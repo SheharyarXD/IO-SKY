@@ -1,0 +1,1376 @@
+{
+  "nl": [
+    {
+      "key": "hero.trust.privacy.note",
+      "loc": "End-to-end versleuteld",
+      "hits": [
+        "end-to-end"
+      ]
+    },
+    {
+      "key": "privacy.localization.body",
+      "loc": "IO SKY bepaalt uw voorkeurstaal uitsluitend op basis van uw browserinstellingen. Er wordt geen IP-gebaseerde geolocatie gebruikt. Uw taalkeuze wordt lokaal in uw browser bewaard om uw voorkeur over bezoeken heen te behouden en kan worden gewist door sitegegevens te verwijderen.",
+      "hits": [
+        "browser"
+      ]
+    },
+    {
+      "key": "ent.cap.customSoftware.body",
+      "loc": "Maatwerk softwareoplossingen, ontworpen voor uw unieke business.",
+      "hits": [
+        "business"
+      ]
+    },
+    {
+      "key": "custom.cta.explore",
+      "loc": "Verken capabilities",
+      "hits": [
+        "capabilities"
+      ]
+    },
+    {
+      "key": "sol.scan.body",
+      "loc": "Onze AI Scan analyseert uw operations en adviseert het ecosysteem dat past bij uw doelen.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "sol.tier.growth.sub",
+      "loc": "Voor bedrijven die klaar zijn om hun operations te optimaliseren en te versnellen.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "about.people.body",
+      "loc": "Wij zijn een team van strategen, engineers, data scientists en operators met één gedeelde missie: de systemen bouwen die de toekomst van het bedrijfsleven aandrijven.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.channels.sub",
+      "loc": "Kies de route die past bij het gesprek. Elk kanaal wordt beheerd door het team dat er verantwoordelijk voor is.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.form.eyebrow",
+      "loc": "SCHRIJF NAAR HET TEAM",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.intro",
+      "loc": "Of u nu een vraag heeft, deskundig advies nodig heeft, of wilt onderzoeken hoe we uw operationele groei kunnen versnellen — ons team staat klaar om contact met u op te nemen.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.form.subtitle",
+      "loc": "Vul onderstaand formulier in en ons team neemt zo spoedig mogelijk contact met u op.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "eng.intro",
+      "loc": "IO SKY Engineering Access is een programma op uitnodiging voor senior engineers, architecten en AI-specialisten die onder NDA willen bijdragen aan een echt operationeel intelligentieplatform. Elke aanvraag wordt handmatig beoordeeld door ons engineering operations team.",
+      "hits": [
+        "operations",
+        "team"
+      ]
+    },
+    {
+      "key": "eng.success.body",
+      "loc": "De engineering operations zullen uw aanvraag handmatig beoordelen en binnen 7 werkdagen reageren. Indien geaccepteerd, ontvangt u een beveiligde NDA en een link voor een technisch gesprek van 30 minuten.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "eng.success.toastBody",
+      "loc": "Ons engineering operations team zal uw aanvraag beoordelen en binnen 7 werkdagen reageren.",
+      "hits": [
+        "operations",
+        "team"
+      ]
+    },
+    {
+      "key": "login.trust.encryption.title",
+      "loc": "End-to-end encryptie",
+      "hits": [
+        "end-to-end"
+      ]
+    },
+    {
+      "key": "aiscan.q.om.kpis",
+      "loc": "Hoe duidelijk worden operationele KPI's gevolgd en opgevolgd binnen het team?",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.ar.experimentation",
+      "loc": "Hoe comfortabel is het team met het uitvoeren van automatiseringspilots?",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.sr.team",
+      "loc": "Kan het huidige team 5× volume aan zonder te breken?",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.ai.coverage",
+      "loc": "Hoeveel functies kunnen vandaag met AI worden versterkt (sales, support, ops, finance)?",
+      "hits": [
+        "support"
+      ]
+    },
+    {
+      "key": "aiscan.q.ai.literacy",
+      "loc": "Hoe AI-vaardig is het team dat de implementatie dagelijks zou beheren?",
+      "hits": [
+        "team"
+      ]
+    }
+  ],
+  "de": [
+    {
+      "key": "hero.body",
+      "loc": "IO SKY entwickelt und betreibt intelligente Infrastruktur, die Ausführung automatisiert, Operations zentralisiert und Ihr Unternehmen mit Klarheit und Kontrolle skaliert.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "hero.trust.security.note",
+      "loc": "Security-First Architektur",
+      "hits": [
+        "security-first"
+      ]
+    },
+    {
+      "key": "dash.kpi.conversions",
+      "loc": "Conversions",
+      "hits": [
+        "conversions"
+      ]
+    },
+    {
+      "key": "problem.eyebrow",
+      "loc": "DAS EIGENTLICHE PROBLEM",
+      "hits": [
+        "problem"
+      ]
+    },
+    {
+      "key": "problem.title.accent",
+      "loc": "Problem mit der operativen Infrastruktur.",
+      "hits": [
+        "problem"
+      ]
+    },
+    {
+      "key": "problem.card.3.body",
+      "loc": "Keine zentrale Übersicht über Operations, Leistung oder Verantwortlichkeit.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "problem.card.4.body",
+      "loc": "Operations werden mit wachsendem Geschäft schwerer steuerbar.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "pillar.infrastructure.body",
+      "loc": "CRM-Systeme, Dashboards, Portale und Integrationen, die Operations zentralisieren und straffen.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "ai.title",
+      "loc": "Intelligenz in jede Operation eingebettet.",
+      "hits": [
+        "operation"
+      ]
+    },
+    {
+      "key": "ai.card.followup.body",
+      "loc": "Stellt sicher, dass Opportunities nicht durch inkonsistente Kommunikation verloren gehen.",
+      "hits": [
+        "opportunities"
+      ]
+    },
+    {
+      "key": "connected.body",
+      "loc": "Überwachen Sie Projekte, Operations, Kommunikation und Leistung über eine zentrale Infrastrukturschicht, die für Klarheit und Kontrolle gebaut ist.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "privacy.localization.body",
+      "loc": "IO SKY ermittelt Ihre bevorzugte Oberflächensprache ausschließlich aus Ihren Browser-Einstellungen. Es wird keine IP-basierte Geolokalisierung verwendet. Ihre Sprachwahl wird lokal in Ihrem Browser gespeichert, um Ihre Präferenz über Besuche hinweg zu erhalten, und kann durch Löschen der Site-Daten entfernt werden.",
+      "hits": [
+        "browser"
+      ]
+    },
+    {
+      "key": "sol.scan.body",
+      "loc": "Unser AI Scan analysiert Ihre Operations und empfiehlt das passende Ökosystem für Ihre Ziele.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "sol.tier.growth.sub",
+      "loc": "Für Unternehmen, die bereit sind, ihre Operations zu optimieren und zu beschleunigen.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "about.triad.vision.title",
+      "loc": "Der globale Standard für Operational Intelligence.",
+      "hits": [
+        "operational"
+      ]
+    },
+    {
+      "key": "about.phil.body",
+      "loc": "Wir glauben, dass Operational Intelligence die Grundlage jeder erfolgreichen Organisation ist. Deshalb bauen wir jede Lösung um fünf Kernprinzipien.",
+      "hits": [
+        "operational"
+      ]
+    },
+    {
+      "key": "about.impact.s1.value",
+      "loc": "End-to-End",
+      "hits": [
+        "end-to-end"
+      ]
+    },
+    {
+      "key": "about.sec.b1.title",
+      "loc": "Security-First Architektur",
+      "hits": [
+        "security-first"
+      ]
+    },
+    {
+      "key": "about.people.body",
+      "loc": "Wir sind ein Team aus Strategen, Ingenieuren, Data Scientists und Operatoren mit einer gemeinsamen Mission: die Systeme zu bauen, die die Zukunft des Geschäfts antreiben.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.channels.sub",
+      "loc": "Wählen Sie den Kanal, der zum Gespräch passt. Jeder Kanal wird von dem Team betreut, das dafür zuständig ist.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.form.eyebrow",
+      "loc": "SCHREIBEN SIE DEM TEAM",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.intro",
+      "loc": "Ob Sie eine Frage haben, Expertenrat benötigen oder erkunden möchten, wie wir Ihr operatives Wachstum beschleunigen können – unser Team ist bereit, sich mit Ihnen zu verbinden.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.form.subtitle",
+      "loc": "Füllen Sie das untenstehende Formular aus, und unser Team wird sich in Kürze bei Ihnen melden.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "eng.intro",
+      "loc": "IO SKY Engineering Access ist ein nur auf Einladung zugängliches Programm für erfahrene Ingenieure, Architekten und AI-Spezialisten, die unter NDA zu einer echten operativen Intelligenzplattform beitragen möchten. Jede Bewerbung wird manuell von unserem Engineering Operations Team geprüft.",
+      "hits": [
+        "operations",
+        "team"
+      ]
+    },
+    {
+      "key": "eng.pill.manual",
+      "loc": "Manuelle Prüfung durch Engineering Operations",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "eng.process.2",
+      "loc": "Engineering Operations prüft und unterzeichnet NDA",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "eng.success.body",
+      "loc": "Die Engineering Operations werden Ihre Bewerbung manuell prüfen und innerhalb von 7 Werktagen antworten. Bei Annahme erhalten Sie eine sichere NDA und einen Link für ein 30-minütiges technisches Gespräch.",
+      "hits": [
+        "operations"
+      ]
+    },
+    {
+      "key": "eng.success.toastBody",
+      "loc": "Unser Engineering Operations Team wird Ihre Bewerbung prüfen und innerhalb von 7 Werktagen antworten.",
+      "hits": [
+        "operations",
+        "team"
+      ]
+    },
+    {
+      "key": "login.hero.accent",
+      "loc": "Operational Intelligence",
+      "hits": [
+        "operational"
+      ]
+    },
+    {
+      "key": "login.card.accent",
+      "loc": "Operational Intelligence Ökosystem",
+      "hits": [
+        "operational"
+      ]
+    },
+    {
+      "key": "intel.title",
+      "loc": "Intelligenz in jede Operation eingebettet.",
+      "hits": [
+        "operation"
+      ]
+    },
+    {
+      "key": "aiscan.q.om.kpis",
+      "loc": "Wie klar werden operative KPIs im Team verfolgt und umgesetzt?",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.ar.experimentation",
+      "loc": "Wie sicher fühlt sich das Team beim Durchführen von Automatisierungspiloten?",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.sr.team",
+      "loc": "Könnte das aktuelle Team das 5-fache Volumen ohne Brüche bewältigen?",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.ai.literacy",
+      "loc": "Wie KI-kompetent ist das Team, das die Einführung täglich verantworten würde?",
+      "hits": [
+        "team"
+      ]
+    }
+  ],
+  "fr": [
+    {
+      "key": "hov.rec.automateIntake",
+      "loc": "Automatiser l'accueil et la qualification",
+      "hits": [
+        "qualification"
+      ]
+    },
+    {
+      "key": "dash.kpi.conversions",
+      "loc": "Conversions",
+      "hits": [
+        "conversions"
+      ]
+    },
+    {
+      "key": "pillar.intelligence.body",
+      "loc": "Agents IA, workflows intelligents et systèmes d’automatisation qui réduisent l’exécution manuelle.",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "ai.body",
+      "loc": "De la qualification des leads aux workflows internes, IO SKY intègre des systèmes intelligents directement dans la couche opérationnelle de votre entreprise.",
+      "hits": [
+        "qualification",
+        "workflows"
+      ]
+    },
+    {
+      "key": "ai.card.voice.body",
+      "loc": "Gèrent automatiquement conversations, qualification et planification.",
+      "hits": [
+        "qualification"
+      ]
+    },
+    {
+      "key": "ai.card.workflows.title",
+      "loc": "Workflows intelligents",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "connected.title",
+      "loc": "Tout connecté. Tout visible.",
+      "hits": [
+        "visible"
+      ]
+    },
+    {
+      "key": "results.stat.3.label",
+      "loc": "Meilleure visibilité sur l’ensemble des workflows.",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "scan.score.label",
+      "loc": "Score global",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "scan.opportunities.row.3",
+      "loc": "Mettre en place une qualification IA",
+      "hits": [
+        "qualification"
+      ]
+    },
+    {
+      "key": "footer.link.workflows",
+      "loc": "Workflows",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "privacy.localization.body",
+      "loc": "IO SKY détecte votre langue d’interface uniquement à partir des paramètres de votre navigateur. Aucune géolocalisation basée sur l’IP n’est utilisée. Votre choix de langue est stocké localement dans votre navigateur afin de conserver votre préférence d’une visite à l’autre et peut être supprimé en effaçant les données du site.",
+      "hits": [
+        "interface",
+        "site"
+      ]
+    },
+    {
+      "key": "translations.body",
+      "loc": "Tableau centralisé de tous les libellés d’interface d’IO SKY dans chaque langue prise en charge. Utilisez cette surface pour vérifier le ton et la formulation avant publication.",
+      "hits": [
+        "interface",
+        "surface"
+      ]
+    },
+    {
+      "key": "ov.kpi.conversions",
+      "loc": "Conversions",
+      "hits": [
+        "conversions"
+      ]
+    },
+    {
+      "key": "ov.agent.leadQualifier",
+      "loc": "Qualification de leads",
+      "hits": [
+        "qualification"
+      ]
+    },
+    {
+      "key": "ov.agent.support",
+      "loc": "Agent de support",
+      "hits": [
+        "support"
+      ]
+    },
+    {
+      "key": "nav.intel.workflows.short",
+      "loc": "Workflows qui suppriment les transferts manuels.",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "nav.intel.voice.short",
+      "loc": "Voix IA pour la qualification entrante et la planification.",
+      "hits": [
+        "qualification"
+      ]
+    },
+    {
+      "key": "infra.cap.crm.body",
+      "loc": "Centralisez les données clients, les processus et les workflows opérationnels dans un environnement gérable.",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "infra.cap.automation.b1",
+      "loc": "Automatisations de workflows",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "intel.flow.body",
+      "loc": "Notre couche d'intelligence connecte, analyse et active l'ensemble de votre écosystème opérationnel.",
+      "hits": [
+        "active"
+      ]
+    },
+    {
+      "key": "intel.cap.hub.b3",
+      "loc": "Gestion des workflows",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "footer.stay.success",
+      "loc": "Inscription confirmée. Bienvenue dans le signal IO SKY.",
+      "hits": [
+        "signal"
+      ]
+    },
+    {
+      "key": "ent.cap.aiSystems.b3",
+      "loc": "Agents IA & workflows",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "ent.cmd.imageAlt",
+      "loc": "Centre de commandement entreprise avec dashboards multi-écrans",
+      "hits": [
+        "dashboards"
+      ]
+    },
+    {
+      "key": "ent.cmd.monitoring.body",
+      "loc": "Supervision continue de chaque surface opérationnelle.",
+      "hits": [
+        "surface"
+      ]
+    },
+    {
+      "key": "ent.cmd.alerts.body",
+      "loc": "Alertes signal uniquement, qui déclenchent l'action immédiate.",
+      "hits": [
+        "signal"
+      ]
+    },
+    {
+      "key": "sol.hero.q2.body",
+      "loc": "Tous les outils, données et workflows connectés comme un seul.",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "sol.tier.growth.f6",
+      "loc": "Support standard",
+      "hits": [
+        "support"
+      ]
+    },
+    {
+      "key": "sol.tier.enterprise.f7",
+      "loc": "Support prioritaire",
+      "hits": [
+        "support"
+      ]
+    },
+    {
+      "key": "sol.tier.elite.f6",
+      "loc": "Support premium 24/7",
+      "hits": [
+        "support"
+      ]
+    },
+    {
+      "key": "sol.trust.t5.body",
+      "loc": "Suivez la performance et constatez l'impact business réel.",
+      "hits": [
+        "business"
+      ]
+    },
+    {
+      "key": "about.why.body1",
+      "loc": "Processus dépassés, outils déconnectés et workflows manuels créent friction, gaspillage et opportunités manquées.",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "about.people.body",
+      "loc": "Nous sommes une équipe de stratèges, ingénieurs, data scientists et opérateurs avec une mission commune : bâtir les systèmes qui propulsent l'avenir du business.",
+      "hits": [
+        "business"
+      ]
+    },
+    {
+      "key": "eng.what.2",
+      "loc": "Pensée opérationnelle — à l'aise avec l'infrastructure, l'automatisation et le flux de données, pas seulement l'interface utilisateur.",
+      "hits": [
+        "interface"
+      ]
+    },
+    {
+      "key": "eng.field.portfolio",
+      "loc": "Portfolio / site personnel",
+      "hits": [
+        "site"
+      ]
+    },
+    {
+      "key": "login.help.cta",
+      "loc": "Contacter le support",
+      "hits": [
+        "support"
+      ]
+    },
+    {
+      "key": "pillars.intel.body",
+      "loc": "Agents IA, workflows d'intelligence et systèmes d'automatisation qui réduisent l'exécution manuelle.",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "intel.body",
+      "loc": "De la qualification des leads aux workflows internes, IO SKY intègre des systèmes intelligents directement dans la couche opérationnelle de votre entreprise.",
+      "hits": [
+        "qualification",
+        "workflows"
+      ]
+    },
+    {
+      "key": "intel.voice.body",
+      "loc": "Gérez les conversations, la qualification et la planification de manière autonome.",
+      "hits": [
+        "qualification"
+      ]
+    },
+    {
+      "key": "intel.workflow.title",
+      "loc": "Workflows intelligents",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "intel.workflow.body",
+      "loc": "Workflows inter-équipes qui éliminent les transferts manuels.",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "discover.overallScore",
+      "loc": "Score global",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "discover.opp3",
+      "loc": "Mettre en œuvre la qualification par IA",
+      "hits": [
+        "qualification"
+      ]
+    },
+    {
+      "key": "solution.bullet.1",
+      "loc": "Un plan de données opérationnel unifié — chaque parcours client visible en un seul endroit.",
+      "hits": [
+        "visible"
+      ]
+    },
+    {
+      "key": "hero.dash.conversions",
+      "loc": "Conversions",
+      "hits": [
+        "conversions"
+      ]
+    },
+    {
+      "key": "aiscan.q.ai.coverage",
+      "loc": "Combien de fonctions pourraient être augmentées par l'IA aujourd'hui (ventes, support, ops, finance) ?",
+      "hits": [
+        "support"
+      ]
+    },
+    {
+      "key": "infra.viz.right.health",
+      "loc": "Santé des workflows",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "infra.results.i2",
+      "loc": "Efficacité des workflows",
+      "hits": [
+        "workflows"
+      ]
+    }
+  ],
+  "es": [
+    {
+      "key": "pillar.infrastructure.body",
+      "loc": "Sistemas CRM, dashboards, portales e integraciones diseñados para centralizar y optimizar las operaciones.",
+      "hits": [
+        "dashboards"
+      ]
+    },
+    {
+      "key": "connected.title",
+      "loc": "Todo conectado. Todo visible.",
+      "hits": [
+        "visible"
+      ]
+    },
+    {
+      "key": "scan.score.label",
+      "loc": "Puntuación global",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "infra.cap.scalability.b4",
+      "loc": "Rendimiento global",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "infra.trust.global.title",
+      "loc": "Infraestructura global",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "intel.cap.executive.b1",
+      "loc": "Dashboards de KPI",
+      "hits": [
+        "dashboards"
+      ]
+    },
+    {
+      "key": "intel.cap.hub.b3",
+      "loc": "Gestión de workflows",
+      "hits": [
+        "workflows"
+      ]
+    },
+    {
+      "key": "sol.tier.enterprise.f3",
+      "loc": "Dashboards y reporting a medida",
+      "hits": [
+        "dashboards"
+      ]
+    },
+    {
+      "key": "about.triad.vision.title",
+      "loc": "El estándar global de inteligencia operativa.",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "about.people.alt",
+      "loc": "El equipo de IO SKY contempla por la noche un horizonte urbano global.",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "solution.link",
+      "loc": "Explore nuestra infraestructura",
+      "hits": [
+        "explore"
+      ]
+    },
+    {
+      "key": "intel.link",
+      "loc": "Explore los sistemas de IA",
+      "hits": [
+        "explore"
+      ]
+    },
+    {
+      "key": "solution.bullet.1",
+      "loc": "Un plano de datos operativos unificado: cada recorrido del cliente visible en un solo lugar.",
+      "hits": [
+        "visible"
+      ]
+    }
+  ],
+  "it": [
+    {
+      "key": "hero.body",
+      "loc": "IO SKY costruisce e gestisce infrastrutture intelligenti che automatizzano l'esecuzione, centralizzano le operazioni e scalano il vostro business con chiarezza e controllo.",
+      "hits": [
+        "business"
+      ]
+    },
+    {
+      "key": "hero.trust.security.note",
+      "loc": "Architettura security-first",
+      "hits": [
+        "security-first"
+      ]
+    },
+    {
+      "key": "hov.bottleneck.handoffs",
+      "loc": "Passaggi manuali tra team",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "problem.card.1.body",
+      "loc": "Informazioni sparse tra strumenti e team.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "ai.card.workflows.body",
+      "loc": "Riducono l'esecuzione ripetitiva tra team e dipartimenti.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "privacy.localization.body",
+      "loc": "IO SKY rileva la lingua preferita dell'interfaccia utilizzando esclusivamente le impostazioni del browser. Non viene utilizzata alcuna geolocalizzazione basata su IP. La lingua selezionata viene memorizzata localmente nel browser per mantenere la preferenza tra le visite e può essere cancellata rimuovendo i dati del sito.",
+      "hits": [
+        "browser"
+      ]
+    },
+    {
+      "key": "infra.cap.automation.body",
+      "loc": "Automatizza le attività ricorrenti affinché i team possano concentrarsi sulla crescita.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "infra.cap.data.short",
+      "loc": "Dashboard in tempo reale e operational intelligence.",
+      "hits": [
+        "operational"
+      ]
+    },
+    {
+      "key": "ent.cap.systems.b3",
+      "loc": "Ottimizzazione del Business",
+      "hits": [
+        "business"
+      ]
+    },
+    {
+      "key": "custom.process.design.body",
+      "loc": "Architettare un sistema che il comitato acquirente possa difendere, il team operativo possa gestire e il team di ingegneria possa estendere.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "about.sec.b1.title",
+      "loc": "Architettura security-first",
+      "hits": [
+        "security-first"
+      ]
+    },
+    {
+      "key": "about.people.body",
+      "loc": "Siamo un team di strateghi, ingegneri, data scientist e operatori con una missione condivisa: costruire i sistemi che alimenteranno il futuro del business.",
+      "hits": [
+        "team",
+        "business"
+      ]
+    },
+    {
+      "key": "about.people.alt",
+      "loc": "Il team IO SKY osserva lo skyline di una metropoli globale di notte.",
+      "hits": [
+        "team",
+        "skyline"
+      ]
+    },
+    {
+      "key": "contact.hero.body",
+      "loc": "Domande operative, revisione della sicurezza, partnership o conversazioni commerciali — ogni messaggio raggiunge un membro senior del team IO SKY e riceve risposta entro un giorno lavorativo.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.channels.sub",
+      "loc": "Scegli il percorso più adatto alla conversazione. Ogni canale è monitorato dal team che ne è responsabile.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.form.eyebrow",
+      "loc": "SCRIVI AL TEAM",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.intro",
+      "loc": "Che abbiate una domanda, abbiate bisogno di consigli esperti o vogliate esplorare come possiamo accelerare la vostra crescita operativa, il nostro team è pronto a connettersi.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "contact.trust.expert.body",
+      "loc": "Parlate direttamente con esperti di operational intelligence.",
+      "hits": [
+        "operational"
+      ]
+    },
+    {
+      "key": "contact.form.subtitle",
+      "loc": "Compilate il modulo sottostante e il nostro team vi ricontatterà a breve.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "eng.intro",
+      "loc": "IO SKY Engineering Access è un programma su invito per ingegneri senior, architetti e specialisti AI che desiderano contribuire a una vera piattaforma di operational intelligence sotto NDA. Ogni candidatura viene esaminata manualmente dal nostro team di ingegneria operativa.",
+      "hits": [
+        "operational",
+        "team"
+      ]
+    },
+    {
+      "key": "eng.pill.manual",
+      "loc": "Revisione manuale da parte del team di ingegneria operativa",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "eng.process.2",
+      "loc": "Revisione da parte del team di ingegneria operativa e firma dell'NDA",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "eng.success.toastBody",
+      "loc": "Il nostro team di operazioni di ingegneria esaminerà e risponderà entro 7 giorni lavorativi.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "login.hero.accent",
+      "loc": "ecosistema di operational intelligence",
+      "hits": [
+        "operational"
+      ]
+    },
+    {
+      "key": "login.card.accent",
+      "loc": "ecosistema di operational intelligence",
+      "hits": [
+        "operational"
+      ]
+    },
+    {
+      "key": "login.help.body",
+      "loc": "Il nostro team di supporto è disponibile 24/7.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "problem.card1.body",
+      "loc": "Automatizza i processi ricorrenti che rallentano i team.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "discover.title",
+      "loc": "Scopri dove l'inefficienza operativa sta rallentando il tuo business.",
+      "hits": [
+        "business"
+      ]
+    },
+    {
+      "key": "problem.subtitle",
+      "loc": "Man mano che i team crescono, i sistemi si frammentano, i flussi di lavoro diventano manuali e la visibilità scompare.",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.om.handoffs",
+      "loc": "Quanto sono fluidi oggi i passaggi tra team o strumenti?",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.om.kpis",
+      "loc": "Con quanta chiarezza i KPI operativi vengono monitorati e gestiti nel team?",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.ar.experimentation",
+      "loc": "Quanto è a suo agio il team nel condurre progetti pilota di automazione?",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.sr.team",
+      "loc": "Il team attuale potrebbe assorbire un volume 5× senza rompersi?",
+      "hits": [
+        "team"
+      ]
+    },
+    {
+      "key": "aiscan.q.ai.literacy",
+      "loc": "Quanto è competente in IA il team che gestirebbe l'implementazione quotidianamente?",
+      "hits": [
+        "team"
+      ]
+    }
+  ],
+  "pt": [
+    {
+      "key": "hero.trust.security.note",
+      "loc": "Arquitetura security-first",
+      "hits": [
+        "security-first"
+      ]
+    },
+    {
+      "key": "dash.overview",
+      "loc": "Overview",
+      "hits": [
+        "overview"
+      ]
+    },
+    {
+      "key": "dash.kpi.revenue",
+      "loc": "Revenue",
+      "hits": [
+        "revenue"
+      ]
+    },
+    {
+      "key": "dash.kpi.conversions",
+      "loc": "Conversions",
+      "hits": [
+        "conversions"
+      ]
+    },
+    {
+      "key": "dash.agents.active",
+      "loc": "Active",
+      "hits": [
+        "active"
+      ]
+    },
+    {
+      "key": "solution.cta",
+      "loc": "Explore a nossa infraestrutura",
+      "hits": [
+        "explore"
+      ]
+    },
+    {
+      "key": "ai.title",
+      "loc": "Inteligência embedded into every operation.",
+      "hits": [
+        "embedded",
+        "into",
+        "every",
+        "operation"
+      ]
+    },
+    {
+      "key": "ai.card.ops.title",
+      "loc": "Operational Inteligência",
+      "hits": [
+        "operational"
+      ]
+    },
+    {
+      "key": "scan.opportunities.title",
+      "loc": "Opportunities",
+      "hits": [
+        "opportunities"
+      ]
+    },
+    {
+      "key": "footer.tagline",
+      "loc": "Engineered for Growth. Powered by Inteligência.",
+      "hits": [
+        "engineered",
+        "for",
+        "powered"
+      ]
+    },
+    {
+      "key": "footer.tagline.line2",
+      "loc": "Powered by Inteligência.",
+      "hits": [
+        "powered"
+      ]
+    },
+    {
+      "key": "footer.link.security",
+      "loc": "Segurança Systems",
+      "hits": [
+        "systems"
+      ]
+    },
+    {
+      "key": "footer.link.about",
+      "loc": "Sobre Us",
+      "hits": [
+        "us"
+      ]
+    },
+    {
+      "key": "footer.link.careers",
+      "loc": "Careers",
+      "hits": [
+        "careers"
+      ]
+    },
+    {
+      "key": "privacy.localization.body",
+      "loc": "A IO SKY deteta o seu idioma de interface preferido utilizando apenas as definições do seu navegador. Não é utilizada geolocalização baseada em IP. O idioma selecionado é armazenado localmente no seu navegador para preservar a sua preferência em visitas futuras e pode ser apagado ao remover os dados do site.",
+      "hits": [
+        "interface",
+        "site"
+      ]
+    },
+    {
+      "key": "ov.title",
+      "loc": "Overview",
+      "hits": [
+        "overview"
+      ]
+    },
+    {
+      "key": "ov.nav.overview",
+      "loc": "Overview",
+      "hits": [
+        "overview"
+      ]
+    },
+    {
+      "key": "ov.nav.settings",
+      "loc": "Settings",
+      "hits": [
+        "settings"
+      ]
+    },
+    {
+      "key": "ov.kpi.revenue",
+      "loc": "Revenue",
+      "hits": [
+        "revenue"
+      ]
+    },
+    {
+      "key": "ov.kpi.conversions",
+      "loc": "Conversions",
+      "hits": [
+        "conversions"
+      ]
+    },
+    {
+      "key": "ov.active",
+      "loc": "Active",
+      "hits": [
+        "active"
+      ]
+    },
+    {
+      "key": "nav.infra.exploreAll",
+      "loc": "Explore all Infraestrutura capabilities",
+      "hits": [
+        "explore",
+        "capabilities"
+      ]
+    },
+    {
+      "key": "nav.intel.exploreAll",
+      "loc": "Explore all Inteligência capabilities",
+      "hits": [
+        "explore",
+        "capabilities"
+      ]
+    },
+    {
+      "key": "nav.ent.exploreAll",
+      "loc": "Explore all Empresarial capabilities",
+      "hits": [
+        "explore",
+        "capabilities"
+      ]
+    },
+    {
+      "key": "infra.cap.scalability.b4",
+      "loc": "Desempenho Global",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "infra.trust.uptime.sub",
+      "loc": "Reliability you can depend on",
+      "hits": [
+        "you"
+      ]
+    },
+    {
+      "key": "infra.trust.global.title",
+      "loc": "Global Infraestrutura",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "footer.company.careers",
+      "loc": "Careers",
+      "hits": [
+        "careers"
+      ]
+    },
+    {
+      "key": "ent.hero.title.line1",
+      "loc": "Empresarial infrastructure for",
+      "hits": [
+        "for"
+      ]
+    },
+    {
+      "key": "ent.cta.explore",
+      "loc": "Explore Empresarial Systems",
+      "hits": [
+        "explore",
+        "systems"
+      ]
+    },
+    {
+      "key": "ent.systems.title.lead",
+      "loc": "Empresarial systems engineered to",
+      "hits": [
+        "systems",
+        "engineered"
+      ]
+    },
+    {
+      "key": "sol.tier.enterprise.cta",
+      "loc": "Explore Empresarial Ecosystem",
+      "hits": [
+        "explore"
+      ]
+    },
+    {
+      "key": "sol.tier.elite.f1",
+      "loc": "Everything in Empresarial",
+      "hits": [
+        "everything"
+      ]
+    },
+    {
+      "key": "about.triad.vision.title",
+      "loc": "O padrão global para inteligência operacional.",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "about.impact.eyebrow",
+      "loc": "Our Impact",
+      "hits": [
+        "our"
+      ]
+    },
+    {
+      "key": "about.impact.body",
+      "loc": "We don't just build systems — we deliver measurable outcomes.",
+      "hits": [
+        "systems"
+      ]
+    },
+    {
+      "key": "about.people.alt",
+      "loc": "A equipa IO SKY a observar o horizonte de uma metrópole global à noite.",
+      "hits": [
+        "global"
+      ]
+    },
+    {
+      "key": "eng.field.portfolio",
+      "loc": "Portefólio / site pessoal",
+      "hits": [
+        "site"
+      ]
+    },
+    {
+      "key": "solution.link",
+      "loc": "Explore a nossa infraestrutura",
+      "hits": [
+        "explore"
+      ]
+    },
+    {
+      "key": "intel.link",
+      "loc": "Explore os sistemas AI",
+      "hits": [
+        "explore"
+      ]
+    }
+  ],
+  "ar": [],
+  "ja": [],
+  "zh": []
+}

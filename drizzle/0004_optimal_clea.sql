@@ -1,0 +1,1 @@
+ALTER TABLE `client_support_tickets` ADD `priority` enum('low','normal','high','urgent') DEFAULT 'normal' NOT NULL;

@@ -1,0 +1,75 @@
+direction: right
+
+users: {
+  label: "End Users"
+  shape: person
+  visitor: "Anonymous visitor"
+  client: "Authenticated client"
+  admin: "Super admin / staff"
+  developer: "Developer"
+}
+
+cdn: {
+  label: "Edge / CDN\n(static assets, /manus-storage)"
+  shape: cloud
+}
+
+webdev: {
+  label: "IO SKY Web App"
+  style.fill: "#0a1628"
+  style.font-color: "#ffffff"
+
+  frontend: {
+    label: "React 19 + Vite\nTailwind 4 + shadcn/ui\nWouter routes\nLanguageProvider (9 locales)\nThemeProvider (dark/light)\nAuthContext + tRPC client"
+  }
+
+  server: {
+    label: "Express 4 + tRPC 11\nsuperjson transformer\nCookie session (JWT)\nRate limiting\nAudit logging"
+  }
+
+  frontend -> server: "HTTPS /api/trpc\nbatched JSON-RPC"
+}
+
+auth: {
+  label: "Authentication providers"
+  manus_oauth: "Manus OAuth\n(default)"
+  local_pw: "Local email+password\n(/api/auth/local)"
+  mfa: "TOTP MFA challenge\n(authenticator app)"
+}
+
+db: {
+  label: "TiDB / MySQL\n50+ tables"
+  shape: cylinder
+  style.fill: "#1a2942"
+  style.font-color: "#ffffff"
+}
+
+storage: {
+  label: "S3-compatible storage\nstoragePut / signed GET"
+  shape: cylinder
+}
+
+llm: {
+  label: "LLM provider\n(Forge default,\nOpenAI/Anthropic optional)"
+}
+
+email: {
+  label: "Outbound email\n(SMTP/Resend/SES via\nnotifyOwner abstraction)"
+}
+
+cron: {
+  label: "Heartbeat scheduler\n• 1-min reminder dispatcher\n• 5-min slot cleanup\n• daily audit retention"
+}
+
+users.visitor -> cdn
+users.client -> webdev
+users.admin -> webdev
+users.developer -> webdev
+
+cdn -> webdev.frontend
+webdev.server -> auth
+webdev.server -> db
+webdev.server -> storage
+webdev.server -> llm
+webdev.server -> email
+cron -> webdev.server: "internal heartbeat\nPOST /api/heartbeat"

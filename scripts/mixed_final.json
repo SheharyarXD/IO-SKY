@@ -1,0 +1,70 @@
+{
+  "nl": [
+    {
+      "key": "contact.ch.ops.email",
+      "loc": "operations@io-sky.io",
+      "en": "operations@io-sky.io",
+      "hits": [
+        "operations"
+      ]
+    }
+  ],
+  "de": [
+    {
+      "key": "contact.ch.ops.email",
+      "loc": "operations@io-sky.io",
+      "en": "operations@io-sky.io",
+      "hits": [
+        "operations"
+      ]
+    }
+  ],
+  "fr": [
+    {
+      "key": "contact.ch.ops.email",
+      "loc": "operations@io-sky.io",
+      "en": "operations@io-sky.io",
+      "hits": [
+        "operations"
+      ]
+    }
+  ],
+  "es": [
+    {
+      "key": "contact.ch.ops.email",
+      "loc": "operations@io-sky.io",
+      "en": "operations@io-sky.io",
+      "hits": [
+        "operations"
+      ]
+    }
+  ],
+  "it": [
+    {
+      "key": "about.people.alt",
+      "loc": "Il team IO SKY osserva lo skyline di una metropoli globale di notte.",
+      "en": "The IO SKY team looking out over a global metropolitan skyline at night.",
+      "hits": [
+        "skyline"
+      ]
+    },
+    {
+      "key": "contact.ch.ops.email",
+      "loc": "operations@io-sky.io",
+      "en": "operations@io-sky.io",
+      "hits": [
+        "operations"
+      ]
+    }
+  ],
+  "pt": [
+    {
+      "key": "contact.ch.ops.email",
+      "loc": "operations@io-sky.io",
+      "en": "operations@io-sky.io",
+      "hits": [
+        "operations"
+      ]
+    }
+  ]
+}

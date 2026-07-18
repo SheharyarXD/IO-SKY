@@ -1,0 +1,700 @@
+{
+  "nl": [
+    {
+      "key": "solution.pill.crm",
+      "en": "CRM & PIPELINE",
+      "loc": "CRM & PIPELINE"
+    },
+    {
+      "key": "solution.pill.dashboards",
+      "en": "DASHBOARDS",
+      "loc": "DASHBOARDS"
+    },
+    {
+      "key": "pillar.enterprise.title",
+      "en": "Enterprise",
+      "loc": "Enterprise"
+    },
+    {
+      "key": "footer.col.enterprise",
+      "en": "Enterprise",
+      "loc": "Enterprise"
+    },
+    {
+      "key": "footer.link.crmPipeline",
+      "en": "CRM & Pipeline",
+      "loc": "CRM & Pipeline"
+    },
+    {
+      "key": "footer.link.dashboards",
+      "en": "Dashboards",
+      "loc": "Dashboards"
+    },
+    {
+      "key": "footer.link.compliance",
+      "en": "Compliance",
+      "loc": "Compliance"
+    },
+    {
+      "key": "intel.flow.impact.title",
+      "en": "Impact",
+      "loc": "Impact"
+    },
+    {
+      "key": "ent.eyebrow",
+      "en": "ENTERPRISE",
+      "loc": "ENTERPRISE"
+    },
+    {
+      "key": "ent.partner.alphora.sub",
+      "en": "SYSTEMS",
+      "loc": "SYSTEMS"
+    },
+    {
+      "key": "ent.partner.noventic.sub",
+      "en": "SOLUTIONS",
+      "loc": "SOLUTIONS"
+    },
+    {
+      "key": "sol.scan.eyebrow",
+      "en": "AI SCAN",
+      "loc": "AI SCAN"
+    },
+    {
+      "key": "sol.scan.cta",
+      "en": "Start AI Scan",
+      "loc": "Start AI Scan"
+    },
+    {
+      "key": "contact.ch.sec.email",
+      "en": "security@io-sky.io",
+      "loc": "security@io-sky.io"
+    },
+    {
+      "key": "industry.saas",
+      "en": "SaaS / Software",
+      "loc": "SaaS / Software"
+    },
+    {
+      "key": "footer.solutions.enterprise",
+      "en": "Enterprise",
+      "loc": "Enterprise"
+    },
+    {
+      "key": "pillars.4.title",
+      "en": "Enterprise",
+      "loc": "Enterprise"
+    },
+    {
+      "key": "aiscan.start.eyebrow",
+      "en": "AI SCAN",
+      "loc": "AI SCAN"
+    },
+    {
+      "key": "infra.diagram.right.dashboards",
+      "en": "Dashboards",
+      "loc": "Dashboards"
+    }
+  ],
+  "de": [
+    {
+      "key": "solution.pill.crm",
+      "en": "CRM & PIPELINE",
+      "loc": "CRM & PIPELINE"
+    },
+    {
+      "key": "solution.pill.dashboards",
+      "en": "DASHBOARDS",
+      "loc": "DASHBOARDS"
+    },
+    {
+      "key": "footer.link.crmPipeline",
+      "en": "CRM & Pipeline",
+      "loc": "CRM & Pipeline"
+    },
+    {
+      "key": "footer.link.dashboards",
+      "en": "Dashboards",
+      "loc": "Dashboards"
+    },
+    {
+      "key": "footer.link.compliance",
+      "en": "Compliance",
+      "loc": "Compliance"
+    },
+    {
+      "key": "ent.partner.alphora.sub",
+      "en": "SYSTEMS",
+      "loc": "SYSTEMS"
+    },
+    {
+      "key": "ent.partner.noventic.sub",
+      "en": "SOLUTIONS",
+      "loc": "SOLUTIONS"
+    },
+    {
+      "key": "contact.ch.sec.email",
+      "en": "security@io-sky.io",
+      "loc": "security@io-sky.io"
+    },
+    {
+      "key": "industry.saas",
+      "en": "SaaS / Software",
+      "loc": "SaaS / Software"
+    },
+    {
+      "key": "infra.benefit.integration.title",
+      "en": "Integration",
+      "loc": "Integration"
+    },
+    {
+      "key": "infra.benefit.governance.title",
+      "en": "Governance",
+      "loc": "Governance"
+    },
+    {
+      "key": "infra.diagram.right.dashboards",
+      "en": "Dashboards",
+      "loc": "Dashboards"
+    }
+  ],
+  "fr": [
+    {
+      "key": "nav.infrastructure",
+      "en": "Infrastructure",
+      "loc": "Infrastructure"
+    },
+    {
+      "key": "nav.intelligence",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "nav.solutions",
+      "en": "Solutions",
+      "loc": "Solutions"
+    },
+    {
+      "key": "solution.pill.crm",
+      "en": "CRM & PIPELINE",
+      "loc": "CRM & PIPELINE"
+    },
+    {
+      "key": "solution.pill.communication",
+      "en": "COMMUNICATION",
+      "loc": "COMMUNICATION"
+    },
+    {
+      "key": "pillar.infrastructure.title",
+      "en": "Infrastructure",
+      "loc": "Infrastructure"
+    },
+    {
+      "key": "pillar.intelligence.title",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "footer.col.infrastructure",
+      "en": "Infrastructure",
+      "loc": "Infrastructure"
+    },
+    {
+      "key": "footer.col.intelligence",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "footer.col.solutions",
+      "en": "Solutions",
+      "loc": "Solutions"
+    },
+    {
+      "key": "footer.link.crmPipeline",
+      "en": "CRM & Pipeline",
+      "loc": "CRM & Pipeline"
+    },
+    {
+      "key": "infra.hero.eyebrow",
+      "en": "INFRASTRUCTURE",
+      "loc": "INFRASTRUCTURE"
+    },
+    {
+      "key": "intel.hero.eyebrow",
+      "en": "INTELLIGENCE",
+      "loc": "INTELLIGENCE"
+    },
+    {
+      "key": "intel.flow.intelligence.title",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "intel.flow.impact.title",
+      "en": "Impact",
+      "loc": "Impact"
+    },
+    {
+      "key": "intel.caps.title.accent",
+      "en": "intelligence",
+      "loc": "intelligence"
+    },
+    {
+      "key": "ent.partner.alphora.sub",
+      "en": "SYSTEMS",
+      "loc": "SYSTEMS"
+    },
+    {
+      "key": "ent.partner.noventic.sub",
+      "en": "SOLUTIONS",
+      "loc": "SOLUTIONS"
+    },
+    {
+      "key": "sol.eyebrow",
+      "en": "SOLUTIONS",
+      "loc": "SOLUTIONS"
+    },
+    {
+      "key": "contact.ch.sec.email",
+      "en": "security@io-sky.io",
+      "loc": "security@io-sky.io"
+    },
+    {
+      "key": "pillars.infra.title",
+      "en": "Infrastructure",
+      "loc": "Infrastructure"
+    },
+    {
+      "key": "pillars.intel.title",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "pillars.growth.title",
+      "en": "Solutions",
+      "loc": "Solutions"
+    },
+    {
+      "key": "discover.gain3",
+      "en": "Conversion",
+      "loc": "Conversion"
+    },
+    {
+      "key": "footer.product.infrastructure",
+      "en": "Infrastructure",
+      "loc": "Infrastructure"
+    },
+    {
+      "key": "footer.product.intelligence",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "pillars.1.title",
+      "en": "Infrastructure",
+      "loc": "Infrastructure"
+    },
+    {
+      "key": "pillars.2.title",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "infra.viz.left.comms",
+      "en": "Communication",
+      "loc": "Communication"
+    },
+    {
+      "key": "infra.diagram.left.title",
+      "en": "Sources",
+      "loc": "Sources"
+    },
+    {
+      "key": "infra.diagram.left.comms",
+      "en": "Communication",
+      "loc": "Communication"
+    }
+  ],
+  "es": [
+    {
+      "key": "ent.partner.alphora.sub",
+      "en": "SYSTEMS",
+      "loc": "SYSTEMS"
+    },
+    {
+      "key": "ent.partner.noventic.sub",
+      "en": "SOLUTIONS",
+      "loc": "SOLUTIONS"
+    },
+    {
+      "key": "contact.ch.sec.email",
+      "en": "security@io-sky.io",
+      "loc": "security@io-sky.io"
+    },
+    {
+      "key": "industry.saas",
+      "en": "SaaS / Software",
+      "loc": "SaaS / Software"
+    }
+  ],
+  "it": [
+    {
+      "key": "nav.intelligence",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "pillar.intelligence.title",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "pillar.enterprise.title",
+      "en": "Enterprise",
+      "loc": "Enterprise"
+    },
+    {
+      "key": "footer.link.crmPipeline",
+      "en": "CRM & Pipeline",
+      "loc": "CRM & Pipeline"
+    },
+    {
+      "key": "intel.hero.eyebrow",
+      "en": "INTELLIGENCE",
+      "loc": "INTELLIGENCE"
+    },
+    {
+      "key": "intel.flow.intelligence.title",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "ent.eyebrow",
+      "en": "ENTERPRISE",
+      "loc": "ENTERPRISE"
+    },
+    {
+      "key": "ent.partner.alphora.sub",
+      "en": "SYSTEMS",
+      "loc": "SYSTEMS"
+    },
+    {
+      "key": "ent.partner.noventic.sub",
+      "en": "SOLUTIONS",
+      "loc": "SOLUTIONS"
+    },
+    {
+      "key": "about.impact.s1.value",
+      "en": "End-to-end",
+      "loc": "End-to-end"
+    },
+    {
+      "key": "contact.ch.sec.email",
+      "en": "security@io-sky.io",
+      "loc": "security@io-sky.io"
+    },
+    {
+      "key": "industry.saas",
+      "en": "SaaS / Software",
+      "loc": "SaaS / Software"
+    },
+    {
+      "key": "login.field.password",
+      "en": "Password",
+      "loc": "Password"
+    },
+    {
+      "key": "pillars.enterprise.title",
+      "en": "Enterprise",
+      "loc": "Enterprise"
+    },
+    {
+      "key": "footer.product.intelligence",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "pillars.2.title",
+      "en": "Intelligence",
+      "loc": "Intelligence"
+    },
+    {
+      "key": "aiscan.start.eyebrow",
+      "en": "AI SCAN",
+      "loc": "AI SCAN"
+    }
+  ],
+  "pt": [
+    {
+      "key": "footer.link.crmPipeline",
+      "en": "CRM & Pipeline",
+      "loc": "CRM & Pipeline"
+    },
+    {
+      "key": "footer.link.dashboards",
+      "en": "Dashboards",
+      "loc": "Dashboards"
+    },
+    {
+      "key": "ent.partner.alphora.sub",
+      "en": "SYSTEMS",
+      "loc": "SYSTEMS"
+    },
+    {
+      "key": "ent.partner.noventic.sub",
+      "en": "SOLUTIONS",
+      "loc": "SOLUTIONS"
+    },
+    {
+      "key": "contact.ch.sec.email",
+      "en": "security@io-sky.io",
+      "loc": "security@io-sky.io"
+    },
+    {
+      "key": "industry.saas",
+      "en": "SaaS / Software",
+      "loc": "SaaS / Software"
+    }
+  ],
+  "ar": [
+    {
+      "key": "ent.partner.nexora.name",
+      "en": "NEXORA",
+      "loc": "NEXORA"
+    },
+    {
+      "key": "ent.partner.nexora.sub",
+      "en": "GROUP",
+      "loc": "GROUP"
+    },
+    {
+      "key": "ent.partner.vertex.name",
+      "en": "VERTEX",
+      "loc": "VERTEX"
+    },
+    {
+      "key": "ent.partner.vertex.sub",
+      "en": "INDUSTRIES",
+      "loc": "INDUSTRIES"
+    },
+    {
+      "key": "ent.partner.alphora.name",
+      "en": "ALPHORA",
+      "loc": "ALPHORA"
+    },
+    {
+      "key": "ent.partner.alphora.sub",
+      "en": "SYSTEMS",
+      "loc": "SYSTEMS"
+    },
+    {
+      "key": "ent.partner.noventic.name",
+      "en": "NOVENTIC",
+      "loc": "NOVENTIC"
+    },
+    {
+      "key": "ent.partner.noventic.sub",
+      "en": "SOLUTIONS",
+      "loc": "SOLUTIONS"
+    },
+    {
+      "key": "ent.partner.quantum.name",
+      "en": "QUANTUM",
+      "loc": "QUANTUM"
+    },
+    {
+      "key": "ent.partner.quantum.sub",
+      "en": "ENTERPRISES",
+      "loc": "ENTERPRISES"
+    },
+    {
+      "key": "ent.partner.stratum.name",
+      "en": "STRATUM",
+      "loc": "STRATUM"
+    },
+    {
+      "key": "ent.partner.stratum.sub",
+      "en": "GLOBAL",
+      "loc": "GLOBAL"
+    },
+    {
+      "key": "contact.ch.ops.email",
+      "en": "operations@io-sky.io",
+      "loc": "operations@io-sky.io"
+    },
+    {
+      "key": "contact.ch.sec.email",
+      "en": "security@io-sky.io",
+      "loc": "security@io-sky.io"
+    },
+    {
+      "key": "contact.ch.partners.email",
+      "en": "partners@io-sky.io",
+      "loc": "partners@io-sky.io"
+    },
+    {
+      "key": "contact.ch.media.email",
+      "en": "press@io-sky.io",
+      "loc": "press@io-sky.io"
+    },
+    {
+      "key": "contact.placeholder.email",
+      "en": "you@email.com",
+      "loc": "you@email.com"
+    }
+  ],
+  "ja": [
+    {
+      "key": "ent.partner.nexora.name",
+      "en": "NEXORA",
+      "loc": "NEXORA"
+    },
+    {
+      "key": "ent.partner.nexora.sub",
+      "en": "GROUP",
+      "loc": "GROUP"
+    },
+    {
+      "key": "ent.partner.vertex.name",
+      "en": "VERTEX",
+      "loc": "VERTEX"
+    },
+    {
+      "key": "ent.partner.vertex.sub",
+      "en": "INDUSTRIES",
+      "loc": "INDUSTRIES"
+    },
+    {
+      "key": "ent.partner.alphora.name",
+      "en": "ALPHORA",
+      "loc": "ALPHORA"
+    },
+    {
+      "key": "ent.partner.alphora.sub",
+      "en": "SYSTEMS",
+      "loc": "SYSTEMS"
+    },
+    {
+      "key": "ent.partner.noventic.name",
+      "en": "NOVENTIC",
+      "loc": "NOVENTIC"
+    },
+    {
+      "key": "ent.partner.noventic.sub",
+      "en": "SOLUTIONS",
+      "loc": "SOLUTIONS"
+    },
+    {
+      "key": "ent.partner.quantum.name",
+      "en": "QUANTUM",
+      "loc": "QUANTUM"
+    },
+    {
+      "key": "ent.partner.quantum.sub",
+      "en": "ENTERPRISES",
+      "loc": "ENTERPRISES"
+    },
+    {
+      "key": "ent.partner.stratum.name",
+      "en": "STRATUM",
+      "loc": "STRATUM"
+    },
+    {
+      "key": "ent.partner.stratum.sub",
+      "en": "GLOBAL",
+      "loc": "GLOBAL"
+    },
+    {
+      "key": "contact.ch.ops.email",
+      "en": "operations@io-sky.io",
+      "loc": "operations@io-sky.io"
+    },
+    {
+      "key": "contact.ch.sec.email",
+      "en": "security@io-sky.io",
+      "loc": "security@io-sky.io"
+    },
+    {
+      "key": "contact.ch.partners.email",
+      "en": "partners@io-sky.io",
+      "loc": "partners@io-sky.io"
+    },
+    {
+      "key": "contact.ch.media.email",
+      "en": "press@io-sky.io",
+      "loc": "press@io-sky.io"
+    },
+    {
+      "key": "contact.placeholder.email",
+      "en": "you@email.com",
+      "loc": "you@email.com"
+    },
+    {
+      "key": "eng.field.linkedin",
+      "en": "LinkedIn",
+      "loc": "LinkedIn"
+    },
+    {
+      "key": "eng.field.github",
+      "en": "GitHub",
+      "loc": "GitHub"
+    }
+  ],
+  "zh": [
+    {
+      "key": "ent.partner.nexora.name",
+      "en": "NEXORA",
+      "loc": "NEXORA"
+    },
+    {
+      "key": "ent.partner.vertex.name",
+      "en": "VERTEX",
+      "loc": "VERTEX"
+    },
+    {
+      "key": "ent.partner.alphora.name",
+      "en": "ALPHORA",
+      "loc": "ALPHORA"
+    },
+    {
+      "key": "ent.partner.noventic.name",
+      "en": "NOVENTIC",
+      "loc": "NOVENTIC"
+    },
+    {
+      "key": "ent.partner.quantum.name",
+      "en": "QUANTUM",
+      "loc": "QUANTUM"
+    },
+    {
+      "key": "ent.partner.stratum.name",
+      "en": "STRATUM",
+      "loc": "STRATUM"
+    },
+    {
+      "key": "contact.ch.ops.email",
+      "en": "operations@io-sky.io",
+      "loc": "operations@io-sky.io"
+    },
+    {
+      "key": "contact.ch.sec.email",
+      "en": "security@io-sky.io",
+      "loc": "security@io-sky.io"
+    },
+    {
+      "key": "contact.ch.partners.email",
+      "en": "partners@io-sky.io",
+      "loc": "partners@io-sky.io"
+    },
+    {
+      "key": "contact.ch.media.email",
+      "en": "press@io-sky.io",
+      "loc": "press@io-sky.io"
+    },
+    {
+      "key": "eng.field.github",
+      "en": "GitHub",
+      "loc": "GitHub"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `ai_scans` ADD `reportPdfKey` varchar(256);

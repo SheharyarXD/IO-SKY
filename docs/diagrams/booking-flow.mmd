@@ -1,0 +1,41 @@
+sequenceDiagram
+    autonumber
+    actor V as Visitor
+    participant FE as Book Strategy Call UI
+    participant API as tRPC bookings.*
+    participant ADP as NativeBookingAdapter
+    participant DB as TiDB
+    participant SCH as Heartbeat (cron)
+    participant MAIL as Email service
+    participant ADM as Admin (notifyOwner)
+
+    V->>FE: Open /book-strategy
+    FE->>API: bookings.listConsultationTypes()
+    FE->>API: bookings.listSlots({date, type, tz})
+    API->>ADP: NativeBookingAdapter.listSlots(...)
+    ADP->>DB: SELECT availability_windows × calendar_blocks × bookings
+    ADP-->>API: free slots[]
+    API-->>FE: slots (timezone-converted)
+
+    V->>FE: Pick slot + fill prep questions
+    FE->>API: bookings.hold({slotKey})
+    API->>DB: INSERT booking_slots (UNIQUE key, status=held, TTL=10min)
+    API-->>FE: holdId
+
+    V->>FE: Submit confirmation
+    FE->>API: bookings.confirm({holdId, answers, contact, honeypot})
+    API->>DB: BEGIN
+    API->>DB: UPDATE booking_slots SET status=booked WHERE id=holdId
+    API->>DB: INSERT bookings, booking_answers, booking_events, audit_logs
+    API->>DB: UPSERT crm_leads (match by email)
+    API->>DB: COMMIT
+    API->>MAIL: sendBookingConfirmation(cancelToken, rescheduleToken)
+    API->>ADM: notifyOwner('booking.created', payload)
+    API-->>FE: booking confirmed (id + ics link)
+
+    note over SCH: Every minute
+    SCH->>DB: SELECT bookings WHERE start - now ≤ 24h AND reminder24_sent=0
+    SCH->>MAIL: send 24h reminders
+    SCH->>DB: UPDATE reminder24_sent=1
+    SCH->>DB: SELECT bookings WHERE start - now ≤ 1h AND reminder1h_sent=0
+    SCH->>MAIL: send 1h reminders

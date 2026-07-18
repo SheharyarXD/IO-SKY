@@ -1,0 +1,525 @@
+/**
+ * server/db/clientPortal.ts
+ *
+ * Database helpers for the Client Portal domain.
+ * Covers: organizations, reports, recommendations, projects, milestones,
+ * invoices, documents, messages, notifications, support tickets,
+ * dashboard bundle, discovery calls for org, and document upload/delete.
+ *
+ * Every helper scopes by organizationId so the clientProcedure can rely
+ * on tenant isolation. Returns raw Drizzle rows.
+ */
+import { and, desc, eq, sql } from "drizzle-orm";
+import {
+  bookings as bookingsTable,
+  clientDocuments,
+  clientInvoices,
+  clientMessages,
+  clientNotifications,
+  clientProjectMilestones,
+  clientProjects,
+  clientRecommendations,
+  clientReports,
+  clientSupportTickets,
+  organizationMemberships,
+  organizations,
+  users as usersTable,
+  type ClientInvoice,
+  type ClientReport,
+  type Organization,
+} from "../../drizzle/schema";
+import { getDb } from "./connection";
+
+// ---------------------------------------------------------------------------
+// Organizations
+// ---------------------------------------------------------------------------
+
+export async function getOrganizationById(
+  id: number,
+): Promise<Organization | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.id, id))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getOrganizationMemberCount(orgId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db
+    .select({ c: sql<number>`COUNT(*)` })
+    .from(organizationMemberships)
+    .where(eq(organizationMemberships.organizationId, orgId));
+  return Number(rows[0]?.c ?? 0);
+}
+
+// ---------------------------------------------------------------------------
+// Reports
+// ---------------------------------------------------------------------------
+
+export async function listClientReports(orgId: number) {
+  const db = await getDb();
+  if (!db) return [] as ClientReport[];
+  return db
+    .select()
+    .from(clientReports)
+    .where(eq(clientReports.organizationId, orgId))
+    .orderBy(desc(clientReports.createdAt))
+    .limit(50);
+}
+
+export async function getClientReport(orgId: number, publicRef: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(clientReports)
+    .where(
+      and(
+        eq(clientReports.organizationId, orgId),
+        eq(clientReports.publicRef, publicRef),
+      ),
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** By-id helper used by signed download / detail flows. */
+export async function getClientReportById(orgId: number, id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(clientReports)
+    .where(
+      and(eq(clientReports.organizationId, orgId), eq(clientReports.id, id)),
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Recommendations
+// ---------------------------------------------------------------------------
+
+export async function listClientRecommendations(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(clientRecommendations)
+    .where(eq(clientRecommendations.organizationId, orgId))
+    .orderBy(desc(clientRecommendations.createdAt))
+    .limit(100);
+}
+
+export async function getClientRecommendationById(orgId: number, id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(clientRecommendations)
+    .where(
+      and(
+        eq(clientRecommendations.organizationId, orgId),
+        eq(clientRecommendations.id, id),
+      ),
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function updateClientRecommendationStatus(
+  orgId: number,
+  id: number,
+  status: "pending" | "in_progress" | "completed" | "dismissed",
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(clientRecommendations)
+    .set({ status })
+    .where(
+      and(
+        eq(clientRecommendations.organizationId, orgId),
+        eq(clientRecommendations.id, id),
+      ),
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Projects & milestones
+// ---------------------------------------------------------------------------
+
+export async function listClientProjects(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(clientProjects)
+    .where(eq(clientProjects.organizationId, orgId))
+    .orderBy(desc(clientProjects.createdAt))
+    .limit(50);
+}
+
+export async function listClientProjectMilestones(projectIds: number[]) {
+  const db = await getDb();
+  if (!db || projectIds.length === 0) return [];
+  return db
+    .select()
+    .from(clientProjectMilestones)
+    .where(
+      sql`${clientProjectMilestones.projectId} IN (${sql.join(
+        projectIds.map((id) => sql`${id}`),
+        sql`,`,
+      )})`,
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Invoices
+// ---------------------------------------------------------------------------
+
+export async function listClientInvoices(orgId: number): Promise<ClientInvoice[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(clientInvoices)
+    .where(eq(clientInvoices.organizationId, orgId))
+    .orderBy(desc(clientInvoices.issuedMs))
+    .limit(100);
+}
+
+export async function getClientInvoiceById(orgId: number, id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(clientInvoices)
+    .where(
+      and(
+        eq(clientInvoices.organizationId, orgId),
+        eq(clientInvoices.id, id),
+      ),
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Documents
+// ---------------------------------------------------------------------------
+
+export async function listClientDocuments(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(clientDocuments)
+    .where(eq(clientDocuments.organizationId, orgId))
+    .orderBy(desc(clientDocuments.createdAt))
+    .limit(200);
+}
+
+export async function getClientDocumentById(orgId: number, id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(clientDocuments)
+    .where(
+      and(
+        eq(clientDocuments.organizationId, orgId),
+        eq(clientDocuments.id, id),
+      ),
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function insertClientDocument(input: {
+  organizationId: number;
+  name: string;
+  category: string;
+  fileKey: string;
+  sizeBytes: number | null;
+  mimeType: string | null;
+  uploadedByUserId: number | null;
+  uploadedBy: string | null;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  const res = await db.insert(clientDocuments).values(input);
+  const insertId =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (res as any)?.insertId ??
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (Array.isArray(res) ? (res as any)[0]?.insertId : undefined) ??
+    null;
+  return insertId ? { id: Number(insertId) } : null;
+}
+
+export async function deleteClientDocumentById(
+  orgId: number,
+  id: number,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .delete(clientDocuments)
+    .where(
+      and(
+        eq(clientDocuments.organizationId, orgId),
+        eq(clientDocuments.id, id),
+      ),
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Messages
+// ---------------------------------------------------------------------------
+
+export async function listClientMessages(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(clientMessages)
+    .where(eq(clientMessages.organizationId, orgId))
+    .orderBy(desc(clientMessages.createdAt))
+    .limit(100);
+}
+
+export async function appendClientMessage(input: {
+  organizationId: number;
+  threadKey: string;
+  sender: "io-sky" | "client";
+  senderName?: string | null;
+  subject?: string | null;
+  body: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  const res = await db.insert(clientMessages).values({
+    organizationId: input.organizationId,
+    threadKey: input.threadKey,
+    sender: input.sender,
+    senderName: input.senderName ?? null,
+    subject: input.subject ?? null,
+    body: input.body,
+  });
+  return res;
+}
+
+/**
+ * Mark every IO-SKY-authored message in this tenant's inbox as read.
+ * We only flip readAt for messages the client did *not* author themselves —
+ * outbound messages are implicitly read by the sender.
+ */
+export async function markIoSkyMessagesRead(orgId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const res = await db
+    .update(clientMessages)
+    .set({ readAt: Date.now() })
+    .where(
+      and(
+        eq(clientMessages.organizationId, orgId),
+        eq(clientMessages.sender, "io-sky"),
+      ),
+    );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return Number((res as any)?.affectedRows ?? 0);
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+export async function listClientNotifications(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(clientNotifications)
+    .where(eq(clientNotifications.organizationId, orgId))
+    .orderBy(desc(clientNotifications.createdAt))
+    .limit(40);
+}
+
+export async function appendClientNotification(input: {
+  organizationId: number;
+  kind: string;
+  title: string;
+  body?: string | null;
+  href?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.insert(clientNotifications).values({
+    organizationId: input.organizationId,
+    kind: input.kind,
+    title: input.title,
+    body: input.body ?? null,
+    href: input.href ?? null,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Support tickets
+// ---------------------------------------------------------------------------
+
+export async function listClientSupportTickets(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(clientSupportTickets)
+    .where(eq(clientSupportTickets.organizationId, orgId))
+    .orderBy(desc(clientSupportTickets.createdAt))
+    .limit(100);
+}
+
+export async function createClientSupportTicket(input: {
+  organizationId: number;
+  openedByUserId: number | null;
+  publicRef: string;
+  subject: string;
+  body: string;
+  category?: string;
+  priority?: "low" | "normal" | "high" | "urgent";
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.insert(clientSupportTickets).values({
+    organizationId: input.organizationId,
+    openedByUserId: input.openedByUserId ?? null,
+    publicRef: input.publicRef,
+    subject: input.subject,
+    body: input.body,
+    category: input.category ?? "general",
+    priority: input.priority ?? "normal",
+  });
+  return { publicRef: input.publicRef };
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard bundle
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a single bundle for the client-portal dashboard so the UI only
+ * needs one round-trip for the overview card grid + activity feed.
+ */
+export async function getClientPortalDashboard(orgId: number) {
+  const [
+    org,
+    reports,
+    recommendations,
+    projects,
+    invoices,
+    messages,
+    notifications,
+  ] = await Promise.all([
+    getOrganizationById(orgId),
+    listClientReports(orgId),
+    listClientRecommendations(orgId),
+    listClientProjects(orgId),
+    listClientInvoices(orgId),
+    listClientMessages(orgId),
+    listClientNotifications(orgId),
+  ]);
+  return {
+    organization: org,
+    latestReport: reports[0] ?? null,
+    reportCount: reports.length,
+    recommendations: recommendations.slice(0, 5),
+    activeRecommendationCount: recommendations.filter(
+      (r) => r.status !== "completed" && r.status !== "dismissed",
+    ).length,
+    projects,
+    invoices,
+    messages: messages.slice(0, 5),
+    notifications: notifications.slice(0, 10),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Discovery calls for org (matches by member emails)
+// ---------------------------------------------------------------------------
+
+export async function listOrgMemberEmails(orgId: number): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ email: usersTable.email })
+    .from(usersTable)
+    .where(eq(usersTable.organizationId, orgId));
+  return rows.map((r) => (r.email ?? "").toLowerCase()).filter(Boolean);
+}
+
+/**
+ * Discovery Calls for the client portal. We don't have a direct
+ * organizationId on bookings, so we match by emails of the
+ * organization's members (case-insensitive).
+ */
+export async function listStrategyCallsForOrg(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const emails = await listOrgMemberEmails(orgId);
+  if (emails.length === 0) return [];
+  const rows = await db
+    .select()
+    .from(bookingsTable)
+    .where(
+      sql`LOWER(${bookingsTable.email}) IN (${sql.join(
+        emails.map((e) => sql`${e}`),
+        sql`,`,
+      )})`,
+    )
+    .orderBy(desc(bookingsTable.slotStartMs))
+    .limit(50);
+  return rows.map((r) => ({
+    id: r.id,
+    publicRef: r.publicRef,
+    serviceLabel: r.serviceId,
+    slotStart: new Date(r.slotStartMs),
+    slotStartMs: r.slotStartMs,
+    durationMin: r.durationMin,
+    timezone: r.timezone,
+    status: r.status,
+    meetingUrl: null as string | null,
+  }));
+}
+
+// NOTE: listLoginAuditForUser is defined in server/db/auth.ts
+// and re-exported via server/db/index.ts — do not duplicate here.
+
+/**
+ * Fetch a single booking only if its email belongs to the caller's
+ * organization. Returns null otherwise so the procedure can throw NOT_FOUND
+ * without leaking existence across tenants.
+ */
+export async function getBookingForOrg(
+  orgId: number,
+  id: number,
+) {
+  const db = await getDb();
+  if (!db) return null;
+  const emails = await listOrgMemberEmails(orgId);
+  if (emails.length === 0) return null;
+  const rows = await db
+    .select()
+    .from(bookingsTable)
+    .where(eq(bookingsTable.id, id))
+    .limit(1);
+  const row = rows[0];
+  if (!row) return null;
+  if (!emails.includes((row.email ?? "").toLowerCase())) return null;
+  return row;
+}

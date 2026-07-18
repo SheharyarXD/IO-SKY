@@ -1,0 +1,26 @@
+flowchart LR
+    classDef src fill:#0a1628,stroke:#f97316,color:#fff
+    classDef fn fill:#1a2942,stroke:#3b82f6,color:#fff
+    classDef ch fill:#0f172a,stroke:#10b981,color:#fff
+
+    subgraph Triggers
+      T1[Booking created]:::src
+      T2[Booking cancelled]:::src
+      T3[Booking rescheduled]:::src
+      T4[Booking no-show]:::src
+      T5[Reminder failed]:::src
+      T6[Custom Discovery submitted]:::src
+      T7[Proposal request]:::src
+      T8[Contact form]:::src
+      T9[AI Scan finished]:::src
+      T10[MFA suspicious login]:::src
+    end
+
+    H[notifyOwner title,content,severity]:::fn
+
+    T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 & T9 & T10 --> H
+
+    H --> N1[In-app notifications table\nadmin bell]:::ch
+    H --> N2[Email to owner inbox\nvia /forge/notification\nor SMTP provider]:::ch
+    H --> N3[Audit log entry\nfor security trail]:::ch
+    H --> N4[Optional Slack/Teams\nwebhook future]:::ch

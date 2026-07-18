@@ -1,0 +1,99 @@
+{
+  "nl": {
+    "count": 3,
+    "byPrefix": {
+      "nav": [
+        "nav.contact  ==  Contact"
+      ],
+      "intel": [
+        "intel.flow.impact.title  ==  Impact"
+      ],
+      "infra": [
+        "infra.diagram.right.dashboards  ==  Dashboards"
+      ]
+    }
+  },
+  "de": {
+    "count": 3,
+    "byPrefix": {
+      "infra": [
+        "infra.benefit.integration.title  ==  Integration",
+        "infra.benefit.governance.title  ==  Governance",
+        "infra.diagram.right.dashboards  ==  Dashboards"
+      ]
+    }
+  },
+  "fr": {
+    "count": 16,
+    "byPrefix": {
+      "nav": [
+        "nav.infrastructure  ==  Infrastructure",
+        "nav.intelligence  ==  Intelligence",
+        "nav.solutions  ==  Solutions",
+        "nav.contact  ==  Contact"
+      ],
+      "footer": [
+        "footer.col.infrastructure  ==  Infrastructure",
+        "footer.col.intelligence  ==  Intelligence",
+        "footer.col.solutions  ==  Solutions"
+      ],
+      "intel": [
+        "intel.flow.intelligence.title  ==  Intelligence",
+        "intel.flow.impact.title  ==  Impact",
+        "intel.caps.title.accent  ==  intelligence"
+      ],
+      "pillars": [
+        "pillars.infra.title  ==  Infrastructure",
+        "pillars.intel.title  ==  Intelligence",
+        "pillars.growth.title  ==  Solutions"
+      ],
+      "discover": [
+        "discover.gain3  ==  Conversion"
+      ],
+      "infra": [
+        "infra.diagram.left.title  ==  Sources",
+        "infra.diagram.left.comms  ==  Communication"
+      ]
+    }
+  },
+  "es": {
+    "count": 0,
+    "byPrefix": {}
+  },
+  "pt": {
+    "count": 0,
+    "byPrefix": {}
+  },
+  "ar": {
+    "count": 0,
+    "byPrefix": {}
+  },
+  "zh": {
+    "count": 0,
+    "byPrefix": {}
+  },
+  "ja": {
+    "count": 0,
+    "byPrefix": {}
+  },
+  "it": {
+    "count": 5,
+    "byPrefix": {
+      "nav": [
+        "nav.intelligence  ==  Intelligence"
+      ],
+      "intel": [
+        "intel.flow.intelligence.title  ==  Intelligence"
+      ],
+      "about": [
+        "about.impact.s1.value  ==  End-to-end"
+      ],
+      "login": [
+        "login.field.password  ==  Password"
+      ],
+      "pillars": [
+        "pillars.enterprise.title  ==  Enterprise"
+      ]
+    }
+  }
+}

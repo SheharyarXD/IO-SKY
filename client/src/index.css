@@ -1,0 +1,768 @@
+/*
+ * IO SKY — global design system.
+ * Master source of truth: design_master.md.
+ * Deep navy-black surfaces, controlled orange accent, premium glass panels,
+ * geometric humanist typography. No purple, no rounded-everything, no AI-slop.
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-orange: var(--orange);
+  --color-orange-soft: var(--orange-soft);
+  --color-ivory: var(--ivory);
+  --color-mute-1: var(--mute-1);
+  --color-mute-2: var(--mute-2);
+
+  --font-sans: "Inter", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Manrope", "Inter", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  /* ---- Official brand palette (exact hex from brand sheet) ----
+   *   #0B1020  navy-black background
+   *   #1A2333  panel / glass surface base
+   *   #E6EAF0  ivory foreground
+   *   #FF6A00  primary orange (action / accent)
+   *   #FFB347  soft orange (highlight / hover state)
+   */
+  --orange: #FF6A00;
+  --orange-hover: #FFB347;
+  --orange-soft: rgb(255 106 0 / 0.18);
+  --ivory: #E6EAF0;
+  --mute-1: oklch(0.78 0.014 250);
+  --mute-2: oklch(0.62 0.018 250);
+
+  /* Surfaces */
+  --background: #0B1020;
+  --foreground: #E6EAF0;
+  --card: #1A2333;
+  --card-foreground: oklch(0.96 0.005 250);
+  --popover: oklch(0.13 0.022 260);
+  --popover-foreground: oklch(0.96 0.005 250);
+  --primary: #FF6A00;
+  --primary-foreground: #0B1020;
+  --secondary: oklch(0.17 0.022 260);
+  --secondary-foreground: oklch(0.88 0.01 250);
+  --muted: oklch(0.17 0.022 260);
+  --muted-foreground: oklch(0.7 0.018 250);
+  --accent: oklch(0.18 0.022 260);
+  --accent-foreground: oklch(0.96 0.005 250);
+  --destructive: oklch(0.65 0.21 25);
+  --destructive-foreground: oklch(0.98 0.005 250);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: rgb(255 106 0 / 0.55);
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  /* Same values — we never run light theme */
+  --background: #0B1020;
+  --foreground: #E6EAF0;
+  --card: #1A2333;
+  --card-foreground: oklch(0.96 0.005 250);
+  --popover: oklch(0.13 0.022 260);
+  --popover-foreground: oklch(0.96 0.005 250);
+  --primary: #FF6A00;
+  --primary-foreground: #0B1020;
+  --secondary: oklch(0.17 0.022 260);
+  --secondary-foreground: oklch(0.88 0.01 250);
+  --muted: oklch(0.17 0.022 260);
+  --muted-foreground: oklch(0.7 0.018 250);
+  --accent: oklch(0.18 0.022 260);
+  --accent-foreground: oklch(0.96 0.005 250);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(1 0 0 / 0.1);
+  --ring: rgb(255 106 0 / 0.55);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html, body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    /* Decorative absolute glows/SVG accents may extend a few px past the
+     * viewport edge on small screens. Clip horizontally so they never
+     * introduce a stray horizontal scrollbar, without affecting layout. */
+    overflow-x: clip;
+    max-width: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01", "ss03";
+  }
+  body {
+    /* Atmospheric backdrop — soft orange ember + cool navy haze, with subtle vertical haze for depth */
+    background-color: var(--background);
+    background-image:
+      radial-gradient(60% 38% at 18% 18%, oklch(0.72 0.205 45 / 0.10), transparent 70%),
+      radial-gradient(46% 32% at 92% 0%, oklch(0.55 0.18 255 / 0.08), transparent 70%),
+      radial-gradient(80% 50% at 50% 100%, oklch(0.72 0.205 45 / 0.06), transparent 70%),
+      linear-gradient(180deg, transparent 0%, oklch(0.12 0.025 260 / 0.18) 100%);
+    background-attachment: fixed;
+  }
+
+  /* Body paragraph readability defaults (paragraphs inside content sections) */
+  p {
+    line-height: 1.65;
+  }
+  p.text-base, p.text-lg, p.text-xl {
+    color: oklch(0.86 0.012 250);
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+  ::selection {
+    background: oklch(0.72 0.205 45 / 0.35);
+    color: var(--ivory);
+  }
+
+  /* Cinematic smooth-scroll site-wide; HashScroll handles offset for anchors. */
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+  /* Fallback offset for any [id] target in case JS hash handler is delayed.
+   * Matches the 96 px navbar offset used by HashScroll. */
+  :target,
+  [id] {
+    scroll-margin-top: 96px;
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .container { padding-left: 1.75rem; padding-right: 1.75rem; }
+  }
+  @media (min-width: 1024px) {
+    .container { padding-left: 2rem; padding-right: 2rem; max-width: 1320px; }
+  }
+
+  .flex { min-height: 0; min-width: 0; }
+
+  .font-display { font-family: var(--font-display); letter-spacing: -0.018em; }
+  .font-mono { font-family: var(--font-mono); }
+
+  /* ---------- Eyebrow ---------- */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--orange);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .eyebrow::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--orange);
+    box-shadow: 0 0 12px var(--orange);
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.35rem;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    color: #0B1020;
+    background: linear-gradient(180deg, #FFB347 0%, #FF6A00 100%);
+    border: 1px solid rgb(255 179 71 / 0.7);
+    border-radius: 10px;
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.25) inset,
+      0 0 0 1px oklch(0 0 0 / 0.18),
+      0 14px 28px -10px oklch(0.72 0.205 45 / 0.55),
+      0 0 28px -6px oklch(0.72 0.205 45 / 0.45);
+    transition: transform 160ms cubic-bezier(0.23,1,0.32,1), filter 160ms ease-out, box-shadow 220ms ease-out;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.04);
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.3) inset,
+      0 0 0 1px oklch(0 0 0 / 0.2),
+      0 18px 32px -10px oklch(0.72 0.205 45 / 0.6),
+      0 0 36px -4px oklch(0.72 0.205 45 / 0.55);
+  }
+  .btn-primary:active { transform: scale(0.985); }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.82rem 1.3rem;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    color: var(--ivory);
+    background: oklch(1 0 0 / 0.04);
+    border: 1px solid oklch(1 0 0 / 0.12);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    transition: transform 160ms cubic-bezier(0.23,1,0.32,1), background 200ms ease-out, border-color 200ms ease-out;
+  }
+  .btn-secondary:hover {
+    background: oklch(1 0 0 / 0.07);
+    border-color: oklch(1 0 0 / 0.22);
+  }
+  .btn-secondary:active { transform: scale(0.985); }
+
+  .link-orange {
+    color: var(--orange);
+    font-weight: 600;
+    font-size: 13.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: color 180ms ease-out, gap 200ms ease-out;
+  }
+  .link-orange:hover { gap: 0.55rem; color: oklch(0.8 0.2 48); }
+
+  /* ---------- Glass surfaces ---------- */
+  .glass {
+    background:
+      linear-gradient(180deg, oklch(0.18 0.022 260 / 0.5) 0%, oklch(0.12 0.022 260 / 0.55) 100%);
+    border: 1px solid oklch(1 0 0 / 0.08);
+    border-radius: 16px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.05),
+      0 30px 60px -30px oklch(0 0 0 / 0.6);
+  }
+  .glass-soft {
+    background: oklch(0.16 0.022 260 / 0.5);
+    border: 1px solid oklch(1 0 0 / 0.06);
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+  }
+  .glass-strong {
+    background:
+      linear-gradient(180deg, oklch(0.2 0.022 260 / 0.65) 0%, oklch(0.13 0.022 260 / 0.7) 100%);
+    border: 1px solid oklch(1 0 0 / 0.1);
+    border-radius: 18px;
+    backdrop-filter: blur(20px);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.06),
+      0 40px 80px -30px oklch(0 0 0 / 0.7),
+      0 0 0 1px oklch(0 0 0 / 0.25);
+  }
+
+  /* Subtle hover lift for feature cards */
+  .feature-card {
+    transition: transform 240ms cubic-bezier(0.23,1,0.32,1),
+                border-color 240ms ease-out,
+                background 240ms ease-out,
+                box-shadow 240ms ease-out;
+  }
+  .feature-card:hover {
+    transform: translateY(-3px);
+    border-color: oklch(0.72 0.205 45 / 0.32);
+    background:
+      linear-gradient(180deg, oklch(0.2 0.022 260 / 0.6) 0%, oklch(0.13 0.022 260 / 0.6) 100%);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.06),
+      0 36px 70px -28px oklch(0 0 0 / 0.7),
+      0 0 32px -8px oklch(0.72 0.205 45 / 0.30);
+  }
+  /* Intensify orange icon chip when its parent feature-card is hovered. */
+  .feature-card:hover .icon-chip {
+    background: oklch(0.72 0.205 45 / 0.18);
+    border-color: oklch(0.72 0.205 45 / 0.5);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.08),
+      0 0 22px -2px oklch(0.72 0.205 45 / 0.55);
+  }
+  /* Smooth orange-glow on group-level Learn more on hover. */
+  .feature-card:hover .arrow-grow {
+    transform: translateX(2px);
+  }
+
+  /* Icon chip — small orange-tinted square */
+  .icon-chip {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: oklch(0.72 0.205 45 / 0.1);
+    border: 1px solid oklch(0.72 0.205 45 / 0.3);
+    color: var(--orange);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.06), 0 0 14px -4px oklch(0.72 0.205 45 / 0.4);
+  }
+  .icon-chip-lg {
+    width: 46px; height: 46px; border-radius: 12px;
+  }
+
+  /* Status dot */
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 999px;
+    background: var(--orange);
+    box-shadow: 0 0 12px var(--orange);
+    display: inline-block;
+  }
+  .status-dot-green {
+    background: oklch(0.78 0.18 150);
+    box-shadow: 0 0 10px oklch(0.78 0.18 150 / 0.7);
+  }
+
+  /* Pill badge */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid oklch(1 0 0 / 0.1);
+    border-radius: 999px;
+    background: oklch(1 0 0 / 0.03);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ivory);
+    font-weight: 500;
+  }
+
+  /* Horizon line under hero */
+  .horizon-glow {
+    position: absolute;
+    inset-inline: 0;
+    height: 280px;
+    pointer-events: none;
+    background:
+      radial-gradient(50% 80% at 30% 100%, oklch(0.72 0.205 45 / 0.28), transparent 70%),
+      radial-gradient(40% 80% at 70% 100%, oklch(0.55 0.18 255 / 0.18), transparent 70%);
+    filter: blur(6px);
+  }
+
+  /* Reveal-on-view */
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 600ms cubic-bezier(0.23,1,0.32,1), transform 600ms cubic-bezier(0.23,1,0.32,1);
+    will-change: opacity, transform;
+  }
+  .reveal.is-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+}
+
+/* Hide scrollbar in horizontal scroll regions (mobile pill rails) */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* ===========================================================================
+ * Cinematic motion layer
+ * ---------------------------------------------------------------------------
+ * Premium, restrained motion vocabulary used across the homepage and portals.
+ * Locked easing curves:
+ *   --ease-out:    cubic-bezier(0.23, 1, 0.32, 1)   default UI snap (≤300ms)
+ *   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1)  morph / move (200–500ms)
+ * Reserve glows and longer transitions for hero / dashboard / loading surfaces.
+ * Honors prefers-reduced-motion at the bottom of this block.
+ * =========================================================================== */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Soft global anchor + link transitions so every interactive surface in the
+ * site has the same micro-rhythm.  Buttons / .feature-card / .btn-primary
+ * have their own (richer) transitions and remain unaffected. */
+@layer components {
+  a, button {
+    transition-property: color, background-color, border-color, opacity, transform, box-shadow, filter;
+    transition-duration: 180ms;
+    transition-timing-function: var(--ease-out);
+  }
+  /* Disable the generic catch-all on the components that already define a
+   * tailored transition — otherwise rules collide and feel less specific. */
+  .btn-primary, .btn-secondary, .feature-card, .icon-chip, .pill {
+    transition-property: transform, filter, box-shadow, background, border-color, color;
+  }
+
+  /* Restrained glow for the orange interaction signal.  Used on .btn-primary
+   * and orange icon chips when hovered.  ~5% brighter shadow, no flicker. */
+  .glow-orange {
+    transition: box-shadow 320ms var(--ease-out), filter 220ms var(--ease-out);
+  }
+  .glow-orange:hover {
+    box-shadow:
+      0 0 0 1px oklch(0.72 0.205 45 / 0.4),
+      0 0 24px -4px oklch(0.72 0.205 45 / 0.55),
+      0 0 60px -10px oklch(0.72 0.205 45 / 0.3);
+  }
+
+  /* Subtle hover-lift utility for nested glass tiles that aren't .feature-card. */
+  .lift-on-hover {
+    transition: transform 260ms var(--ease-out), border-color 240ms var(--ease-out),
+                box-shadow 280ms var(--ease-out), background 240ms var(--ease-out);
+    will-change: transform;
+  }
+  .lift-on-hover:hover {
+    transform: translateY(-2px);
+    border-color: oklch(1 0 0 / 0.14);
+    box-shadow:
+      0 24px 48px -28px oklch(0 0 0 / 0.55),
+      0 0 22px -10px oklch(0.72 0.205 45 / 0.18);
+  }
+
+  /* Slow, ambient pulse for the small orange signal dots in dashboards. */
+  .pulse-orange {
+    animation: pulseOrange 3.4s var(--ease-in-out) infinite;
+  }
+  @keyframes pulseOrange {
+    0%, 100% { box-shadow: 0 0 0 0 oklch(0.72 0.205 45 / 0.45); }
+    50%      { box-shadow: 0 0 0 6px oklch(0.72 0.205 45 / 0); }
+  }
+
+  /* Premium branded loading spinner — the IO orange ring + counter-rotating arc. */
+  .io-spinner {
+    width: 28px;
+    height: 28px;
+    position: relative;
+    display: inline-block;
+  }
+  .io-spinner::before,
+  .io-spinner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    border: 2px solid transparent;
+  }
+  .io-spinner::before {
+    border-top-color: var(--orange);
+    border-right-color: oklch(0.72 0.205 45 / 0.35);
+    animation: ioSpin 900ms linear infinite;
+  }
+  .io-spinner::after {
+    inset: 5px;
+    border-bottom-color: var(--orange-hover, #FFB347);
+    border-left-color: oklch(0.85 0.18 60 / 0.3);
+    animation: ioSpin 1400ms linear infinite reverse;
+  }
+  @keyframes ioSpin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Cinematic page transition wrapper — applied on every <main> via .page-enter. */
+  .page-enter {
+    animation: pageEnter 420ms var(--ease-out) both;
+  }
+  @keyframes pageEnter {
+    0%   { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+    60%  { filter: blur(0); }
+    100% { opacity: 1; transform: translateY(0);   filter: blur(0); }
+  }
+
+  /* Live Ops Ticker — looped horizontal scroll. */
+  .ticker-track {
+    animation: liveOpsScroll 48s linear infinite;
+    width: max-content;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+  @keyframes liveOpsScroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation: none; transform: none; justify-content: center; }
+  }
+
+  /* Skeleton shimmer for dashboard placeholders. */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      oklch(1 0 0 / 0.04) 0%,
+      oklch(1 0 0 / 0.10) 50%,
+      oklch(1 0 0 / 0.04) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.6s var(--ease-in-out) infinite;
+    border-radius: 6px;
+  }
+  @keyframes skeletonShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ============================================================
+   * Canonical design-language primitives (Pakket 2)
+   * Use these instead of ad-hoc utility stacks so every surface in
+   * IO SKY — homepage, admin, client portal, developer workspace,
+   * auth, MFA — shares one visual rhythm.
+   * ============================================================ */
+
+  /* Canonical card / panel surface */
+  .io-surface {
+    background: color-mix(in oklch, var(--card) 92%, transparent);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(6px);
+  }
+  /* Glass surface variant for floating panels */
+  .io-surface-glass {
+    background:
+      linear-gradient(180deg, oklch(1 0 0 / 0.04), oklch(1 0 0 / 0.01)),
+      color-mix(in oklch, var(--card) 78%, transparent);
+    border: 1px solid oklch(1 0 0 / 0.10);
+    border-radius: var(--radius);
+    backdrop-filter: blur(10px) saturate(110%);
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.05) inset,
+      0 24px 64px -32px oklch(0 0 0 / 0.6);
+  }
+  /* Canonical card with hover lift baked-in */
+  .io-card {
+    background: color-mix(in oklch, var(--card) 92%, transparent);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition:
+      transform 180ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+      border-color 180ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)),
+      box-shadow 180ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  }
+  .io-card:hover {
+    transform: translateY(-2px);
+    border-color: oklch(0.7 0.205 45 / 0.35);
+    box-shadow: 0 12px 32px -16px oklch(0.7 0.205 45 / 0.25);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .io-card { transition: none; }
+    .io-card:hover { transform: none; }
+  }
+
+  /* Section vertical rhythm — use everywhere instead of ad-hoc py-* */
+  .io-section {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+  @media (min-width: 768px) {
+    .io-section { padding-top: 6rem; padding-bottom: 6rem; }
+  }
+  @media (min-width: 1024px) {
+    .io-section { padding-top: 8rem; padding-bottom: 8rem; }
+  }
+
+  /* Canonical empty state */
+  .io-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.65rem;
+    padding: 3rem 1.5rem;
+    border: 1px dashed oklch(1 0 0 / 0.10);
+    border-radius: var(--radius);
+    background: color-mix(in oklch, var(--card) 60%, transparent);
+    color: var(--mute-1);
+  }
+  .io-empty-state .io-empty-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: oklch(1 0 0 / 0.05);
+    border: 1px solid oklch(1 0 0 / 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--orange);
+  }
+
+  /* Canonical icon container (consistent sizing across sidebars + cards) */
+  .io-icon-chip {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: oklch(1 0 0 / 0.05);
+    border: 1px solid oklch(1 0 0 / 0.10);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--orange);
+    flex-shrink: 0;
+  }
+  .io-icon-chip-sm {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: oklch(1 0 0 / 0.05);
+    border: 1px solid oklch(1 0 0 / 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--orange);
+    flex-shrink: 0;
+  }
+
+  /* Subtle dividers */
+  .io-divider {
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.10), transparent);
+    border: 0;
+  }
+  .io-divider-vertical {
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(180deg, transparent, oklch(1 0 0 / 0.10), transparent);
+  }
+
+  /* Status pills (used in admin + client portal + dev workspace) */
+  .io-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid oklch(1 0 0 / 0.10);
+    background: oklch(1 0 0 / 0.04);
+    color: var(--mute-1);
+  }
+  .io-pill-success { color: oklch(0.85 0.18 145); border-color: oklch(0.85 0.18 145 / 0.25); background: oklch(0.85 0.18 145 / 0.08); }
+  .io-pill-danger  { color: oklch(0.78 0.20 25);  border-color: oklch(0.78 0.20 25 / 0.30);  background: oklch(0.78 0.20 25 / 0.08);  }
+  .io-pill-warn    { color: oklch(0.86 0.17 75);  border-color: oklch(0.86 0.17 75 / 0.30);  background: oklch(0.86 0.17 75 / 0.08);  }
+  .io-pill-orange  { color: var(--orange);         border-color: oklch(0.72 0.205 45 / 0.35); background: var(--orange-soft); }
+
+  /* RTL safety: when [dir="rtl"] is set on <html>, lift-on-hover and reveal
+   * should still animate identically. */
+  [dir="rtl"] .reveal { transform: translateY(8px) translateX(0); }
+  [dir="rtl"] .reveal.is-in { transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .page-enter { animation: none; }
+}
+
+/* ─── LogoLoader static animations ───────────────────────────────────────────
+ * These replace the inline <style> tags that were previously generated with
+ * Math.random() inside LogoLoader.tsx. Inline <style> nodes caused a React 18
+ * removeChild crash when window.location.href triggered a hard navigation
+ * before React could unmount the component cleanly.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+@keyframes iosky-loader-sweep {
+  0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+
+@keyframes iosky-loader-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 122, 0, 0)); }
+  50%      { filter: drop-shadow(0 0 8px rgba(255, 122, 0, 0.45)); }
+}
+
+.iosky-loader-base {
+  opacity: 0.18;
+  filter: grayscale(1);
+}
+
+.iosky-loader-sweep {
+  position: absolute;
+  inset: 0;
+  animation:
+    iosky-loader-sweep 1.6s cubic-bezier(0.23, 1, 0.32, 1) infinite,
+    iosky-loader-glow 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iosky-loader-sweep {
+    animation: none;
+    clip-path: inset(0);
+    opacity: 1;
+  }
+  .iosky-loader-base {
+    opacity: 0.4;
+  }
+}
+
+/* ─── Login page keyframes (moved from Login.tsx inline <style>) ─────────────
+ * Prevents the React 18 removeChild crash caused by hard navigation
+ * (window.location.href) destroying the DOM before React unmounts the
+ * inline <style> node.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+@keyframes iosky-menu-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes iosky-modal-in {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}

@@ -1,0 +1,45 @@
+flowchart TB
+    classDef role fill:#0a1628,stroke:#f97316,color:#fff
+    classDef gate fill:#1a2942,stroke:#3b82f6,color:#fff
+    classDef route fill:#0f172a,stroke:#10b981,color:#fff
+
+    subgraph Roles[ROLES]
+      A[Super Admin]:::role
+      B[Admin / Staff]:::role
+      C[Client]:::role
+      D[Developer]:::role
+      G[Anonymous]:::role
+    end
+
+    subgraph Procedures[tRPC procedure gates]
+      P1[publicProcedure]:::gate
+      P2[protectedProcedure\nrequires ctx.user]:::gate
+      P3[adminProcedure\nrole IN admin,super_admin]:::gate
+      P4[superAdminProcedure\nrole = super_admin]:::gate
+      P5[developerProcedure\nrole = developer]:::gate
+    end
+
+    subgraph Routes[Frontend route guards]
+      R1[/Public site/]:::route
+      R2[/client-portal/* /]:::route
+      R3[/developer-workspace/* /]:::route
+      R4[/admin/* /]:::route
+      R5[/admin/security/* /]:::route
+    end
+
+    G --> P1 --> R1
+    C --> P2 --> R2
+    D --> P5 --> R3
+    B --> P3 --> R4
+    A --> P4 --> R5
+
+    subgraph ViewAs[View-As impersonation]
+      VA1[Admin clicks View as Client]:::role
+      VA2[window.prompt audit reason]:::gate
+      VA3[trpc.adminViewAs.start\nmint short-lived viewAs JWT\n30 min TTL]:::gate
+      VA4[Audit row inserted\nview_as_sessions table]:::gate
+      VA5[Redirect to /client-portal\nwith X-Viewing-As banner]:::route
+      VA6[End Session button\nclears viewAs cookie]:::gate
+    end
+
+    B --> VA1 --> VA2 --> VA3 --> VA4 --> VA5 --> VA6 --> R4
