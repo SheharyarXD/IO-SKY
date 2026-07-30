@@ -14,7 +14,9 @@
  *   – never exposes PII back to anonymous callers
  */
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { randomBytes } from "crypto";
+import { publicProcedure, adminProcedure, router } from "../_core/trpc";
+import { getRequestIp, getRequestUserAgent } from "../_core/requestMeta";
 import { TRPCError } from "@trpc/server";
 import { notifyOwner } from "../_core/notification";
 import {
@@ -34,23 +36,14 @@ import {
 
 const ecosystemEnum = z.enum(["growth", "elite", "custom"]);
 
-/** ~9 base36 chars — 47 bits of entropy, plenty for an anonymous resume key. */
+/**
+ * Bearer token for resuming/editing a Custom Discovery session — this is the
+ * sole access control for the PII (name/email/phone/company) captured in
+ * that flow, so it must be a CSPRNG, not Math.random(). Matches the
+ * crypto.randomBytes convention already used for AI Scan report tokens.
+ */
 function newToken(): string {
-  return (
-    Math.random().toString(36).slice(2, 11) +
-    Math.random().toString(36).slice(2, 11)
-  );
-}
-
-function ctxIp(ctx: { req: { headers: Record<string, unknown>; socket?: { remoteAddress?: string } } }) {
-  const xf = ctx.req.headers["x-forwarded-for"];
-  if (typeof xf === "string" && xf.length > 0) return xf.split(",")[0]?.trim() || null;
-  return ctx.req.socket?.remoteAddress ?? null;
-}
-
-function ctxUa(ctx: { req: { headers: Record<string, unknown> } }) {
-  const ua = ctx.req.headers["user-agent"];
-  return typeof ua === "string" ? ua : null;
+  return randomBytes(24).toString("hex");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -80,8 +73,8 @@ export const solutionsRouter = router({
           ecosystem: input.ecosystem ?? null,
           sessionToken: input.sessionToken ?? null,
           userId: ctx.user?.id ?? null,
-          ip: ctxIp(ctx),
-          userAgent: ctxUa(ctx),
+          ip: getRequestIp(ctx.req),
+          userAgent: getRequestUserAgent(ctx.req),
           payload: input.payload ?? null,
         });
       } catch (err) {
@@ -118,8 +111,8 @@ export const solutionsRouter = router({
         phone: input.phone ?? null,
         interest: input.ecosystem,
         note: input.message ?? null,
-        ip: ctxIp(ctx),
-        userAgent: ctxUa(ctx),
+        ip: getRequestIp(ctx.req),
+        userAgent: getRequestUserAgent(ctx.req),
       });
 
       const proposal = await createEcosystemProposalRequest({
@@ -132,8 +125,8 @@ export const solutionsRouter = router({
         goals: input.goals ?? null,
         source: input.source,
         leadId: lead?.id ?? null,
-        ip: ctxIp(ctx),
-        userAgent: ctxUa(ctx),
+        ip: getRequestIp(ctx.req),
+        userAgent: getRequestUserAgent(ctx.req),
       });
 
       if (!proposal) {
@@ -260,8 +253,8 @@ export const solutionsRouter = router({
         ]
           .filter(Boolean)
           .join("\n") || null,
-        ip: ctxIp(ctx),
-        userAgent: ctxUa(ctx),
+        ip: getRequestIp(ctx.req),
+        userAgent: getRequestUserAgent(ctx.req),
       });
 
       const updated = await upsertCustomDiscoverySession(input.token, {
@@ -292,30 +285,21 @@ export const solutionsRouter = router({
   /* Admin-only listings used by the Admin Portal "Ecosystem" panel.    */
   /* ------------------------------------------------------------------ */
 
-  adminListClicks: protectedProcedure
+  adminListClicks: adminProcedure
     .input(z.object({ limit: z.number().int().min(1).max(500).default(100) }))
-    .query(async ({ ctx, input }) => {
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+    .query(async ({ input }) => {
       return listRecentEcosystemClicks(input.limit);
     }),
 
-  adminListProposals: protectedProcedure
+  adminListProposals: adminProcedure
     .input(z.object({ limit: z.number().int().min(1).max(500).default(100) }))
-    .query(async ({ ctx, input }) => {
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+    .query(async ({ input }) => {
       return listEcosystemProposalRequests(input.limit);
     }),
 
-  adminListDiscoveries: protectedProcedure
+  adminListDiscoveries: adminProcedure
     .input(z.object({ limit: z.number().int().min(1).max(500).default(100) }))
-    .query(async ({ ctx, input }) => {
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+    .query(async ({ input }) => {
       return listCustomDiscoverySessions(input.limit);
     }),
 });

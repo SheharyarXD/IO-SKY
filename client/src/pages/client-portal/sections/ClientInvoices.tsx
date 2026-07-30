@@ -16,6 +16,7 @@ import { Download, Receipt, ExternalLink, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   GlassCard,
@@ -187,12 +188,12 @@ export default function ClientInvoices() {
                       </td>
                       <td className="px-5 py-3 text-white/65">
                         {inv.issuedMs
-                          ? new Date(inv.issuedMs).toLocaleDateString()
+                          ? formatDate(inv.issuedMs)
                           : "—"}
                       </td>
                       <td className="px-5 py-3 text-white/65">
                         {inv.dueMs
-                          ? new Date(inv.dueMs).toLocaleDateString()
+                          ? formatDate(inv.dueMs)
                           : "—"}
                       </td>
                       <td className="px-5 py-3 text-right text-white font-mono">

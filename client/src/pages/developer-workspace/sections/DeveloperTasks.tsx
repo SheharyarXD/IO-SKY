@@ -10,6 +10,7 @@
 import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
 import {
   GlassCard,
   SectionHeader,
@@ -221,7 +222,7 @@ export default function DeveloperTasks() {
                   {task.dueMs && (
                     <div className="mt-2 flex items-center gap-1 text-[11px] text-white/45">
                       <ChevronRight className="h-3 w-3 opacity-60" />
-                      Due {new Date(task.dueMs).toLocaleDateString()}
+                      Due {formatDate(task.dueMs)}
                     </div>
                   )}
                 </div>

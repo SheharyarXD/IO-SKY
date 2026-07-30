@@ -23,8 +23,10 @@ import {
   appendBookingAudit,
   appendBookingEvent,
   cancelBookingSlot,
+  cancelBookingSlotById,
   createBooking,
   createLead,
+  getBookingById,
   getBookingByPublicRef,
   insertBookingAnswers,
   listRecentBookings,
@@ -38,6 +40,9 @@ import {
 import { sendBookingConfirmation } from "../email";
 import { notifyOwner } from "../_core/notification";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
+import { createRateLimiter } from "../_core/rateLimiter";
+import { getRequestIp, getRequestMeta } from "../_core/requestMeta";
+import { generatePublicRef } from "../_core/publicRef";
 import {
   CONSULTATION_CATALOG,
   getBookingAdapter,
@@ -51,26 +56,11 @@ import {
 // Rate limiting & spam protection
 // ---------------------------------------------------------------------------
 
-const submissionsByIp = new Map<string, number[]>();
-const SUBMISSION_WINDOW_MS = 60_000;
 const SUBMISSION_LIMIT_PER_MIN = 4;
 const HOLD_LIMIT_PER_MIN = 12;
-const holdsByIp = new Map<string, number[]>();
 
-function isRateLimited(map: Map<string, number[]>, ip: string | null, limit: number): boolean {
-  if (!ip) return false;
-  const now = Date.now();
-  const recent = (map.get(ip) || []).filter((t) => now - t < SUBMISSION_WINDOW_MS);
-  recent.push(now);
-  map.set(ip, recent);
-  return recent.length > limit;
-}
-
-function generatePublicRef(): string {
-  const block = () =>
-    Math.random().toString(36).slice(2, 6).toUpperCase().replace(/[0OIL1]/g, "X");
-  return `IOSKY-${block()}-${block()}`;
-}
+const isSubmissionRateLimited = createRateLimiter(SUBMISSION_LIMIT_PER_MIN);
+const isHoldRateLimited = createRateLimiter(HOLD_LIMIT_PER_MIN);
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -142,13 +132,8 @@ export const bookingsRouter = router({
   hold: publicProcedure
     .input(holdSchema)
     .mutation(async ({ ctx, input }) => {
-      const ip =
-        (ctx.req?.headers["x-forwarded-for"] as string | undefined)
-          ?.split(",")[0]
-          ?.trim() ||
-        ctx.req?.socket?.remoteAddress ||
-        null;
-      if (isRateLimited(holdsByIp, ip, HOLD_LIMIT_PER_MIN)) {
+      const ip = getRequestIp(ctx.req);
+      if (isHoldRateLimited(ip)) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Too many requests. Please try again shortly.",
@@ -192,15 +177,9 @@ export const bookingsRouter = router({
         };
       }
 
-      const ip =
-        (ctx.req?.headers["x-forwarded-for"] as string | undefined)
-          ?.split(",")[0]
-          ?.trim() ||
-        ctx.req?.socket?.remoteAddress ||
-        null;
-      const userAgent = (ctx.req?.headers["user-agent"] as string) || null;
+      const { ip, userAgent } = getRequestMeta(ctx.req);
 
-      if (isRateLimited(submissionsByIp, ip, SUBMISSION_LIMIT_PER_MIN)) {
+      if (isSubmissionRateLimited(ip)) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Too many booking attempts. Please try again shortly.",
@@ -257,8 +236,11 @@ export const bookingsRouter = router({
         userAgent,
       });
       if (!booking) {
-        // Free the held slot so the next caller can use it.
-        await cancelBookingSlot(0).catch(() => null);
+        // Free the held slot so the next caller can use it. The slot is
+        // still only "held" at this point (confirmBookingSlot hasn't run),
+        // so its bookingId column is null — cancelBookingSlot(bookingId)
+        // could never match it. Cancel by the slot's own id instead.
+        await cancelBookingSlotById(slotId).catch(() => null);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Booking could not be persisted. Please try again.",
@@ -458,11 +440,7 @@ export const bookingsRouter = router({
       if (!verified.ok) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: `Invalid token (${verified.reason}).` });
       }
-      const booking = await (async () => {
-        // Load by id via list helper; we don't expose a getById publicly.
-        const all = await listRecentBookings(5000);
-        return all.find((b) => b.id === verified.bookingId) ?? null;
-      })();
+      const booking = await getBookingById(verified.bookingId);
       if (!booking) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
       }

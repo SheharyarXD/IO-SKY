@@ -9,6 +9,7 @@ import {
   signMfaPending,
 } from "./mfaChallenge";
 import { sdk } from "./sdk";
+import { getRequestIp } from "./requestMeta";
 
 /**
  * Decode the IO SKY OAuth state.
@@ -108,7 +109,7 @@ export function registerOAuthRoutes(app: Express) {
           provider: "manus",
           outcome: "success",
           reason: null,
-          ip: req.socket?.remoteAddress ?? null,
+          ip: getRequestIp(req),
           userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
         });
       } catch (auditError) {

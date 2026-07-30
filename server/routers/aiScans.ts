@@ -30,6 +30,8 @@ import { renderAiScanReportPdf } from "../aiScanReportPdf";
 import { storagePut, storageGetSignedUrl } from "../storage";
 import { notifyOwner } from "../_core/notification";
 import { publicProcedure, router } from "../_core/trpc";
+import { createRateLimiter } from "../_core/rateLimiter";
+import { getRequestMeta } from "../_core/requestMeta";
 import {
   AI_SCAN_QUESTION_BANK,
   findMissingAnswers,
@@ -42,20 +44,9 @@ export const AI_SCAN_TIERS = ["free", "growth", "elite"] as const;
 export type AiScanTier = (typeof AI_SCAN_TIERS)[number];
 
 // ── Rate limiting ───────────────────────────────────────────────────────────
-const submissionsByIp = new Map<string, number[]>();
-const SUBMISSION_WINDOW_MS = 60_000;
 const SUBMISSION_LIMIT_PER_MIN = 6;
 
-export function isAiScanRateLimited(ip: string | null): boolean {
-  if (!ip) return false;
-  const now = Date.now();
-  const recent = (submissionsByIp.get(ip) || []).filter(
-    (t) => now - t < SUBMISSION_WINDOW_MS,
-  );
-  recent.push(now);
-  submissionsByIp.set(ip, recent);
-  return recent.length > SUBMISSION_LIMIT_PER_MIN;
-}
+export const isAiScanRateLimited = createRateLimiter(SUBMISSION_LIMIT_PER_MIN);
 
 // ── Inputs ──────────────────────────────────────────────────────────────────
 const submitLeadInput = z.object({
@@ -104,22 +95,6 @@ function newReportToken(): string {
   return randomBytes(24).toString("hex");
 }
 
-function getIpAndUa(ctx: {
-  req?: {
-    headers: Record<string, string | string[] | undefined>;
-    socket?: { remoteAddress?: string };
-  };
-}): { ip: string | null; userAgent: string | null } {
-  const ip =
-    ((ctx.req?.headers["x-forwarded-for"] as string | undefined) || "")
-      .split(",")[0]
-      ?.trim() ||
-    ctx.req?.socket?.remoteAddress ||
-    null;
-  const userAgent = (ctx.req?.headers["user-agent"] as string | undefined) || null;
-  return { ip: ip || null, userAgent };
-}
-
 // ── Router ──────────────────────────────────────────────────────────────────
 export const aiScansRouter = router({
   /**
@@ -133,7 +108,7 @@ export const aiScansRouter = router({
         return { success: true as const, tier: input.tier, leadId: null };
       }
 
-      const { ip, userAgent } = getIpAndUa(ctx as never);
+      const { ip, userAgent } = getRequestMeta(ctx.req);
 
       if (isAiScanRateLimited(ip)) {
         throw new TRPCError({
@@ -220,7 +195,7 @@ export const aiScansRouter = router({
         };
       }
 
-      const { ip, userAgent } = getIpAndUa(ctx as never);
+      const { ip, userAgent } = getRequestMeta(ctx.req);
       if (isAiScanRateLimited(ip)) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",

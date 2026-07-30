@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { GitBranch, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { GlassCard, EmptyState, PortalSkeleton, SectionHeader, StatusPill } from "../components/PortalUI";
+import { formatDate } from "@/lib/utils";
 
 export default function ClientProjects() {
   const projects = trpc.clientPortal.projects.useQuery();
@@ -49,7 +50,7 @@ export default function ClientProjects() {
               <div className="mt-1 flex items-center justify-between text-[11px] text-white/45">
                 <span>{p.progress}% complete</span>
                 {p.targetMs && (
-                  <span>Target {new Date(p.targetMs).toLocaleDateString()}</span>
+                  <span>Target {formatDate(p.targetMs)}</span>
                 )}
               </div>
 

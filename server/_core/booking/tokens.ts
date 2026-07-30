@@ -7,11 +7,12 @@
  * where hmac = base64url(HMAC-SHA256(secret, `${bookingId}.${action}.${expiryMs}`))
  */
 import crypto from "node:crypto";
+import { requireSecret } from "../env";
 
 export type BookingAction = "reschedule" | "cancel";
 
 function secret(): string {
-  return process.env.JWT_SECRET || "iosky-dev-fallback-secret";
+  return requireSecret("JWT_SECRET", process.env.JWT_SECRET);
 }
 
 function b64url(buf: Buffer): string {

@@ -13,6 +13,7 @@ import {
   StatusPill,
 } from "@/pages/client-portal/components/PortalUI";
 import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/utils";
 import { FolderKanban } from "lucide-react";
 
 function statusVariant(status: string): "neutral" | "good" | "warn" | "info" | "danger" {
@@ -84,13 +85,13 @@ export default function DeveloperProjects() {
                 <div className="flex justify-between border-b border-white/[0.06] pb-1">
                   <span className="text-white/45">Started</span>
                   <span className="text-white/80">
-                    {project.startMs ? new Date(project.startMs).toLocaleDateString() : "—"}
+                    {project.startMs ? formatDate(project.startMs) : "—"}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-white/[0.06] pb-1">
                   <span className="text-white/45">Target</span>
                   <span className="text-white/80">
-                    {project.targetMs ? new Date(project.targetMs).toLocaleDateString() : "—"}
+                    {project.targetMs ? formatDate(project.targetMs) : "—"}
                   </span>
                 </div>
               </div>

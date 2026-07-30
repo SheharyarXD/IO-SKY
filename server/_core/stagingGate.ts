@@ -18,6 +18,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
+import { requireSecret } from "./env";
 
 const STAGING_COOKIE = "iosky_staging_pass";
 const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
@@ -27,10 +28,9 @@ function isStagingEnabled() {
 }
 
 function getStagingSecret() {
-  return (
-    process.env.STAGING_SECRET ||
-    process.env.JWT_SECRET ||
-    "iosky-staging-fallback-secret-change-me"
+  return requireSecret(
+    "STAGING_SECRET or JWT_SECRET",
+    process.env.STAGING_SECRET || process.env.JWT_SECRET,
   );
 }
 

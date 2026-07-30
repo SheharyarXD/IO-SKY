@@ -36,6 +36,7 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { notifyOwner } from "../_core/notification";
 import { storageGetSignedUrl, storagePut } from "../storage";
 import { clientProcedure, router } from "../_core/trpc";
+import { generatePublicRef } from "../_core/publicRef";
 
 const supportTicketSchema = z.object({
   subject: z.string().min(3).max(200),
@@ -50,10 +51,6 @@ const messageSchema = z.object({
   subject: z.string().max(200).nullable().optional(),
 });
 
-const randomRef = () => {
-  const part = () => Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `IOSKY-T-${part()}-${part()}`;
-};
 
 export const clientPortalRouter = router({
   dashboard: clientProcedure.query(async ({ ctx }) => getClientPortalDashboard(ctx.organizationId)),
@@ -756,7 +753,7 @@ export const clientPortalRouter = router({
   createTicket: clientProcedure
     .input(supportTicketSchema)
     .mutation(async ({ ctx, input }) => {
-      const publicRef = randomRef();
+      const publicRef = generatePublicRef("T");
       await createClientSupportTicket({
         organizationId: ctx.organizationId,
         openedByUserId: ctx.user.id,

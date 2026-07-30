@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { getRequestMeta } from "./_core/requestMeta";
 import { bookingsRouter } from "./routers/bookings";
 import { contactRouter } from "./routers/contact";
 import { engineeringRouter } from "./routers/engineering";
@@ -74,13 +75,7 @@ export const appRouter = router({
         }),
       )
       .mutation(async ({ ctx, input }) => {
-        const ip =
-          (ctx.req.headers["x-forwarded-for"] as string | undefined)
-            ?.split(",")[0]
-            ?.trim() ||
-          ctx.req.socket?.remoteAddress ||
-          null;
-        const userAgent = (ctx.req.headers["user-agent"] as string | undefined) ?? null;
+        const { ip, userAgent } = getRequestMeta(ctx.req);
 
         await appendLoginAudit({
           userId: ctx.user?.id ?? null,

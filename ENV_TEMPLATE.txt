@@ -80,15 +80,17 @@ TWILIO_FROM_NUMBER=
 
 # -----------------------------------------------------------------------------
 # OBJECT STORAGE
-# Today: served via the Forge presign proxy at /manus-storage/*.
-# Standalone: set the S3_* group and switch server/storage.ts to the AWS SDK
-# (already installed). The public /manus-storage/* URL shape stays unchanged.
+# Today: served via the Forge presign proxy at /manus-storage/*. There is no
+# code path yet that reads S3_* variables — do NOT fill these in expecting
+# storage to switch automatically. Wiring server/storage.ts to a direct S3
+# client (or Supabase Storage) is real development work, tracked separately
+# in the Milestone 2 Manus-removal / storage-migration plan.
 # -----------------------------------------------------------------------------
-S3_ENDPOINT=
-S3_BUCKET=
-S3_ACCESS_KEY_ID=
-S3_SECRET_ACCESS_KEY=
-S3_REGION=
+# S3_ENDPOINT=
+# S3_BUCKET=
+# S3_ACCESS_KEY_ID=
+# S3_SECRET_ACCESS_KEY=
+# S3_REGION=
 
 # -----------------------------------------------------------------------------
 # PRE-LAUNCH STAGING GATE (optional)
@@ -107,7 +109,10 @@ VITE_ANALYTICS_ENDPOINT=
 VITE_ANALYTICS_WEBSITE_ID=
 
 # -----------------------------------------------------------------------------
-# BRANDING (optional)
+# BRANDING — not currently read by any code path (page <title> is hardcoded
+# in client/index.html; there is no VITE_APP_LOGO consumer anywhere). Left
+# here only as a placeholder for future work — do not expect setting these
+# to change anything today.
 # -----------------------------------------------------------------------------
-VITE_APP_TITLE=IO SKY
-VITE_APP_LOGO=
+# VITE_APP_TITLE=IO SKY
+# VITE_APP_LOGO=

@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
 import {
   GlassCard,
   SectionHeader,
@@ -143,7 +144,7 @@ export default function DeveloperAgreements() {
                         Signed
                         {row.signedAtMs && (
                           <span className="text-emerald-300/60">
-                            · {new Date(row.signedAtMs).toLocaleDateString()}
+                            · {formatDate(row.signedAtMs)}
                           </span>
                         )}
                       </span>

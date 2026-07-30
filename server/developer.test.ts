@@ -91,7 +91,7 @@ vi.mock("./storage", () => ({
     url: `/manus-storage/${key}`,
   })),
   storagePut: vi.fn(async () => ({ key: "k", url: "/manus-storage/k" })),
-  storageGetSignedUrl: vi.fn(async () => "https://signed.example/x"),
+  storageGetSignedUrl: vi.fn(async (key: string) => `https://signed.example/${key}?sig=test`),
 }));
 
 import { appRouter } from "./routers";
@@ -228,7 +228,8 @@ describe("developer router — file signed URL", () => {
     };
     const caller = appRouter.createCaller(makeCtx({}));
     const out = await caller.developer.requestFileSignedUrl({ fileId: 1234 });
-    expect(out.url).toContain("/manus-storage/developer/PRJ-AI/spec.pdf");
+    expect(out.url).toContain("developer/PRJ-AI/spec.pdf");
+    expect(out.url).toMatch(/^https:\/\/signed\.example\//);
     const { appendDeveloperAudit } = await import("./db");
     expect(appendDeveloperAudit).toHaveBeenCalledWith(
       expect.objectContaining({ event: "file.downloaded", developerId: 100 }),

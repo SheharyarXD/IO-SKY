@@ -10,6 +10,7 @@
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   GlassCard,
@@ -113,7 +114,7 @@ export default function DeveloperFiles() {
                         </>
                       )}
                       <span className="text-white/20">·</span>
-                      <span>{new Date(file.createdAt).toLocaleDateString()}</span>
+                      <span>{formatDate(file.createdAt)}</span>
                     </div>
                   </div>
                 </div>

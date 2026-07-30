@@ -2,6 +2,7 @@ import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
+import type { User } from "../../drizzle/schema";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -60,9 +61,50 @@ export const clientProcedure = t.procedure.use(
 );
 
 /**
+ * Shared gate-evaluation used by both developerProcedure and
+ * developerSelfProcedure below — profile exists, MFA enrolled, all
+ * required agreements signed, an active non-expired access scope, at
+ * least one active assignment. Throws FORBIDDEN with a stable code in the
+ * error message so the front-end can render the matching setup page (mfa /
+ * agreements / access-expired / no-assignments) on failure; otherwise
+ * returns the `ctx.developer` object both middlewares inject.
+ *
+ * Previously this whole block (gate call + error throws + ctx shape) was
+ * duplicated line-for-line between the two middlewares; only the initial
+ * role check actually differs between them.
+ */
+async function resolveDeveloperContext(user: User) {
+  // Lazy-import the helper to keep this file free of DB deps.
+  const { evaluateDeveloperGate } = await import("../db");
+  const result = await evaluateDeveloperGate({
+    userId: user.id,
+    mfaMethod: user.mfaMethod ?? "none",
+  });
+
+  if (!result.gate.ok) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `developer_gate:${result.gate.reason}`,
+    });
+  }
+  if (!result.profile) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "developer_gate:no_profile",
+    });
+  }
+
+  return {
+    id: result.profile.id,
+    profile: result.profile,
+    scope: result.scope,
+    assignments: result.assignments,
+  };
+}
+
+/**
  * developerProcedure — requires role="developer" AND a passing gate
- * (profile exists, MFA enrolled, all required agreements signed, an
- * active non-expired access scope, at least one active assignment).
+ * (see resolveDeveloperContext above).
  *
  * If any gate fails it raises FORBIDDEN with a stable code in the error
  * message so the front-end can render the matching setup page (mfa /
@@ -85,37 +127,10 @@ export const developerProcedure = t.procedure.use(
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
-    // Lazy-import the helper to keep this file free of DB deps.
-    const { evaluateDeveloperGate } = await import("../db");
-    const result = await evaluateDeveloperGate({
-      userId: ctx.user.id,
-      mfaMethod: ctx.user.mfaMethod ?? "none",
-    });
-
-    if (!result.gate.ok) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: `developer_gate:${result.gate.reason}`,
-      });
-    }
-    if (!result.profile) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "developer_gate:no_profile",
-      });
-    }
+    const developer = await resolveDeveloperContext(ctx.user);
 
     return next({
-      ctx: {
-        ...ctx,
-        user: ctx.user,
-        developer: {
-          id: result.profile.id,
-          profile: result.profile,
-          scope: result.scope,
-          assignments: result.assignments,
-        },
-      },
+      ctx: { ...ctx, user: ctx.user, developer },
     });
   }),
 );
@@ -127,7 +142,7 @@ export const developerProcedure = t.procedure.use(
  * Unlike developerProcedure (which intentionally lets admins through so
  * support tooling can introspect a developer's data), this middleware
  * refuses admin callers outright. The only allowed role is `developer`,
- * and the same four gates still have to pass.
+ * and the same gates still have to pass (resolveDeveloperContext above).
  *
  * Use this for any endpoint that writes to the calling developer's row
  * or returns their personal audit log.
@@ -146,36 +161,10 @@ export const developerSelfProcedure = t.procedure.use(
       });
     }
 
-    const { evaluateDeveloperGate } = await import("../db");
-    const result = await evaluateDeveloperGate({
-      userId: ctx.user.id,
-      mfaMethod: ctx.user.mfaMethod ?? "none",
-    });
-
-    if (!result.gate.ok) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: `developer_gate:${result.gate.reason}`,
-      });
-    }
-    if (!result.profile) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "developer_gate:no_profile",
-      });
-    }
+    const developer = await resolveDeveloperContext(ctx.user);
 
     return next({
-      ctx: {
-        ...ctx,
-        user: ctx.user,
-        developer: {
-          id: result.profile.id,
-          profile: result.profile,
-          scope: result.scope,
-          assignments: result.assignments,
-        },
-      },
+      ctx: { ...ctx, user: ctx.user, developer },
     });
   }),
 );

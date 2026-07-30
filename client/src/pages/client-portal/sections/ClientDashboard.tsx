@@ -21,6 +21,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { SectionHeader, GlassCard, EmptyState, PortalSkeleton, StatusPill } from "../components/PortalUI";
+import { formatDate } from "@/lib/utils";
 
 export default function ClientDashboard() {
   const dashboard = trpc.clientPortal.dashboard.useQuery();
@@ -104,7 +105,7 @@ export default function ClientDashboard() {
                   <p className="text-[11px] text-white/55">Operational Intelligence</p>
                   <p className="text-sm font-semibold text-white mt-0.5">Report</p>
                   <p className="text-[10px] text-white/40 mt-2">
-                    {new Date(latestReport.createdAt as unknown as string).toLocaleDateString()}
+                    {formatDate(latestReport.createdAt as unknown as string)}
                   </p>
                 </div>
               </div>
@@ -328,7 +329,7 @@ export default function ClientDashboard() {
                 <div className="mt-1 flex items-center justify-between text-[11px] text-white/45">
                   <span>{p.progress}% complete</span>
                   {p.targetMs && (
-                    <span>Target {new Date(p.targetMs).toLocaleDateString()}</span>
+                    <span>Target {formatDate(p.targetMs)}</span>
                   )}
                 </div>
               </div>
@@ -510,7 +511,7 @@ function timeAgo(iso: string) {
   if (hr < 24) return `${hr}h ago`;
   const d = Math.round(hr / 24);
   if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString();
+  return formatDate(iso);
 }
 
 function Countdown({ ms }: { ms: number }) {

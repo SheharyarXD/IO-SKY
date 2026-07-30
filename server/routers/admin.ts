@@ -29,9 +29,9 @@ import { z } from "zod";
 import { count, desc, eq, gte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, router } from "../_core/trpc";
+import { getRequestMeta } from "../_core/requestMeta";
 import { getDb, appendLoginAudit, listRecentBookings, listRecentAiScans } from "../db";
 import {
-  bookings,
   organizations,
   leads,
   clientProjects,
@@ -43,6 +43,7 @@ import {
   clientNotifications,
   clientMessages,
   loginAudit,
+  aiScans,
   users,
   developerProfiles,
   developerAccessScopes,
@@ -61,14 +62,7 @@ async function recordAdminEvent(opts: {
   outcome?: "success" | "failed";
 }) {
   try {
-    const ip =
-      (opts.ctx?.req?.headers?.["x-forwarded-for"] as string | undefined)
-        ?.split(",")[0]
-        ?.trim() ||
-      opts.ctx?.req?.socket?.remoteAddress ||
-      null;
-    const userAgent =
-      (opts.ctx?.req?.headers?.["user-agent"] as string | undefined) ?? null;
+    const { ip, userAgent } = getRequestMeta(opts.ctx?.req);
 
     await appendLoginAudit({
       userId: opts.ctx?.user?.id ?? null,
@@ -79,8 +73,18 @@ async function recordAdminEvent(opts: {
       ip,
       userAgent,
     });
-  } catch {
-    // Never fail the read because of an audit hiccup.
+  } catch (err) {
+    // Never fail the read/write because of an audit hiccup — but a failed
+    // write to the Audit Logs table must not be silent either. This is the
+    // system's compliance/security trail; losing an entry with no trace
+    // defeats the point of having it. Until a real monitoring/alerting
+    // pipeline exists (tracked separately), a loud console.error is the
+    // honest minimum — at least it's visible in server logs instead of
+    // vanishing into an empty catch block.
+    console.error(
+      `[AdminAudit] FAILED to record admin event (reason="${opts.reason}", userId=${opts.ctx?.user?.id ?? "?"}):`,
+      err,
+    );
   }
 }
 
@@ -174,10 +178,8 @@ async function buildSummary(): Promise<AdminSummary> {
     activeClients,
     openProjects,
     openTickets,
-    bookingsThisMonth,
-    bookingsLastMonth,
-    leadsThisMonth,
-    leadsLastMonth,
+    aiScansThisMonth,
+    aiScansLastMonth,
     invoicePaidSumThisMonth,
     invoicePaidSumLastMonth,
     recentBookings,
@@ -204,32 +206,16 @@ async function buildSummary(): Promise<AdminSummary> {
     safe(async () => {
       const r = await db
         .select({ c: count() })
-        .from(bookings)
-        .where(gte(bookings.createdAt, new Date(startOfMonthMs) as any));
+        .from(aiScans)
+        .where(gte(aiScans.createdAt, new Date(startOfMonthMs) as any));
       return Number(r[0]?.c ?? 0);
     }, 0),
     safe(async () => {
       const r = await db
         .select({ c: count() })
-        .from(bookings)
+        .from(aiScans)
         .where(
-          sql`${bookings.createdAt} >= ${new Date(previousMonthStartMs)} AND ${bookings.createdAt} < ${new Date(startOfMonthMs)}`,
-        );
-      return Number(r[0]?.c ?? 0);
-    }, 0),
-    safe(async () => {
-      const r = await db
-        .select({ c: count() })
-        .from(leads)
-        .where(gte(leads.createdAt, new Date(startOfMonthMs) as any));
-      return Number(r[0]?.c ?? 0);
-    }, 0),
-    safe(async () => {
-      const r = await db
-        .select({ c: count() })
-        .from(leads)
-        .where(
-          sql`${leads.createdAt} >= ${new Date(previousMonthStartMs)} AND ${leads.createdAt} < ${new Date(startOfMonthMs)}`,
+          sql`${aiScans.createdAt} >= ${new Date(previousMonthStartMs)} AND ${aiScans.createdAt} < ${new Date(startOfMonthMs)}`,
         );
       return Number(r[0]?.c ?? 0);
     }, 0),
@@ -277,8 +263,6 @@ async function buildSummary(): Promise<AdminSummary> {
   const revenueLast = invoicePaidSumLastMonth > 0 ? invoicePaidSumLastMonth / 100 : 107_640;
   const revenueDelta = revenueLast === 0 ? 0 : ((revenueMTD - revenueLast) / revenueLast) * 100;
 
-  const aiScansThisMonth = bookingsThisMonth + leadsThisMonth;
-  const aiScansLastMonth = bookingsLastMonth + leadsLastMonth;
   const aiScansDelta =
     aiScansLastMonth === 0
       ? aiScansThisMonth > 0

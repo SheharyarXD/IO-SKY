@@ -21,7 +21,7 @@ import { parse as parseCookieHeader } from "cookie";
 import { SignJWT, jwtVerify } from "jose";
 import { COOKIE_NAME } from "@shared/const";
 import * as db from "../db";
-import { ENV } from "./env";
+import { getCookieSecretBytes } from "./env";
 import { sdk } from "./sdk";
 import { getSessionCookieOptions } from "./cookies";
 
@@ -37,7 +37,7 @@ export interface ImpersonationPayload {
 }
 
 function secretKey() {
-  return new TextEncoder().encode(ENV.cookieSecret);
+  return getCookieSecretBytes();
 }
 
 export async function signImpersonationToken(
@@ -134,8 +134,14 @@ export function registerViewAsRoutes(app: Express) {
         ip: req.ip ?? null,
         userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
       });
-    } catch {
-      /* audit best-effort */
+    } catch (err) {
+      // Impersonation is the primary control for detecting/investigating
+      // admin misuse of "View As" — losing this audit row silently is a
+      // materially worse outcome than losing a routine notification.
+      console.error(
+        `[ViewAs] FAILED to record impersonation-enter audit row (admin=${admin.id}, target=${target}):`,
+        err,
+      );
     }
 
     res.json({
@@ -165,8 +171,11 @@ export function registerViewAsRoutes(app: Express) {
             userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
           });
         }
-      } catch {
-        /* audit best-effort */
+      } catch (err) {
+        console.error(
+          `[ViewAs] FAILED to record impersonation-exit audit row (target=${claim.target}):`,
+          err,
+        );
       }
     }
 

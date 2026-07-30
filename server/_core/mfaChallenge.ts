@@ -11,7 +11,7 @@
  * distinct `typ` claim ("mfa_pending") so it can never be mistaken for a
  * full session token.
  */
-import { ENV } from "./env";
+import { getCookieSecretBytes } from "./env";
 import { SignJWT, jwtVerify } from "jose";
 
 export const MFA_PENDING_COOKIE = "io_sky_mfa_pending";
@@ -31,7 +31,7 @@ export type MfaPendingPayload = {
 };
 
 function secretKey(): Uint8Array {
-  return new TextEncoder().encode(ENV.cookieSecret);
+  return getCookieSecretBytes();
 }
 
 export async function signMfaPending(

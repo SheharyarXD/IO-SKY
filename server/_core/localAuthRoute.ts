@@ -21,21 +21,10 @@ import * as db from "../db";
 import { sdk } from "./sdk";
 import { getSessionCookieOptions } from "./cookies";
 import { COOKIE_NAME } from "@shared/const";
+import { roleBasedDestination } from "./oauth";
+import { getRequestIp } from "./requestMeta";
 
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
-
-function roleBasedDestination(role: string | null | undefined): string {
-  switch (role) {
-    case "admin":
-      return "/admin/bookings";
-    case "client":
-      return "/client-portal";
-    case "developer":
-      return "/developer-workspace";
-    default:
-      return "/";
-  }
-}
 
 export function registerLocalAuthRoutes(app: Express) {
   app.post("/api/auth/local/login", async (req: Request, res: Response) => {
@@ -44,7 +33,9 @@ export function registerLocalAuthRoutes(app: Express) {
         email?: string;
         password?: string;
       };
-      console.log("[LocalAuth] login attempt", { email: email?.trim() });
+      // No PII (raw email) in application logs — the real audit trail is the
+      // `login_audit` DB row written below, which is access-controlled.
+      console.log("[LocalAuth] login attempt received");
 
       if (!email || !password) {
         // Stable machine-readable code so the UI can render a localized,
@@ -72,10 +63,14 @@ export function registerLocalAuthRoutes(app: Express) {
             provider: "local",
             outcome: "failed",
             reason: "invalid_credentials",
-            ip: req.socket?.remoteAddress ?? null,
+            ip: getRequestIp(req),
             userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
           });
-        } catch {}
+        } catch (err) {
+          // A failed-login audit write going silent means brute-force
+          // attempts against this endpoint could leave no trail.
+          console.error("[LocalAuth] FAILED to record failed-login audit row:", err);
+        }
         // Generic error — never reveals whether the email exists, never
         // reveals which factor failed. The client renders a single safe
         // localized message regardless of code.
@@ -104,13 +99,15 @@ export function registerLocalAuthRoutes(app: Express) {
           provider: "local",
           outcome: "success",
           reason: null,
-          ip: req.socket?.remoteAddress ?? null,
+          ip: getRequestIp(req),
           userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
         });
         await db.touchUserLastSignedIn(user.id);
-      } catch {}
+      } catch (err) {
+        console.error("[LocalAuth] FAILED to record successful-login audit row:", err);
+      }
 
-      const next = roleBasedDestination(user.role);
+      const next = roleBasedDestination(user.role, "/");
       console.log("[LocalAuth] login success", { userId: user.id, role: user.role, next });
       res.status(200).json({
         ok: true,

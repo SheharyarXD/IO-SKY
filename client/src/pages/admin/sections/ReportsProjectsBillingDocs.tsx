@@ -6,6 +6,7 @@
  * fires `admin.action` so the audit log is complete.
  */
 import { useMemo } from "react";
+import { formatDate } from "@/lib/utils";
 import OperationalPage, {
   DefaultToolbar,
   DataTable,
@@ -231,7 +232,7 @@ export function Billing() {
     { key: "description", header: "Description" },
     { key: "amountCents", header: "Amount", align: "right", render: (r) => <span className="font-mono text-white/85">{fmtCents(r.amountCents, r.currency || "EUR")}</span> },
     { key: "status", header: "Status", render: (r) => <StatusPill tone={invTone(r.status) as any} label={r.status} /> },
-    { key: "issuedMs", header: "Issued", align: "right", render: (r) => <span className="font-mono text-white/55">{new Date(r.issuedMs).toLocaleDateString()}</span> },
+    { key: "issuedMs", header: "Issued", align: "right", render: (r) => <span className="font-mono text-white/55">{formatDate(r.issuedMs)}</span> },
   ];
 
   return (

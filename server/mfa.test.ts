@@ -83,11 +83,11 @@ vi.mock("./db", () => ({
       f.lastUsedAt = new Date();
     }
   }),
-  bumpMfaFactorFailure: vi.fn(async (id: number, opts: any = {}) => {
+  bumpMfaFactorFailure: vi.fn(async (id: number, opts: { maxFailedAttempts: number; lockWindowMs: number }) => {
     const f = factorStore.find(f => f.id === id);
     if (!f) return null;
     f.failedAttempts += 1;
-    if (opts.lockUntilMs) f.lockedUntilMs = opts.lockUntilMs;
+    if (f.failedAttempts >= opts.maxFailedAttempts) f.lockedUntilMs = Date.now() + opts.lockWindowMs;
     return f.failedAttempts;
   }),
   deleteMfaFactor: vi.fn(async (id: number, userId: number) => {

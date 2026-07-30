@@ -26,19 +26,14 @@ import {
   verifyMfaPending,
 } from "./mfaChallenge";
 import { sdk } from "./sdk";
+import { getRequestIp, getRequestUserAgent } from "./requestMeta";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_WINDOW_MS = 5 * 60 * 1000;
 
-function reqIp(req: Request): string | null {
-  const fwd = req.headers["x-forwarded-for"];
-  const head = typeof fwd === "string" ? fwd.split(",")[0]?.trim() : undefined;
-  return head || (req.socket.remoteAddress ?? null);
-}
-
-function reqUa(req: Request): string | null {
-  return (req.headers["user-agent"] as string | undefined) ?? null;
-}
+// Aliases onto the shared implementation (server/_core/requestMeta.ts).
+const reqIp = getRequestIp;
+const reqUa = getRequestUserAgent;
 
 interface SmsSecretPayload {
   phone: string;
@@ -153,10 +148,8 @@ export function registerMfaChallengeRoutes(app: Express) {
       const ok = await verifyChallengeCode(factor, code);
       if (!ok) {
         const next = await db.bumpMfaFactorFailure(factor.id, {
-          lockUntilMs:
-            (factor.failedAttempts ?? 0) + 1 >= MAX_FAILED_ATTEMPTS
-              ? Date.now() + LOCK_WINDOW_MS
-              : factor.lockedUntilMs ?? undefined,
+          maxFailedAttempts: MAX_FAILED_ATTEMPTS,
+          lockWindowMs: LOCK_WINDOW_MS,
         });
         await db.appendLoginAudit({
           userId: pending.userId,

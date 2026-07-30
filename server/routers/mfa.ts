@@ -48,6 +48,7 @@ import {
 } from "../_core/mfaTotp";
 import { generateSmsOtp, getSmsSender } from "../_core/smsSender";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getRequestIp, getRequestUserAgent } from "../_core/requestMeta";
 
 /**
  * Normalise + lightly validate an E.164 phone number. We allow optional
@@ -84,15 +85,10 @@ function decodeSmsSecret(envelope: string): SmsSecretPayload {
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_WINDOW_MS = 5 * 60 * 1000;
 
-function reqIp(req: any): string | null {
-  const fwd = req?.headers?.["x-forwarded-for"];
-  const head = typeof fwd === "string" ? fwd.split(",")[0]?.trim() : undefined;
-  return head || req?.socket?.remoteAddress || null;
-}
-
-function reqUa(req: any): string | null {
-  return (req?.headers?.["user-agent"] as string | undefined) ?? null;
-}
+// Aliases onto the shared implementation (server/_core/requestMeta.ts) —
+// kept as local names since this file has ~12 call sites using them.
+const reqIp = getRequestIp;
+const reqUa = getRequestUserAgent;
 
 function maskFactor(row: any) {
   return {
@@ -196,10 +192,8 @@ export const mfaRouter = router({
       const ok = verifyTotpToken(input.token, secret);
       if (!ok) {
         const next = await bumpMfaFactorFailure(factor.id, {
-          lockUntilMs:
-            (factor.failedAttempts ?? 0) + 1 >= MAX_FAILED_ATTEMPTS
-              ? Date.now() + LOCK_WINDOW_MS
-              : factor.lockedUntilMs ?? undefined,
+          maxFailedAttempts: MAX_FAILED_ATTEMPTS,
+          lockWindowMs: LOCK_WINDOW_MS,
         });
         await appendLoginAudit({
           userId: ctx.user.id,
@@ -406,10 +400,8 @@ export const mfaRouter = router({
 
       if (!codeOk) {
         const next = await bumpMfaFactorFailure(factor.id, {
-          lockUntilMs:
-            (factor.failedAttempts ?? 0) + 1 >= MAX_FAILED_ATTEMPTS
-              ? Date.now() + LOCK_WINDOW_MS
-              : factor.lockedUntilMs ?? undefined,
+          maxFailedAttempts: MAX_FAILED_ATTEMPTS,
+          lockWindowMs: LOCK_WINDOW_MS,
         });
         await appendLoginAudit({
           userId: ctx.user.id,

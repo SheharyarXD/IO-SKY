@@ -376,6 +376,34 @@ export async function cancelBookingSlot(bookingId: number): Promise<void> {
     .where(eq(bookingSlotsTable.bookingId, bookingId));
 }
 
+/**
+ * Cancel/release a slot by its own id rather than by bookingId. Needed for
+ * cleanup paths that must free a *held* (not yet confirmed) slot — a held
+ * slot's `bookingId` column is still null, since that FK is only populated
+ * by confirmBookingSlot(), so cancelBookingSlot(bookingId) can never match
+ * it. Use this whenever the caller has a slotId but no confirmed booking.
+ */
+export async function cancelBookingSlotById(slotId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(bookingSlotsTable)
+    .set({ status: "cancelled" })
+    .where(eq(bookingSlotsTable.id, slotId));
+}
+
+/**
+ * Look up a single booking by its internal numeric id. Used instead of
+ * scanning listRecentBookings(N) for a target id — that pattern silently
+ * "loses" bookings once the table exceeds N rows.
+ */
+export async function getBookingById(id: number): Promise<Booking | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
 export async function insertBookingAnswers(
   rows: InsertBookingAnswer[],
 ): Promise<void> {

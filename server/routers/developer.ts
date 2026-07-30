@@ -34,23 +34,16 @@ import {
   updateDeveloperTaskStatus,
   updateUserMfaMethod,
 } from "../db";
-import { storageGet } from "../storage";
+import { storageGetSignedUrl } from "../storage";
+import { getRequestMeta } from "../_core/requestMeta";
 
 /**
  * Helper — pull the caller's IP and user-agent out of the express ctx so
- * we can stamp them onto audit rows uniformly.
+ * we can stamp them onto audit rows uniformly. Alias onto the shared
+ * implementation (server/_core/requestMeta.ts) — kept as a local name
+ * since this file has ~14 call sites using it.
  */
-function callerMeta(req: any) {
-  const ip =
-    (req?.headers?.["x-forwarded-for"] as string | undefined)
-      ?.split(",")[0]
-      ?.trim() ||
-    (req?.socket?.remoteAddress as string | undefined) ||
-    null;
-  const userAgent =
-    (req?.headers?.["user-agent"] as string | undefined) ?? null;
-  return { ip, userAgent };
-}
+const callerMeta = getRequestMeta;
 
 /**
  * Generate a stable public reference for support tickets.
@@ -246,7 +239,12 @@ export const developerRouter = router({
         });
         throw new TRPCError({ code: "FORBIDDEN", message: "file_not_accessible" });
       }
-      const { url } = await storageGet(file.fileKey);
+      // Real presigned, time-limited URL — storageGet() previously used
+      // here only ever returned the bare, permanently-valid
+      // /manus-storage/{key} path without actually signing anything,
+      // despite this endpoint's "approved files only, via signed URLs"
+      // contract above.
+      const url = await storageGetSignedUrl(file.fileKey);
       const meta = callerMeta(ctx.req);
       await appendDeveloperAudit({
         developerId: ctx.developer.id,

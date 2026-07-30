@@ -5,7 +5,7 @@
  * Covers: MFA factors, recovery codes, and MFA challenges.
  * All helpers follow the project convention: lazy getDb() + drizzle SQL.
  */
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import {
   mfaChallenges as mfaChallengesTable,
   mfaFactors as mfaFactorsTable,
@@ -119,12 +119,27 @@ export async function deleteMfaFactor(factorId: number, userId: number) {
     );
 }
 
+/**
+ * Records a failed MFA attempt and locks the factor once the threshold is
+ * crossed. Previously this took a pre-computed `lockUntilMs` from the
+ * caller, derived from a `factor` row read earlier in the request (before
+ * the code-verification step) — under concurrent failed attempts that
+ * stale read could under-count, letting the lockout threshold be crossed
+ * without the account actually locking. The counter is now incremented
+ * atomically in SQL (so it can never lose an update to a concurrent
+ * request), and the lock decision is read back immediately afterward
+ * instead of relying on a caller-supplied, possibly-stale value.
+ */
 export async function bumpMfaFactorFailure(
   factorId: number,
-  opts: { lockUntilMs?: number } = {},
+  opts: { maxFailedAttempts: number; lockWindowMs: number },
 ) {
   const db = await getDb();
   if (!db) return null;
+  await db
+    .update(mfaFactorsTable)
+    .set({ failedAttempts: sql`${mfaFactorsTable.failedAttempts} + 1` })
+    .where(eq(mfaFactorsTable.id, factorId));
   const rows = await db
     .select()
     .from(mfaFactorsTable)
@@ -132,14 +147,13 @@ export async function bumpMfaFactorFailure(
     .limit(1);
   const row = rows[0];
   if (!row) return null;
-  const nextFailed = (row.failedAttempts ?? 0) + 1;
-  await db
-    .update(mfaFactorsTable)
-    .set({
-      failedAttempts: nextFailed,
-      lockedUntilMs: opts.lockUntilMs ?? row.lockedUntilMs ?? null,
-    })
-    .where(eq(mfaFactorsTable.id, factorId));
+  const nextFailed = row.failedAttempts ?? 0;
+  if (nextFailed >= opts.maxFailedAttempts) {
+    await db
+      .update(mfaFactorsTable)
+      .set({ lockedUntilMs: Date.now() + opts.lockWindowMs })
+      .where(eq(mfaFactorsTable.id, factorId));
+  }
   return nextFailed;
 }
 
@@ -174,10 +188,17 @@ export async function replaceMfaRecoveryCodes(
 export async function listUnusedRecoveryCodesForUser(userId: number) {
   const db = await getDb();
   if (!db) return [];
+  // Filter unused in SQL rather than relying on every caller to remember to
+  // filter `usedAt === null` client-side after the fact.
   return db
     .select()
     .from(mfaRecoveryCodesTable)
-    .where(eq(mfaRecoveryCodesTable.userId, userId));
+    .where(
+      and(
+        eq(mfaRecoveryCodesTable.userId, userId),
+        isNull(mfaRecoveryCodesTable.usedAt),
+      ),
+    );
 }
 
 export async function markRecoveryCodeUsed(codeId: number) {

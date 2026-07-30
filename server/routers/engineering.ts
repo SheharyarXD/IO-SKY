@@ -20,31 +20,13 @@ import {
 import { sendDevApplicationAck } from "../email";
 import { notifyOwner } from "../_core/notification";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
+import { createRateLimiter } from "../_core/rateLimiter";
+import { getRequestMeta } from "../_core/requestMeta";
+import { generatePublicRef } from "../_core/publicRef";
 
-const submissionsByIp = new Map<string, number[]>();
-const SUBMISSION_WINDOW_MS = 60_000;
 const SUBMISSION_LIMIT_PER_MIN = 3;
 
-function isRateLimited(ip: string | null): boolean {
-  if (!ip) return false;
-  const now = Date.now();
-  const recent = (submissionsByIp.get(ip) || []).filter(
-    (t) => now - t < SUBMISSION_WINDOW_MS,
-  );
-  recent.push(now);
-  submissionsByIp.set(ip, recent);
-  return recent.length > SUBMISSION_LIMIT_PER_MIN;
-}
-
-function generatePublicRef(): string {
-  const block = () =>
-    Math.random()
-      .toString(36)
-      .slice(2, 6)
-      .toUpperCase()
-      .replace(/[0OIL1]/g, "X");
-  return `IOSKY-DEV-${block()}-${block()}`;
-}
+const isRateLimited = createRateLimiter(SUBMISSION_LIMIT_PER_MIN);
 
 const applyInputSchema = z.object({
   fullName: z.string().min(2).max(200),
@@ -93,13 +75,7 @@ export const engineeringRouter = router({
         });
       }
 
-      const ip =
-        (ctx.req?.headers["x-forwarded-for"] as string | undefined)
-          ?.split(",")[0]
-          ?.trim() ||
-        ctx.req?.socket?.remoteAddress ||
-        null;
-      const userAgent = (ctx.req?.headers["user-agent"] as string) || null;
+      const { ip, userAgent } = getRequestMeta(ctx.req);
 
       if (isRateLimited(ip)) {
         throw new TRPCError({
@@ -108,7 +84,7 @@ export const engineeringRouter = router({
         });
       }
 
-      const publicRef = generatePublicRef();
+      const publicRef = generatePublicRef("DEV");
       const application = await createDevApplication({
         publicRef,
         fullName: input.fullName.trim(),

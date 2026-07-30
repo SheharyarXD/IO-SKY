@@ -42,6 +42,7 @@ import {
   publicProcedure,
   router,
 } from "../_core/trpc";
+import { getRequestIp, getRequestUserAgent } from "../_core/requestMeta";
 
 const SUPPORTED_KINDS = [
   "privacy-policy",
@@ -60,15 +61,14 @@ const kindOrSlugSchema = z
   .max(64)
   .regex(/^[a-z0-9-]+$/);
 
-function pickIp(ctx: { req?: { headers?: Record<string, unknown>; socket?: { remoteAddress?: string } } | null }): string | null {
-  const fwd = ctx.req?.headers?.["x-forwarded-for"];
-  if (typeof fwd === "string") return fwd.split(",")[0]?.trim() ?? null;
-  return ctx.req?.socket?.remoteAddress ?? null;
+// Thin wrappers onto the shared implementation (server/_core/requestMeta.ts)
+// — kept so call sites can keep passing `ctx` rather than `ctx.req`.
+function pickIp(ctx: { req?: Parameters<typeof getRequestIp>[0] }): string | null {
+  return getRequestIp(ctx.req);
 }
 
-function pickUa(ctx: { req?: { headers?: Record<string, unknown> } | null }): string | null {
-  const ua = ctx.req?.headers?.["user-agent"];
-  return typeof ua === "string" ? ua : null;
+function pickUa(ctx: { req?: Parameters<typeof getRequestUserAgent>[0] }): string | null {
+  return getRequestUserAgent(ctx.req);
 }
 
 export const legalRouter = router({
