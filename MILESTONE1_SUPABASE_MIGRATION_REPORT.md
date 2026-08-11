@@ -6,13 +6,13 @@ Supabase Postgres = application database, Supabase RLS = tenant/security boundar
 RM-41 through RM-63. Cross-reference: `PHASE1_CHECKLIST.md` (full RM-01..63 tracking, both
 sessions) and `CONTRIBUTING.md` (branching/commit convention).
 
-**Headline: Milestone 1 is NOT complete.** The database schema, its constraints, its RLS
-policies, and the write-path code are fully authored and internally verified (typecheck +
-test suite), but none of it has been applied to the live Supabase project, and the auth/RBAC/
-route-guard/RLS-test layers that depend on a live database are correspondingly unbuilt or
-partial. The single blocker behind nearly everything unfinished here is the same one:
-**the Supabase Postgres `DATABASE_URL` (the database password) was never provided** — only
-the Auth/REST API keys were.
+**Headline: the database migration is now LIVE and verified.** The Supabase Postgres
+`DATABASE_URL` was provided, debugged (see §3), and used to apply all 5 migrations to the
+actual project — schema, foreign keys, indexes, triggers, and RLS policies are confirmed
+present on the live database via direct queries, not just generated/authored locally.
+Milestone 1 as a whole is still NOT complete: the auth/RBAC/route-guard/RLS-test layers that
+depend on this database are the next dependency-chain step and haven't been built yet, and
+RM-57 (Super Admin) remains an open client decision.
 
 ---
 
@@ -21,20 +21,20 @@ the Auth/REST API keys were.
 | RM | Task | Status |
 |---|---|---|
 | RM-41 | Provision Supabase project | ✅ Done — project `rhgzcgcqlypuvislwjlf` |
-| RM-42 | Record connection strings | 🔶 Partial — API keys recorded in `.env`; Postgres `DATABASE_URL` still missing |
-| RM-43 | Schema translation (MySQL → Postgres) | ✅ Done — 53/53 tables, `drizzle/schema.ts` |
-| RM-44 | Foreign keys | ✅ Done — ~65 relationships, explicit ON DELETE policy per table |
-| RM-45 | Indexes | ✅ Done — one per FK column + status-column indexes |
+| RM-42 | Record connection strings | ✅ Done — `DATABASE_URL` (pooler) + all API keys recorded in `.env` |
+| RM-43 | Schema translation (MySQL → Postgres) | ✅ **Live** — 53/53 tables confirmed on the actual database |
+| RM-44 | Foreign keys | ✅ **Live** — 65 foreign keys confirmed on the actual database |
+| RM-45 | Indexes | ✅ **Live** — 126 indexes confirmed on the actual database |
 | RM-46 | Rewrite MySQL-specific write-path code | ✅ Done — 0 remaining `insertId`/`affectedRows`/`onDuplicateKeyUpdate`/1062 patterns |
 | RM-47 | Data migration | ✅ Done — confirmed no production data exists; nothing to migrate |
-| RM-48 | RLS policies | ✅ Authored & internally verified (53/53 tables) — **not yet applied to a live DB** |
+| RM-48 | RLS policies | ✅ **Live** — 53/53 tables RLS enabled+forced, 102 policies confirmed on the actual database |
 | RM-49 | Client decision: Path A vs Path B | ✅ Resolved — Path A |
-| RM-50..54 | Login/OAuth/MFA/password-reset migration | 🔶 Foundation built (Supabase clients + JWT verification, unit-tested) — live wiring blocked on `DATABASE_URL` |
-| RM-55 | RBAC rebuild on Supabase session | ⏭ Blocked on RM-50..54 completing |
+| RM-50..54 | Login/OAuth/MFA/password-reset migration | 🔶 Foundation built (Supabase clients + JWT verification, unit-tested) — live wiring is the next step, now unblocked |
+| RM-55 | RBAC rebuild on Supabase session | ⏭ Next after RM-50..54 |
 | RM-56 | Fix `solutions.ts` `adminList*` inconsistency | ✅ Done (prior session) |
 | RM-57 | Super Admin role decision | ⛔ **STOP — investigated, insufficient repo information, flagged for client** (§12) |
-| RM-58/59 | Route guards on Supabase session model | ⏭ Blocked on RM-50..55 |
-| RM-60 | RLS negative test suite | ⏭ Blocked on RM-48 being live (needs a real DB to test against) |
+| RM-58/59 | Route guards on Supabase session model | ⏭ Next after RM-50..55 |
+| RM-60 | RLS negative test suite | ⏭ RLS is live and ready to test against — not yet written |
 | RM-61..63 | Environment separation | 🔶 Partial — `.gitignore`/docs done; Supabase project-separation is a client account decision |
 
 RM-01..40 (repository cleanup through bug fixes) were completed in the prior session — see
@@ -85,14 +85,43 @@ Five migrations, in order, forming the complete Postgres migration history:
 | 0003 | `0003_add_auth_user_id.sql` | Add `users.authUserId uuid unique` (Supabase Auth link) |
 | 0004 | `0004_rls_policies.sql` | RLS helper functions + policies, all 53 tables |
 
-**Not yet applied to the live database.** Applying requires `DATABASE_URL` and, for 0004
-specifically, running as (or granting) a role with permission to create policies — a normal
-Supabase project owner/service connection has this by default.
+**Applied to the live database via `npx drizzle-kit migrate`, and verified with direct SQL
+queries against the actual project** (not just re-running `generate` locally): `select count(*)
+from information_schema.tables` → 53, `pg_class.relrowsecurity`/`relforcerowsecurity` → 53/53,
+`pg_policies` → 102 rows, `pg_trigger` → 18, `information_schema.table_constraints` (FK) → 65,
+`pg_indexes` → 126, `pg_proc` → all 5 RLS helper functions + `set_updated_at`.
 
-`0004` additionally requires the `authUserId` FK to Supabase's own `auth.users(id)` table to
-be added by hand once live (Drizzle's schema DSL only models the `public` schema) —
-documented inline in `drizzle/schema.ts`'s `authUserId` column comment; not yet added as SQL
-anywhere since it can't be tested without a live `auth` schema to reference.
+Two real problems surfaced and were fixed while getting here, both worth recording:
+
+1. **The `DATABASE_URL` the client provided was corrupted in transit.** Part of the password
+   (a URL-percent-encoded `%40` for a literal `@` character, followed by the host) had been
+   turned into a Markdown mailto-link (`%[...](mailto:...)`) somewhere between where the value
+   was copied and where it landed in `.env`, plus a stray backslash before the first colon —
+   consistent with having passed through a Markdown-rendering surface at some point. Diagnosed
+   from the exact corruption pattern and reconstructed; the password itself was never echoed
+   back in chat.
+2. **The reconstructed URL then failed with `CONNECT_TIMEOUT`.** `nslookup` showed Supabase's
+   direct-connection host (`db.<ref>.supabase.co`, port 5432) resolves to an IPv6 address only
+   — no IPv4 record — and this machine has IPv6 disabled on every network adapter
+   (confirmed via `Get-NetAdapterBinding`). This is a known Supabase situation; the fix is
+   their **connection pooler** (Supavisor, port 6543, IPv4-reachable) instead of the direct
+   host — the client supplied that pooler URL and it connected immediately.
+3. **The first `drizzle-kit migrate` run then failed mid-way** with Postgres NOTICE-level
+   "identifier will be truncated" messages escalating into a real parse error. Root cause: this
+   report's own migration file, `drizzle/0002_updated_at_triggers.sql`, documented drizzle-kit's
+   statement-separator convention by quoting it literally in a comment (`"--> statement-
+   breakpoint"`) — drizzle-kit's migration-file splitter does a plain substring match for that
+   marker, so it split the file at that spurious in-comment occurrence too, corrupting
+   everything after it. The run is transactional: it failed cleanly with **zero tables created**
+   (verified before touching anything further). Fixed by rephrasing the comment to no longer
+   contain the literal marker string, then re-ran successfully.
+
+`authUserId`'s FK to Supabase's own `auth.users(id)` table (documented inline in
+`drizzle/schema.ts`'s column comment as needing to be added by hand, since Drizzle's schema DSL
+only models the `public` schema) has **not** been added yet — small, safe, and now possible
+since the database is live, but deliberately left for the RM-50..54 auth-wiring pass so it
+lands alongside the code that actually populates that column, rather than as an isolated
+constraint with nothing writing to it yet.
 
 ---
 
@@ -160,8 +189,12 @@ RLS, anyone holding that key could query any table directly, bypassing the backe
 This migration closes that off as defense-in-depth; it does not require rewriting the
 backend's own privileged-connection queries (table owners bypass RLS by default).
 
-**Not yet done:** applying this to the live database, and therefore RM-60 (the negative
-cross-tenant test suite this policy set is supposed to defend) — both blocked on `DATABASE_URL`.
+**Live and verified** (§3): 53/53 tables RLS-enabled and forced, 102 policies, all 5 helper
+functions present. The backend's own `postgres-js` connection (`server/db/connection.ts`) uses
+the same `postgres` role that owns these tables (it ran the migrations), so it bypasses RLS by
+design and needs no changes — only `anon`/`authenticated` PostgREST access is now restricted.
+**Not yet done:** RM-60, the negative cross-tenant test suite this policy set is supposed to
+defend — RLS is live and ready to test against, but the suite itself hasn't been written yet.
 
 ---
 
@@ -251,17 +284,15 @@ appears — verify usage first."
 
 ## 9. Environment variables required
 
-**Already configured** (in the local, gitignored `.env` — never committed, never echoed):
+**Now fully configured** (in the local, gitignored `.env` — never committed, never echoed):
 `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_JWKS_URL`,
-`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `DATABASE_URL` (the connection
+**pooler** URL — `postgresql://postgres.<ref>:[password]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres`
+— not the direct-connection host, which is IPv6-only and unreachable from this environment;
+see §3 for the full diagnosis).
 
-**Still required from the client — this is the primary blocker:**
-- `DATABASE_URL` — the Supabase project's direct Postgres connection string, **with the
-  database password** (Project Settings → Database → Connection string). This is a different
-  credential from the four API keys above; none of them substitute for it.
-
-**Documented but unrelated to this session's blocker** (pre-existing, unchanged):
-`JWT_SECRET`, `NODE_ENV`, `PORT`, and the full set in `ENV_TEMPLATE.txt`.
+**Documented, pre-existing, unchanged this session:** `JWT_SECRET`, `NODE_ENV`, `PORT`, and the
+full set in `ENV_TEMPLATE.txt`.
 
 `ENV_TEMPLATE.txt` was updated to stop describing `DATABASE_URL` as a MySQL/TiDB string, and
 now documents the environment-separation convention for RM-61..63 (§1).
@@ -276,6 +307,7 @@ now documents the environment-separation convention for RM-61..63 (§1).
 | `npx tsc --noEmit` (`pnpm run check`) | ✅ **0 errors** |
 | `npx vitest run` (`pnpm run test`) | ✅ **355/355 passing, 15 skipped** (up from 350 — 5 new tests for `supabaseAuth.ts`) |
 | `drizzle-kit generate` | ✅ Ran repeatedly through the session; final run reports "No schema changes, nothing to migrate" — confirms `drizzle/schema.ts` and the 0004 snapshot are in sync |
+| `drizzle-kit migrate` against the live Supabase project | ✅ **All 5 migrations applied.** First attempt failed cleanly (transactional, 0 tables created) on a bug in `0002`'s own comment (see §3); fixed and re-ran successfully. Verified via direct SQL: 53 tables, 65 FKs, 126 indexes, 18 triggers, 53/53 RLS-enabled+forced, 102 policies, 6 functions |
 | Manus/TiDB/custom-auth dependency search | ✅ Done — full classification in §8 |
 | Hardcoded-secret search | ✅ Clean — no `sb_secret_`/`sb_publishable_` literals in tracked files, no secret values in any new/modified file |
 | RLS policy review | ✅ Done — 53/53 tables, verified programmatically against the schema's table list, no `USING (true)` |
@@ -295,23 +327,26 @@ frozen" pattern from the start to avoid reintroducing the same bug class.
 
 ## 11. Remaining blockers
 
-1. **`DATABASE_URL` (Supabase Postgres connection string + password) — the central blocker.**
-   Without it: no migration can be applied to the live database; RLS policies can't be
-   activated; the Supabase Auth foundation can't be wired into the real login flow (needs to
-   read/write `users.authUserId`); RM-55 (RBAC), RM-58/59 (route guards), and RM-60 (RLS
-   negative tests) all cascade from this.
-2. Everything already listed as externally blocked in the prior session
+**The `DATABASE_URL` blocker is resolved** — the database is live and verified (§3). What
+remains is genuinely different in kind from "waiting on a credential":
+
+1. **RM-50..54 auth wiring itself** — not blocked on anything external anymore, just not yet
+   built: wiring Supabase Auth into `context.ts`/tRPC, the actual login/signup/OAuth routes,
+   `users.authUserId` linkage (+ its FK to `auth.users`, §3), and MFA/password-reset re-keying.
+   This is implementation work, next in the dependency chain.
+2. RM-55 (RBAC) and RM-58/59 (route guards) — depend on #1 landing first.
+3. RM-60 (RLS negative test suite) — RLS itself is live; the test suite hasn't been written.
+4. Everything already listed as externally blocked in the prior session
    (`PHASE1_CHECKLIST.md` §"Blocked on external provider/account access") — secrets rotation,
-   GitHub org/branch-protection settings, etc. — unchanged by this session.
-3. Supabase project-separation for staging vs. production (RM-61..63) depends on the client's
+   GitHub org/branch-protection settings, etc. — unrelated to the database, unchanged.
+5. Supabase project-separation for staging vs. production (RM-61..63) depends on the client's
    Supabase account/billing decisions, not code.
 
 ---
 
 ## 12. Client decisions still required
 
-1. **Provide `DATABASE_URL`** (§9, §11) — unblocks the largest remaining chunk of work.
-2. **RM-57 — Super Admin role.** Investigated thoroughly; the repository has no super-admin
+1. **RM-57 — Super Admin role.** Investigated thoroughly; the repository has no super-admin
    tier anywhere (schema, enforcement code, or design intent beyond a comment reading "leave
    room for a future distinction"). Specific decisions needed: (a) new enum value vs. flag vs.
    other representation; (b) what a Super Admin can do that a regular Admin cannot — never
@@ -319,9 +354,9 @@ frozen" pattern from the start to avoid reintroducing the same bug class.
    existing `OWNER_OPEN_ID` pattern) vs. an assignable role. See `PHASE1_CHECKLIST.md`
    Workstream 2.11 for the full evidence trail. **Nothing was invented in place of this
    decision**, per explicit instruction.
-3. Whether staging and production should be separate Supabase projects or one project with
+2. Whether staging and production should be separate Supabase projects or one project with
    logical separation (RM-61..63) — an account/billing decision, not a code one.
-4. Whether Manus OAuth (Google/Microsoft/Apple sign-in currently routed through Manus's
+3. Whether Manus OAuth (Google/Microsoft/Apple sign-in currently routed through Manus's
    gateway, per §8's REPLACE list) should be preserved as a login option once Supabase Auth is
-   live, or dropped — affects the scope of the RM-50..54 wiring work once `DATABASE_URL`
-   unblocks it.
+   live, or dropped — affects the scope of the RM-50..54 wiring work, now unblocked and ready
+   to start.

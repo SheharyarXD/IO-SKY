@@ -10,8 +10,11 @@
 --
 -- Hand-written (not drizzle-kit generated): Drizzle's schema DSL has no way to express
 -- trigger DDL, so this file was authored directly and slotted into the migration
--- sequence after 0001. It follows the same "--> statement-breakpoint" convention
--- drizzle-kit uses so drizzle-kit's migrator can still apply it statement-by-statement.
+-- sequence after 0001. It follows the same statement-separator convention drizzle-kit
+-- uses so drizzle-kit's migrator can still apply it statement-by-statement (see the
+-- separator lines below this comment block — deliberately not spelled out literally
+-- here, since drizzle-kit's migration-file splitter matches on that exact substring
+-- wherever it appears in the file, including inside comments).
 
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
