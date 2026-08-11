@@ -58,6 +58,7 @@ export const appRouter = router({
           identifier: z.string().email().max(320).nullable().optional(),
           provider: z.enum([
             "manus",
+            "supabase",
             "google",
             "microsoft",
             "apple",

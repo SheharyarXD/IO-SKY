@@ -78,6 +78,77 @@ export async function getUserByOpenId(openId: string) {
 }
 
 /**
+ * RM-50: lookup a user by their linked Supabase Auth identity
+ * (users.authUserId, a uuid pointing at auth.users.id).
+ */
+export async function getUserByAuthUserId(authUserId: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get user: database not available");
+    return undefined;
+  }
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.authUserId, authUserId))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * RM-50: link an existing (Manus-era) user row to its Supabase Auth
+ * identity — used the first time that user successfully signs in via
+ * Supabase (matched by email). Does not touch role/openId/anything else.
+ */
+export async function linkAuthUserId(
+  userId: number,
+  authUserId: string,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ authUserId }).where(eq(users.id, userId));
+}
+
+/**
+ * RM-50: create a brand-new `users` row for a Supabase-native identity that
+ * has no prior Manus-era account (no existing row matched by authUserId or
+ * email). `openId` is still populated (it's `NOT NULL UNIQUE` — see
+ * drizzle/schema.ts) with a synthetic `supabase:<authUserId>` value so every
+ * piece of downstream code that still keys off `openId` (session cookies,
+ * audit logs, role redirects) keeps working unchanged — see
+ * server/_core/supabaseAuthRoute.ts's file header for the full rationale.
+ *
+ * Role defaults to "user", same as every other new account — there is no
+ * Supabase-identity equivalent of the Manus-only `OWNER_OPEN_ID`
+ * auto-admin-promotion in upsertUser() above (that comparison is against
+ * the Manus openId specifically); promoting a Supabase-native owner account
+ * to admin is a manual/admin-panel action, not something this function
+ * should guess at.
+ */
+export async function createUserFromSupabase(input: {
+  authUserId: string;
+  email: string | null;
+  name?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("[Database] Cannot create user: database not available");
+  }
+  const rows = await db
+    .insert(users)
+    .values({
+      openId: `supabase:${input.authUserId}`,
+      authUserId: input.authUserId,
+      email: input.email,
+      name: input.name ?? null,
+      loginMethod: "supabase",
+      lastSignedIn: new Date(),
+    })
+    .returning();
+  return rows[0];
+}
+
+/**
  * Lookup a user by email address for local-password authentication.
  * Returns undefined when the user doesn't exist or hasn't been issued
  * a password (OAuth-only accounts).

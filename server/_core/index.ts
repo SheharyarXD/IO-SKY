@@ -6,6 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerMfaChallengeRoutes } from "./mfaChallengeRoute";
 import { registerOAuthRoutes } from "./oauth";
 import { registerLocalAuthRoutes } from "./localAuthRoute";
+import { registerSupabaseAuthRoutes } from "./supabaseAuthRoute";
 import { registerStorageProxy } from "./storageProxy";
 import { registerViewAsRoutes } from "./viewAsRoute";
 import { registerStagingGate } from "./stagingGate";
@@ -43,6 +44,7 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerLocalAuthRoutes(app);
+  registerSupabaseAuthRoutes(app);
   registerMfaChallengeRoutes(app);
   registerViewAsRoutes(app);
   // tRPC API

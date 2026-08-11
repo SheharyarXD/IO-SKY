@@ -36,6 +36,13 @@
       "when": 1786433500000,
       "tag": "0004_rls_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786500000000,
+      "tag": "0005_auth_users_fk",
+      "breakpoints": true
     }
   ]
 }
