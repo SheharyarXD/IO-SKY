@@ -76,6 +76,16 @@ export function registerSupabaseAuthRoutes(app: Express) {
       // Resolve to a users row: by authUserId (already linked), else by
       // email (a Manus-era account signing in via Supabase for the first
       // time), else create a brand-new row.
+      //
+      // NOTE: despite its name/doc comment, getUserByEmailWithPassword()'s
+      // actual query is a plain `WHERE email = ?` with no passwordHash
+      // filter - verified directly against its implementation (server/db/
+      // users.ts). This linking path deliberately relies on that broader
+      // behavior to match OAuth-origin accounts (which have no password)
+      // by email too, not just local-password ones. If that function is
+      // ever changed to actually filter by passwordHash IS NOT NULL (to
+      // match its name), this call site needs to switch to a real
+      // password-agnostic lookup instead.
       let user = await db.getUserByAuthUserId(claims.sub);
       if (!user && email) {
         const existingByEmail = await db.getUserByEmailWithPassword(email).catch(() => undefined);

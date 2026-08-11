@@ -167,7 +167,7 @@ export const clientPortalRouter = router({
       try {
         await appendLoginAudit({
           userId: ctx.user.id,
-          provider: "manus-oauth",
+          provider: ctx.user.loginMethod || "unknown",
           outcome: "success",
           reason: `profile-update:name:${input.name.slice(0, 80)}`,
           ip: null,
@@ -186,7 +186,7 @@ export const clientPortalRouter = router({
       try {
         await appendLoginAudit({
           userId: ctx.user.id,
-          provider: "manus-oauth",
+          provider: ctx.user.loginMethod || "unknown",
           outcome: "success",
           reason: input.method === "none"
             ? "mfa-disabled"
@@ -228,7 +228,7 @@ export const clientPortalRouter = router({
       try {
         await appendLoginAudit({
           userId: ctx.user.id,
-          provider: "manus-oauth",
+          provider: ctx.user.loginMethod || "unknown",
           outcome: "success",
           reason: everywhere
             ? "session-revoke:everywhere"

@@ -9,6 +9,7 @@
  * All times are passed and returned in UTC milliseconds. Conversion to a
  * user's IANA timezone happens at the edges (UI and reminder dispatch).
  */
+import { randomBytes } from "crypto";
 import {
   cancelBookingSlot,
   confirmBookingSlot,
@@ -330,14 +331,20 @@ export function getBookingAdapter(): BookingAdapter {
 // Token helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Used for booking-slot hold tokens (server/_core/booking/index.ts's
+ * holdToken) — a capability token that gates who can claim/confirm a held
+ * slot, not just a display label, so this must be a CSPRNG. Previously had
+ * a Math.random() fallback for environments lacking `globalThis.crypto`;
+ * removed it — Node.js (this app's only server runtime) has guaranteed
+ * `crypto.randomBytes` support, so the fallback was both dead in practice
+ * and a latent security weakening if it ever *did* trigger.
+ */
 function randomToken(len: number): string {
-  const bytes = new Uint8Array(len);
-  if (typeof globalThis.crypto !== "undefined" && "getRandomValues" in globalThis.crypto) {
-    globalThis.crypto.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < len; i++) bytes[i] = Math.floor(Math.random() * 256);
-  }
-  return Array.from(bytes).map((b) => b.toString(36)).join("").slice(0, len);
+  // ceil(len/2) bytes -> hex-encodes to at least `len` characters (2 hex
+  // chars per byte) before the slice, so every requested character is
+  // backed by real random-byte entropy rather than being truncated away.
+  return randomBytes(Math.ceil(len / 2)).toString("hex").slice(0, len);
 }
 
 export { randomToken };

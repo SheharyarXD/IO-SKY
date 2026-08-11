@@ -128,7 +128,10 @@ export function registerViewAsRoutes(app: Express) {
     try {
       await db.appendLoginAudit({
         userId: admin.id,
-        provider: "manus",
+        // Was hardcoded "manus" - wrong for admins authenticated via the
+        // Supabase Auth bridge (RM-50) or local-password login. Reflects
+        // the account's actual last-known login method instead.
+        provider: admin.loginMethod || "unknown",
         outcome: "success",
         reason: `admin.view_as.enter.${target} :: ${reason.slice(0, 80)}`,
         ip: req.ip ?? null,
@@ -164,7 +167,7 @@ export function registerViewAsRoutes(app: Express) {
         if (real) {
           await db.appendLoginAudit({
             userId: real.id,
-            provider: "manus",
+            provider: real.loginMethod || "unknown",
             outcome: "success",
             reason: `admin.view_as.exit.${claim.target}`,
             ip: req.ip ?? null,
