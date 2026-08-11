@@ -6,13 +6,14 @@ Supabase Postgres = application database, Supabase RLS = tenant/security boundar
 RM-41 through RM-63. Cross-reference: `PHASE1_CHECKLIST.md` (full RM-01..63 tracking, both
 sessions) and `CONTRIBUTING.md` (branching/commit convention).
 
-**Headline: the database migration is now LIVE and verified.** The Supabase Postgres
-`DATABASE_URL` was provided, debugged (see §3), and used to apply all 5 migrations to the
-actual project — schema, foreign keys, indexes, triggers, and RLS policies are confirmed
-present on the live database via direct queries, not just generated/authored locally.
-Milestone 1 as a whole is still NOT complete: the auth/RBAC/route-guard/RLS-test layers that
-depend on this database are the next dependency-chain step and haven't been built yet, and
-RM-57 (Super Admin) remains an open client decision.
+**Headline: RM-41 through RM-60 are all done and live-verified.** The Supabase Postgres
+database is live (schema, FKs, indexes, triggers, RLS — §3/§5), Supabase Auth is wired into the
+real login flow and verified end-to-end against the actual project (§6), RBAC needed zero code
+changes and that's now proven with a dedicated test suite (§7), the three portal route guards
+are consolidated into one shared hook (§7a), and an 18-test negative RLS suite runs against the
+live database through the real PostgREST API (§5a). What's left for Milestone 1: RM-57 (Super
+Admin) is a genuine open client decision, and a handful of tasks remain externally blocked
+(secrets rotation, branch protection, CI-run verification — none of them database-related).
 
 ---
 
@@ -29,12 +30,12 @@ RM-57 (Super Admin) remains an open client decision.
 | RM-47 | Data migration | ✅ Done — confirmed no production data exists; nothing to migrate |
 | RM-48 | RLS policies | ✅ **Live** — 53/53 tables RLS enabled+forced, 102 policies confirmed on the actual database |
 | RM-49 | Client decision: Path A vs Path B | ✅ Resolved — Path A |
-| RM-50..54 | Login/OAuth/MFA/password-reset migration | 🔶 Foundation built (Supabase clients + JWT verification, unit-tested) — live wiring is the next step, now unblocked |
-| RM-55 | RBAC rebuild on Supabase session | ⏭ Next after RM-50..54 |
+| RM-50..54 | Login/OAuth/MFA/password-reset migration | ✅ **Wired and live-verified end-to-end** (§6) |
+| RM-55 | RBAC rebuild on Supabase session | ✅ Verified — zero code changes needed, proven with a 21-test suite (§7) |
 | RM-56 | Fix `solutions.ts` `adminList*` inconsistency | ✅ Done (prior session) |
 | RM-57 | Super Admin role decision | ⛔ **STOP — investigated, insufficient repo information, flagged for client** (§12) |
-| RM-58/59 | Route guards on Supabase session model | ⏭ Next after RM-50..55 |
-| RM-60 | RLS negative test suite | ⏭ RLS is live and ready to test against — not yet written |
+| RM-58/59 | Route guards on Supabase session model | ✅ Shared `useRouteGuard` hook, all 3 portals migrated (§7a) |
+| RM-60 | RLS negative test suite | ✅ 18 tests, live against the real database (§5a) |
 | RM-61..63 | Environment separation | 🔶 Partial — `.gitignore`/docs done; Supabase project-separation is a client account decision |
 
 RM-01..40 (repository cleanup through bug fixes) were completed in the prior session — see
@@ -44,32 +45,49 @@ RM-01..40 (repository cleanup through bug fixes) were completed in the prior ses
 
 ## 2. Exact files changed this session
 
-**New files:**
+**New files — database/migrations:**
 - `drizzle/0000_slim_santa_claus.sql` — baseline Postgres schema (53 tables, ~47 enums)
 - `drizzle/0001_futuristic_nekra.sql` — foreign keys + indexes
 - `drizzle/0002_updated_at_triggers.sql` — hand-written `set_updated_at()` trigger (Postgres replacement for MySQL's `.onUpdateNow()`), applied to the 18 tables with an `updatedAt` column
 - `drizzle/0003_add_auth_user_id.sql` — `users.authUserId` (uuid, links to Supabase `auth.users.id`)
 - `drizzle/0004_rls_policies.sql` — RLS helper functions + policies for all 53 tables
-- `drizzle/meta/0000_snapshot.json` .. `0004_snapshot.json` (+ updated `_journal.json`)
+- `drizzle/0005_auth_users_fk.sql` — `users.authUserId` FK to Supabase's `auth.users(id)`, `ON DELETE SET NULL`
+- `drizzle/meta/0000_snapshot.json` .. `0005_snapshot.json` (+ updated `_journal.json`)
 - `drizzle/_archive_mysql_migrations/` — the 13 original MySQL migrations, preserved for history (prior session)
+
+**New files — auth:**
 - `server/_core/supabaseAuth.ts` — Supabase admin client + `verifySupabaseAccessToken()`
-- `server/supabaseAuth.test.ts` — 5 unit tests for the above
+- `server/_core/supabaseAuthRoute.ts` — `POST /api/auth/supabase/session` bridge endpoint
+- `server/supabaseAuth.test.ts` (5 tests), `server/rbac.authOrigin.test.ts` (21 tests), `server/rls.negative.test.ts` (18 tests, live)
 - `client/src/lib/supabase.ts` — Supabase browser client (publishable key only)
+- `client/src/pages/ResetPassword.tsx` — password-reset completion page
+- `client/src/_core/hooks/useRouteGuard.ts` — shared route-guard logic (RM-58/59)
+- `client/src/_core/hooks/useRouteGuard.test.ts` (6 tests)
+- `server/auth.recordAttempt.test.ts` (3 tests)
 
 **Modified files:**
 - `drizzle/schema.ts` — full MySQL→Postgres rewrite (53 tables) + FKs/indexes + `authUserId`
 - `drizzle.config.ts` — `dialect: "postgresql"`, `dbCredentials.url` from `DATABASE_URL`
 - `server/db/connection.ts` — `drizzle-orm/postgres-js` + `postgres` (was `drizzle-orm/mysql2`)
-- `server/db/{aiScans,bookings,clientPortal,crm,developerWorkspace,mfa,solutions,users}.ts` — MySQL write-path rewrite (RM-46)
+- `server/db/{aiScans,bookings,clientPortal,crm,developerWorkspace,mfa,solutions,users}.ts` — MySQL write-path rewrite (RM-46) + `users.ts`: `getUserByAuthUserId`/`linkAuthUserId`/`createUserFromSupabase` (RM-50)
 - `server/_core/env.ts` — added `supabaseUrl`/`supabasePublishableKey`/`supabaseSecretKey`/`supabaseJwksUrl`
+- `server/_core/index.ts` — registered `registerSupabaseAuthRoutes`
+- `server/routers.ts` — added `"supabase"` to `auth.recordAttempt`'s provider enum
 - `server/{bookingAdmin,bookings,viewAs}.test.ts` — `JWT_SECRET` test-setup fix (see §10)
+- `client/src/pages/Login.tsx` — Supabase sign-in tried first (falls back to local-password), real password reset
+- `client/src/pages/App.tsx` — registered `/reset-password` route
+- `client/src/_core/hooks/useAuth.ts` — logout also calls `supabase.auth.signOut()`
+- `client/src/pages/admin/components/AdminLayout.tsx`, `client/src/pages/client-portal/ClientPortal.tsx`, `client/src/pages/developer-workspace/DeveloperWorkspace.tsx` — migrated to the shared `useRouteGuard` hook, fixed hardcoded `provider: "manus"` audit logging
+- `vitest.config.ts` — added `client/src/**/*.test.ts` to the test glob (DOM-free logic only)
 - `package.json` / `pnpm-lock.yaml` — added `@supabase/supabase-js`, `postgres`; removed unused `mysql2`
 - `ENV_TEMPLATE.txt` — Supabase section, corrected stale MySQL/TiDB `DATABASE_URL` comment, environment-separation note
 - `.gitignore` — added `.env.development`, `.env.staging(.local)`, `.env.production` variants
 - `PHASE1_CHECKLIST.md` — full status update across every workstream touched this session
 
 No files were deleted this session (the MySQL migration archive move happened in the prior
-session and is preserved intact — 13 `.sql` files + 14 meta files confirmed present).
+session and is preserved intact — 13 `.sql` files + 14 meta files confirmed present). All of
+the above was pushed as a sequence of separate, reviewable commits (one per RM task) to both
+`origin` and `org` remotes, per `CONTRIBUTING.md`'s convention.
 
 ---
 
@@ -193,49 +211,156 @@ backend's own privileged-connection queries (table owners bypass RLS by default)
 functions present. The backend's own `postgres-js` connection (`server/db/connection.ts`) uses
 the same `postgres` role that owns these tables (it ran the migrations), so it bypasses RLS by
 design and needs no changes — only `anon`/`authenticated` PostgREST access is now restricted.
-**Not yet done:** RM-60, the negative cross-tenant test suite this policy set is supposed to
-defend — RLS is live and ready to test against, but the suite itself hasn't been written yet.
 
 ---
 
-## 6. Auth migration details
+## 5a. RLS negative test suite (RM-60)
 
-**Built and unit-tested (5 passing tests, `server/supabaseAuth.test.ts`):**
-- `server/_core/supabaseAuth.ts` — `getSupabaseAdmin()` (service-role client) and
-  `verifySupabaseAccessToken()` (verifies a Supabase Auth JWT against `SUPABASE_JWKS_URL` — no
-  DB round-trip needed, so this piece is genuinely testable without a live Postgres connection).
-  Reads `process.env` fresh at call time (not a frozen snapshot), matching the pattern fixed in
-  `env.ts` (§10) — avoids reintroducing the same staleness bug in new code.
-- `client/src/lib/supabase.ts` — browser client using only the publishable key (safe to expose
-  by design; access control is enforced by RLS, not key secrecy).
+`server/rls.negative.test.ts` — 18 tests, run against the **live** Supabase project through the
+real PostgREST API (the `anon`/`authenticated` Postgres roles), not the backend's own privileged
+connection and not mocked. `beforeAll` creates real fixtures via the service-role client (2
+organizations, 2 client users, 2 developer users, an admin user, a `client_reports` row, a
+`client_invoices` row, a `leads` row, a `legal_documents` row with one published and one draft
+`agreement_versions` row), then signs in as each test user through the actual Supabase Auth
+client SDK — the same code path a real browser would use. `afterAll` deletes every fixture row
+and every test Supabase Auth user; verified via direct query after each run (`users`/
+`organizations` back to 0 rows both times).
 
-**Deliberately NOT done yet, and why:** wiring this into `server/_core/context.ts` (so a
-Supabase session becomes `ctx.user` for tRPC procedures), building the actual Supabase
-login/signup/OAuth routes, linking `users.authUserId` on first Supabase login, and re-keying
-MFA/password-reset to the new identity. All of this reads and writes the live `users` table —
-attempting it without a working `DATABASE_URL` to test against would mean shipping unverified
-auth code, which the explicit working rule for this migration prohibits ("do not delete old
-auth implementation until replacement is actually wired and verified"). `server/_core/sdk.ts`
-(the current Manus-OAuth session system) is completely untouched and remains the live,
-working auth path — nothing about login/logout/session handling changed for end users this
-session.
+What's proven, concretely:
+- **Cross-tenant reads denied**: client B cannot see client A's org, `client_reports`,
+  `client_invoices`, or the `organizations` row itself.
+- **Cross-tenant writes denied**: client B's `UPDATE`/`DELETE` against client A's invoice/report
+  affects 0 rows — reconfirmed unchanged via a direct SQL read afterward, not just trusting the
+  API response.
+- **Admin-only tables denied** to both client and developer roles (`leads`).
+- **Unauthenticated (anon) denied** on every private table tested (`leads`, `client_reports`,
+  `organizations`).
+- **Developer-to-developer boundary denied**: developer Y cannot read developer X's
+  `developer_profiles` row; developer X can read their own; a client (non-developer) can read
+  neither.
+- **MFA tables return empty, not an error** — `mfa_factors` queried cross-tenant returns `[]`
+  rather than throwing, so the policy doesn't leak row existence through error behavior either.
+- **The one deliberate anon-readable carve-out is real and narrowly scoped**: an anonymous
+  request CAN read a `published` `agreement_versions` row and its parent `active`
+  `legal_documents` row (public ToS/Privacy pages need this), but CANNOT read a `draft` version
+  of the exact same document — proving the carve-out isn't accidentally `USING (true)`.
+
+Skips cleanly (`describe.skipIf`) when `DATABASE_URL`/`SUPABASE_*` aren't configured, which is
+the case in CI today — a live-infrastructure test suite has nothing to assert without real
+credentials, so it skips rather than failing or hanging. One real bug was found and fixed while
+building this: the first draft's `describe.skipIf` didn't actually prevent live Supabase clients
+from being constructed, because `describe.skipIf` only skips the `it()`/`beforeAll()` callbacks
+— the describe body itself still runs synchronously during test collection. Fixed by moving all
+client/connection construction into `beforeAll`; both the skip path (env vars cleared) and the
+live path (env vars present) were re-verified after the fix.
+
+---
+
+## 6. Auth migration details (RM-50..54)
+
+**Wired into the live login flow and verified end-to-end — not just built and left disconnected.**
+
+- `server/_core/supabaseAuthRoute.ts` (new) — `POST /api/auth/supabase/session`. Verifies a
+  Supabase Auth access token (`verifySupabaseAccessToken`, §previous), resolves the caller to a
+  `users` row (by `authUserId` if already linked, else by email match against a pre-existing
+  Manus-era account, else creates a brand-new row via `createUserFromSupabase`), mints the
+  **existing** `app_session_id` session cookie exactly the way `server/_core/oauth.ts`'s Manus
+  callback does, and runs the identical post-login MFA gate. Because it produces the same cookie
+  the rest of the app already understands, `context.ts`, every `*Procedure` in `trpc.ts`, MFA,
+  and admin impersonation all work correctly for Supabase-authenticated sessions **with zero
+  changes to any of them** — this was a deliberate "bridge" design over building a second,
+  competing session-verification path, documented in the file's header comment.
+- `server/db/users.ts`: `getUserByAuthUserId`, `linkAuthUserId`, `createUserFromSupabase`.
+- `client/src/pages/Login.tsx`: the email/password form now tries
+  `supabase.auth.signInWithPassword()` first; on failure (which is every existing account today,
+  since none have been migrated — see RM-47) it falls through unchanged to the existing
+  local-password endpoint. Real password reset via `supabase.auth.resetPasswordForEmail()` —
+  previously "Forgot password" only wrote an entry to `localStorage` and showed a fake "sent"
+  confirmation; no email was ever dispatched.
+- `client/src/pages/ResetPassword.tsx` (new) + an `App.tsx` route — completes the reset flow
+  (Supabase establishes a recovery session from the email link; the page collects a new password
+  via `supabase.auth.updateUser()`).
+- `client/src/_core/hooks/useAuth.ts`: logout also calls `supabase.auth.signOut()` (best-effort
+  — the app's own session cookie, cleared separately, is what actually gates access).
+- `drizzle/0005_auth_users_fk.sql`: `users.authUserId` FK to Supabase's own `auth.users(id)`,
+  `ON DELETE SET NULL` — deferred from the original RLS migration specifically until there was
+  real code populating the column; applied live and confirmed via `pg_constraint`.
+
+**Live end-to-end verification performed** (not mocked, not just unit tests): created a real
+Supabase Auth user via the admin API, signed in through the actual `@supabase/supabase-js`
+client (the same SDK the browser uses), verified the resulting access token through
+`verifySupabaseAccessToken()`, exercised the bridge's new-user-creation path (confirmed no
+duplicate row on a second lookup), exercised the existing-Manus-account email-linking path
+(created a legacy-shaped `users` row first, then signed in via Supabase with the same email —
+confirmed it linked to the existing row and preserved its `role`, didn't create a duplicate),
+and confirmed the `auth.users` foreign key genuinely rejects a fabricated, non-existent id. All
+8 checks passed. Every test row and test Supabase Auth user was deleted afterward — confirmed
+`select count(*) from users` = 0 post-cleanup.
+
+**`server/_core/sdk.ts` (the Manus-OAuth session system) is completely untouched** and remains
+the live path for every existing account — nothing about login/logout/session handling changed
+for a current user in this session, per the explicit rule not to remove working auth before its
+replacement is verified. This pass proves the replacement works; it does not cut over any real
+accounts to it.
 
 **Existing custom MFA system** (TOTP + SMS + recovery codes, `server/db/mfa.ts` +
-`server/_core/mfaChallenge.ts`) is preserved as-is. Per the RM-49 resolution's "preserve
-existing... rebuild enforcement around Supabase identity" language, the plan is to re-key it to
-`users.id` via the new `authUserId` link rather than replace it with Supabase's own built-in
-MFA feature — it's already built, tested, and race-condition-hardened (see prior session's
-RM-33 fix). This re-keying is part of the still-blocked RM-50..54 wiring work.
+`server/_core/mfaChallenge.ts`) required no re-keying work: it was already keyed on `users.id`,
+not on `openId`, so it works unchanged for any user regardless of which auth path produced their
+`ctx.user` — verified as part of the bridge's MFA-gate logic reusing the identical
+`listVerifiedMfaFactorsForUser`/`signMfaPending` calls `oauth.ts` uses.
+
+**Known scope limit, documented rather than silently decided**: session validity for the rest of
+a session's lifetime is governed by the app's own `JWT_SECRET`-signed cookie, not continuously
+re-checked against live Supabase session state — revoking a user in the Supabase dashboard does
+not immediately invalidate an already-issued app cookie. Full continuous revalidation would need
+a token-refresh mechanism this stateless-cookie model doesn't support today; that's a follow-up,
+not something decided silently.
 
 ---
 
-## 7. RBAC changes
+## 7. RBAC changes (RM-55)
 
-No RBAC changes this session — RM-55 is blocked on RM-50..54 completing (RBAC needs a live
-Supabase session to attach role checks to). The existing role model
-(`user`/`client`/`developer`/`admin`, `usersRoleEnum` in `drizzle/schema.ts`) is preserved
-unchanged in the new schema. `server/routers/solutions.ts`'s RBAC inconsistency (RM-56) was
-fixed in the prior session and remains fixed; not touched again here.
+**Verified, zero code changes required.** Every `*Procedure` middleware in `server/_core/trpc.ts`
+(`clientProcedure`, `developerProcedure`, `developerSelfProcedure`, `adminProcedure`) checks only
+`ctx.user.role`, `ctx.user.organizationId`, and `ctx.user.id` — never `openId` or anything else
+Manus-specific. Since RM-50's bridge resolves `ctx.user` to a real `users` row regardless of auth
+origin, RBAC was already correct for Supabase-authenticated sessions before this pass started;
+what this pass adds is proof, not code: `server/rbac.authOrigin.test.ts` (21 tests) exercises
+every procedure's rejection path with both a Manus-shaped `ctx.user` (real `openId`, no
+`authUserId`) and a Supabase-shaped one (synthetic `supabase:<uuid>` openId, `authUserId` set),
+asserting identical reject/accept behavior — proving role gating never branches on auth origin.
+The existing role model (`user`/`client`/`developer`/`admin`) is unchanged.
+`server/routers/solutions.ts`'s RBAC inconsistency (RM-56) was fixed in the prior session and
+remains fixed; not touched again here.
+
+---
+
+## 7a. Route guards (RM-58/59)
+
+Before this pass, `AdminLayout.tsx`, `ClientPortal.tsx`, and `DeveloperWorkspace.tsx` each
+independently reimplemented the same conceptual guard: a role→home-portal redirect mapping and
+an "is an admin impersonating this role" check, with `(user as any)` unsafe casts in two of the
+three. New `client/src/_core/hooks/useRouteGuard.ts` centralizes the two pieces that were
+genuinely identical across all three (`roleHome()`, mirroring the server's
+`roleBasedDestination()`; `isImpersonatingTarget()`, properly typed) and all three portal shells
+now import it. **Deliberately not unified**: each portal's choice of hard-redirect (Admin) vs.
+in-place "access denied" card (Client/Developer) for a wrong-role visitor — that's a real,
+pre-existing UX difference, not accidental duplication, and this environment still can't
+visually QA a forced unification (same reasoning the prior session applied when deferring
+RM-25/RM-26). Built on `useAuth()`/`trpc.auth.me`, which was already auth-source-agnostic per
+RM-55 — not a throwaway guard tied to the old session system.
+
+A real staleness bug was found and fixed while touching these files: `ClientPortal.tsx` and
+`DeveloperWorkspace.tsx` both hardcoded `provider: "manus"` in their portal-access audit calls
+regardless of how the user actually authenticated — harmless before RM-50 (everyone really was
+Manus-authenticated), actively wrong after it. Now uses the user's real `loginMethod` via a new
+`recordAttemptProvider()` helper.
+
+6 new unit tests (`useRouteGuard.test.ts`) cover the three exported pure functions.
+`vitest.config.ts` was extended to collect `client/src/**/*.test.ts` (previously server-only) —
+scoped deliberately to DOM-free logic, since there's no jsdom/React Testing Library setup in
+this project yet; that remains a separate decision. `npx vite build` was run to confirm the
+client bundles cleanly with the refactored imports (not just `tsc`).
 
 ---
 
@@ -295,7 +420,9 @@ see §3 for the full diagnosis).
 full set in `ENV_TEMPLATE.txt`.
 
 `ENV_TEMPLATE.txt` was updated to stop describing `DATABASE_URL` as a MySQL/TiDB string, and
-now documents the environment-separation convention for RM-61..63 (§1).
+now documents the environment-separation convention for RM-61..63 (§1). No new environment
+variables were introduced in the RM-50..60 work — the Supabase Auth bridge and RLS test suite
+reuse exactly the six variables already listed above.
 
 ---
 
@@ -304,13 +431,17 @@ now documents the environment-separation convention for RM-61..63 (§1).
 | Check | Result |
 |---|---|
 | `pnpm install` | ✅ Clean (this session added `@supabase/supabase-js`+`postgres`, removed unused `mysql2`) |
-| `npx tsc --noEmit` (`pnpm run check`) | ✅ **0 errors** |
-| `npx vitest run` (`pnpm run test`) | ✅ **355/355 passing, 15 skipped** (up from 350 — 5 new tests for `supabaseAuth.ts`) |
-| `drizzle-kit generate` | ✅ Ran repeatedly through the session; final run reports "No schema changes, nothing to migrate" — confirms `drizzle/schema.ts` and the 0004 snapshot are in sync |
-| `drizzle-kit migrate` against the live Supabase project | ✅ **All 5 migrations applied.** First attempt failed cleanly (transactional, 0 tables created) on a bug in `0002`'s own comment (see §3); fixed and re-ran successfully. Verified via direct SQL: 53 tables, 65 FKs, 126 indexes, 18 triggers, 53/53 RLS-enabled+forced, 102 policies, 6 functions |
+| `npx tsc --noEmit` (`pnpm run check`) | ✅ **0 errors**, re-checked after every meaningful change |
+| `npx vitest run` (`pnpm run test`) | ✅ **403/403 passing, 15 skipped** (up from 350 at the start of this session — 53 new tests: 5 `supabaseAuth`, 3 `auth.recordAttempt`, 21 `rbac.authOrigin`, 6 `useRouteGuard`, 18 `rls.negative`) |
+| `npx vite build` | ✅ Client bundles cleanly with the route-guard refactor's new imports |
+| `drizzle-kit generate` | ✅ Ran repeatedly through the session; final run reports "No schema changes, nothing to migrate" — confirms `drizzle/schema.ts` and the latest snapshot are in sync |
+| `drizzle-kit migrate` against the live Supabase project | ✅ **All 6 migrations applied** (0000–0005). First attempt at 0000-0004 failed cleanly (transactional, 0 tables created) on a bug in `0002`'s own comment (see §3); fixed and re-ran successfully. 0005 (the `auth.users` FK) applied cleanly on the first attempt. Verified via direct SQL: 53 tables, 65 FKs, 126 indexes, 18 triggers, 53/53 RLS-enabled+forced, 102 policies, 6 functions, `auth.users` FK present |
+| RLS negative test suite against the live database | ✅ 18/18 passing — see §5a for what's actually proven |
+| Live Supabase Auth end-to-end verification | ✅ 8/8 checks passing — see §6 |
 | Manus/TiDB/custom-auth dependency search | ✅ Done — full classification in §8 |
-| Hardcoded-secret search | ✅ Clean — no `sb_secret_`/`sb_publishable_` literals in tracked files, no secret values in any new/modified file |
-| RLS policy review | ✅ Done — 53/53 tables, verified programmatically against the schema's table list, no `USING (true)` |
+| Hardcoded-secret search | ✅ Clean — no `sb_secret_`/`sb_publishable_` literals in tracked files (only a fake placeholder in a test file), no secret values in any new/modified file |
+| Full git-history secret scan | ✅ Pattern-grepped the **entire** `git log -p` for AWS keys, Supabase secret keys, OpenAI-style keys, PEM private key blocks, embedded-password Postgres URLs, and JWT headers — zero real matches (only documentation placeholders) |
+| RLS policy review | ✅ Done — 53/53 tables, verified programmatically against the schema's table list, no `USING (true)`, and now also proven behaviorally by the live negative-test suite |
 | Service-role-key client exposure check | ✅ Clean — `SUPABASE_SECRET_KEY` referenced nowhere under `client/`; only `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` are `VITE_`-prefixed among the Supabase vars |
 | `.env`/secret-file gitignore verification | ✅ `git check-ignore -v .env` confirms coverage; `.gitignore` extended to cover every per-environment filename variant |
 | Final diff review | ✅ `git status`/`git diff --stat` reviewed — every change traceable to a specific RM task, no unexpected/stray files, no destructive changes to files outside this session's scope |
@@ -327,19 +458,22 @@ frozen" pattern from the start to avoid reintroducing the same bug class.
 
 ## 11. Remaining blockers
 
-**The `DATABASE_URL` blocker is resolved** — the database is live and verified (§3). What
-remains is genuinely different in kind from "waiting on a credential":
+RM-41 through RM-60 are done. What's left:
 
-1. **RM-50..54 auth wiring itself** — not blocked on anything external anymore, just not yet
-   built: wiring Supabase Auth into `context.ts`/tRPC, the actual login/signup/OAuth routes,
-   `users.authUserId` linkage (+ its FK to `auth.users`, §3), and MFA/password-reset re-keying.
-   This is implementation work, next in the dependency chain.
-2. RM-55 (RBAC) and RM-58/59 (route guards) — depend on #1 landing first.
-3. RM-60 (RLS negative test suite) — RLS itself is live; the test suite hasn't been written.
-4. Everything already listed as externally blocked in the prior session
-   (`PHASE1_CHECKLIST.md` §"Blocked on external provider/account access") — secrets rotation,
-   GitHub org/branch-protection settings, etc. — unrelated to the database, unchanged.
-5. Supabase project-separation for staging vs. production (RM-61..63) depends on the client's
+1. **RM-57 — Super Admin role.** Genuine open decision, not a blocker this session can resolve
+   in code — see §12.
+2. **Externally blocked, unrelated to the database or auth work**: RM-01 (confirm GitHub org),
+   RM-07..11 (secrets rotation — needs TiDB/Manus/AWS/deployment console access), RM-17 (branch
+   protection — also a deliberate decision, since it would immediately block the direct-push
+   workflow used to ship this session's work), RM-20 (CI-run verification — no `gh` CLI or
+   authenticated GitHub API access available here to check whether `.github/workflows/ci.yml`
+   actually ran on this session's pushes), RM-38 (cookie `SameSite`/`Secure` config — depends on
+   an undecided hosting/reverse-proxy setup).
+3. **Deliberately not attempted, per explicit instruction to only do so if safely testable**:
+   RM-15 (centralizing `process.env` reads — a ~15-file mechanical refactor, lower priority than
+   the security-critical work in this pass), RM-25/26/29/30 (UI/structural consolidations that
+   need visual QA this environment still can't perform).
+4. Supabase project-separation for staging vs. production (RM-61..63) depends on the client's
    Supabase account/billing decisions, not code.
 
 ---
@@ -358,5 +492,12 @@ remains is genuinely different in kind from "waiting on a credential":
    logical separation (RM-61..63) — an account/billing decision, not a code one.
 3. Whether Manus OAuth (Google/Microsoft/Apple sign-in currently routed through Manus's
    gateway, per §8's REPLACE list) should be preserved as a login option once Supabase Auth is
-   live, or dropped — affects the scope of the RM-50..54 wiring work, now unblocked and ready
-   to start.
+   live, or dropped — the login bridge itself (§6) is provider-agnostic and doesn't force this
+   decision either way, but real OAuth-via-Supabase would need providers configured in the
+   Supabase dashboard (external setup this session can't do or verify).
+4. Whether/when to actually migrate real user accounts onto Supabase Auth and retire the Manus
+   OAuth path — this session proves the replacement works end-to-end; it deliberately does not
+   cut over any real accounts, per the explicit rule not to remove working auth before its
+   replacement is verified. That cutover is a separate decision with its own rollout plan.
+5. Enable branch protection on `main` (RM-17) once ready to move off the direct-push workflow
+   this session used.
