@@ -13,7 +13,7 @@
  */
 import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation, useRouter } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useRouteGuard } from "@/_core/hooks/useRouteGuard";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import IOSkyLogo from "@/components/IOSkyLogo";
 import { cn } from "@/lib/utils";
@@ -112,7 +112,7 @@ export function AdminLayout({
   const [location, navigate] = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, roleHome } = useRouteGuard();
 
   // Tick the date/time chip once a minute so it doesn't feel frozen.
   useEffect(() => {
@@ -135,12 +135,7 @@ export function AdminLayout({
     }
     if (role && role !== "admin") {
       // Redirect to the role's home rather than gatekeeping in place.
-      const dest =
-        role === "client" || role === "client_member"
-          ? "/client-portal"
-          : role === "developer"
-          ? "/developer-workspace"
-          : "/";
+      const dest = roleHome(role);
       debugLog.log("admin_layout_redirect_wrong_role", { role, dest });
       // Use SPA navigate to avoid portal unmount race
       navigate(dest);

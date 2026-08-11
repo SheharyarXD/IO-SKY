@@ -5,7 +5,7 @@
  */
 import { useEffect } from "react";
 import { Redirect, useLocation, useRoute } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useRouteGuard, recordAttemptProvider } from "@/_core/hooks/useRouteGuard";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import ClientPortalLayout from "./components/ClientPortalLayout";
@@ -46,7 +46,7 @@ const SECTIONS = [
 export default function ClientPortal() {
   const [, params] = useRoute("/client-portal/:section*");
   const [location] = useLocation();
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, isImpersonatingTarget } = useRouteGuard();
   const rawSection = (params as Record<string, string | undefined> | null)?.["section*"] ?? "dashboard";
   const section = rawSection.split("/")[0] || "dashboard";
 
@@ -56,7 +56,7 @@ export default function ClientPortal() {
     if (!isAuthenticated || !user) return;
     recordAttempt.mutate({
       identifier: user.email ?? null,
-      provider: "manus",
+      provider: recordAttemptProvider(user.loginMethod),
       outcome: "success",
       reason: `client-portal:${section || "dashboard"}`,
     });
@@ -72,8 +72,7 @@ export default function ClientPortal() {
   // Impersonation: when an admin is in View-As-Client we let them through
   // and treat them as a virtual client (the real admin role stays on the
   // server context for adminProcedure access).
-  const impersonatingClient =
-    (user as any)?.impersonation?.active && (user as any)?.impersonation?.target === "client";
+  const impersonatingClient = isImpersonatingTarget(user, "client");
 
   // Role-based redirect away from client portal (skip when impersonating).
   if (user?.role === "admin" && !impersonatingClient) {

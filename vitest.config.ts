@@ -14,6 +14,16 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
+    // client/src/**/*.test.ts is scoped to pure, DOM-free logic only (e.g.
+    // client/src/_core/hooks/useRouteGuard.test.ts) - there is no
+    // jsdom/@testing-library setup in this project yet, so component/hook
+    // rendering tests still don't belong here. Broadening this further to
+    // cover component tests is a separate decision (new test environment,
+    // new dependency), not made as part of this change.
+    include: [
+      "server/**/*.test.ts",
+      "server/**/*.spec.ts",
+      "client/src/**/*.test.ts",
+    ],
   },
 });

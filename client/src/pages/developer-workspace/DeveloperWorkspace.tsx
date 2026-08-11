@@ -9,7 +9,7 @@
  */
 import { useEffect } from "react";
 import { Redirect, useLocation, useRoute } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useRouteGuard, recordAttemptProvider } from "@/_core/hooks/useRouteGuard";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import WorkspaceLayout from "./components/WorkspaceLayout";
@@ -45,7 +45,7 @@ const SECTIONS = [
 export default function DeveloperWorkspace() {
   const [, params] = useRoute("/developer-workspace/:section*");
   const [location] = useLocation();
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, isImpersonatingTarget } = useRouteGuard();
   const rawSection =
     (params as Record<string, string | undefined> | null)?.["section*"] ?? "overview";
   const section = rawSection.split("/")[0] || "overview";
@@ -58,7 +58,7 @@ export default function DeveloperWorkspace() {
     if (!isAuthenticated || !user) return;
     recordAttempt.mutate({
       identifier: user.email ?? null,
-      provider: "manus",
+      provider: recordAttemptProvider(user.loginMethod),
       outcome: "success",
       reason: `developer-workspace:${section || "overview"}`,
     });
@@ -72,8 +72,7 @@ export default function DeveloperWorkspace() {
   }
 
   // Impersonation breadcrumb (admin acting as developer).
-  const impersonatingDeveloper =
-    (user as any)?.impersonation?.active && (user as any)?.impersonation?.target === "developer";
+  const impersonatingDeveloper = isImpersonatingTarget(user, "developer");
 
   // Hard role redirects (skip when impersonating).
   if (user?.role === "client") {
