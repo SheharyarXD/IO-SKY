@@ -20,17 +20,7 @@ export async function createAiScan(
     console.warn("[Database] Cannot create AI scan: database not available");
     return null;
   }
-  const result = await db.insert(aiScans).values(input);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) return null;
-  const rows = await db
-    .select()
-    .from(aiScans)
-    .where(eq(aiScans.id, Number(insertId)))
-    .limit(1);
+  const rows = await db.insert(aiScans).values(input).returning();
   return rows[0] ?? null;
 }
 

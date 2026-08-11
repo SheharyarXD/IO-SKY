@@ -7,12 +7,19 @@
  *   - rejects garbage / empty / wrong-signature tokens
  *   - 30-minute expiry is enforced (skewed clock test)
  */
-import { describe, it, expect } from "vitest";
+import { beforeAll, describe, it, expect } from "vitest";
 import {
   signImpersonationToken,
   verifyImpersonationToken,
   IMPERSONATION_COOKIE,
 } from "./_core/viewAsRoute";
+
+beforeAll(() => {
+  // getCookieSecretBytes() (server/_core/env.ts) requires a real JWT_SECRET
+  // since the RM-12 fail-fast fix removed the empty-string fallback these
+  // tests previously relied on without realizing it.
+  process.env.JWT_SECRET = "test-secret-test-secret-test-secret-1234";
+});
 
 describe("View-As impersonation token", () => {
   it("round-trips a signed token and exposes the claim", async () => {

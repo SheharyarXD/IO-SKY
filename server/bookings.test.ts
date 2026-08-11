@@ -7,7 +7,15 @@
  *   - Mock the owner notification (`./_core/notification`).
  *   - Drive bookings.create / bookings.getByRef through appRouter.createCaller.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+beforeAll(() => {
+  // Booking action tokens (server/_core/booking/tokens.ts) require a real
+  // JWT_SECRET since the RM-12 fail-fast fix removed the hardcoded
+  // "iosky-dev-fallback-secret" fallback these tests previously relied on
+  // without realizing it.
+  process.env.JWT_SECRET = "test-secret-test-secret-test-secret-1234";
+});
 
 // ---------------------------------------------------------------------------
 // Mock modules BEFORE importing the router.

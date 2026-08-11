@@ -8,13 +8,29 @@
 # The frontend can ONLY read variables prefixed with VITE_. Never place a
 # secret behind a VITE_ prefix unless it is intentionally public
 # (e.g. logo URL, public app id).
+#
+# ENVIRONMENT SEPARATION (Milestone 1, RM-61..63): keep one env file per
+# environment — e.g. `.env.development`, `.env.staging`, `.env.production`
+# (or your host's equivalent secret-store separation) — and NEVER copy a
+# production DATABASE_URL/SUPABASE_SECRET_KEY/JWT_SECRET into a development
+# or staging file. Every one of the *.env* filename variants is already
+# gitignored (see .gitignore) so none of them are committable by accident.
+# Whether staging/production share one Supabase project (separated by RLS
+# and application-level scoping only) or use two fully separate Supabase
+# projects is a decision for whoever owns the Supabase billing/account — not
+# something this template can decide; document the choice here once made.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # CORE (required)
 # -----------------------------------------------------------------------------
-# MySQL / TiDB connection string.
-# Format: mysql://user:pass@host:port/db?ssl={"rejectUnauthorized":true}
+# Supabase PostgreSQL direct connection string (Milestone 1, RM-43: migrated
+# off MySQL/TiDB). Get this from the Supabase dashboard: Project Settings ->
+# Database -> Connection string. This is a SEPARATE credential from the
+# SUPABASE_* API keys below — the API keys authenticate against the Auth/
+# REST/Storage APIs, this is the actual Postgres password, required for
+# drizzle-kit migrate/push and the app's own postgres-js connection.
+# Format: postgresql://postgres:[password]@[host]:5432/postgres
 DATABASE_URL=
 
 # 32+ char random secret. Signs session cookies, impersonation tokens,
@@ -32,6 +48,29 @@ PORT=
 # Public base URL of the site (used to build email links: cancel/reschedule).
 PUBLIC_BASE_URL=https://iosky.nl
 VITE_PUBLIC_BASE_URL=https://iosky.nl
+
+# -----------------------------------------------------------------------------
+# SUPABASE (Milestone 1 migration target — RM-41/42)
+# Database: DATABASE_URL above must be the project's direct Postgres
+# connection string (Project Settings → Database) once the schema/driver
+# migration (RM-43/46) lands — the API keys below do NOT substitute for it,
+# they authenticate the Auth/REST/Storage APIs, not a raw Postgres connection.
+# -----------------------------------------------------------------------------
+SUPABASE_URL=
+# New-format Supabase API keys (publishable/secret), not the legacy
+# anon/service_role JWT pair.
+SUPABASE_PUBLISHABLE_KEY=
+# Server-only. Full data-plane access (bypasses RLS) — never expose to the
+# client, never prefix with VITE_.
+SUPABASE_SECRET_KEY=
+# Used for local/manual verification of Supabase-issued JWTs if ever needed
+# outside the supabase-js SDK's own session handling.
+SUPABASE_JWKS_URL=
+
+# Frontend — Vite only exposes VITE_-prefixed vars to the browser bundle.
+# The publishable key is safe to expose client-side by design.
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
 
 # -----------------------------------------------------------------------------
 # LLM + IMAGE GENERATION + VOICE + DATA API + MAPS + OWNER NOTIFICATIONS

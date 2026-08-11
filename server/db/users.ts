@@ -51,9 +51,12 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (Object.keys(updateSet).length === 0) {
       updateSet.lastSignedIn = new Date();
     }
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
+    // Postgres: onDuplicateKeyUpdate (MySQL) -> onConflictDoUpdate, targeting
+    // the unique column that would actually collide (openId).
+    await db
+      .insert(users)
+      .values(values)
+      .onConflictDoUpdate({ target: users.openId, set: updateSet });
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;

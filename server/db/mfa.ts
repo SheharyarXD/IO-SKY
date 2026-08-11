@@ -59,16 +59,17 @@ export async function insertMfaFactor(input: {
 }): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const result = await db.insert(mfaFactorsTable).values({
-    userId: input.userId,
-    kind: input.kind,
-    label: input.label ?? null,
-    secret: input.secret,
-    phoneHint: input.phoneHint ?? null,
-  });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId = (result as any)?.[0]?.insertId ?? (result as any)?.insertId;
-  return Number(insertId ?? 0);
+  const rows = await db
+    .insert(mfaFactorsTable)
+    .values({
+      userId: input.userId,
+      kind: input.kind,
+      label: input.label ?? null,
+      secret: input.secret,
+      phoneHint: input.phoneHint ?? null,
+    })
+    .returning({ id: mfaFactorsTable.id });
+  return rows[0]?.id ?? 0;
 }
 
 export async function markMfaFactorVerified(
@@ -226,19 +227,20 @@ export async function insertMfaChallenge(input: {
 }): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const result = await db.insert(mfaChallengesTable).values({
-    userId: input.userId,
-    state: input.state,
-    purpose: input.purpose ?? "login",
-    expectedKind: input.expectedKind ?? "any",
-    factorId: input.factorId ?? null,
-    expiresAt: input.expiresAt,
-    ip: input.ip ?? null,
-    userAgent: input.userAgent ?? null,
-  });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId = (result as any)?.[0]?.insertId ?? (result as any)?.insertId;
-  return Number(insertId ?? 0);
+  const rows = await db
+    .insert(mfaChallengesTable)
+    .values({
+      userId: input.userId,
+      state: input.state,
+      purpose: input.purpose ?? "login",
+      expectedKind: input.expectedKind ?? "any",
+      factorId: input.factorId ?? null,
+      expiresAt: input.expiresAt,
+      ip: input.ip ?? null,
+      userAgent: input.userAgent ?? null,
+    })
+    .returning({ id: mfaChallengesTable.id });
+  return rows[0]?.id ?? 0;
 }
 
 export async function getMfaChallengeByState(state: string) {

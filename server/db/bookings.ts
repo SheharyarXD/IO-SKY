@@ -47,22 +47,7 @@ export async function createBooking(input: InsertBooking): Promise<Booking | nul
     console.warn("[Database] Cannot create booking: database not available");
     return null;
   }
-  const result = await db.insert(bookings).values(input);
-  // mysql2 driver returns [ResultSetHeader, fields]; insertId on header.
-  // drizzle wraps this; cast through unknown for typing.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) {
-    console.warn("[Database] createBooking: insertId missing");
-    return null;
-  }
-  const rows = await db
-    .select()
-    .from(bookings)
-    .where(eq(bookings.id, Number(insertId)))
-    .limit(1);
+  const rows = await db.insert(bookings).values(input).returning();
   return rows[0] ?? null;
 }
 
@@ -300,9 +285,8 @@ export async function tryHoldBookingSlot(input: {
     return { ok: true, id: row.id };
   } catch (err: unknown) {
     // Duplicate key = slot already held/booked by someone else.
-    const isDupe =
-      (err as any)?.code === "ER_DUP_ENTRY" ||
-      (err as any)?.errno === 1062;
+    // Postgres unique_violation code (MySQL's ER_DUP_ENTRY/1062 equivalent).
+    const isDupe = (err as any)?.code === "23505";
     if (isDupe) {
       // Check if the existing hold has expired and can be taken over.
       const rows = await db

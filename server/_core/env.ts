@@ -7,6 +7,13 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  // RM-41/RM-50: Supabase project config (Milestone 1 auth/DB/storage
+  // migration). supabaseSecretKey is a service-role-equivalent credential —
+  // server-only, must never reach client bundles (never VITE_-prefixed).
+  supabaseUrl: process.env.SUPABASE_URL ?? "",
+  supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY ?? "",
+  supabaseSecretKey: process.env.SUPABASE_SECRET_KEY ?? "",
+  supabaseJwksUrl: process.env.SUPABASE_JWKS_URL ?? "",
 };
 
 /**
@@ -30,7 +37,16 @@ export function requireSecret(name: string, value: string | undefined | null): s
  * Shared signing key for session cookies, the MFA-pending cookie, and the
  * admin impersonation cookie. Throws instead of silently signing with an
  * empty-string key when JWT_SECRET is unset.
+ *
+ * Deliberately re-reads process.env.JWT_SECRET directly rather than the
+ * frozen `ENV.cookieSecret` snapshot above (which is captured once, at
+ * module-import time). Discovered via `pnpm test`: several test files set
+ * `process.env.JWT_SECRET` in a `beforeAll()`, which runs *after* this
+ * module's top-level `ENV` object has already been evaluated (by whatever
+ * imported it first in the module graph) — so `ENV.cookieSecret` stayed ""
+ * for the rest of that test run no matter what the test set afterward.
+ * Matches the pattern mfaCrypto.ts's getMasterKey() already uses correctly.
  */
 export function getCookieSecretBytes(): Uint8Array {
-  return new TextEncoder().encode(requireSecret("JWT_SECRET", ENV.cookieSecret));
+  return new TextEncoder().encode(requireSecret("JWT_SECRET", process.env.JWT_SECRET));
 }

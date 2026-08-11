@@ -1,96 +1,40 @@
 {
   "version": "7",
-  "dialect": "mysql",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1779477608727,
-      "tag": "0000_stormy_the_executioner",
+      "version": "7",
+      "when": 1786432051114,
+      "tag": "0000_slim_santa_claus",
       "breakpoints": true
     },
     {
       "idx": 1,
-      "version": "5",
-      "when": 1779477647348,
-      "tag": "0001_cute_loners",
+      "version": "7",
+      "when": 1786432949101,
+      "tag": "0001_futuristic_nekra",
       "breakpoints": true
     },
     {
       "idx": 2,
-      "version": "5",
-      "when": 1779482767780,
-      "tag": "0002_tired_paibok",
+      "version": "7",
+      "when": 1786433000000,
+      "tag": "0002_updated_at_triggers",
       "breakpoints": true
     },
     {
       "idx": 3,
-      "version": "5",
-      "when": 1779519296034,
-      "tag": "0003_powerful_spot",
+      "version": "7",
+      "when": 1786433437814,
+      "tag": "0003_add_auth_user_id",
       "breakpoints": true
     },
     {
       "idx": 4,
-      "version": "5",
-      "when": 1779519913831,
-      "tag": "0004_optimal_clea",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1779527253868,
-      "tag": "0005_complex_gorilla_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1779530951071,
-      "tag": "0006_parched_starjammers",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "5",
-      "when": 1779577530830,
-      "tag": "0007_rich_spiral",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "5",
-      "when": 1779580616049,
-      "tag": "0008_old_tenebrous",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "5",
-      "when": 1779582852286,
-      "tag": "0009_mushy_kylun",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "5",
-      "when": 1779711777732,
-      "tag": "0010_sparkling_blob",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "5",
-      "when": 1780339130178,
-      "tag": "0011_abnormal_sumo",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "5",
-      "when": 1780409679109,
-      "tag": "0012_loud_randall",
+      "version": "7",
+      "when": 1786433500000,
+      "tag": "0004_rls_policies",
       "breakpoints": true
     }
   ]

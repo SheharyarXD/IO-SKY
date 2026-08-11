@@ -28,17 +28,7 @@ export async function createLead(input: InsertLead): Promise<Lead | null> {
     console.warn("[Database] Cannot create lead: database not available");
     return null;
   }
-  const result = await db.insert(leads).values(input);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) return null;
-  const rows = await db
-    .select()
-    .from(leads)
-    .where(eq(leads.id, Number(insertId)))
-    .limit(1);
+  const rows = await db.insert(leads).values(input).returning();
   return rows[0] ?? null;
 }
 
@@ -57,17 +47,7 @@ export async function createContactSubmission(
 ): Promise<ContactSubmission | null> {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(contactSubmissions).values(input);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) return null;
-  const rows = await db
-    .select()
-    .from(contactSubmissions)
-    .where(eq(contactSubmissions.id, Number(insertId)))
-    .limit(1);
+  const rows = await db.insert(contactSubmissions).values(input).returning();
   return rows[0] ?? null;
 }
 
@@ -110,17 +90,7 @@ export async function createDevApplication(
 ): Promise<DevApplication | null> {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(devApplications).values(input);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) return null;
-  const rows = await db
-    .select()
-    .from(devApplications)
-    .where(eq(devApplications.id, Number(insertId)))
-    .limit(1);
+  const rows = await db.insert(devApplications).values(input).returning();
   return rows[0] ?? null;
 }
 

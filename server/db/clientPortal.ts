@@ -254,14 +254,8 @@ export async function insertClientDocument(input: {
 }) {
   const db = await getDb();
   if (!db) return null;
-  const res = await db.insert(clientDocuments).values(input);
-  const insertId =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (res as any)?.insertId ??
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (Array.isArray(res) ? (res as any)[0]?.insertId : undefined) ??
-    null;
-  return insertId ? { id: Number(insertId) } : null;
+  const rows = await db.insert(clientDocuments).values(input).returning();
+  return rows[0] ? { id: rows[0].id } : null;
 }
 
 export async function deleteClientDocumentById(
@@ -324,7 +318,7 @@ export async function appendClientMessage(input: {
 export async function markIoSkyMessagesRead(orgId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const res = await db
+  const rows = await db
     .update(clientMessages)
     .set({ readAt: Date.now() })
     .where(
@@ -332,9 +326,9 @@ export async function markIoSkyMessagesRead(orgId: number): Promise<number> {
         eq(clientMessages.organizationId, orgId),
         eq(clientMessages.sender, "io-sky"),
       ),
-    );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return Number((res as any)?.affectedRows ?? 0);
+    )
+    .returning({ id: clientMessages.id });
+  return rows.length;
 }
 
 // ---------------------------------------------------------------------------

@@ -30,17 +30,7 @@ export async function recordEcosystemClick(
 ): Promise<EcosystemClickEvent | null> {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(ecosystemClickEvents).values(input);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) return null;
-  const rows = await db
-    .select()
-    .from(ecosystemClickEvents)
-    .where(eq(ecosystemClickEvents.id, Number(insertId)))
-    .limit(1);
+  const rows = await db.insert(ecosystemClickEvents).values(input).returning();
   return rows[0] ?? null;
 }
 
@@ -65,17 +55,7 @@ export async function createEcosystemProposalRequest(
 ): Promise<EcosystemProposalRequest | null> {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(ecosystemProposalRequests).values(input);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) return null;
-  const rows = await db
-    .select()
-    .from(ecosystemProposalRequests)
-    .where(eq(ecosystemProposalRequests.id, Number(insertId)))
-    .limit(1);
+  const rows = await db.insert(ecosystemProposalRequests).values(input).returning();
   return rows[0] ?? null;
 }
 

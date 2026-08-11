@@ -209,17 +209,7 @@ export async function signDeveloperAgreement(args: {
     signedIp: args.ip ?? null,
     signedUserAgent: args.userAgent ?? null,
   };
-  const result = await db.insert(developerAgreements).values(insertInput);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) return null;
-  const rows = await db
-    .select()
-    .from(developerAgreements)
-    .where(eq(developerAgreements.id, Number(insertId)))
-    .limit(1);
+  const rows = await db.insert(developerAgreements).values(insertInput).returning();
   return rows[0] ?? null;
 }
 
@@ -594,17 +584,7 @@ export async function createDeveloperSubmission(
 ): Promise<DeveloperSubmission | null> {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(developerSubmissions).values(input);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) return null;
-  const rows = await db
-    .select()
-    .from(developerSubmissions)
-    .where(eq(developerSubmissions.id, Number(insertId)))
-    .limit(1);
+  const rows = await db.insert(developerSubmissions).values(input).returning();
   return rows[0] ?? null;
 }
 
@@ -634,23 +614,16 @@ export async function appendDeveloperMessage(args: {
 }): Promise<DeveloperMessage | null> {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(developerMessages).values({
-    developerId: args.developerId,
-    sender: "developer",
-    senderName: args.senderName,
-    subject: args.subject,
-    body: args.body,
-  });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) return null;
   const rows = await db
-    .select()
-    .from(developerMessages)
-    .where(eq(developerMessages.id, Number(insertId)))
-    .limit(1);
+    .insert(developerMessages)
+    .values({
+      developerId: args.developerId,
+      sender: "developer",
+      senderName: args.senderName,
+      subject: args.subject,
+      body: args.body,
+    })
+    .returning();
   return rows[0] ?? null;
 }
 
@@ -660,7 +633,7 @@ export async function markAdminMessagesReadForDeveloper(
 ): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const res = await db
+  const rows = await db
     .update(developerMessages)
     .set({ readAt: Date.now() })
     .where(
@@ -668,9 +641,9 @@ export async function markAdminMessagesReadForDeveloper(
         eq(developerMessages.developerId, developerId),
         eq(developerMessages.sender, "admin"),
       ),
-    );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return Number((res as any)?.affectedRows ?? 0);
+    )
+    .returning({ id: developerMessages.id });
+  return rows.length;
 }
 
 // ---------------------------------------------------------------------------
@@ -720,17 +693,7 @@ export async function createDeveloperSupportTicket(args: {
 }): Promise<DeveloperSupportTicket | null> {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(developerSupportTickets).values(args);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertId =
-    (result as unknown as any)[0]?.insertId ??
-    (result as unknown as any).insertId;
-  if (!insertId) return null;
-  const rows = await db
-    .select()
-    .from(developerSupportTickets)
-    .where(eq(developerSupportTickets.id, Number(insertId)))
-    .limit(1);
+  const rows = await db.insert(developerSupportTickets).values(args).returning();
   return rows[0] ?? null;
 }
 
