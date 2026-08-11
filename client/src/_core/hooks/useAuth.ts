@@ -1,5 +1,6 @@
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { getSupabaseClient } from "@/lib/supabase";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
@@ -36,6 +37,16 @@ export function useAuth(options?: UseAuthOptions) {
       }
       throw error;
     } finally {
+      // RM-50: also end any Supabase Auth session (harmless no-op for
+      // accounts that only ever used the Manus/local-password path — the
+      // Supabase client just has no active session to clear). Best-effort:
+      // the app's own session cookie (cleared above) is what actually
+      // gates access, so a Supabase sign-out failure must not block logout.
+      try {
+        await getSupabaseClient()?.auth.signOut();
+      } catch {
+        /* best-effort */
+      }
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }

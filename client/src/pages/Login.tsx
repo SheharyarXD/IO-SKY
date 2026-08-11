@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { useT } from "@/contexts/LanguageContext";
 import IOSkyLogo from "@/components/IOSkyLogo";
 import { trpc } from "@/lib/trpc";
+import { getSupabaseClient } from "@/lib/supabase";
 import { getLoginUrl } from "@/const";
 import { debugLog } from "@/lib/debugLog";
 import {
@@ -144,6 +145,87 @@ export default function Login() {
     return Object.keys(next).length === 0;
   }
 
+  /* ---- shared post-login redirect ---- */
+  function redirectToTarget(target: string) {
+    setSubmitting(false);
+    setFormError(null);
+    // Dismiss all Sonner toasts BEFORE navigating to prevent the React 18
+    // removeChild crash: Sonner mounts portals into document.body, and
+    // window.location.href tears down the DOM before React can unmount them.
+    toast.dismiss();
+    debugLog.log("login_redirect_scheduled", { target, delay: "rAF x2" });
+    // Double requestAnimationFrame gives React one full commit cycle to
+    // flush and unmount all portal nodes before the hard navigation fires.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        debugLog.log("login_redirect_executing", { target });
+        window.location.href = target;
+      });
+    });
+  }
+
+  /**
+   * RM-50: try Supabase Auth first (the Path A source of truth for new
+   * sign-ins). Returns true if it produced a session and the caller should
+   * stop (redirect already scheduled or a Supabase-specific error was
+   * shown) — false to fall through to the legacy local-password path
+   * below, which covers every existing account that hasn't got a Supabase
+   * identity yet (nothing has been migrated to Supabase Auth server-side).
+   */
+  async function trySupabaseLogin(): Promise<boolean> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return false; // not configured in this environment
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    if (error || !data.session) {
+      // Not a Supabase account (or wrong password) - fall through silently
+      // to the local-password path rather than showing a Supabase-specific
+      // error, since most existing accounts simply don't have one yet.
+      return false;
+    }
+
+    try {
+      const res = await fetch("/api/auth/supabase/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ accessToken: data.session.access_token }),
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        role?: string;
+        next?: string;
+        mfaRequired?: boolean;
+      };
+      if (!res.ok || !json.ok) {
+        // Supabase itself authenticated the user but our bridge rejected
+        // it (server error) - surface this as a real error, don't silently
+        // fall back (that would mask a genuine backend problem).
+        silentRecord("credentials", "failed", "supabase-bridge-error", email.trim());
+        setSubmitting(false);
+        const msg = t("login.err.server.body", "We could not reach the login service. Please try again in a moment.");
+        setFormError(msg);
+        toast.error(t("login.err.server.title", "Sign-in temporarily unavailable"), { description: msg });
+        return true;
+      }
+      debugLog.log("login_auth_success", { role: json.role, next: json.next, provider: "supabase" });
+      silentRecord("credentials", "success", "supabase-password", email.trim());
+      redirectToTarget(json.next || "/");
+      return true;
+    } catch (err) {
+      console.warn("[Login] supabase session bridge unreachable", err);
+      silentRecord("credentials", "failed", "supabase-bridge-network", email.trim());
+      setSubmitting(false);
+      const netMsg = t("login.err.network.body", "Connection issue. Check your network and try again.");
+      setFormError(netMsg);
+      toast.error(t("login.err.network.title", "Connection issue"), { description: netMsg });
+      return true;
+    }
+  }
+
   /* ---- submit ---- */
   function silentRecord(
     provider:
@@ -244,15 +326,21 @@ export default function Login() {
     }
 
     /*
-     * Production credentials login flows through the Manus OAuth portal.
-     * The on-page form acts as a fast-track entry: we audit the attempt
-     * server-side, then redirect to the real authentication surface.
-     * Once that flow lands a session via /api/oauth/callback, role-based
-     * routing kicks in (admin -> /admin/bookings, dev -> /portal/developer,
-     * everyone else -> /portal/client).
+     * RM-50 (Path A): Supabase Auth is tried first - it's the source of
+     * truth for any account that has been migrated / newly created there.
+     * Nothing server-side has been migrated yet (no data migration was
+     * performed - see RM-47), so today this will fall through to the
+     * legacy path below for every existing account; it activates
+     * automatically as accounts get linked via the bridge endpoint on
+     * their first successful Supabase sign-in.
      */
-    // Native local-password path (Manus-independent). Falls back to OAuth
-    // portal if the user does not have a local password set.
+    if (await trySupabaseLogin()) return;
+
+    /*
+     * Legacy path: native local-password login (Manus-independent, not
+     * OAuth). Kept fully intact per the migration's explicit rule not to
+     * remove working auth before its replacement is verified end-to-end.
+     */
     try {
       const res = await fetch("/api/auth/local/login", {
         method: "POST",
@@ -264,22 +352,7 @@ export default function Login() {
         const json = (await res.json()) as { ok: boolean; role?: string; next?: string };
         debugLog.log("login_auth_success", { role: json.role, next: json.next });
         silentRecord("credentials", "success", "local-password", email.trim());
-        setSubmitting(false);
-        setFormError(null);
-        // Dismiss all Sonner toasts BEFORE navigating to prevent the React 18
-        // removeChild crash: Sonner mounts portals into document.body, and
-        // window.location.href tears down the DOM before React can unmount them.
-        toast.dismiss();
-        const target = json.next || "/";
-        debugLog.log("login_redirect_scheduled", { target, delay: "rAF x2" });
-        // Double requestAnimationFrame gives React one full commit cycle to
-        // flush and unmount all portal nodes before the hard navigation fires.
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            debugLog.log("login_redirect_executing", { target });
-            window.location.href = target;
-          });
-        });
+        redirectToTarget(json.next || "/");
         return;
       }
 
@@ -392,8 +465,17 @@ export default function Login() {
     });
   }
 
-  /* ---- forgot password ---- */
-  function submitForgot(e: React.FormEvent) {
+  /**
+   * RM-50: real password reset via Supabase Auth (previously this only
+   * wrote to localStorage and showed a fake "sent" state - no email was
+   * ever dispatched). Actual delivery depends on the Supabase project's
+   * email/SMTP configuration, which is external infrastructure this
+   * environment cannot verify - see MILESTONE1_SUPABASE_MIGRATION_REPORT.md.
+   * The UI deliberately shows the same "sent" confirmation on both success
+   * and failure (matches the login form's no-enumeration principle: never
+   * reveal whether an email address has an account).
+   */
+  async function submitForgot(e: React.FormEvent) {
     e.preventDefault();
     if (!validEmail(forgotEmail)) {
       toast.error(t("login.forgot.err", "Enter a valid email"), {
@@ -411,6 +493,16 @@ export default function Login() {
       localStorage.setItem(key, JSON.stringify(queue.slice(-25)));
     } catch {
       /* ignore */
+    }
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.auth.resetPasswordForEmail(forgotEmail.trim().toLowerCase(), {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+      } catch (err) {
+        console.warn("[Login] resetPasswordForEmail failed", err);
+      }
     }
     setForgotSent(true);
   }

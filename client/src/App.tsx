@@ -35,6 +35,7 @@ import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import Enterprise from "./pages/Enterprise";
 import CustomSoftware from "./pages/CustomSoftware";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import Translations from "./pages/Translations";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import HashScroll from "./components/HashScroll";
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/enterprise" component={Enterprise} />
       <Route path="/custom-software" component={CustomSoftware} />
       <Route path="/login" component={Login} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/mfa-challenge" component={MfaChallenge} />
       <Route path="/translations" component={Translations} />
       <Route path="/ai-scan" component={AIScan} />
