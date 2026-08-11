@@ -7,7 +7,6 @@ import { getRequestMeta } from "./_core/requestMeta";
 import { bookingsRouter } from "./routers/bookings";
 import { contactRouter } from "./routers/contact";
 import { engineeringRouter } from "./routers/engineering";
-import { auditRouter } from "./routers/audit";
 import { clientPortalRouter } from "./routers/clientPortal";
 import { developerRouter } from "./routers/developer";
 import { mfaRouter } from "./routers/mfa";
@@ -94,7 +93,6 @@ export const appRouter = router({
   bookings: bookingsRouter,
   contact: contactRouter,
   engineering: engineeringRouter,
-  audit: auditRouter,
   clientPortal: clientPortalRouter,
   developer: developerRouter,
   mfa: mfaRouter,
