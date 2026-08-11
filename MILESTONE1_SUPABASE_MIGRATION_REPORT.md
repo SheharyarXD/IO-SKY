@@ -2,18 +2,26 @@
 
 Scope: continuation of Milestone 1 following the RM-49 decision (**Path A — Supabase Auth as
 the primary authentication system**: Supabase Auth = source of truth for auth/sessions,
-Supabase Postgres = application database, Supabase RLS = tenant/security boundary). Covers
-RM-41 through RM-63. Cross-reference: `PHASE1_CHECKLIST.md` (full RM-01..63 tracking, both
-sessions) and `CONTRIBUTING.md` (branching/commit convention).
+Supabase Postgres = application database, Supabase RLS = tenant/security boundary). Primarily
+covers RM-41 through RM-63, plus RM-04's final resolution and a security/consistency re-sweep
+added in a follow-up pass (§13/§14). Cross-reference: `PHASE1_CHECKLIST.md` (full RM-01..63
+tracking, every session) and `CONTRIBUTING.md` (branching/commit convention).
 
-**Headline: RM-41 through RM-60 are all done and live-verified.** The Supabase Postgres
-database is live (schema, FKs, indexes, triggers, RLS — §3/§5), Supabase Auth is wired into the
-real login flow and verified end-to-end against the actual project (§6), RBAC needed zero code
-changes and that's now proven with a dedicated test suite (§7), the three portal route guards
-are consolidated into one shared hook (§7a), and an 18-test negative RLS suite runs against the
-live database through the real PostgREST API (§5a). What's left for Milestone 1: RM-57 (Super
-Admin) is a genuine open client decision, and a handful of tasks remain externally blocked
-(secrets rotation, branch protection, CI-run verification — none of them database-related).
+**Headline: RM-41 through RM-60 are all done and live-verified, plus RM-04 resolved and a full
+security/consistency re-sweep completed in a follow-up pass.** The Supabase Postgres database is
+live (schema, FKs, indexes, triggers, RLS — §3/§5), Supabase Auth is wired into the real login
+flow and verified end-to-end against the actual project (§6), RBAC needed zero code changes and
+that's now proven with a dedicated test suite (§7), the three portal route guards are
+consolidated into one shared hook (§7a), and an 18-test negative RLS suite runs against the live
+database through the real PostgREST API (§5a). A follow-up pass then: resolved RM-04's last file
+(§13), re-investigated RM-03/RM-15/RM-25/RM-26/RM-29 with concrete evidence rather than size
+estimates (all confirmed to correctly stay deferred — see §13), found and fixed a real
+Math.random()-fallback + entropy-truncation bug in the booking system's hold-token generator and
+5 more stale `provider: "manus"` audit-log literals (§14), and re-read every multi-hop RLS policy
+against actual application query logic with no gaps found (§14). What's left for Milestone 1:
+RM-57 (Super Admin) is a genuine open client decision, and a handful of tasks remain externally
+blocked (secrets rotation, branch protection, CI-run verification — none of them
+database-related).
 
 ---
 
@@ -501,3 +509,114 @@ RM-41 through RM-60 are done. What's left:
    replacement is verified. That cutover is a separate decision with its own rollout plan.
 5. Enable branch protection on `main` (RM-17) once ready to move off the direct-push workflow
    this session used.
+
+---
+
+## 13. Follow-up pass: RM-04 resolution + re-investigation of deferred hygiene tasks
+
+**RM-04 fully resolved.** The 13th dead-code file left in place last pass (`server/routers/audit.ts`,
+then classified "orphaned not dead, needs a product decision") was traced to a conclusive answer:
+`audit.listLogins`/`audit.listLeads` have zero client-side consumers anywhere in `client/src`
+(grep for `trpc.audit.` returns nothing), and both are already duplicated — with strictly more
+functionality — by `admin.ts`'s own `recentLoginAudit` (same `loginAudit` table query, plus it
+records its own admin-audit-event via `recordAdminEvent`, which `audit.listLogins` never did) and
+`crm` (same `leads` table, richer shape) endpoints, which the Executive Overview page actually
+uses. No other file references `auditRouter` beyond its own definition and mount point. Removed
+`server/routers/audit.ts`, its import and mount in `routers.ts` — no live route or product
+behavior changed, since nothing reachable through the real UI called it.
+
+**RM-03, RM-15, RM-25, RM-26, RM-29 re-investigated with concrete file-level evidence** (not
+just re-stated as size/priority estimates) — all confirmed to correctly stay deferred:
+- **RM-03**: git history is uninformative (repo squashed to one `Init` commit; every ambiguous
+  script shows exactly one history entry) and every file shares an identical bulk-export
+  timestamp — neither gives real supersession evidence. Tracing actual file I/O shows
+  `pt_missing.mjs` → `pt_split.mjs` → (external translation step) → `pt_rebuild.mjs` is a real
+  sequential pipeline, not competing duplicates, with `pt_dump.mjs` a separate diagnostic tool;
+  two of the four are currently non-functional because their input JSON files were deleted as
+  generated artifacts in RM-02, but they're regenerable, not dead. The `mixed_*`/`identical_audit`
+  scripts are self-contained but `mixed_final.mts` audits only 6 locales vs. the other three's 9
+  — "final" is narrower in scope, not a strict improvement, so naming can't establish a safe
+  deletion order.
+- **RM-15**: full inventory of all 9 files/every direct `process.env.X` read outside `env.ts`.
+  The safe-to-centralize subset is empty once excluding secrets that must stay fresh-read for
+  test-correctness (confirmed `STAGING_MODE`, not just `JWT_SECRET`-family values, is toggled in
+  `stagingGate.test.ts`'s `beforeEach()` — centralizing it would reproduce the exact staleness
+  bug class already fixed) and values with real behavior-change risk (`NODE_ENV` is compared
+  against different literals in different files) or negligible single-call-site value (`PORT`).
+- **RM-25/RM-26**: full side-by-side reads of all `StatusPill`/state-boundary implementations
+  confirm they're genuinely divergent (different prop APIs, a dot indicator present in only one
+  of three `StatusPill`s, different border-radius, different colors for matching semantic names;
+  `ModuleStateBoundary` auto-detects permission-denied from error shape while `SectionStateSwitch`
+  requires an explicit caller-supplied boolean) — not just differently styled, real visual/API
+  risk confirmed with evidence rather than assumed.
+- **RM-29**: `admin.ts` is 1,104 lines, ~16 helper functions feeding ~25 procedures, all sharing
+  `getDb()`/`safe()`/`recordAdminEvent()`. A safe split must preserve the flat `admin.*`
+  client-facing namespace and not silently drop an audit-log call while moving code across ~5 new
+  files — real risk for a change with zero functional benefit. Confirmed as the "large structural
+  rewrite" the task says to defer, not a mechanical extraction.
+
+---
+
+## 14. Follow-up pass: security sweep + re-verification
+
+**Real fix**: `server/_core/booking/index.ts`'s `randomToken()` — used for the native booking
+system's slot **hold token** (a capability token gating who can claim/confirm a held slot, not
+just a display label) — had a `Math.random()` fallback for environments lacking
+`globalThis.crypto`. Removed in favor of Node's `crypto.randomBytes` directly (guaranteed
+available in this app's only runtime), and fixed a real entropy-truncation bug found in the same
+function: hex-encoding N bytes then slicing to N characters only used half the intended entropy
+(2 hex characters per byte) — now requests `ceil(len/2)` bytes so every output character is
+backed by real randomness. Verified `holdToken` is treated as an opaque string everywhere
+(compared via `===`, no character-set-specific validation) before changing its output alphabet.
+
+**Real fix, same bug class as the prior pass's `ClientPortal.tsx`/`DeveloperWorkspace.tsx` catch**:
+5 more hardcoded `provider: "manus"`/`"manus-oauth"` audit-log literals found via a full
+`grep -rn 'provider: "manus'` sweep — `viewAsRoute.ts`'s View-As impersonation enter/exit audit
+rows, and `clientPortal.ts`'s profile-update/MFA-method-change/session-revoke audit rows. All were
+correct when every admin/client was necessarily Manus-authenticated; wrong now that an admin or
+client can authenticate via the Supabase bridge (RM-50) or local-password login and still reach
+these code paths (RBAC being auth-agnostic means they genuinely can). Fixed to use the account's
+actual `loginMethod`. The one remaining `provider: "manus"` literal (`oauth.ts:109`) was verified
+correct — it's the real Manus OAuth callback, genuinely always "manus". Distinguished from a
+separate, pre-existing, intentional convention: `clientPortal.ts`'s `provider: "client-portal"`
+literals (8 sites) tag the *application surface* that generated an in-portal action audit event,
+not an auth provider — correctly left untouched, not the same bug.
+
+**Verified, not a bug**: the Supabase-bridge email-linking path (`supabaseAuthRoute.ts`) calls
+`getUserByEmailWithPassword()`, whose name and doc comment suggest it filters to accounts that
+have a local password set — read its actual implementation directly and confirmed the real SQL
+query is a plain `WHERE email = ?` with no such filter, so the linking path correctly matches
+OAuth-origin (no-password) Manus-era accounts by email too. Left a comment at the call site
+explaining this reliance, since a future "fix" to make that function match its name would
+silently break linking for exactly that account type.
+
+**RLS re-verified against real application behavior, not re-authored**: read all 5 EXISTS-based
+(multi-hop join) policies in `0004_rls_policies.sql` side-by-side against the actual DB-layer
+query functions they're meant to mirror. Confirmed, for example, that `developer_tasks`'s policy
+(visible to any developer assigned to the *project*) exactly matches `listDeveloperTasks()`'s
+real filtering (project-level assignment grants visibility to every task in that project;
+`developer_task_assignments` only drives a "mine" UI badge, not a stricter visibility rule) — no
+gap found; the original design was already correct. Re-confirmed 53/53 tables covered, zero
+`USING (true)` policies, and re-ran the live 18-test negative suite after all other changes in
+this pass — still 18/18 passing, database confirmed empty in every touched table afterward.
+
+**Other items checked and found already clean, no changes needed**: no hardcoded fallback
+secrets remain; no raw `x-forwarded-for`/`remoteAddress` parsing outside the shared
+`requestMeta.ts` helper; no PII (email addresses) written to `console.log`/`console.warn`; no
+remaining MySQL-specific write-path code (`onDuplicateKeyUpdate`/`insertId`/`affectedRows`/errno
+1062 — only explanatory comments referencing the old codes); `SUPABASE_SECRET_KEY` referenced
+nowhere under `client/`; `organizationId` is consistently left null-by-default across all three
+account-creation paths (Manus OAuth, local-password, Supabase bridge) — no inconsistency found;
+logout is unified through one tRPC mutation that clears the session cookie regardless of auth
+origin, with the Supabase sign-out call added alongside it. One minor, low-priority, **not**
+fixed item noted for completeness: `server/routers/developer.ts`'s `makePublicRef()` duplicates
+the intent (not the exact algorithm) of the shared `server/_core/publicRef.ts` generator for
+support-ticket reference codes — left alone because consolidating would visibly change the
+ticket-ID format shown to submitters (`ENG-XXXXXXXX` → `IOSKY-ENG-XXXX-XXXX`) without explicit
+sign-off, and it is not security-sensitive (a display reference, not an access token).
+
+**Verification for this follow-up pass**: `npx tsc --noEmit`: 0 errors after every change.
+`npx vitest run`: 403/403 passing throughout (no test count change — this pass fixed bugs and
+removed dead code, it didn't add new test files). `npx vite build`: succeeds. Live RLS suite
+re-run: 18/18 passing. Database confirmed clean (0 rows in every previously-test-touched table)
+both before and after this pass's changes.
