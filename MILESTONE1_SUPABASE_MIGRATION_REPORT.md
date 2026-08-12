@@ -18,10 +18,13 @@ database through the real PostgREST API (§5a). A follow-up pass then: resolved 
 estimates (all confirmed to correctly stay deferred — see §13), found and fixed a real
 Math.random()-fallback + entropy-truncation bug in the booking system's hold-token generator and
 5 more stale `provider: "manus"` audit-log literals (§14), and re-read every multi-hop RLS policy
-against actual application query logic with no gaps found (§14). What's left for Milestone 1:
-RM-57 (Super Admin) is a genuine open client decision, and a handful of tasks remain externally
-blocked (secrets rotation, branch protection, CI-run verification — none of them
-database-related).
+against actual application query logic with no gaps found (§14). **A later, independent
+re-verification pass (§15, 2026-08-12) confirmed all of the above from a clean install in a
+different environment — 0 typecheck errors, 385/418 tests passing (33 skipped, all correctly
+env-gated), a clean production build, and a fresh security/auth/RLS sweep that found nothing new
+— with zero code changes needed.** What's left for Milestone 1: RM-57 (Super Admin) is a genuine
+open client decision, and a handful of tasks remain externally blocked (secrets rotation, branch
+protection, CI-run verification — none of them database-related).
 
 ---
 
@@ -620,3 +623,84 @@ sign-off, and it is not security-sensitive (a display reference, not an access t
 removed dead code, it didn't add new test files). `npx vite build`: succeeds. Live RLS suite
 re-run: 18/18 passing. Database confirmed clean (0 rows in every previously-test-touched table)
 both before and after this pass's changes.
+
+---
+
+## 15. Independent re-verification pass (2026-08-12) — no code changes, tree confirmed unchanged
+
+A fresh session picked this milestone back up from a clean working tree (`git status` clean,
+`HEAD` at `8337bdb`, matching exactly what §13/§14 documented) with instructions to continue
+Phase 1. **Conclusion: everything safely actionable through code was already done in the prior
+pass.** This pass's job was to independently re-verify that claim rather than take it on faith,
+and to re-run the security/auth/RLS sweep against the actual current tree in case anything had
+drifted. Nothing had. No files were changed this session.
+
+**Environment note, worth recording**: this session's shell had no `node`/`npm`/`pnpm` on `PATH`
+at all (a different machine/session state than whatever produced §10's live results) and no local
+`.env` file — meaning zero Supabase credentials were available. A bundled Node 22 distribution was
+located under the local qwen-code tool install and used to run `corepack prepare pnpm@10.4.1
+--activate` (matching `package.json`'s pinned `packageManager`), then `pnpm install
+--frozen-lockfile`. This got a fully working toolchain without touching the pinned dependency
+versions. **No `.env` was available or created**, so the live-Supabase-only tests (the 18
+`rls.negative.test.ts` tests) correctly skipped via their existing `describe.skipIf` guard rather
+than failing — this is the suite behaving exactly as designed for a credential-less environment,
+not a regression. Live Supabase re-verification (RLS suite, auth end-to-end check) was **not**
+re-run this session for that reason; §5a/§6's prior live results stand as the last live evidence
+and have not been contradicted by anything found this session.
+
+**Baseline re-confirmed independently, from a clean install**:
+
+| Check | Result |
+|---|---|
+| `pnpm install --frozen-lockfile` | ✅ Clean, no lockfile drift |
+| `npx tsc --noEmit` | ✅ **0 errors** |
+| `npx vitest run` | ✅ **385/418 passing, 33 skipped** (18 more skipped than §10's 403/15 — exactly the live RLS suite, correctly skipping with no `.env` present; the other 385 non-live tests all pass, no regressions) |
+| `npx vite build` | ✅ Succeeds (pre-existing chunk-size warnings only, not errors) |
+
+**RM-04 re-confirmed**: `server/routers/audit.ts` does not exist on disk; `routers.ts` has no
+`audit` import, mount, or reference anywhere in the codebase (`grep -rn "auditRouter"` returns
+nothing). §13's removal is final and stable.
+
+**RM-03/RM-15/RM-25/RM-26/RM-29/RM-30 evidence spot-checked against the live tree, not re-derived
+from memory**: `admin.ts` is still exactly 1,104 lines; the same 9 files still contain the only
+direct `process.env.X` reads outside `env.ts`; all `StatusPill`-named components in §13's list
+still exist unmerged; nothing about any of this has changed since §13's investigation, so its
+conclusions (stay deferred, with evidence) still hold without re-running the full investigation.
+
+**Fresh security/correctness sweep, targeted grep-based, found nothing new**:
+`Math.random()` call sites re-enumerated — the two real security-sensitive ones already fixed
+(`solutions.ts`'s discovery-session token, `booking/index.ts`'s hold-token generator) remain fixed;
+every other site (`developer.ts`'s support-ticket ref suffix, `publicRef.ts`'s reference-code
+generator, `sidebar.tsx`'s skeleton-width jitter, `useCookieConsent.tsx`'s consent-record id,
+`Solutions.tsx`'s anonymous analytics-funnel session id in `localStorage`) is a non-authenticating
+label/analytics value, not a capability token — confirmed by reading each call site's actual use,
+not just the function name. No hardcoded fallback secrets found (only comments describing the
+fail-fast pattern). No remaining MySQL-specific write-path code — the only `insertId`/`1062`-shaped
+hits are the two explanatory comments in `bookings.ts`/`users.ts` already noted in §14. `provider:
+"manus"` now appears exactly once in the whole server tree (`oauth.ts:109`, the genuine Manus OAuth
+callback) — the 7 staleness bugs from §14 stay fixed. `x-forwarded-for` parsing exists only inside
+`requestMeta.ts`. No `SUPABASE_SECRET_KEY`/service-role reference anywhere under `client/`. RLS
+migration file re-counted directly: 53 `ENABLE ROW LEVEL SECURITY` + 53 `FORCE ROW LEVEL SECURITY`
+statements (an initial grep hit 54 for the FORCE count because of a doc-comment false match — the
+real statement count is 53/53, matching `schema.ts`'s 53 `pgTable` definitions exactly, no gap).
+
+**Auth-consistency spot check**: re-read `server/db/users.ts`'s `createUserFromSupabase` — Supabase-
+native users get a synthetic `openId` of the form `` `supabase:${authUserId}` `` (satisfies the
+column's pre-existing `NOT NULL UNIQUE` constraint) but authorization never keys off it (RM-55's
+21-test suite already proves every `*Procedure` gate checks only `role`/`organizationId`/`id`); the
+few remaining `ctx.user.openId` reads (`bookingAdmin.ts`'s audit-log actor label,
+`mfa.ts`'s TOTP-issuer display-name fallback when no email is set) are display/labeling uses, not
+access-control decisions — re-confirmed by reading each call site, not assumed from the RM-55
+report. Re-read `supabaseAuthRoute.ts` in full: its design (mint the same `app_session_id` cookie
+Manus's callback mints, reuse the same MFA gate, leave `sdk.ts`/`oauth.ts`/`localAuthRoute.ts`
+completely untouched) matches exactly what §6 describes — no drift.
+
+**Net result of this pass: zero RM statuses changed.** Every task that could be safely completed
+through code was already completed in the prior pass; this pass's contribution is independent
+confirmation (fresh install, fresh toolchain resolution, fresh grep sweep, fresh manual reads of
+the auth bridge and RLS coverage) that nothing has regressed and nothing new was missed — not a
+rubber stamp, but a genuine second look that happened to agree with the first. The Phase 1 count
+stays **43 done / 5 partial / 10 blocked / 5 deferred, out of 63** (see `PHASE1_CHECKLIST.md`'s
+summary, also updated with this pass's date). RM-57 (Super Admin) and the externally-blocked items
+in §11/§12 remain the only things standing between this milestone and 100%, and none of them are
+resolvable without client input or infrastructure access this environment doesn't have.

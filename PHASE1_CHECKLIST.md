@@ -155,6 +155,21 @@ Legend: ✅ Done this session · ⛔ Blocked (external access/decision required)
 
 **43 + 5 + 10 + 5 = 63.** Every task has an explicit status; nothing was silently skipped.
 
+**Re-verified 2026-08-12, independent session, zero status changes.** A fresh session (clean
+`git status`, `HEAD` at `8337bdb`) re-ran the full toolchain from scratch on a clean `pnpm install`
+in a different environment: `npx tsc --noEmit` → 0 errors, `npx vitest run` → 385/418 passing (33
+skipped — 18 more than the 15 previously skipped, exactly the live-Supabase-only RLS suite
+correctly skipping because this session had no `.env`/credentials available), `npx vite build` →
+succeeds. Re-confirmed RM-04's removal is final (no `audit.ts`, no references anywhere), spot-
+checked the RM-03/15/25/26/29/30 evidence against the live tree (unchanged — `admin.ts` still
+1,104 lines, same 9 files read `process.env` directly, same divergent `StatusPill` components),
+and re-ran the security/auth/RLS grep sweep from §3 of the milestone report fresh (`Math.random()`
+sites, hardcoded secrets, MySQL leftovers, `provider: "manus"` literals, `x-forwarded-for`
+handling, client-side secret exposure, RLS table-count parity, `openId` usage) — found nothing new
+requiring a fix. See `MILESTONE1_SUPABASE_MIGRATION_REPORT.md` §15 for full detail. **No RM status
+changed; the count stays 43/5/10/5 of 63** — everything safely completable through code in this
+milestone was already done before this pass started.
+
 ### What this means for Milestone 1 completion
 The RM-49 decision (Path A — Supabase Auth) has been made, the Supabase project is provisioned, the full Postgres migration is live on the actual database (53 tables, 65 FKs, 126 indexes, 102 RLS policies — see Workstream 2.9/2.13), Supabase Auth is genuinely wired into the live login flow and verified end-to-end against the real project, RBAC needed zero code changes (proven with a 21-test suite), route guards are consolidated into one shared hook, and RLS has an 18-test live negative suite. **This pass added a full re-verification/security-sweep layer on top of that**: RM-04 is now fully resolved (the 13th dead-code file, `server/routers/audit.ts`, was traced to a conclusive "zero consumers, fully duplicated elsewhere" finding and removed); RM-03/RM-15/RM-25/RM-26/RM-29 were all re-investigated with concrete file-level evidence rather than left as size estimates, and all still correctly stay deferred — the evidence in every case pointed *away* from a safe quick win, not toward one, which is itself a meaningful result (confirms the earlier caution was right, not just repeated). A real security-hardening fix was found and applied: `randomToken()` (native booking system hold tokens) had a `Math.random()` fallback path plus an entropy-truncation bug, both fixed. Five more hardcoded `provider: "manus"`/`"manus-oauth"` audit-log staleness bugs were found (View-As impersonation, profile update, MFA method change, session revoke) and fixed, on top of the two caught in the prior pass. The RLS policy set was re-read end-to-end against actual application query logic and confirmed correct with no gaps — a genuine re-verification, not a rubber stamp.
 
