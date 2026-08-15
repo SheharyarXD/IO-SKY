@@ -28,7 +28,7 @@
 import { z } from "zod";
 import { count, desc, eq, gte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { adminProcedure, router } from "../_core/trpc";
+import { adminProcedure, isAdminRole, router } from "../_core/trpc";
 import { getRequestMeta } from "../_core/requestMeta";
 import { getDb, appendLoginAudit, listRecentBookings, listRecentAiScans } from "../db";
 import {
@@ -1056,10 +1056,11 @@ export const adminRouter = router({
   viewAs: adminProcedure
     .input(viewAsInput)
     .mutation(async ({ ctx, input }) => {
-      // Only admins reach here (adminProcedure already gates). We add an
-      // explicit check to leave room for a future "super admin only"
-      // distinction without breaking the contract.
-      if (ctx.user?.role !== "admin") {
+      // Only admins reach here (adminProcedure already gates). RM-57
+      // resolved the "future super admin distinction" this comment used to
+      // flag: super_admin is a strict superset of admin, so it keeps
+      // impersonation rather than losing it — isAdminRole() accepts both.
+      if (!ctx.user || !isAdminRole(ctx.user.role)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Only admins may impersonate." });
       }
       await recordAdminEvent({

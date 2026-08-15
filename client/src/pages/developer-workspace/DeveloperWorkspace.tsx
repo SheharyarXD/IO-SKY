@@ -45,7 +45,7 @@ const SECTIONS = [
 export default function DeveloperWorkspace() {
   const [, params] = useRoute("/developer-workspace/:section*");
   const [location] = useLocation();
-  const { user, loading, isAuthenticated, isImpersonatingTarget } = useRouteGuard();
+  const { user, loading, isAuthenticated, isImpersonatingTarget, isAdminRole } = useRouteGuard();
   const rawSection =
     (params as Record<string, string | undefined> | null)?.["section*"] ?? "overview";
   const section = rawSection.split("/")[0] || "overview";
@@ -78,7 +78,7 @@ export default function DeveloperWorkspace() {
   if (user?.role === "client") {
     return <Redirect to="/client-portal" replace />;
   }
-  if (user?.role === "admin" && !impersonatingDeveloper) {
+  if (isAdminRole(user?.role) && !impersonatingDeveloper) {
     return <Redirect to="/admin" replace />;
   }
   if (user?.role !== "developer" && !impersonatingDeveloper) {

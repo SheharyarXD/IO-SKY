@@ -142,4 +142,35 @@ describe("RBAC is identical regardless of auth origin (RM-55)", () => {
       }
     }
   });
+
+  it("RM-57: super_admin passes adminProcedure's role gate exactly like admin does (strict superset, not a separate/weaker tier)", async () => {
+    const manusSuperAdmin = manusUser({ role: "super_admin" });
+    const supabaseSuperAdmin = supabaseUser({ role: "super_admin" });
+    for (const superAdmin of [manusSuperAdmin, supabaseSuperAdmin]) {
+      const caller = appRouter.createCaller(makeCtx(superAdmin));
+      try {
+        await caller.admin.summary();
+      } catch (err) {
+        const code = (err as { code?: string })?.code;
+        expect(code).not.toBe("FORBIDDEN");
+        expect(code).not.toBe("UNAUTHORIZED");
+      }
+    }
+  });
+
+  it("RM-57: plain admin is rejected by superAdminProcedure (super_admin's exclusive capabilities are NOT available to regular admin)", async () => {
+    // No live super-admin-only endpoint is wired into appRouter yet
+    // (Milestone 2 §2.5 adds those) — this asserts the middleware
+    // contract directly instead of through a router path.
+    const { superAdminProcedure, router } = await import("./_core/trpc");
+    const testRouter = router({
+      probe: superAdminProcedure.query(() => "ok" as const),
+    });
+    await expect(
+      testRouter.createCaller(makeCtx(manusUser({ role: "admin" }))).probe(),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      testRouter.createCaller(makeCtx(manusUser({ role: "super_admin" }))).probe(),
+    ).resolves.toBe("ok");
+  });
 });

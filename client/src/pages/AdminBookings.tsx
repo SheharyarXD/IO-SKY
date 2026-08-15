@@ -7,6 +7,7 @@
  */
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { isAdminRole } from "@/_core/hooks/useRouteGuard";
 import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -49,7 +50,7 @@ interface AdminBookingsProps {
 
 export default function AdminBookings({ embedded = false }: AdminBookingsProps = {}) {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = isAdminRole(user?.role);
 
   const enabled = isAuthenticated && isAdmin;
   const recent = trpc.bookings.listRecent.useQuery(undefined, {

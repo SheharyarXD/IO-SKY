@@ -4,6 +4,7 @@ import { notifyOwner } from "../_core/notification";
 import {
   developerProcedure,
   developerSelfProcedure,
+  isAdminRole,
   protectedProcedure,
   router,
 } from "../_core/trpc";
@@ -66,7 +67,7 @@ export const developerRouter = router({
    * raise a 403. Anyone whose role !== "developer" gets a hard "denied".
    */
   gateStatus: protectedProcedure.query(async ({ ctx }) => {
-    if (ctx.user.role !== "developer" && ctx.user.role !== "admin") {
+    if (ctx.user.role !== "developer" && !isAdminRole(ctx.user.role)) {
       return {
         ok: false as const,
         reason: "denied" as const,
@@ -244,7 +245,7 @@ export const developerRouter = router({
       // /manus-storage/{key} path without actually signing anything,
       // despite this endpoint's "approved files only, via signed URLs"
       // contract above.
-      const url = await storageGetSignedUrl(file.fileKey);
+      const url = await storageGetSignedUrl("developer-workspace", file.fileKey);
       const meta = callerMeta(ctx.req);
       await appendDeveloperAudit({
         developerId: ctx.developer.id,
@@ -418,7 +419,7 @@ export const developerRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.role !== "developer" && ctx.user.role !== "admin") {
+      if (ctx.user.role !== "developer" && !isAdminRole(ctx.user.role)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "developer_only" });
       }
       const result = await evaluateDeveloperGate({

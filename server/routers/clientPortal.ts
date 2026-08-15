@@ -34,7 +34,7 @@ import {
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { notifyOwner } from "../_core/notification";
-import { storageGetSignedUrl, storagePut } from "../storage";
+import { storageDelete, storageGetSignedUrl, storagePut } from "../storage";
 import { clientProcedure, router } from "../_core/trpc";
 import { generatePublicRef } from "../_core/publicRef";
 
@@ -281,9 +281,13 @@ export const clientPortalRouter = router({
       }
       let url: string;
       try {
-        url = await storageGetSignedUrl(report.pdfKey);
-      } catch {
-        url = `/manus-storage/${report.pdfKey}`;
+        url = await storageGetSignedUrl("client-portal", report.pdfKey);
+      } catch (err) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Couldn’t generate a download link. Please try again.",
+          cause: err,
+        });
       }
       try {
         await appendLoginAudit({
@@ -319,9 +323,13 @@ export const clientPortalRouter = router({
       }
       let url: string;
       try {
-        url = await storageGetSignedUrl(invoice.pdfKey);
-      } catch {
-        url = `/manus-storage/${invoice.pdfKey}`;
+        url = await storageGetSignedUrl("client-portal", invoice.pdfKey);
+      } catch (err) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Couldn’t generate a download link. Please try again.",
+          cause: err,
+        });
       }
       try {
         await appendLoginAudit({
@@ -421,9 +429,13 @@ export const clientPortalRouter = router({
       if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
       let url: string;
       try {
-        url = await storageGetSignedUrl(doc.fileKey);
-      } catch {
-        url = `/manus-storage/${doc.fileKey}`;
+        url = await storageGetSignedUrl("client-portal", doc.fileKey);
+      } catch (err) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Couldn’t generate a download link. Please try again.",
+          cause: err,
+        });
       }
       try {
         await appendLoginAudit({
@@ -491,20 +503,25 @@ export const clientPortalRouter = router({
           message: "File must be between 1 byte and 15 MB.",
         });
       }
-      // Slug the filename so the S3 key stays predictable.
+      // Slug the filename so the storage key stays predictable.
       const safeName = input.name
         .replace(/[^a-zA-Z0-9._-]+/g, "-")
         .replace(/-+/g, "-")
         .slice(0, 120);
-      const key = `client-portal/${ctx.organizationId}/${Date.now()}-${safeName}`;
+      // Path convention per drizzle/0007_storage_buckets.sql:
+      // {organizationId}/documents/{timestamp}-{name} — the leading
+      // organizationId segment is what the bucket's RLS policy matches
+      // against app_current_organization_id().
+      const key = `${ctx.organizationId}/documents/${Date.now()}-${safeName}`;
       let putKey = key;
       try {
         const out = await storagePut(
+          "client-portal",
           key,
           buffer,
           input.mimeType ?? "application/octet-stream",
         );
-        putKey = out.key ?? key;
+        putKey = out.key;
       } catch (err) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -584,6 +601,17 @@ export const clientPortalRouter = router({
         });
       }
       await deleteClientDocumentById(ctx.organizationId, doc.id);
+      try {
+        // Best-effort: the DB row (the record the client actually asked to
+        // remove) is already gone at this point regardless of whether this
+        // succeeds. A storage-side failure here would otherwise leave an
+        // orphaned object with no DB row pointing at it — logged, not
+        // thrown, so it doesn't turn into a confusing partial-failure error
+        // for a mutation the client will see as "deleted".
+        await storageDelete("client-portal", doc.fileKey);
+      } catch (err) {
+        console.error(`[clientPortal] failed to delete storage object for document ${doc.id}:`, err);
+      }
       try {
         await appendLoginAudit({
           userId: ctx.user.id,

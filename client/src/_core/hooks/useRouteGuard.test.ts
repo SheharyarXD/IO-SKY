@@ -6,11 +6,12 @@
  * exports, which have no React/DOM dependency.
  */
 import { describe, expect, it } from "vitest";
-import { isImpersonatingTarget, recordAttemptProvider, roleHome } from "./useRouteGuard";
+import { isAdminRole, isImpersonatingTarget, recordAttemptProvider, roleHome } from "./useRouteGuard";
 
 describe("roleHome", () => {
   it("maps every known role to its portal", () => {
     expect(roleHome("admin")).toBe("/admin");
+    expect(roleHome("super_admin")).toBe("/admin");
     expect(roleHome("client")).toBe("/client-portal");
     expect(roleHome("client_member")).toBe("/client-portal");
     expect(roleHome("developer")).toBe("/developer-workspace");
@@ -21,6 +22,21 @@ describe("roleHome", () => {
     expect(roleHome("something-unexpected")).toBe("/");
     expect(roleHome(null)).toBe("/");
     expect(roleHome(undefined)).toBe("/");
+  });
+});
+
+describe("isAdminRole (RM-57)", () => {
+  it("is true for admin and super_admin (strict superset)", () => {
+    expect(isAdminRole("admin")).toBe(true);
+    expect(isAdminRole("super_admin")).toBe(true);
+  });
+
+  it("is false for every non-admin role and missing values", () => {
+    expect(isAdminRole("client")).toBe(false);
+    expect(isAdminRole("developer")).toBe(false);
+    expect(isAdminRole("user")).toBe(false);
+    expect(isAdminRole(null)).toBe(false);
+    expect(isAdminRole(undefined)).toBe(false);
   });
 });
 

@@ -46,7 +46,7 @@ const SECTIONS = [
 export default function ClientPortal() {
   const [, params] = useRoute("/client-portal/:section*");
   const [location] = useLocation();
-  const { user, loading, isAuthenticated, isImpersonatingTarget } = useRouteGuard();
+  const { user, loading, isAuthenticated, isImpersonatingTarget, isAdminRole } = useRouteGuard();
   const rawSection = (params as Record<string, string | undefined> | null)?.["section*"] ?? "dashboard";
   const section = rawSection.split("/")[0] || "dashboard";
 
@@ -75,7 +75,7 @@ export default function ClientPortal() {
   const impersonatingClient = isImpersonatingTarget(user, "client");
 
   // Role-based redirect away from client portal (skip when impersonating).
-  if (user?.role === "admin" && !impersonatingClient) {
+  if (isAdminRole(user?.role) && !impersonatingClient) {
     return <Redirect to="/admin" replace />;
   }
 

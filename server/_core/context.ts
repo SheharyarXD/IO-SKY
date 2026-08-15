@@ -1,6 +1,7 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
+import { isAdminRole } from "./trpc";
 import {
   getImpersonationFromRequest,
   verifyImpersonationToken,
@@ -38,7 +39,7 @@ export async function createContext(
   // role to downstream procedures while keeping the real admin identity
   // recorded for audit. If anything is off we silently ignore it.
   let impersonation: ImpersonationContext | null = null;
-  if (user && user.role === "admin") {
+  if (user && isAdminRole(user.role)) {
     const token = getImpersonationFromRequest(opts.req);
     if (token) {
       const claim = await verifyImpersonationToken(token);
@@ -50,10 +51,11 @@ export async function createContext(
           reason: claim.reason,
           expiresAt: claim.exp * 1000,
         };
-        // We deliberately keep ctx.user.role === "admin" so adminProcedure
-        // continues to work (Super Admins can keep using admin RPCs even
-        // while previewing). Frontend role gates use auth.me.impersonation
-        // to allow rendering the client / developer portal UI.
+        // We deliberately keep ctx.user.role untouched (admin or, per
+        // RM-57, super_admin) so adminProcedure continues to work — both
+        // tiers can keep using admin RPCs while previewing. Frontend role
+        // gates use auth.me.impersonation to allow rendering the client /
+        // developer portal UI.
       }
     }
   }

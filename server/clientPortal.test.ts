@@ -50,9 +50,12 @@ vi.mock("./_core/notification", () => ({
 
 vi.mock("./storage", () => ({
   // Always return a deterministic signed URL so the test can assert on it
-  // without touching the real S3 SDK.
-  storageGetSignedUrl: vi.fn(async (key: string) => `https://signed.example/${key}`),
-  storagePut: vi.fn(async (key: string) => ({ key, url: `/manus-storage/${key}` })),
+  // without touching the real Supabase Storage SDK. bucket is accepted (and
+  // ignored) to match storagePut/storageGetSignedUrl's real (bucket, key, ...)
+  // signature — the key is the second argument, not the first.
+  storageGetSignedUrl: vi.fn(async (_bucket: string, key: string) => `https://signed.example/${key}`),
+  storagePut: vi.fn(async (_bucket: string, key: string) => ({ bucket: _bucket, key })),
+  storageDelete: vi.fn(async () => undefined),
 }));
 
 import { appRouter } from "./routers";
@@ -433,8 +436,8 @@ describe("clientPortal router", () => {
     const storage = await import("./storage");
     const { notifyOwner } = await import("./_core/notification");
     (storage.storagePut as any).mockResolvedValueOnce({
-      key: "client-portal/7/123-test.pdf",
-      url: "/manus-storage/client-portal/7/123-test.pdf",
+      bucket: "client-portal",
+      key: "7/documents/123-test.pdf",
     });
     const caller = appRouter.createCaller(makeCtx({ role: "client", orgId: 7 }));
     const out = await caller.clientPortal.uploadDocument({
@@ -444,7 +447,7 @@ describe("clientPortal router", () => {
       contentBase64: Buffer.from("hello world").toString("base64"),
     });
     expect(out.id).toBe(999);
-    expect(out.fileKey).toBe("client-portal/7/123-test.pdf");
+    expect(out.fileKey).toBe("7/documents/123-test.pdf");
     expect(db.insertClientDocument).toHaveBeenCalledTimes(1);
     expect(db.appendLoginAudit).toHaveBeenCalledTimes(1);
     expect((db.appendLoginAudit as any).mock.calls[0][0].reason).toContain(
@@ -494,6 +497,30 @@ describe("clientPortal router", () => {
     expect(out.removed).toBe(true);
     expect(db.deleteClientDocumentById).toHaveBeenCalledWith(7, 56);
     expect(db.appendLoginAudit).toHaveBeenCalledTimes(1);
+    const storage = await import("./storage");
+    expect(storage.storageDelete).toHaveBeenCalledWith("client-portal", "client-portal/7/my-upload.pdf");
+  });
+
+  it("requestDocumentDeletion: DB row is removed even if the storage-object delete fails (best-effort, not a partial-failure error)", async () => {
+    const db = await import("./db");
+    const storage = await import("./storage");
+    (db.getClientDocumentById as any).mockResolvedValueOnce({
+      id: 57,
+      organizationId: 7,
+      name: "flaky-storage.pdf",
+      category: "general",
+      fileKey: "client-portal/7/flaky-storage.pdf",
+      sizeBytes: 512,
+      mimeType: "application/pdf",
+      uploadedByUserId: 1,
+      uploadedBy: "Alex Tester",
+      createdAt: new Date(),
+    });
+    (storage.storageDelete as any).mockRejectedValueOnce(new Error("bucket unreachable"));
+    const caller = appRouter.createCaller(makeCtx({ role: "client", orgId: 7 }));
+    const out = await caller.clientPortal.requestDocumentDeletion({ id: 57 });
+    expect(out.removed).toBe(true);
+    expect(db.deleteClientDocumentById).toHaveBeenCalledWith(7, 57);
   });
 
   it("markMessagesRead returns affected-rows count and stays tenant-scoped", async () => {

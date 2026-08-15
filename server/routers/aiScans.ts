@@ -414,7 +414,7 @@ export const aiScansRouter = router({
       // Reuse a previously generated PDF when available.
       if (scan.reportPdfKey) {
         try {
-          const url = await storageGetSignedUrl(scan.reportPdfKey);
+          const url = await storageGetSignedUrl("ai-scan-reports", scan.reportPdfKey);
           return { url, filename: pdfFilename(shortRef) };
         } catch {
           // fall through and regenerate if the cached object is unreachable
@@ -441,11 +441,11 @@ export const aiScansRouter = router({
             : Date.now(),
       });
 
-      const key = `ai-scan-reports/${scan.reportToken}.pdf`;
-      const { key: storedKey } = await storagePut(key, pdf, "application/pdf");
+      const key = `${scan.reportToken}.pdf`;
+      const { key: storedKey } = await storagePut("ai-scan-reports", key, pdf, "application/pdf");
       await setAiScanReportPdfKey(scan.id, storedKey);
 
-      const url = await storageGetSignedUrl(storedKey);
+      const url = await storageGetSignedUrl("ai-scan-reports", storedKey);
       return { url, filename: pdfFilename(shortRef) };
     }),
 });

@@ -1,21 +1,34 @@
-// Preconfigured storage helpers for Manus WebDev templates
-// Uploads via Forge Server presigned URL to S3 (PUT direct).
-// Downloads return /manus-storage/{key} paths served via 307 redirect.
+/**
+ * IO SKY — object storage (Milestone 2 §2.1).
+ *
+ * Replaces the Manus Forge presigned-URL backend (S3 via a Forge presign
+ * API — see git history for the prior implementation) with Supabase
+ * Storage. Every call goes through the backend's service-role client
+ * (getSupabaseAdmin(), server/_core/supabaseAuth.ts), which bypasses
+ * storage.objects RLS the same way the app's own Postgres connection
+ * bypasses table RLS — the actual tenant-isolation boundary for direct
+ * client access is drizzle/0007_storage_buckets.sql's RLS policies, not
+ * this module. This module is the single write/read path so that
+ * boundary can't be bypassed by a router reaching for the Supabase SDK
+ * directly.
+ *
+ * Four buckets, one per tenancy shape — see 0007_storage_buckets.sql's
+ * header for the exact path convention each one expects. Passing the
+ * wrong bucket for a path shape won't fail at this layer (bucket and key
+ * are independent strings); callers are expected to use the constants in
+ * StorageBucket and match the path convention documented there and in the
+ * migration.
+ */
+import { getSupabaseAdmin } from "./_core/supabaseAuth";
 
-import { ENV } from "./_core/env";
+export const STORAGE_BUCKETS = [
+  "branding",
+  "client-portal",
+  "developer-workspace",
+  "ai-scan-reports",
+] as const;
 
-function getForgeConfig() {
-  const forgeUrl = ENV.forgeApiUrl;
-  const forgeKey = ENV.forgeApiKey;
-
-  if (!forgeUrl || !forgeKey) {
-    throw new Error(
-      "Storage config missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY",
-    );
-  }
-
-  return { forgeUrl: forgeUrl.replace(/\/+$/, ""), forgeKey };
-}
+export type StorageBucket = (typeof STORAGE_BUCKETS)[number];
 
 function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
@@ -28,70 +41,82 @@ function appendHashSuffix(relKey: string): string {
   return `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
 }
 
+/**
+ * Upload bytes to the given bucket. Appends a short random suffix to the
+ * key (before the extension) so concurrent uploads with the same
+ * caller-chosen name never collide — same behavior the prior Forge-backed
+ * implementation had, preserved because callers (clientPortal.ts's
+ * uploadDocument, aiScans.ts's report generator) rely on the returned key
+ * being the actual stored key, not necessarily the one they passed in.
+ */
 export async function storagePut(
+  bucket: StorageBucket,
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream",
-): Promise<{ key: string; url: string }> {
-  const { forgeUrl, forgeKey } = getForgeConfig();
+): Promise<{ bucket: StorageBucket; key: string }> {
   const key = appendHashSuffix(normalizeKey(relKey));
+  const body =
+    typeof data === "string" ? Buffer.from(data, "utf-8") : Buffer.from(data);
 
-  // 1. Get presigned PUT URL from Forge
-  const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
-  presignUrl.searchParams.set("path", key);
+  const { error } = await getSupabaseAdmin()
+    .storage.from(bucket)
+    .upload(key, body, { contentType, upsert: false });
 
-  const presignResp = await fetch(presignUrl, {
-    headers: { Authorization: `Bearer ${forgeKey}` },
-  });
-
-  if (!presignResp.ok) {
-    const msg = await presignResp.text().catch(() => presignResp.statusText);
-    throw new Error(`Storage presign failed (${presignResp.status}): ${msg}`);
+  if (error) {
+    throw new Error(`Storage upload failed (bucket=${bucket}, key=${key}): ${error.message}`);
   }
 
-  const { url: s3Url } = (await presignResp.json()) as { url: string };
-  if (!s3Url) throw new Error("Forge returned empty presign URL");
-
-  // 2. PUT file directly to S3
-  const blob =
-    typeof data === "string"
-      ? new Blob([data], { type: contentType })
-      : new Blob([data as any], { type: contentType });
-
-  const uploadResp = await fetch(s3Url, {
-    method: "PUT",
-    headers: { "Content-Type": contentType },
-    body: blob,
-  });
-
-  if (!uploadResp.ok) {
-    throw new Error(`Storage upload to S3 failed (${uploadResp.status})`);
-  }
-
-  return { key, url: `/manus-storage/${key}` };
+  return { bucket, key };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+/**
+ * Short-lived signed URL for a private object. Default 10 minutes, matching
+ * every current caller's `expiresInSec: 600` response contract
+ * (clientPortal.ts's report/invoice/document downloads).
+ */
+export async function storageGetSignedUrl(
+  bucket: StorageBucket,
+  relKey: string,
+  expiresInSec = 600,
+): Promise<string> {
   const key = normalizeKey(relKey);
-  return { key, url: `/manus-storage/${key}` };
-}
 
-export async function storageGetSignedUrl(relKey: string): Promise<string> {
-  const { forgeUrl, forgeKey } = getForgeConfig();
-  const key = normalizeKey(relKey);
+  const { data, error } = await getSupabaseAdmin()
+    .storage.from(bucket)
+    .createSignedUrl(key, expiresInSec);
 
-  const getUrl = new URL("v1/storage/presign/get", forgeUrl + "/");
-  getUrl.searchParams.set("path", key);
-
-  const resp = await fetch(getUrl, {
-    headers: { Authorization: `Bearer ${forgeKey}` },
-  });
-
-  if (!resp.ok) {
-    const msg = await resp.text().catch(() => resp.statusText);
-    throw new Error(`Storage signed URL failed (${resp.status}): ${msg}`);
+  if (error || !data?.signedUrl) {
+    throw new Error(
+      `Storage signed URL failed (bucket=${bucket}, key=${key}): ${error?.message ?? "empty response"}`,
+    );
   }
 
-  const { url } = (await resp.json()) as { url: string };
-  return url;
+  return data.signedUrl;
+}
+
+/**
+ * Permanent public URL for an object in the `branding` bucket — the one
+ * bucket created with `public: true` (0007_storage_buckets.sql). Does not
+ * hit the network; Supabase public URLs are deterministic from the project
+ * URL + bucket + key, so this is safe to call from a hot path.
+ */
+export function storageGetPublicUrl(bucket: "branding", relKey: string): string {
+  const key = normalizeKey(relKey);
+  const { data } = getSupabaseAdmin().storage.from(bucket).getPublicUrl(key);
+  return data.publicUrl;
+}
+
+/**
+ * Delete an object. Not used by any current caller (no delete UI exists
+ * yet for client documents / developer files / AI Scan reports), exposed
+ * ahead of Milestone 2 §2.6's Document Lifecycle work needing it, same
+ * "declare ahead of first consumer" pattern the RLS helper functions use.
+ */
+export async function storageDelete(bucket: StorageBucket, relKey: string): Promise<void> {
+  const key = normalizeKey(relKey);
+  const { error } = await getSupabaseAdmin().storage.from(bucket).remove([key]);
+  if (error) {
+    throw new Error(`Storage delete failed (bucket=${bucket}, key=${key}): ${error.message}`);
+  }
 }

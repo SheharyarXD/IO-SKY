@@ -11,6 +11,17 @@ const t = initTRPC.context<TrpcContext>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+/**
+ * RM-57: "super_admin" is a strict superset of "admin" — every place that
+ * previously checked `role === "admin"` to mean "this account has
+ * admin-or-above privilege" must also accept "super_admin", or a promoted
+ * account would silently lose access an ordinary admin still has. Use this
+ * instead of comparing to the literal "admin" string.
+ */
+export function isAdminRole(role: string | null | undefined): boolean {
+  return role === "admin" || role === "super_admin";
+}
+
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
 
@@ -40,7 +51,7 @@ export const clientProcedure = t.procedure.use(
     if (!ctx.user) {
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
     }
-    if (ctx.user.role !== "client" && ctx.user.role !== "admin") {
+    if (ctx.user.role !== "client" && !isAdminRole(ctx.user.role)) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
     if (!ctx.user.organizationId) {
@@ -123,7 +134,7 @@ export const developerProcedure = t.procedure.use(
     if (!ctx.user) {
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
     }
-    if (ctx.user.role !== "developer" && ctx.user.role !== "admin") {
+    if (ctx.user.role !== "developer" && !isAdminRole(ctx.user.role)) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
@@ -173,7 +184,34 @@ export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.role !== 'admin') {
+    if (!ctx.user || !isAdminRole(ctx.user.role)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  }),
+);
+
+/**
+ * superAdminProcedure — strictly role="super_admin", no admin fallback.
+ * Use for the Milestone 2 §2.5 capabilities that are exclusively
+ * super_admin's (organization management, role/permission management,
+ * platform & integration configuration) — the capabilities a regular
+ * admin does NOT get, per the RM-57 decision. Everything a regular admin
+ * can already do stays reachable through adminProcedure, which
+ * super_admin also passes (see isAdminRole above) — this procedure is
+ * additive, not a replacement for adminProcedure elsewhere.
+ */
+export const superAdminProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    if (!ctx.user || ctx.user.role !== "super_admin") {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 

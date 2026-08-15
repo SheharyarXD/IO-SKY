@@ -22,9 +22,15 @@ against actual application query logic with no gaps found (§14). **A later, ind
 re-verification pass (§15, 2026-08-12) confirmed all of the above from a clean install in a
 different environment — 0 typecheck errors, 385/418 tests passing (33 skipped, all correctly
 env-gated), a clean production build, and a fresh security/auth/RLS sweep that found nothing new
-— with zero code changes needed.** What's left for Milestone 1: RM-57 (Super Admin) is a genuine
-open client decision, and a handful of tasks remain externally blocked (secrets rotation, branch
-protection, CI-run verification — none of them database-related).
+— with zero code changes needed.** **A further session (§16, 2026-08-15), scoped specifically to
+completing only the Milestone 1 work Milestone 2 actually depends on, resolved RM-57 by client
+decision (super_admin: new 5th role, strict superset of admin, assignable), implemented the
+schema/RLS/RBAC foundation for it, installed a working Node/pnpm toolchain (this environment had
+none), and locally verified it — 0 typecheck errors, 389/422 tests passing, clean build. The one
+remaining gap is the live database migration, since that session had no Supabase credentials; see
+§16 for the exact status.** What's left for Milestone 1: RM-57's migration needs to be applied to
+the live database (§16), and a handful of tasks remain externally blocked (secrets rotation,
+branch protection, CI-run verification — none of them database-related).
 
 ---
 
@@ -704,3 +710,102 @@ stays **43 done / 5 partial / 10 blocked / 5 deferred, out of 63** (see `PHASE1_
 summary, also updated with this pass's date). RM-57 (Super Admin) and the externally-blocked items
 in §11/§12 remain the only things standing between this milestone and 100%, and none of them are
 resolvable without client input or infrastructure access this environment doesn't have.
+
+---
+
+## 16. RM-57 resolution (2026-08-15) — Milestone 1 prerequisite for Milestone 2 §2.5
+
+**Context**: this session's task was to audit Milestone 1 against the Milestone 2 requirements
+and complete *only* the Milestone 1 portions that Milestone 2 actually depends on — not to redo
+verified work or invent unrelated scope. The audit (cross-referencing every non-✅ RM item in
+`PHASE1_CHECKLIST.md` against Milestone 2's workstreams) found exactly one genuine blocker:
+RM-57's Super Admin decision, which Milestone 2 §2.5 ("Advanced Super Admin & Platform
+Governance") and the Technical Operator role's RBAC boundary both depend on, and which the
+codebase had never defined (§12 above / Workstream 2.11 in `PHASE1_CHECKLIST.md`). Every other
+incomplete RM item (secrets rotation, branch protection, CI verification, cookie config, env
+separation, the deferred UI consolidations) was confirmed to have no code-level coupling to any
+Milestone 2 workstream, so none of them were touched.
+
+**Decision obtained from the client** (not invented): (a) `super_admin` is a new 5th
+`usersRoleEnum` value; (b) it is a strict superset of `admin` — every existing admin capability
+stays available, plus organization management, role/permission management, and platform/
+integration configuration (the latter three are Milestone 2 §2.5 deliverables, not built in this
+pass — only the role tier and its recognition at the RLS/RBAC layer were in scope here); (c) it
+is assignable (any existing admin can be promoted by an existing super_admin), not a single
+hardcoded owner — so `db/users.ts`'s `ENV.ownerOpenId` auto-promotion was deliberately left
+promoting to plain `admin`, unchanged.
+
+**What was implemented**:
+- `drizzle/schema.ts`: `usersRoleEnum` extended to 5 values.
+- `drizzle/0006_super_admin_role.sql` (+ matching `meta/0006_snapshot.json` and `_journal.json`
+  entry, hand-authored in the same format as 0000-0005 since no `drizzle-kit generate` was
+  available): `ALTER TYPE users_role ADD VALUE 'super_admin'`, then redefines `app_is_admin()` —
+  the single function every one of the 53 tables' RLS policies already calls — to
+  `role IN ('admin','super_admin')`. This is the entire RLS-layer change needed for the "strict
+  superset" requirement: every existing policy extends to super_admin with zero per-policy edits,
+  by construction. A new `app_is_super_admin()` helper is also declared, unused by any policy yet,
+  for §2.5's future super-admin-exclusive tables (same "declare ahead of first consumer" pattern
+  0004's original helpers followed for `app_current_developer_id()`).
+- `server/_core/trpc.ts`: new `isAdminRole(role)` helper (`role === "admin" || role === "super_admin"`),
+  applied to `adminProcedure`, and to the admin-fallback branches of `clientProcedure`/
+  `developerProcedure`. New `superAdminProcedure` (strictly `role === "super_admin"`) for §2.5's
+  exclusive endpoints — none exist yet, so nothing currently uses it beyond its own test.
+- Every other server-side `role === "admin"` gate updated to `isAdminRole()`, found via a
+  repository-wide grep (not assumed from memory): `server/_core/context.ts` (impersonation-
+  eligibility check), `server/_core/viewAsRoute.ts` (the `/api/admin/view-as` Express route),
+  `server/routers/admin.ts`'s `viewAs` mutation (the exact line RM-57's original investigation
+  flagged — `"leave room for a future 'super admin only' distinction"` — now resolved), and
+  `server/routers/developer.ts`'s two admin-fallback checks (`gateStatus`, agreement-signing).
+- Client-side mirror: `useRouteGuard.ts` gained an `isAdminRole()` twin (client code can't import
+  server code) and a `roleHome("super_admin") → "/admin"` case. Applied to `AdminLayout.tsx`
+  (both its redirect-away-from-admin check and its loading-gate check — also fixed a pre-existing
+  `(user as any).role !== "admin"` unsafe-cast comparison while touching the same line),
+  `ClientPortal.tsx` and `DeveloperWorkspace.tsx` (their "admin previewing this portal" checks),
+  and `AdminBookings.tsx` (its local `isAdmin` flag, which gated a real query's `enabled` option —
+  left unfixed, a super_admin visiting that page would have silently seen an empty state forever,
+  the same staleness-bug class RM-50's follow-up pass already found and fixed twice elsewhere).
+- `server/_core/oauth.ts`'s `roleBasedDestination()` (post-login redirect target) gained the same
+  `super_admin → "/admin/bookings"` case as `admin`.
+- Repository-wide re-grep after all edits (`role === "admin"` / `role !== "admin"`, both server and
+  client) confirms zero remaining literal-only admin checks outside comments and `isAdminRole()`'s
+  own implementation — the sweep was exhaustive, not partial.
+
+**Tests added**: `server/rbac.authOrigin.test.ts` gained two cases — super_admin passes
+`adminProcedure`'s role gate exactly like admin does (both Manus- and Supabase-shaped identities,
+mirroring the file's existing pattern), and plain admin is rejected by `superAdminProcedure` while
+super_admin passes it (proving the exclusive tier is real, not just additive in name).
+`client/src/_core/hooks/useRouteGuard.test.ts` gained `isAdminRole()` coverage and a
+`roleHome("super_admin")` case.
+
+**Explicitly NOT built in this pass** (Milestone 2 §2.5's actual job, not a Milestone 1
+prerequisite): the Super Admin console UI, the org-management/role-management/platform-config
+endpoints that would use `superAdminProcedure`, and the admin→super_admin promotion mutation
+itself. This pass only lands the foundation those features sit on.
+
+**Verification status, updated**: this session initially had no `.env` file and no `node`/`pnpm`
+on `PATH` at all. Rather than leave the work unverified, Node.js 24.19.0 LTS was installed via
+`winget install OpenJS.NodeJS.LTS`, and the project's pinned `pnpm@10.4.1` activated via
+`corepack prepare pnpm@10.4.1 --activate` (no admin rights to write a `pnpm.CMD` shim into
+`C:\Program Files\nodejs`, so every command this session invoked pnpm as `corepack pnpm <args>`
+rather than a bare `pnpm` on PATH — functionally identical, just a different invocation).
+**With that toolchain, real local verification was performed**:
+
+| Check | Result |
+|---|---|
+| `pnpm install --frozen-lockfile` | ✅ Clean |
+| `npx tsc --noEmit` | ✅ **0 errors** |
+| `npx vitest run` | ✅ **389/422 passing, 33 skipped** (up from 385/418 in §15 — the 4 new tests are exactly this session's RM-57 additions: `rbac.authOrigin.test.ts` gained 2, `useRouteGuard.test.ts` gained 2, all passing; the 33 skips are the same live-Supabase-only suites correctly skipping with no `.env`, zero unexpected skips or failures) |
+| `npx vite build && esbuild ...` | ✅ Succeeds — only the pre-existing chunk-size warnings §15 already documented (index bundle ~3.9MB / 1MB gzip, several large syntax-highlighting/diagram chunks), no new errors |
+
+**Still not done, honestly**: no Supabase credentials (`DATABASE_URL`/`SUPABASE_*`) were available
+this session, so unlike RM-41..60 (applied to and verified against the live Supabase project),
+**`drizzle/0006_super_admin_role.sql` has not been run against the live database.** The SQL and
+snapshot JSON were hand-authored and verified by direct structural comparison against 0000-0005
+(same statement-breakpoint convention, same snapshot `id`/`prevId` chaining, same helper-function
+declaration style) since no `drizzle-kit generate` diff was possible without a live connection to
+diff against — a real but weaker form of verification than the live query-based proof §3/§5 used
+for 0000-0005. **Required before RM-57 reaches that same bar**: a session with Supabase
+credentials must run `npx drizzle-kit migrate`, then confirm via direct SQL
+(`SELECT enumlabel FROM pg_enum WHERE enumtypid = 'users_role'::regtype` → 5 rows including
+`super_admin`; `SELECT prosrc FROM pg_proc WHERE proname = 'app_is_admin'` → matches this
+migration's definition) exactly the way §3/§5 did for 0000-0005.

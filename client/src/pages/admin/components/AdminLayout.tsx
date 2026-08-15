@@ -112,7 +112,7 @@ export function AdminLayout({
   const [location, navigate] = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
-  const { user, loading, isAuthenticated, roleHome } = useRouteGuard();
+  const { user, loading, isAuthenticated, roleHome, isAdminRole } = useRouteGuard();
 
   // Tick the date/time chip once a minute so it doesn't feel frozen.
   useEffect(() => {
@@ -133,7 +133,7 @@ export function AdminLayout({
       window.location.href = getLoginUrl(location);
       return;
     }
-    if (role && role !== "admin") {
+    if (role && !isAdminRole(role)) {
       // Redirect to the role's home rather than gatekeeping in place.
       const dest = roleHome(role);
       debugLog.log("admin_layout_redirect_wrong_role", { role, dest });
@@ -143,7 +143,7 @@ export function AdminLayout({
     debugLog.log("admin_layout_auth_passed", { role });
   }, [loading, isAuthenticated, user, location]);
 
-  if (loading || !isAuthenticated || ((user as any)?.role && (user as any).role !== "admin")) {
+  if (loading || !isAuthenticated || ((user as any)?.role && !isAdminRole((user as any).role))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0B1020] text-white/70">
         <Loader2 className="w-5 h-5 animate-spin mr-3" /> Verifying admin session…

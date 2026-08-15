@@ -26,8 +26,21 @@
  */
 import { useAuth } from "./useAuth";
 
-export type PortalRole = "user" | "client" | "developer" | "admin";
+export type PortalRole = "user" | "client" | "developer" | "admin" | "super_admin";
 export type ImpersonationTarget = "client" | "developer";
+
+/**
+ * RM-57: "super_admin" is a strict superset of "admin" — everywhere the
+ * portal shells used to check `role === "admin"` to mean "this account has
+ * admin-or-above access" must also accept "super_admin", the same rule
+ * `server/_core/trpc.ts`'s `isAdminRole()` enforces server-side. Client-side
+ * checks are UX only (the real boundary is the server), but a stale check
+ * here would still incorrectly bounce a super_admin out of the admin
+ * console, so it has to stay in sync.
+ */
+export function isAdminRole(role: string | null | undefined): boolean {
+  return role === "admin" || role === "super_admin";
+}
 
 export type GuardUser = {
   role?: string | null;
@@ -47,6 +60,7 @@ export type GuardUser = {
 export function roleHome(role: string | null | undefined): string {
   switch (role) {
     case "admin":
+    case "super_admin":
       return "/admin";
     case "client":
     case "client_member":
@@ -106,5 +120,5 @@ export function recordAttemptProvider(
  */
 export function useRouteGuard() {
   const auth = useAuth();
-  return { ...auth, roleHome, isImpersonatingTarget };
+  return { ...auth, roleHome, isImpersonatingTarget, isAdminRole };
 }

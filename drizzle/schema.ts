@@ -84,7 +84,17 @@ import {
 // Core / Auth
 // ---------------------------------------------------------------------------
 
-export const usersRoleEnum = pgEnum("users_role", ["user", "client", "developer", "admin"]);
+/**
+ * RM-57 (resolved): "super_admin" is a 5th tier, a strict superset of
+ * "admin" — every super_admin capability is admin-plus, never
+ * admin-minus. Assignable (any existing admin can be promoted by an
+ * existing super_admin), not a single hardcoded owner. See
+ * `drizzle/0006_super_admin_role.sql` for the RLS-layer equivalent
+ * (`app_is_admin()` now also returns true for super_admin) and
+ * `server/_core/trpc.ts`'s `isAdminRole()`/`superAdminProcedure` for the
+ * application-layer equivalent.
+ */
+export const usersRoleEnum = pgEnum("users_role", ["user", "client", "developer", "admin", "super_admin"]);
 
 /**
  * Core user table backing auth flow.

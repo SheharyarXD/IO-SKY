@@ -47,6 +47,7 @@ export function roleBasedDestination(
 ): string {
   switch (role) {
     case "admin":
+    case "super_admin":
       return "/admin/bookings";
     case "client":
     case "client_member":

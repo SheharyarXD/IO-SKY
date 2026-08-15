@@ -24,6 +24,7 @@ import * as db from "../db";
 import { getCookieSecretBytes } from "./env";
 import { sdk } from "./sdk";
 import { getSessionCookieOptions } from "./cookies";
+import { isAdminRole } from "./trpc";
 
 export const IMPERSONATION_COOKIE = "io_sky_impersonation";
 const IMPERSONATION_TTL_SEC = 30 * 60;
@@ -103,7 +104,7 @@ export function registerViewAsRoutes(app: Express) {
     } catch {
       return res.status(401).json({ ok: false, error: "Unauthenticated" });
     }
-    if (admin.role !== "admin") {
+    if (!isAdminRole(admin.role)) {
       return res.status(403).json({ ok: false, error: "Forbidden" });
     }
 

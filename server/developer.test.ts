@@ -86,12 +86,12 @@ vi.mock("./_core/notification", () => ({
 }));
 
 vi.mock("./storage", () => ({
-  storageGet: vi.fn(async (key: string) => ({
-    key,
-    url: `/manus-storage/${key}`,
-  })),
-  storagePut: vi.fn(async () => ({ key: "k", url: "/manus-storage/k" })),
-  storageGetSignedUrl: vi.fn(async (key: string) => `https://signed.example/${key}?sig=test`),
+  // bucket is accepted (and ignored) to match storagePut/storageGetSignedUrl's
+  // real (bucket, key, ...) signature — the key is the second argument.
+  storagePut: vi.fn(async (bucket: string, key: string) => ({ bucket, key })),
+  storageGetSignedUrl: vi.fn(
+    async (_bucket: string, key: string) => `https://signed.example/${key}?sig=test`,
+  ),
 }));
 
 import { appRouter } from "./routers";
