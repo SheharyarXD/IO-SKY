@@ -153,7 +153,9 @@ function renderPreLaunchHtml(opts: { error?: boolean }): string {
 /**
  * True if the request is for a path that should never be gated:
  *  - all /api/* (tRPC + auth + storage proxy)
- *  - all /manus-storage/* (signed asset redirects)
+ *  - all /manus-storage/* (signed asset redirects — legacy branding proxy,
+ *    see server/_core/storageProxy.ts's header comment for why it's still
+ *    live)
  *  - anything that looks like a static asset
  *  - the favicon and the robots file (we render robots ourselves below)
  *  - the pre-launch unlock endpoint and the login page
@@ -163,7 +165,6 @@ function isExempt(req: Request): boolean {
   if (url.startsWith("/api/")) return true;
   if (url.startsWith("/manus-storage/")) return true;
   if (url.startsWith("/assets/")) return true;
-  if (url.startsWith("/__manus__/")) return true;
   if (url === "/favicon.ico" || url === "/robots.txt") return true;
   if (url === "/login") return true;
   // Static-file extensions

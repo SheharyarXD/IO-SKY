@@ -308,7 +308,7 @@ export default function ExecutiveOverview() {
             </div>
             <div className="min-w-0">
               <div className="font-display font-semibold text-[18px] tracking-tight leading-tight text-[#E6EAF0]">
-                Good morning, {(typeof window !== "undefined" && (JSON.parse(localStorage.getItem("manus-runtime-user-info") ?? "null")?.name?.split(" ")[0])) || "Alex"}.
+                Good morning, {(typeof window !== "undefined" && (JSON.parse(localStorage.getItem("iosky-current-user-cache") ?? "null")?.name?.split(" ")[0])) || "Alex"}.
               </div>
               <p className="text-[13px] text-white/65 leading-snug mt-1">
                 I've analyzed all systems and prepared your operational brief.

@@ -53,8 +53,12 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
+    // Milestone 2 §2.2 cosmetic sweep: renamed from "manus-runtime-user-info"
+    // — purely an internal display cache (one writer here, one reader in
+    // ExecutiveOverview.tsx's greeting fallback), never an external call,
+    // but the old name was a stale Manus-era leftover worth cleaning up.
     localStorage.setItem(
-      "manus-runtime-user-info",
+      "iosky-current-user-cache",
       JSON.stringify(meQuery.data)
     );
     return {

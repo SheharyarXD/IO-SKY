@@ -1154,7 +1154,6 @@ export const ar: Record<string, string> = {
   "ui.empty": "لا يوجد شيء هنا بعد",
   "ui.permissionDenied": "تم رفض الإذن",
   "ui.error": "حدث خطأ ما",
-  "auth.continueWithManus": "المتابعة باستخدام Manus",
   "auth.mfa.code": "رمز مكون من 6 أرقام",
   "auth.mfa.submit": "تحقق",
   "auth.mfa.subtitle": "تأكيد باستخدام تطبيق المصادقة أو رمز الاسترداد الخاص بك.",

@@ -373,6 +373,65 @@ export const loginAudit = pgTable(
 export type LoginAudit = typeof loginAudit.$inferSelect;
 export type InsertLoginAudit = typeof loginAudit.$inferInsert;
 
+/**
+ * Milestone 2 §2.3 — email delivery tracking. One row per send attempt
+ * across every transactional email path (booking confirmation, contact/
+ * dev-app acknowledgement, owner alerts — server/email.ts's
+ * sendBookingConfirmation/dispatchSimpleEmail both write here), updated
+ * in place as Resend webhook events arrive (delivered/bounced/complained)
+ * so email failures are visible instead of silently disappearing.
+ * providerMessageId is the join key for webhook updates — nullable
+ * because the SMTP/console transports don't produce a Resend-trackable id
+ * (only Resend sends delivery-status webhooks; SMTP/console rows stay at
+ * "sent" permanently, which is honest — there is no delivery confirmation
+ * to have for those transports).
+ */
+export const emailMessageTypeEnum = pgEnum("email_message_type", [
+  "booking-confirmation",
+  "contact-confirmation",
+  "devapp-ack",
+  "owner-alert",
+]);
+
+export const emailDeliveryStatusEnum = pgEnum("email_delivery_status", [
+  "sent",
+  "delivered",
+  "bounced",
+  "complained",
+  "failed",
+]);
+
+export const emailDeliveryLog = pgTable(
+  "email_delivery_log",
+  {
+    id: serial("id").primaryKey(),
+    messageType: emailMessageTypeEnum("messageType").notNull(),
+    /** "resend" | "smtp" | "console" — mirrors email.ts's transport union. */
+    transport: varchar("transport", { length: 16 }).notNull(),
+    /** Resend's email id. Null for smtp/console (see header comment). */
+    providerMessageId: varchar("providerMessageId", { length: 255 }),
+    recipient: varchar("recipient", { length: 320 }).notNull(),
+    subject: varchar("subject", { length: 500 }),
+    /** Booking publicRef / contact ref / etc, for cross-referencing. Nullable — owner alerts have no ref. */
+    relatedRef: varchar("relatedRef", { length: 64 }),
+    status: emailDeliveryStatusEnum("status").default("sent").notNull(),
+    /** Send-time transport error (e.g. "Resend 500: ..."). Null on success. */
+    errorMessage: text("errorMessage"),
+    /** Raw bounce/complaint reason from the Resend webhook, if any. */
+    providerResponse: text("providerResponse"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("email_delivery_log_provider_message_id_idx").on(table.providerMessageId),
+    index("email_delivery_log_status_idx").on(table.status),
+    index("email_delivery_log_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export type EmailDeliveryLog = typeof emailDeliveryLog.$inferSelect;
+export type InsertEmailDeliveryLog = typeof emailDeliveryLog.$inferInsert;
+
 /* -----------------------------------------------------------------------
  * CLIENT PORTAL (multi-tenant, organization-scoped)
  * Every record below carries `organizationId`. The clientProcedure

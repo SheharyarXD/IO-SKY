@@ -163,7 +163,6 @@ export const zh: Record<string, string> = {
   "auth.signIn": "登录",
   "auth.signOut": "退出登录",
   "auth.welcome": "欢迎回来",
-  "auth.continueWithManus": "通过 Manus 账户继续",
   "auth.mfa.title": "请验证您的身份",
   "auth.mfa.subtitle":
     "请输入您的认证器应用生成的 6 位数代码,或使用您的恢复码。",

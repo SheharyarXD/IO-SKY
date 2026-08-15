@@ -19,6 +19,7 @@
  *   aiScans            — AI scan create/read/update
  *   solutions          — ecosystem clicks, proposals, custom discovery
  *   legal              — legal documents, agreement versions, acceptances, cookie consent
+ *   emailDelivery      — email delivery log (Milestone 2 §2.3)
  */
 
 export { getDb } from "./connection";
@@ -32,3 +33,4 @@ export * from "./developerWorkspace";
 export * from "./aiScans";
 export * from "./solutions";
 export * from "./legal";
+export * from "./emailDelivery";

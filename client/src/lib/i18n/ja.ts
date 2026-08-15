@@ -1153,7 +1153,6 @@ export const ja: Record<string, string> = {
   "ui.empty": "まだ何もありません",
   "ui.permissionDenied": "アクセスが拒否されました",
   "ui.error": "問題が発生しました",
-  "auth.continueWithManus": "Manusで続行",
   "auth.mfa.code": "6桁のコード",
   "auth.mfa.submit": "確認",
   "auth.mfa.subtitle": "認証アプリまたはリカバリーコードで確認してください。",

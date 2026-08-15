@@ -10,6 +10,7 @@ import { registerSupabaseAuthRoutes } from "./supabaseAuthRoute";
 import { registerStorageProxy } from "./storageProxy";
 import { registerViewAsRoutes } from "./viewAsRoute";
 import { registerStagingGate } from "./stagingGate";
+import { registerResendWebhookRoutes } from "./resendWebhookRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -36,8 +37,17 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
+  // Configure body parser with larger size limit for file uploads.
+  // `verify` stashes the raw bytes alongside the parsed body — needed by
+  // server/_core/resendWebhookRoute.ts (Milestone 2 §2.3) to check the
+  // Svix/Resend webhook signature, which is computed over the exact raw
+  // payload bytes, not a re-serialization of the parsed JSON.
+  app.use(express.json({
+    limit: "50mb",
+    verify: (req, _res, buf) => {
+      (req as express.Request & { rawBody?: Buffer }).rawBody = Buffer.from(buf);
+    },
+  }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // Private staging / pre-launch gate (no-op unless STAGING_MODE=on).
   registerStagingGate(app);
@@ -47,6 +57,7 @@ async function startServer() {
   registerSupabaseAuthRoutes(app);
   registerMfaChallengeRoutes(app);
   registerViewAsRoutes(app);
+  registerResendWebhookRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

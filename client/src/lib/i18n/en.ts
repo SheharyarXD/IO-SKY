@@ -1304,7 +1304,6 @@ export const en: Record<string, string> = {
 "ui.error": "Something went wrong",
 
 // ZH parity additions (Pakket 3): keys present in ZH that previously had no EN fallback.
-"auth.continueWithManus": "Continue with Manus",
 "auth.mfa.code": "6-digit code",
 "auth.mfa.submit": "Verify",
 "auth.mfa.subtitle": "Confirm with your authenticator or recovery code.",

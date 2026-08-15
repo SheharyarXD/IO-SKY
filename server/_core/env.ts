@@ -16,6 +16,20 @@ export const ENV = {
   supabaseJwksUrl: process.env.SUPABASE_JWKS_URL ?? "",
 };
 
+// Milestone 2 §2.2: owner-alert channel config, replacing the Manus
+// WebDevService/SendNotification push (server/_core/notification.ts).
+// Deliberately NOT part of the frozen ENV object above — read fresh at
+// call time instead, same reasoning as getCookieSecretBytes() below and
+// supabaseAuth.ts's config reads: a module-load-time snapshot would stay
+// stale for any test that sets these in a beforeEach()/beforeAll(), which
+// runs after ENV's top-level object literal has already been evaluated.
+export function getOwnerNotifyConfig() {
+  return {
+    email: process.env.OWNER_NOTIFY_EMAIL ?? "",
+    slackWebhookUrl: process.env.OWNER_NOTIFY_SLACK_WEBHOOK_URL ?? "",
+  };
+}
+
 /**
  * Validates a signing secret before it's used, instead of silently falling
  * back to an empty string or a hardcoded value. Mirrors the fail-fast check

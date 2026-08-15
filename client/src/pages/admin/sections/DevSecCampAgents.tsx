@@ -29,55 +29,80 @@ import {
 // =============================================================================
 // Developer Management
 // =============================================================================
-interface Developer {
-  id: string;
-  name: string;
-  role: string;
-  access: "Standard" | "Elevated" | "Limited";
-  expiresIn: string;
-  status: "Active" | "Pending" | "Revoked";
+interface DeveloperRow {
+  id: number;
+  fullName: string;
+  country: string | null;
+  status: string;
+  availability: string | null;
+  mfaRequired: boolean | number | null;
+  approvedMs: number | null;
 }
 
-const DEV_KPIS: KpiTile[] = [
-  { id: "active", label: "Active devs", value: "18", delta: { value: "1", positive: true }, icon: Wrench, accent: "orange", spark: [12, 13, 15, 16, 17, 17, 18] },
-  { id: "elev", label: "Elevated access", value: "5", icon: KeySquare, accent: "violet", spark: [3, 4, 4, 5, 5, 5, 5] },
-  { id: "exp", label: "Expiring (24h)", value: "3", icon: Clock, accent: "red", spark: [1, 2, 2, 3, 3, 3, 3] },
-  { id: "rev", label: "Revoked (7d)", value: "2", icon: AlertTriangle, accent: "red", spark: [0, 1, 1, 2, 2, 2, 2] },
+type DevelopersPayload = {
+  rows: DeveloperRow[];
+  scopes: { developerId: number; level: string; status: string; expiresMs: number | null }[];
+  pendingRequests: number;
+  total: number;
+};
+
+const devStatusTone = (s: string) =>
+  s === "active" ? "ok" : s === "pending" || s === "suspended" ? "warn" : "muted";
+
+const DEV_COLS: DataColumn<DeveloperRow & { elevatedLevel: string; expiresLabel: string }>[] = [
+  { key: "id", header: "Ref", width: "78px", render: (r) => <span className="font-mono text-white/55">DEV-{r.id}</span> },
+  { key: "fullName", header: "Developer" },
+  { key: "elevatedLevel", header: "Access" },
+  { key: "expiresLabel", header: "Expires", align: "right", render: (r) => <span className="font-mono text-white/65">{r.expiresLabel}</span> },
+  { key: "status", header: "Status", render: (r) => <StatusPill tone={devStatusTone(r.status) as any} label={r.status} /> },
 ];
 
-const DEVS: Developer[] = [
-  { id: "DEV-21", name: "John Developer",  role: "Infrastructure",         access: "Elevated", expiresIn: "2h 14m",  status: "Active" },
-  { id: "DEV-20", name: "Sarah Engineer",  role: "Database",               access: "Elevated", expiresIn: "1h 32m",  status: "Active" },
-  { id: "DEV-19", name: "Mike DevOps",     role: "Server deploy",          access: "Elevated", expiresIn: "45m",     status: "Active" },
-  { id: "DEV-18", name: "Tom Engineer",    role: "Bug investigation",      access: "Limited",  expiresIn: "1h 05m",  status: "Active" },
-  { id: "DEV-17", name: "Lena Backend",    role: "Backend rollout",        access: "Standard", expiresIn: "—",       status: "Pending" },
-];
-
-const accessTone = (a: Developer["access"]) =>
-  a === "Elevated" ? "warn" : a === "Limited" ? "muted" : "info";
-
-const DEV_COLS: DataColumn<Developer>[] = [
-  { key: "id", header: "Ref", width: "78px" },
-  { key: "name", header: "Developer" },
-  { key: "role", header: "Purpose" },
-  { key: "access", header: "Access", render: (r) => <StatusPill tone={accessTone(r.access) as any} label={r.access} /> },
-  { key: "expiresIn", header: "Expires", align: "right", render: (r) => <span className="font-mono text-white/65">{r.expiresIn}</span> },
-  { key: "status", header: "Status", render: (r) => <StatusPill tone={r.status === "Active" ? "ok" : r.status === "Pending" ? "info" : "err"} label={r.status} /> },
-];
+function relativeFromNow(ms: number | null): string {
+  if (!ms) return "—";
+  const diff = ms - Date.now();
+  if (diff <= 0) return "expired";
+  const mins = Math.round(diff / 60_000);
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}h ${mins % 60}m`;
+}
 
 export function Developers() {
   const q = trpc.admin.developers.useQuery(undefined, { staleTime: 30_000 });
   const audited = useAuditedAction();
   return (
-    <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
-      {() => (
+    <ModuleStateBoundary<DevelopersPayload>
+      isLoading={q.isLoading}
+      error={q.error as any}
+      data={q.data as DevelopersPayload | undefined}
+      isEmpty={(d) => d.rows.length === 0}
+      onRetry={() => q.refetch()}
+    >
+      {(data) => {
+        const scopeByDeveloper = new Map(data.scopes.map((s) => [s.developerId, s]));
+        const rows = data.rows.map((r) => {
+          const scope = scopeByDeveloper.get(r.id);
+          return {
+            ...r,
+            elevatedLevel: scope?.level ?? "none",
+            expiresLabel: relativeFromNow(scope?.expiresMs ?? null),
+          };
+        });
+        const elevatedCount = data.scopes.filter((s) => s.status === "active" && s.level !== "none").length;
+        const activeCount = data.rows.filter((r) => r.status === "active").length;
+        return (
     <OperationalPage
       eyebrow="Workforce"
       title="Developer Management"
       tagline="Approve developers, assign projects and grant temporary maintenance access with auto-expiration. Revoke instantly with full audit trail."
-      kpis={DEV_KPIS}
+      kpis={[
+        { id: "active", label: "Active devs", value: String(activeCount), icon: Wrench, accent: "orange" },
+        { id: "elev", label: "Elevated access", value: String(elevatedCount), icon: KeySquare, accent: "violet" },
+        { id: "pending", label: "Pending requests", value: String(data.pendingRequests), icon: Clock, accent: data.pendingRequests > 0 ? "red" : "green" },
+        { id: "total", label: "Total developers", value: String(data.total), icon: AlertTriangle, accent: "blue" },
+      ]}
       toolbar={<DefaultToolbar searchPlaceholder="Search developers, projects…" filters={["Access", "Status"]} primaryAction={{ label: "Grant access", onClick: () => audited.fire("developers", "grant-access") }} />}
-      primary={<DataTable columns={DEV_COLS} rows={DEVS} />}
+      primary={<DataTable columns={DEV_COLS} rows={rows} />}
       aside={
         <SideCard title="Access policies">
           <ul className="space-y-2.5 text-[12.5px] text-white/85">
@@ -89,7 +114,8 @@ export function Developers() {
         </SideCard>
       }
     />
-      )}
+        );
+      }}
     </ModuleStateBoundary>
   );
 }
@@ -97,68 +123,66 @@ export function Developers() {
 // =============================================================================
 // Security Monitoring
 // =============================================================================
-interface SecurityEvent {
-  id: string;
-  type: "Suspicious Login" | "Brute Force" | "Unusual Download" | "Failed MFA" | "Role Escalation";
-  source: string;
-  severity: "Low" | "Medium" | "High" | "Critical";
-  detectedAt: string;
-  status: "New" | "Acknowledged" | "Resolved";
+interface SecurityEventRow {
+  id: number;
+  kind: string;
+  severity: string;
+  message: string;
+  ip: string | null;
+  acknowledgedAt: string | Date | null;
+  createdAt: string | Date;
 }
 
-const SEC_KPIS: KpiTile[] = [
-  { id: "events", label: "Events (24h)", value: "412", delta: { value: "3.4%", positive: false }, icon: ShieldAlert, accent: "orange", spark: [350, 360, 370, 388, 398, 405, 412] },
-  { id: "high", label: "High / Critical", value: "5", delta: { value: "2", positive: false }, icon: AlertTriangle, accent: "red", spark: [2, 3, 3, 4, 4, 5, 5] },
-  { id: "blk", label: "Blocked IPs", value: "67", delta: { value: "9", positive: true }, icon: ShieldCheck, accent: "green", spark: [50, 53, 58, 60, 63, 65, 67] },
-  { id: "mttr", label: "MTTR", value: "12 min", delta: { value: "1.4", positive: true }, icon: Clock, accent: "violet", spark: [18, 17, 16, 15, 14, 13, 12] },
-];
+type SecurityPayload = { rows: SecurityEventRow[]; failedLogins24h: number; total: number };
 
-const SEC_EVENTS: SecurityEvent[] = [
-  { id: "SE-2418", type: "Suspicious Login",   source: "185.234.x.x · NL",  severity: "High",     detectedAt: "10:42", status: "New" },
-  { id: "SE-2417", type: "Brute Force",        source: "92.118.x.x · DE",   severity: "Critical", detectedAt: "10:18", status: "Acknowledged" },
-  { id: "SE-2416", type: "Unusual Download",   source: "TechVision · US",    severity: "Medium",   detectedAt: "09:51", status: "Resolved" },
-  { id: "SE-2415", type: "Failed MFA",         source: "developer@io",       severity: "Medium",   detectedAt: "09:21", status: "Resolved" },
-  { id: "SE-2414", type: "Role Escalation",    source: "admin console",      severity: "High",     detectedAt: "08:48", status: "Acknowledged" },
-];
+const sevTone = (s: string) =>
+  s === "critical" ? "err" : s === "high" ? "warn" : s === "medium" ? "info" : "muted";
 
-const sevTone = (s: SecurityEvent["severity"]) =>
-  s === "Critical" ? "err" : s === "High" ? "warn" : s === "Medium" ? "info" : "muted";
-
-const SEC_COLS: DataColumn<SecurityEvent>[] = [
-  { key: "id", header: "Ref", width: "84px" },
-  { key: "type", header: "Event" },
-  { key: "source", header: "Source" },
+const SEC_COLS: DataColumn<SecurityEventRow>[] = [
+  { key: "id", header: "Ref", width: "84px", render: (r) => <span className="font-mono text-white/55">SE-{r.id}</span> },
+  { key: "kind", header: "Event" },
+  { key: "ip", header: "Source", render: (r) => <span className="font-mono text-white/65">{r.ip ?? "—"}</span> },
   { key: "severity", header: "Severity", render: (r) => <StatusPill tone={sevTone(r.severity) as any} label={r.severity} /> },
-  { key: "detectedAt", header: "Detected", align: "right", render: (r) => <span className="font-mono text-white/65">{r.detectedAt}</span> },
-  { key: "status", header: "Status", render: (r) => <StatusPill tone={r.status === "Resolved" ? "ok" : r.status === "Acknowledged" ? "info" : "warn"} label={r.status} /> },
+  { key: "createdAt", header: "Detected", align: "right", render: (r) => <span className="font-mono text-white/65">{new Date(r.createdAt).toLocaleString()}</span> },
+  { key: "acknowledgedAt", header: "Status", render: (r) => <StatusPill tone={r.acknowledgedAt ? "ok" : "warn"} label={r.acknowledgedAt ? "Acknowledged" : "New"} /> },
 ];
 
 export function Security() {
   const q = trpc.admin.security.useQuery(undefined, { staleTime: 30_000 });
   const audited = useAuditedAction();
   return (
-    <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
-      {() => (
+    <ModuleStateBoundary<SecurityPayload>
+      isLoading={q.isLoading}
+      error={q.error as any}
+      data={q.data as SecurityPayload | undefined}
+      isEmpty={(d) => d.rows.length === 0}
+      onRetry={() => q.refetch()}
+    >
+      {(data) => {
+        const highCritical = data.rows.filter((r) => r.severity === "high" || r.severity === "critical").length;
+        return (
     <OperationalPage
       eyebrow="SecOps"
-      sampleData
       title="Security Monitoring"
-      tagline="24/7 monitoring for suspicious logins, brute-force attempts, unusual downloads, role escalations and failed MFA. Anomalies escalate automatically."
-      kpis={SEC_KPIS}
+      tagline="Developer-workspace security events (suspicious access, MFA failures, escalations) plus failed-login volume across the platform."
+      kpis={[
+        { id: "events", label: "Events (recent)", value: String(data.total), icon: ShieldAlert, accent: "orange" },
+        { id: "high", label: "High / Critical", value: String(highCritical), icon: AlertTriangle, accent: highCritical > 0 ? "red" : "green" },
+        { id: "failed", label: "Failed logins (24h)", value: String(data.failedLogins24h), icon: ShieldCheck, accent: data.failedLogins24h > 0 ? "red" : "green" },
+      ]}
       toolbar={<DefaultToolbar searchPlaceholder="Search events, sources, IPs…" filters={["Severity", "Type", "Status"]} primaryAction={{ label: "Run scan", onClick: () => audited.fire("security", "run-scan") }} />}
-      primary={<DataTable columns={SEC_COLS} rows={SEC_EVENTS} />}
+      primary={<DataTable columns={SEC_COLS} rows={data.rows} />}
       aside={
         <SideCard title="Live posture">
           <ul className="space-y-2.5 text-[12.5px] text-white/85">
-            <li className="flex items-center justify-between"><span>Login policy</span><span className="text-emerald-400 font-mono">enforced</span></li>
-            <li className="flex items-center justify-between"><span>WAF</span><span className="text-emerald-400 font-mono">active</span></li>
-            <li className="flex items-center justify-between"><span>Rate limit</span><span className="text-emerald-400 font-mono">100/min</span></li>
-            <li className="flex items-center justify-between"><span>Threat feed</span><span className="text-emerald-400 font-mono">synced</span></li>
+            <li className="flex items-center justify-between"><span>Failed logins (24h)</span><span className="font-mono text-white/65">{data.failedLogins24h}</span></li>
+            <li className="flex items-center justify-between"><span>Unacknowledged events</span><span className="font-mono text-white/65">{data.rows.filter((r) => !r.acknowledgedAt).length}</span></li>
           </ul>
         </SideCard>
       }
     />
-      )}
+        );
+      }}
     </ModuleStateBoundary>
   );
 }

@@ -70,7 +70,6 @@ const AUTO_COLS: DataColumn<Automation>[] = [
 export function Automations() {
   const q = trpc.admin.automations.useQuery(undefined, { staleTime: 30_000 });
   const audited = useAuditedAction();
-  void audited;
   return (
     <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
       {() => (
@@ -80,7 +79,7 @@ export function Automations() {
       title="Notifications & Automations"
       tagline="Automation queues, retries, webhooks, reminders and AI generation pipelines. Surface failed runs, retry on-demand and audit every change."
       kpis={AUTO_KPIS}
-      toolbar={<DefaultToolbar searchPlaceholder="Search workflows, triggers…" filters={["Status", "Trigger"]} primaryAction={{ label: "New workflow" }} />}
+      toolbar={<DefaultToolbar searchPlaceholder="Search workflows, triggers…" filters={["Status", "Trigger"]} primaryAction={{ label: "New workflow", onClick: () => audited.fire("automations", "new-workflow") }} />}
       primary={<DataTable columns={AUTO_COLS} rows={AUTOMATIONS} />}
       aside={
         <SideCard title="Queue health">
@@ -182,65 +181,69 @@ export function Analytics() {
 // Users & Permissions
 // =============================================================================
 interface UserRow {
-  id: string;
-  name: string;
-  email: string;
-  role: "Super Admin" | "Admin" | "Operator" | "Developer" | "Client";
-  mfa: "Enabled" | "Pending";
-  lastSeen: string;
+  id: number;
+  name: string | null;
+  email: string | null;
+  role: string;
+  mfaMethod: string;
+  organizationId: number | null;
+  lastSignedIn: string | Date;
 }
 
-const USER_KPIS: KpiTile[] = [
-  { id: "tot", label: "Total users", value: "128", delta: { value: "4", positive: true }, icon: Users, accent: "orange", spark: [110, 116, 120, 122, 124, 126, 128] },
-  { id: "adm", label: "Admins", value: "6", icon: ShieldCheck, accent: "violet", spark: [5, 5, 6, 6, 6, 6, 6] },
-  { id: "mfa", label: "MFA enabled", value: "97.6%", delta: { value: "1.2%", positive: true }, icon: ShieldCheck, accent: "green", spark: [94, 95, 96, 96.5, 97, 97.4, 97.6] },
-  { id: "lock", label: "Locked accounts", value: "1", icon: AlertTriangle, accent: "red", spark: [0, 0, 1, 1, 1, 1, 1] },
-];
-
-const USERS: UserRow[] = [
-  { id: "U-014", name: "Alex Admin",       email: "alex@io.sky",        role: "Super Admin", mfa: "Enabled", lastSeen: "now" },
-  { id: "U-013", name: "Sara Ops",         email: "sara@io.sky",        role: "Admin",       mfa: "Enabled", lastSeen: "12m" },
-  { id: "U-012", name: "Mike Field",       email: "mike@io.sky",        role: "Operator",    mfa: "Enabled", lastSeen: "1h" },
-  { id: "U-011", name: "John Developer",   email: "john@dev.io.sky",    role: "Developer",   mfa: "Enabled", lastSeen: "today" },
-  { id: "U-010", name: "Lena Client",      email: "lena@nordic.com",    role: "Client",      mfa: "Pending", lastSeen: "yesterday" },
-];
+type UsersPayload = { rows: UserRow[]; total: number };
 
 const USER_COLS: DataColumn<UserRow>[] = [
-  { key: "id", header: "Ref", width: "70px" },
-  { key: "name", header: "User" },
-  { key: "email", header: "Email", render: (r) => <span className="font-mono text-white/65">{r.email}</span> },
+  { key: "id", header: "Ref", width: "70px", render: (r) => <span className="font-mono text-white/55">U-{r.id}</span> },
+  { key: "name", header: "User", render: (r) => <span>{r.name ?? "—"}</span> },
+  { key: "email", header: "Email", render: (r) => <span className="font-mono text-white/65">{r.email ?? "—"}</span> },
   { key: "role", header: "Role" },
-  { key: "mfa", header: "MFA", render: (r) => <StatusPill tone={r.mfa === "Enabled" ? "ok" : "warn"} label={r.mfa} /> },
-  { key: "lastSeen", header: "Last seen", align: "right", render: (r) => <span className="font-mono text-white/55">{r.lastSeen}</span> },
+  { key: "mfaMethod", header: "MFA", render: (r) => <StatusPill tone={r.mfaMethod !== "none" ? "ok" : "warn"} label={r.mfaMethod !== "none" ? r.mfaMethod : "disabled"} /> },
+  { key: "lastSignedIn", header: "Last seen", align: "right", render: (r) => <span className="font-mono text-white/55">{new Date(r.lastSignedIn).toLocaleDateString()}</span> },
 ];
 
 export function UsersPermissions() {
   const q = trpc.admin.users.useQuery(undefined, { staleTime: 30_000 });
   const audited = useAuditedAction();
-  void audited;
   return (
-    <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
-      {() => (
+    <ModuleStateBoundary<UsersPayload>
+      isLoading={q.isLoading}
+      error={q.error as any}
+      data={q.data as UsersPayload | undefined}
+      isEmpty={(d) => d.rows.length === 0}
+      onRetry={() => q.refetch()}
+    >
+      {(data) => {
+        const byRole = new Map<string, number>();
+        for (const r of data.rows) byRole.set(r.role, (byRole.get(r.role) ?? 0) + 1);
+        const mfaEnabled = data.rows.filter((r) => r.mfaMethod !== "none").length;
+        const mfaPct = data.rows.length > 0 ? ((mfaEnabled / data.rows.length) * 100).toFixed(1) : "0.0";
+        return (
     <OperationalPage
       eyebrow="Identity"
       title="Users & Permissions"
-      tagline="Manage roles, access scopes, suspensions, MFA enforcement and time-bound permissions. Every change writes to the audit trail."
-      kpis={USER_KPIS}
-      toolbar={<DefaultToolbar searchPlaceholder="Search users, roles…" filters={["Role", "MFA", "Status"]} primaryAction={{ label: "Invite user" }} />}
-      primary={<DataTable columns={USER_COLS} rows={USERS} />}
+      tagline="Every registered account, role and MFA status. Role/permission mutations are Super Admin-only — see Milestone 2 §2.5."
+      kpis={[
+        { id: "tot", label: "Total users", value: String(data.total), icon: Users, accent: "orange" },
+        { id: "adm", label: "Admins + Super Admins", value: String((byRole.get("admin") ?? 0) + (byRole.get("super_admin") ?? 0)), icon: ShieldCheck, accent: "violet" },
+        { id: "mfa", label: "MFA enabled", value: `${mfaPct}%`, icon: ShieldCheck, accent: "green" },
+      ]}
+      toolbar={<DefaultToolbar searchPlaceholder="Search users, roles…" filters={["Role", "MFA", "Status"]} primaryAction={{ label: "Invite user", onClick: () => audited.fire("users", "invite-user") }} />}
+      primary={<DataTable columns={USER_COLS} rows={data.rows} />}
       aside={
         <SideCard title="Role catalogue">
           <ul className="space-y-2.5 text-[12.5px] text-white/85">
-            <li className="flex items-center justify-between"><span>Super Admin</span><span className="font-mono text-white/55">2</span></li>
-            <li className="flex items-center justify-between"><span>Admin</span><span className="font-mono text-white/55">4</span></li>
-            <li className="flex items-center justify-between"><span>Operator</span><span className="font-mono text-white/55">12</span></li>
-            <li className="flex items-center justify-between"><span>Developer</span><span className="font-mono text-white/55">18</span></li>
-            <li className="flex items-center justify-between"><span>Client</span><span className="font-mono text-white/55">92</span></li>
+            {["super_admin", "admin", "developer", "client", "user"].map((role) => (
+              <li key={role} className="flex items-center justify-between">
+                <span>{role}</span>
+                <span className="font-mono text-white/55">{byRole.get(role) ?? 0}</span>
+              </li>
+            ))}
           </ul>
         </SideCard>
       }
     />
-      )}
+        );
+      }}
     </ModuleStateBoundary>
   );
 }
@@ -249,63 +252,51 @@ export function UsersPermissions() {
 // Audit Logs
 // =============================================================================
 interface AuditEntry {
-  id: string;
-  actor: string;
-  action: string;
-  target: string;
-  timestamp: string;
-  outcome: "success" | "failure";
+  id: number;
+  identifier: string | null;
+  provider: string;
+  reason: string | null;
+  outcome: string;
+  createdAt: string | Date;
 }
 
-const AUDIT_KPIS: KpiTile[] = [
-  { id: "ev", label: "Events (24h)", value: "1,842", delta: { value: "4.6%", positive: true }, icon: ScrollText, accent: "orange", spark: [1480, 1520, 1610, 1680, 1740, 1790, 1842] },
-  { id: "fail", label: "Failures", value: "11", delta: { value: "2", positive: true }, icon: AlertTriangle, accent: "red", spark: [16, 14, 14, 13, 12, 11, 11] },
-  { id: "exp", label: "Exports (7d)", value: "4", icon: ScrollText, accent: "violet", spark: [2, 2, 3, 3, 3, 4, 4] },
-  { id: "ret", label: "Retention", value: "10 yr", icon: Clock, accent: "blue", spark: [10, 10, 10, 10, 10, 10, 10] },
-];
-
-const AUDIT_ENTRIES: AuditEntry[] = [
-  { id: "A-9412", actor: "alex@io.sky",       action: "admin.summary",        target: "/admin",            timestamp: "10:42:08", outcome: "success" },
-  { id: "A-9411", actor: "sara@io.sky",       action: "lead.update",          target: "L-241",             timestamp: "10:41:55", outcome: "success" },
-  { id: "A-9410", actor: "alex@io.sky",       action: "report.release",       target: "R-9412",            timestamp: "10:41:20", outcome: "success" },
-  { id: "A-9409", actor: "developer@io.sky",  action: "developer.access",     target: "DEV-21",            timestamp: "10:40:08", outcome: "success" },
-  { id: "A-9408", actor: "—",                 action: "auth.login",           target: "185.234.x.x",       timestamp: "10:39:14", outcome: "failure" },
-];
+type AuditPayload = { rows: AuditEntry[] };
 
 const AUDIT_COLS: DataColumn<AuditEntry>[] = [
-  { key: "timestamp", header: "Time", width: "100px", render: (r) => <span className="font-mono text-white/65">{r.timestamp}</span> },
-  { key: "actor", header: "Actor" },
-  { key: "action", header: "Action", render: (r) => <span className="font-mono text-[11.5px] text-white/85">{r.action}</span> },
-  { key: "target", header: "Target", render: (r) => <span className="font-mono text-[11.5px] text-white/65">{r.target}</span> },
+  { key: "createdAt", header: "Time", width: "150px", render: (r) => <span className="font-mono text-white/65">{new Date(r.createdAt).toLocaleString()}</span> },
+  { key: "identifier", header: "Actor", render: (r) => <span>{r.identifier ?? "—"}</span> },
+  { key: "reason", header: "Action", render: (r) => <span className="font-mono text-[11.5px] text-white/85">{r.reason ?? r.provider}</span> },
+  { key: "provider", header: "Via", render: (r) => <span className="font-mono text-[11.5px] text-white/65">{r.provider}</span> },
   { key: "outcome", header: "Outcome", render: (r) => <StatusPill tone={r.outcome === "success" ? "ok" : "err"} label={r.outcome} /> },
 ];
 
 export function AuditLogs() {
   const q = trpc.admin.audit.useQuery(undefined, { staleTime: 30_000 });
   const audited = useAuditedAction();
-  void audited;
   return (
-    <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
-      {() => (
+    <ModuleStateBoundary<AuditPayload>
+      isLoading={q.isLoading}
+      error={q.error as any}
+      data={q.data as AuditPayload | undefined}
+      isEmpty={(d) => d.rows.length === 0}
+      onRetry={() => q.refetch()}
+    >
+      {(data) => {
+        const failures = data.rows.filter((r) => r.outcome !== "success").length;
+        return (
     <OperationalPage
       eyebrow="Compliance"
       title="Audit Logs"
-      tagline="Immutable audit trail with export and search across every important system event. Hash-chained for tamper evidence."
-      kpis={AUDIT_KPIS}
-      toolbar={<DefaultToolbar searchPlaceholder="Search actor, action, target…" filters={["Outcome", "Actor", "Period"]} primaryAction={{ label: "Export" }} />}
-      primary={<DataTable columns={AUDIT_COLS} rows={AUDIT_ENTRIES} />}
-      aside={
-        <SideCard title="Integrity">
-          <ul className="space-y-2.5 text-[12.5px] text-white/85">
-            <li className="flex items-center justify-between"><span>Hash chain</span><span className="text-emerald-400 font-mono">verified</span></li>
-            <li className="flex items-center justify-between"><span>Last anchor</span><span className="font-mono text-white/55">2m ago</span></li>
-            <li className="flex items-center justify-between"><span>Replication</span><span className="text-emerald-400 font-mono">3 regions</span></li>
-            <li className="flex items-center justify-between"><span>WORM bucket</span><span className="text-emerald-400 font-mono">enforced</span></li>
-          </ul>
-        </SideCard>
-      }
+      tagline="Every login attempt and admin action, written to login_audit at the moment it happens — not a separate best-effort log."
+      kpis={[
+        { id: "ev", label: "Events (recent)", value: String(data.rows.length), icon: ScrollText, accent: "orange" },
+        { id: "fail", label: "Failures", value: String(failures), icon: AlertTriangle, accent: failures > 0 ? "red" : "green" },
+      ]}
+      toolbar={<DefaultToolbar searchPlaceholder="Search actor, action, target…" filters={["Outcome", "Actor", "Period"]} primaryAction={{ label: "Export", onClick: () => audited.fire("audit", "export") }} />}
+      primary={<DataTable columns={AUDIT_COLS} rows={data.rows} />}
     />
-      )}
+        );
+      }}
     </ModuleStateBoundary>
   );
 }
@@ -314,29 +305,34 @@ export function AuditLogs() {
 // System Settings
 // =============================================================================
 export function SystemSettings() {
+  const audited = useAuditedAction();
   const sections = [
-    { title: "Branding", desc: "Logo, accent colour, favicon and admin portal name.", state: "Configured" },
-    { title: "Cloud storage", desc: "S3-compatible bucket, region, encryption and retention.", state: "Configured" },
-    { title: "Security policies", desc: "MFA enforcement, session length, IP allowlists, password policy.", state: "Hardened" },
-    { title: "Localisation", desc: "Default timezone (Europe/Amsterdam), languages and currency formats.", state: "EN · NL" },
-    { title: "Integrations", desc: "Stripe, Twilio, SendGrid, Postmark, OpenAI, Google Maps, Manus auth.", state: "Connected" },
-    { title: "Observability", desc: "Audit retention, error reporting, performance budgets, alerting.", state: "Active" },
+    { key: "branding", title: "Branding", desc: "Logo, accent colour, favicon and admin portal name.", state: "Configured" },
+    { key: "storage", title: "Cloud storage", desc: "Supabase Storage buckets (client-portal, developer-workspace, ai-scan-reports, branding) — see Milestone 2 §2.1.", state: "Configured" },
+    { key: "security", title: "Security policies", desc: "MFA enforcement, session length, IP allowlists, password policy.", state: "Hardened" },
+    { key: "i18n", title: "Localisation", desc: "Default timezone (Europe/Amsterdam), languages and currency formats.", state: "EN · NL" },
+    { key: "integrations", title: "Integrations", desc: "Resend (email), Supabase (auth/db/storage). LLM provider and Slack owner-alerts are configured but not yet activated — see Milestone 2 §2.2/§2.3.", state: "Partial" },
+    { key: "observability", title: "Observability", desc: "Audit retention, error reporting, performance budgets, alerting.", state: "Active" },
   ];
   return (
     <OperationalPage
       eyebrow="Configuration"
+      sampleData
       title="System Settings"
-      tagline="Manage branding, cloud storage, security policies, localisation, integrations and observability — every change writes an audit row."
+      tagline="Reference view of platform configuration — not yet a live settings editor. Real per-section management (branding upload, security policy editing, etc) is not built."
       primary={
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {sections.map((s) => (
             <div key={s.title} className="rounded-[12px] border border-white/[0.06] bg-white/[0.02] p-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-[14px] font-medium text-white">{s.title}</h3>
-                <StatusPill tone="ok" label={s.state} />
+                <StatusPill tone={s.state === "Partial" ? "warn" : "ok"} label={s.state} />
               </div>
               <p className="mt-1.5 text-[12.5px] text-white/65 leading-relaxed">{s.desc}</p>
-              <button className="mt-3 inline-flex items-center gap-1.5 text-[11.5px] font-mono text-[#FF6A00] hover:text-[#FF7A1A]">
+              <button
+                className="mt-3 inline-flex items-center gap-1.5 text-[11.5px] font-mono text-[#FF6A00] hover:text-[#FF7A1A]"
+                onClick={() => audited.fire("settings", `view-${s.key}`)}
+              >
                 <SettingsIcon className="w-3 h-3" />
                 Manage
               </button>
@@ -352,67 +348,59 @@ export function SystemSettings() {
 // Support Desk
 // =============================================================================
 interface Ticket {
-  id: string;
+  id: number;
+  publicRef: string;
   subject: string;
-  client: string;
-  priority: "Low" | "Normal" | "High" | "Urgent";
-  status: "Open" | "In Progress" | "Resolved";
-  age: string;
+  category: string;
+  priority: string;
+  status: string;
+  createdAt: string | Date;
+  organizationName: string | null;
 }
 
-const SUP_KPIS: KpiTile[] = [
-  { id: "open", label: "Open tickets", value: "14", delta: { value: "7.1%", positive: true }, icon: LifeBuoy, accent: "orange", spark: [22, 20, 18, 17, 16, 15, 14] },
-  { id: "urgent", label: "Urgent", value: "2", icon: AlertTriangle, accent: "red", spark: [3, 3, 2, 2, 2, 2, 2] },
-  { id: "frt", label: "Avg. first response", value: "4m 12s", delta: { value: "12s", positive: true }, icon: Clock, accent: "violet", spark: [320, 305, 290, 275, 268, 260, 252] },
-  { id: "csat", label: "CSAT", value: "4.8", delta: { value: "0.1", positive: true }, icon: Activity, accent: "green", spark: [4.6, 4.6, 4.7, 4.7, 4.7, 4.8, 4.8] },
-];
+type SupportPayload = { rows: Ticket[]; total: number };
 
-const TICKETS: Ticket[] = [
-  { id: "T-1042", subject: "Invoice export failing for May",  client: "TechVision Enterprises", priority: "High",    status: "In Progress", age: "1h 12m" },
-  { id: "T-1041", subject: "AI Scan stuck at 80%",             client: "Brouwer Logistics",      priority: "Urgent",  status: "Open",        age: "2h 04m" },
-  { id: "T-1040", subject: "MFA reset request",                client: "Khan Capital",           priority: "Normal",  status: "Resolved",    age: "yesterday" },
-  { id: "T-1039", subject: "Document download 403",            client: "Nordic Retail Group",    priority: "High",    status: "In Progress", age: "3h 28m" },
-  { id: "T-1038", subject: "Add billing contact",              client: "Hartog Industries",      priority: "Low",     status: "Open",        age: "yesterday" },
-];
-
-const prTone = (p: Ticket["priority"]) =>
-  p === "Urgent" ? "err" : p === "High" ? "warn" : p === "Low" ? "muted" : "info";
+const prTone = (p: string) =>
+  p === "urgent" ? "err" : p === "high" ? "warn" : p === "low" ? "muted" : "info";
 
 const SUP_COLS: DataColumn<Ticket>[] = [
-  { key: "id", header: "Ref", width: "82px" },
+  { key: "publicRef", header: "Ref", width: "96px", render: (r) => <span className="font-mono text-white/55">{r.publicRef}</span> },
   { key: "subject", header: "Subject" },
-  { key: "client", header: "Client" },
+  { key: "organizationName", header: "Client", render: (r) => <span>{r.organizationName ?? "—"}</span> },
   { key: "priority", header: "Priority", render: (r) => <StatusPill tone={prTone(r.priority) as any} label={r.priority} /> },
-  { key: "status", header: "Status", render: (r) => <StatusPill tone={r.status === "Resolved" ? "ok" : r.status === "In Progress" ? "info" : "warn"} label={r.status} /> },
-  { key: "age", header: "Age", align: "right", render: (r) => <span className="font-mono text-white/55">{r.age}</span> },
+  { key: "status", header: "Status", render: (r) => <StatusPill tone={r.status === "resolved" ? "ok" : r.status === "in_progress" ? "info" : "warn"} label={r.status} /> },
+  { key: "createdAt", header: "Opened", align: "right", render: (r) => <span className="font-mono text-white/55">{new Date(r.createdAt).toLocaleDateString()}</span> },
 ];
 
 export function SupportDesk() {
   const q = trpc.admin.support.useQuery(undefined, { staleTime: 30_000 });
   const audited = useAuditedAction();
-  void audited;
   return (
-    <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
-      {() => (
+    <ModuleStateBoundary<SupportPayload>
+      isLoading={q.isLoading}
+      error={q.error as any}
+      data={q.data as SupportPayload | undefined}
+      isEmpty={(d) => d.rows.length === 0}
+      onRetry={() => q.refetch()}
+    >
+      {(data) => {
+        const open = data.rows.filter((r) => r.status === "open").length;
+        const urgent = data.rows.filter((r) => r.priority === "urgent").length;
+        return (
     <OperationalPage
       eyebrow="Support"
       title="Support Desk"
-      tagline="Triage tickets, escalations and SLA breaches across every IO SKY surface. Routing, macros and knowledge base live alongside the queue."
-      kpis={SUP_KPIS}
-      toolbar={<DefaultToolbar searchPlaceholder="Search tickets, clients…" filters={["Status", "Priority", "Owner"]} primaryAction={{ label: "New ticket" }} />}
-      primary={<DataTable columns={SUP_COLS} rows={TICKETS} />}
-      aside={
-        <SideCard title="SLA dashboard">
-          <ul className="space-y-2.5 text-[12.5px] text-white/85">
-            <li className="flex items-center justify-between"><span>Within SLA</span><span className="text-emerald-400 font-mono">96%</span></li>
-            <li className="flex items-center justify-between"><span>Breached (24h)</span><span className="font-mono text-red-400">1</span></li>
-            <li className="flex items-center justify-between"><span>Open · urgent</span><span className="font-mono text-amber-400">2</span></li>
-            <li className="flex items-center justify-between"><span>On-call engineer</span><span className="font-mono text-white/65">Mike DevOps</span></li>
-          </ul>
-        </SideCard>
-      }
+      tagline="Every client_support_tickets row — real tickets clients raise from the Client Portal."
+      kpis={[
+        { id: "open", label: "Open tickets", value: String(open), icon: LifeBuoy, accent: "orange" },
+        { id: "urgent", label: "Urgent", value: String(urgent), icon: AlertTriangle, accent: urgent > 0 ? "red" : "green" },
+        { id: "total", label: "Total (recent)", value: String(data.total), icon: Activity, accent: "blue" },
+      ]}
+      toolbar={<DefaultToolbar searchPlaceholder="Search tickets, clients…" filters={["Status", "Priority", "Owner"]} primaryAction={{ label: "New ticket", onClick: () => audited.fire("support", "new-ticket") }} />}
+      primary={<DataTable columns={SUP_COLS} rows={data.rows} />}
     />
-      )}
+        );
+      }}
     </ModuleStateBoundary>
   );
 }

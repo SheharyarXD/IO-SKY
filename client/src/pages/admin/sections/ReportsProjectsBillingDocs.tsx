@@ -44,17 +44,29 @@ const reportTone = (s: string) =>
 
 export function Reports() {
   const query = trpc.admin.reports.useQuery(undefined, { staleTime: 30_000 });
-  const audited = useAuditedAction();
+  const utils = trpc.useUtils();
+  const createReport = trpc.admin.createReport.useMutation({
+    onSuccess: () => utils.admin.reports.invalidate(),
+  });
   const data = query.data;
+
+  const handleGenerate = () => {
+    const organizationId = Number(window.prompt("Organization ID for this report?", ""));
+    if (!organizationId || Number.isNaN(organizationId)) return;
+    const title = window.prompt("Report title?", "Operational Intelligence Report");
+    if (!title) return;
+    const scoreRaw = window.prompt("Overall score (0-100)?", "75");
+    const score = Number(scoreRaw);
+    if (Number.isNaN(score) || score < 0 || score > 100) return;
+    createReport.mutate({ organizationId, title, score });
+  };
 
   const kpis: KpiTile[] = useMemo(() => {
     const rows = (data?.rows ?? []) as ReportRow[];
     const pending = rows.filter((r) => /pending|review/i.test(r.status)).length;
     return [
-      { id: "rep", label: "Reports", value: String(rows.length || 184), delta: { value: "12.6%", positive: true }, icon: FileText, accent: "orange", spark: [120, 132, 145, 152, 168, 176, rows.length || 184] },
-      { id: "pend", label: "Pending review", value: String(pending || 3), icon: AlertTriangle, accent: "red", spark: [2, 3, 3, 4, 3, 3, pending || 3] },
-      { id: "downl", label: "Downloads (24h)", value: "47", icon: Download, accent: "violet", spark: [28, 32, 35, 38, 42, 45, 47] },
-      { id: "size", label: "Avg. size", value: "2.4 MB", icon: HardDrive, accent: "blue", spark: [3.0, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4] },
+      { id: "rep", label: "Reports", value: String(rows.length), icon: FileText, accent: "orange" },
+      { id: "pend", label: "Pending review", value: String(pending), icon: AlertTriangle, accent: pending > 0 ? "red" : "green" },
     ];
   }, [data]);
 
@@ -71,25 +83,15 @@ export function Reports() {
         <OperationalPage
           eyebrow="Report management"
           title="Reports"
-          tagline="Release pipeline with encrypted cloud storage, signed download URLs and tamper-evident audit trail for every report download."
+          tagline="Client reports, backed by Supabase Storage with short-lived signed download URLs (Milestone 2 §2.1) and a per-request audit row on every download."
           kpis={kpis}
-          toolbar={<DefaultToolbar searchPlaceholder="Search reports, clients…" filters={["Status", "Type", "Period"]} primaryAction={{ label: "Generate", onClick: () => audited.fire("reports", "generate") }} />}
+          toolbar={<DefaultToolbar searchPlaceholder="Search reports, clients…" filters={["Status", "Type", "Period"]} primaryAction={{ label: "Generate", onClick: handleGenerate }} />}
           primary={
             (d.rows ?? []).length === 0 ? (
               <div className="rounded-[12px] border border-dashed border-white/[0.08] p-6 text-center text-[12.5px] text-white/55">No reports generated yet.</div>
             ) : (
               <DataTable columns={cols} rows={d.rows as ReportRow[]} />
             )
-          }
-          aside={
-            <SideCard title="Storage health">
-              <div className="text-[12.5px] text-white/85 space-y-2">
-                <div className="flex justify-between"><span>Encrypted-at-rest</span><span className="text-emerald-400 font-mono">100%</span></div>
-                <div className="flex justify-between"><span>Last backup</span><span className="font-mono">12 min ago</span></div>
-                <div className="flex justify-between"><span>Bucket region</span><span className="font-mono">eu-west-1</span></div>
-                <div className="flex justify-between"><span>Anomalies (24h)</span><span className="font-mono text-emerald-400">0</span></div>
-              </div>
-            </SideCard>
           }
         />
       )}
@@ -112,23 +114,49 @@ interface ProjectRow {
   milestones?: number;
 }
 
+interface UpcomingMilestone {
+  id: number;
+  projectId: number;
+  title: string;
+  dueMs: number | null;
+  status: string;
+}
+
+function daysUntil(ms: number | null): string {
+  if (!ms) return "—";
+  const days = Math.round((ms - Date.now()) / 86_400_000);
+  if (days < 0) return "overdue";
+  if (days === 0) return "today";
+  return `in ${days}d`;
+}
+
 const phaseTone = (s: string) =>
   /operate|completed|live/i.test(s) ? "ok" : /launch|active/i.test(s) ? "info" : /build/i.test(s) ? "warn" : "muted";
 
 export function Projects() {
   const query = trpc.admin.projects.useQuery(undefined, { staleTime: 30_000 });
-  const audited = useAuditedAction();
+  const utils = trpc.useUtils();
+  const createProject = trpc.admin.createProject.useMutation({
+    onSuccess: () => utils.admin.projects.invalidate(),
+  });
   const data = query.data;
+
+  const handleNewProject = () => {
+    const organizationId = Number(window.prompt("Organization ID for this project?", ""));
+    if (!organizationId || Number.isNaN(organizationId)) return;
+    const name = window.prompt("Project name?", "");
+    if (!name) return;
+    createProject.mutate({ organizationId, name });
+  };
 
   const kpis: KpiTile[] = useMemo(() => {
     const rows = (data?.rows ?? []) as ProjectRow[];
     const open = rows.filter((r) => r.status !== "completed").length;
     const onHold = rows.filter((r) => r.status === "on_hold").length;
     return [
-      { id: "open", label: "Open projects", value: String(open || 23), delta: { value: "15.0%", positive: true }, icon: GitBranch, accent: "orange", spark: [18, 19, 20, 20, 21, 22, open || 23] },
-      { id: "atrisk", label: "On hold", value: String(onHold || 4), icon: AlertTriangle, accent: "red", spark: [3, 3, 4, 5, 4, 4, onHold || 4] },
-      { id: "vel", label: "Avg. velocity", value: "9.2 / wk", icon: Activity, accent: "violet", spark: [8.4, 8.6, 8.8, 8.9, 9.0, 9.1, 9.2] },
-      { id: "deploys", label: "Deploys (7d)", value: "38", icon: Workflow, accent: "blue", spark: [22, 26, 28, 30, 33, 35, 38] },
+      { id: "open", label: "Open projects", value: String(open), icon: GitBranch, accent: "orange" },
+      { id: "atrisk", label: "On hold", value: String(onHold), icon: AlertTriangle, accent: onHold > 0 ? "red" : "green" },
+      { id: "total", label: "Total projects", value: String(rows.length), icon: Workflow, accent: "blue" },
     ];
   }, [data]);
 
@@ -160,7 +188,7 @@ export function Projects() {
           title="Projects & Ecosystems"
           tagline="Track ecosystem implementations, milestones, deployments and project assignments."
           kpis={kpis}
-          toolbar={<DefaultToolbar searchPlaceholder="Search projects, leads, clients…" filters={["Phase", "Lead", "Risk"]} primaryAction={{ label: "New project", onClick: () => audited.fire("projects", "new-project") }} />}
+          toolbar={<DefaultToolbar searchPlaceholder="Search projects, leads, clients…" filters={["Phase", "Lead", "Risk"]} primaryAction={{ label: "New project", onClick: handleNewProject }} />}
           primary={
             (d.rows ?? []).length === 0 ? (
               <div className="rounded-[12px] border border-dashed border-white/[0.08] p-6 text-center text-[12.5px] text-white/55">No projects yet.</div>
@@ -170,12 +198,18 @@ export function Projects() {
           }
           aside={
             <SideCard title="Upcoming milestones">
-              <ul className="space-y-2.5 text-[12.5px] text-white/85">
-                <li className="flex items-center justify-between"><span>Voice agent UAT</span><span className="font-mono text-white/55">in 3d</span></li>
-                <li className="flex items-center justify-between"><span>Billing migration</span><span className="font-mono text-white/55">in 5d</span></li>
-                <li className="flex items-center justify-between"><span>Compliance review</span><span className="font-mono text-white/55">in 9d</span></li>
-                <li className="flex items-center justify-between"><span>AI Scan v2 launch</span><span className="font-mono text-white/55">in 14d</span></li>
-              </ul>
+              {((d as any).upcomingMilestones ?? []).length === 0 ? (
+                <p className="text-[12.5px] text-white/55">No upcoming milestones with a due date.</p>
+              ) : (
+                <ul className="space-y-2.5 text-[12.5px] text-white/85">
+                  {((d as any).upcomingMilestones as UpcomingMilestone[]).map((m) => (
+                    <li key={m.id} className="flex items-center justify-between">
+                      <span>{m.title}</span>
+                      <span className="font-mono text-white/55">{daysUntil(m.dueMs)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </SideCard>
           }
         />
@@ -216,14 +250,16 @@ export function Billing() {
     const rows = (data?.rows ?? []) as InvoiceRow[];
     const open = rows.filter((r) => r.status === "open").length;
     const overdue = rows.filter((r) => r.status === "overdue").length;
+    // MTD = rows whose paidMs falls within the current calendar month —
+    // real, and correctly $0 (not a fake fallback) when nothing's paid yet.
     const paidMtdCents = rows
       .filter((r) => r.status === "paid" && r.paidMs && r.paidMs >= new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime())
       .reduce((a, r) => a + r.amountCents, 0);
     return [
-      { id: "rev", label: "Revenue (MTD)", value: paidMtdCents > 0 ? fmtCents(paidMtdCents, "EUR") : "€127,430", delta: { value: "18.4%", positive: true }, icon: CreditCard, accent: "green", spark: [70, 84, 95, 102, 110, 118, 127] },
-      { id: "open", label: "Open invoices", value: String(open || 31), icon: Receipt, accent: "orange", spark: [22, 25, 27, 28, 29, 30, open || 31] },
-      { id: "over", label: "Overdue", value: String(overdue || 4), icon: AlertTriangle, accent: "red", spark: [3, 3, 3, 4, 4, 4, overdue || 4] },
-      { id: "fail", label: "Failed payments", value: "2", icon: AlertTriangle, accent: "red", spark: [4, 3, 3, 2, 2, 2, 2] },
+      { id: "rev", label: "Revenue (MTD)", value: fmtCents(paidMtdCents, "EUR"), icon: CreditCard, accent: "green" },
+      { id: "open", label: "Open invoices", value: String(open), icon: Receipt, accent: "orange" },
+      { id: "over", label: "Overdue", value: String(overdue), icon: AlertTriangle, accent: overdue > 0 ? "red" : "green" },
+      { id: "total", label: "Total invoices", value: String(rows.length), icon: Receipt, accent: "blue" },
     ];
   }, [data]);
 
@@ -241,9 +277,9 @@ export function Billing() {
         <OperationalPage
           eyebrow="Finance"
           title="Billing & Payments"
-          tagline="Stripe, iDEAL, PayPal and SEPA flows. Generate invoices, issue refunds, retry failed payments and export billing reports."
+          tagline="Invoice tracking is real (client_invoices). No payment processor is integrated yet — invoices are settled manually; see requestInvoiceCheckout's 'manual' mode in the Client Portal."
           kpis={kpis}
-          toolbar={<DefaultToolbar searchPlaceholder="Search invoices, clients…" filters={["Status", "Method", "Period"]} primaryAction={{ label: "New invoice", onClick: () => audited.fire("billing", "new-invoice") }} />}
+          toolbar={<DefaultToolbar searchPlaceholder="Search invoices, clients…" filters={["Status", "Period"]} primaryAction={{ label: "New invoice", onClick: () => audited.fire("billing", "new-invoice") }} />}
           primary={
             (d.rows ?? []).length === 0 ? (
               <div className="rounded-[12px] border border-dashed border-white/[0.08] p-6 text-center text-[12.5px] text-white/55">No invoices yet.</div>
@@ -252,22 +288,30 @@ export function Billing() {
             )
           }
           aside={
-            <SideCard title="Method mix (30d)">
-              <ul className="space-y-2.5 text-[12.5px]">
-                {[
-                  { name: "Stripe", pct: 58 },
-                  { name: "iDEAL", pct: 22 },
-                  { name: "SEPA", pct: 12 },
-                  { name: "PayPal", pct: 8 },
-                ].map((m) => (
-                  <li key={m.name}>
-                    <div className="flex justify-between text-white/85"><span>{m.name}</span><span className="font-mono text-white/65">{m.pct}%</span></div>
-                    <div className="h-1.5 mt-1 rounded-full bg-white/[0.05] overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-[#FF6A00] to-[#FF8E3D]" style={{ width: `${m.pct}%` }} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
+            <SideCard title="Status mix">
+              {(() => {
+                const rows = (d.rows ?? []) as InvoiceRow[];
+                const total = rows.length || 1;
+                const byStatus = ["draft", "open", "paid", "overdue", "void"].map((status) => ({
+                  status,
+                  count: rows.filter((r) => r.status === status).length,
+                }));
+                return (
+                  <ul className="space-y-2.5 text-[12.5px]">
+                    {byStatus.map((s) => {
+                      const pct = Math.round((s.count / total) * 100);
+                      return (
+                        <li key={s.status}>
+                          <div className="flex justify-between text-white/85"><span className="capitalize">{s.status}</span><span className="font-mono text-white/65">{s.count} · {pct}%</span></div>
+                          <div className="h-1.5 mt-1 rounded-full bg-white/[0.05] overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-[#FF6A00] to-[#FF8E3D]" style={{ width: `${pct}%` }} />
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()}
             </SideCard>
           }
         />

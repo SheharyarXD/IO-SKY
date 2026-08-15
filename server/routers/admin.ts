@@ -30,7 +30,23 @@ import { count, desc, eq, gte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, isAdminRole, router } from "../_core/trpc";
 import { getRequestMeta } from "../_core/requestMeta";
-import { getDb, appendLoginAudit, listRecentBookings, listRecentAiScans } from "../db";
+import {
+  getDb,
+  appendLoginAudit,
+  listRecentBookings,
+  listRecentAiScans,
+  listEmailDeliveryLog,
+  listFailedEmailDeliveries,
+  getAiScanById,
+  createClientReport,
+  updateClientReport,
+  createClientProject,
+  updateClientProject,
+  getClientProjectById,
+  createClientProjectMilestone,
+  updateClientProjectMilestone,
+} from "../db";
+import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import {
   organizations,
   leads,
@@ -444,8 +460,25 @@ async function readProjects() {
   );
   const milestoneMap = new Map<number, number>();
   for (const r of milestoneCounts) milestoneMap.set(r.projectId, Number(r.c ?? 0));
+  const upcomingMilestones = await safe(
+    () =>
+      db
+        .select({
+          id: clientProjectMilestones.id,
+          projectId: clientProjectMilestones.projectId,
+          title: clientProjectMilestones.title,
+          dueMs: clientProjectMilestones.dueMs,
+          status: clientProjectMilestones.status,
+        })
+        .from(clientProjectMilestones)
+        .where(sql`${clientProjectMilestones.status} <> 'completed' AND ${clientProjectMilestones.dueMs} IS NOT NULL`)
+        .orderBy(clientProjectMilestones.dueMs)
+        .limit(5),
+    [] as any[],
+  );
   return {
     rows: rows.map((r: any) => ({ ...r, milestones: milestoneMap.get(r.id) ?? 0 })),
+    upcomingMilestones,
     total: rows.length,
     generatedAtMs: Date.now(),
     source: "db" as const,
@@ -579,8 +612,10 @@ async function readSupport() {
           priority: clientSupportTickets.priority,
           status: clientSupportTickets.status,
           createdAt: clientSupportTickets.createdAt,
+          organizationName: organizations.name,
         })
         .from(clientSupportTickets)
+        .leftJoin(organizations, eq(clientSupportTickets.organizationId, organizations.id))
         .orderBy(desc(clientSupportTickets.createdAt))
         .limit(50),
     [] as any[],
@@ -930,6 +965,23 @@ export const adminRouter = router({
     );
   }),
 
+  /**
+   * Milestone 2 §2.3 — "make failures visible": every send attempt
+   * (booking/contact/devapp/owner-alert) is logged to email_delivery_log
+   * (server/email.ts) and updated in place as Resend webhook events
+   * arrive (server/_core/resendWebhookRoute.ts). This surfaces both the
+   * full recent log and the failures-only view an operator actually cares
+   * about day to day.
+   */
+  emailDeliveryLog: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.email_delivery_log" });
+    return safe(() => listEmailDeliveryLog(200), []);
+  }),
+  emailDeliveryFailures: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.email_delivery_failures" });
+    return safe(() => listFailedEmailDeliveries(200), []);
+  }),
+
   // -- Module reads --------------------------------------------------------
   crm: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.crm" });
@@ -1009,6 +1061,18 @@ export const adminRouter = router({
     await recordAdminEvent({ ctx, reason: "admin.read.audit" });
     return readAudit();
   }),
+  /**
+   * Milestone 2 §2.4: this is a reference/documentation panel, not a
+   * configurable-settings system backed by real state — there is no
+   * database table for "branding"/"integrations"/etc config in this
+   * schema, so unlike users/audit/support/developers above there is no
+   * real query this could bind to without building that system first
+   * (a large, separate feature, not a wiring fix). Previously mislabeled
+   * `source: "db"` despite being a static literal — corrected to "static"
+   * so the client can render it as reference info rather than live state.
+   * client/src/pages/admin/sections/AutomationsAnalyticsRest.tsx's
+   * SystemSettings component carries the matching `sampleData` disclosure.
+   */
   settings: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.settings" });
     return {
@@ -1021,13 +1085,224 @@ export const adminRouter = router({
         { key: "observability", title: "Observability", desc: "Audit retention, error reporting, performance budgets, alerting.",state: "Active" },
       ],
       generatedAtMs: Date.now(),
-      source: "db" as const,
+      source: "static" as const,
     };
   }),
   support: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.support" });
     return readSupport();
   }),
+
+  // -- Reports & Projects mutations (Milestone 2 §2.4) ---------------------
+  // Previously read-only: client_reports/client_projects/client_project_
+  // milestones had no create/update path anywhere in the app, so those
+  // tables could never actually be populated outside a manual SQL insert.
+
+  createReport: adminProcedure
+    .input(
+      z.object({
+        organizationId: z.number().int().positive(),
+        title: z.string().min(1).max(200),
+        score: z.number().int().min(0).max(100),
+        delta: z.number().int().optional(),
+        summary: z.string().max(4000).optional(),
+        status: z.enum(["draft", "ready", "delivered"]).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const report = await createClientReport(input);
+      if (!report) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create report." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.report.create(org=${input.organizationId})` });
+      return report;
+    }),
+
+  updateReport: adminProcedure
+    .input(
+      z.object({
+        organizationId: z.number().int().positive(),
+        id: z.number().int().positive(),
+        title: z.string().min(1).max(200).optional(),
+        score: z.number().int().min(0).max(100).optional(),
+        delta: z.number().int().optional(),
+        summary: z.string().max(4000).optional(),
+        status: z.enum(["draft", "ready", "delivered"]).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { organizationId, id, ...updates } = input;
+      const report = await updateClientReport(organizationId, id, updates);
+      if (!report) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Report not found for this organization." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.report.update(${id})` });
+      return report;
+    }),
+
+  /**
+   * Milestone 2 §2.4 — "bridge AI Scan funnel data to the Client Portal
+   * reports tab." Promotes a completed AI Scan (public-intake, anonymous
+   * marketing funnel — ai_scans has no organizationId) into a real
+   * client_reports row once that prospect has become a client with a real
+   * organization. Does not copy the PDF (it lives under the ai-scan-reports
+   * bucket, a different tenancy shape than client-portal's
+   * {orgId}/reports/{filename} convention — see MILESTONE2_PROGRESS.md
+   * §2.1); pdfKey stays null until a formal report PDF is generated for
+   * the client's own portal.
+   */
+  promoteAiScanToClientReport: adminProcedure
+    .input(
+      z.object({
+        aiScanId: z.number().int().positive(),
+        organizationId: z.number().int().positive(),
+        title: z.string().min(1).max(200).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const scan = await getAiScanById(input.aiScanId);
+      if (!scan) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "AI Scan not found." });
+      }
+      if (scan.status !== "ready" || scan.overallScore === null) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "This AI Scan has not finished scoring yet.",
+        });
+      }
+      let summary: string | undefined;
+      if (scan.reportPayload) {
+        try {
+          const payload = JSON.parse(scan.reportPayload) as AiScanReportPayload;
+          summary = payload.executiveSummary;
+        } catch {
+          // Corrupted payload shouldn't block the bridge — the score alone
+          // is still enough to create a meaningful report row.
+        }
+      }
+      const report = await createClientReport({
+        organizationId: input.organizationId,
+        title: input.title ?? `AI Scan — ${scan.company ?? scan.fullName}`,
+        scanType: "ai-scan",
+        score: scan.overallScore,
+        summary,
+        status: "ready",
+      });
+      if (!report) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create report." });
+      }
+      await recordAdminEvent({
+        ctx,
+        reason: `admin.report.promote_ai_scan(scan=${input.aiScanId}, org=${input.organizationId})`,
+      });
+      return report;
+    }),
+
+  createProject: adminProcedure
+    .input(
+      z.object({
+        organizationId: z.number().int().positive(),
+        name: z.string().min(1).max(200),
+        phase: z.string().max(96).optional(),
+        status: z.enum(["planning", "active", "on_hold", "completed"]).optional(),
+        progress: z.number().int().min(0).max(100).optional(),
+        startMs: z.number().int().optional(),
+        targetMs: z.number().int().optional(),
+        summary: z.string().max(4000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const project = await createClientProject(input);
+      if (!project) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create project." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.project.create(org=${input.organizationId})` });
+      return project;
+    }),
+
+  updateProject: adminProcedure
+    .input(
+      z.object({
+        organizationId: z.number().int().positive(),
+        id: z.number().int().positive(),
+        name: z.string().min(1).max(200).optional(),
+        phase: z.string().max(96).optional(),
+        status: z.enum(["planning", "active", "on_hold", "completed"]).optional(),
+        progress: z.number().int().min(0).max(100).optional(),
+        startMs: z.number().int().optional(),
+        targetMs: z.number().int().optional(),
+        summary: z.string().max(4000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { organizationId, id, ...updates } = input;
+      const project = await updateClientProject(organizationId, id, updates);
+      if (!project) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found for this organization." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.project.update(${id})` });
+      return project;
+    }),
+
+  createMilestone: adminProcedure
+    .input(
+      z.object({
+        organizationId: z.number().int().positive(),
+        projectId: z.number().int().positive(),
+        title: z.string().min(1).max(200),
+        dueMs: z.number().int().optional(),
+        status: z.enum(["pending", "in_progress", "completed"]).optional(),
+        body: z.string().max(4000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // client_project_milestones has no organizationId of its own (see
+      // the schema comment) — verify the project itself belongs to this
+      // org before attaching a milestone to it, mirroring exactly what
+      // this table's RLS policy checks at the database layer.
+      const project = await getClientProjectById(input.organizationId, input.projectId);
+      if (!project) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found for this organization." });
+      }
+      const milestone = await createClientProjectMilestone({
+        projectId: input.projectId,
+        title: input.title,
+        dueMs: input.dueMs,
+        status: input.status,
+        body: input.body,
+      });
+      if (!milestone) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create milestone." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.milestone.create(project=${input.projectId})` });
+      return milestone;
+    }),
+
+  updateMilestone: adminProcedure
+    .input(
+      z.object({
+        organizationId: z.number().int().positive(),
+        projectId: z.number().int().positive(),
+        id: z.number().int().positive(),
+        title: z.string().min(1).max(200).optional(),
+        dueMs: z.number().int().optional(),
+        status: z.enum(["pending", "in_progress", "completed"]).optional(),
+        body: z.string().max(4000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const project = await getClientProjectById(input.organizationId, input.projectId);
+      if (!project) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found for this organization." });
+      }
+      const { organizationId, projectId, id, ...updates } = input;
+      const milestone = await updateClientProjectMilestone(projectId, id, updates);
+      if (!milestone) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Milestone not found for this project." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.milestone.update(${id})` });
+      return milestone;
+    }),
 
   // -- Health / extra read endpoints --------------------------------------
   mfaPosture: adminProcedure.query(async ({ ctx }) => {

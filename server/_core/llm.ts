@@ -1,5 +1,3 @@
-import { ENV } from "./env";
-
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
 
 export type TextContent = {
@@ -209,15 +207,55 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+/**
+ * Milestone 2 §2.2 — direct provider integration, replacing the Forge/Manus
+ * LLM proxy. Deliberately reads process.env fresh at call time rather than
+ * a frozen ENV snapshot (same reasoning as server/_core/env.ts's
+ * getOwnerNotifyConfig()/getCookieSecretBytes()).
+ *
+ * Provider-neutral by design rather than hardcoded to one vendor: the
+ * request/response shape this module speaks (messages[], response_format
+ * json_schema, choices[].message.content) is OpenAI's Chat Completions
+ * wire protocol, which is also what AiScanScoring.ts already expects back
+ * — and is also what OpenAI itself, Azure OpenAI, and Google's Gemini
+ * OpenAI-compatibility endpoint (among others) all accept directly, with
+ * no translation layer. Configuring LLM_API_URL/LLM_API_KEY/LLM_MODEL for
+ * whichever of those the client selects is the entire integration step;
+ * no code change should be needed to switch providers within that set.
+ *
+ * BLOCKED — production activation: no provider has been selected and no
+ * credentials are configured in this environment. See
+ * MILESTONE2_PROGRESS.md §2.2 for exactly what's needed.
+ */
+const DEFAULT_MODEL = "gpt-4o-mini";
+const DEFAULT_TIMEOUT_MS = 60_000;
 
-const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+const resolveApiUrl = () => {
+  const url = process.env.LLM_API_URL;
+  if (!url || url.trim().length === 0) {
+    throw new Error(
+      "LLM_API_URL is not configured — no LLM provider has been selected/activated for this environment.",
+    );
   }
+  return url;
+};
+
+const resolveApiKey = () => {
+  const key = process.env.LLM_API_KEY;
+  if (!key || key.trim().length === 0) {
+    throw new Error(
+      "LLM_API_KEY is not configured — no LLM provider has been selected/activated for this environment.",
+    );
+  }
+  return key;
+};
+
+const resolveModel = () => process.env.LLM_MODEL || DEFAULT_MODEL;
+
+const resolveTimeoutMs = () => {
+  const raw = process.env.LLM_TIMEOUT_MS;
+  const parsed = raw ? Number(raw) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TIMEOUT_MS;
 };
 
 const normalizeResponseFormat = ({
@@ -266,7 +304,8 @@ const normalizeResponseFormat = ({
 };
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
+  const apiUrl = resolveApiUrl();
+  const apiKey = resolveApiKey();
 
   const {
     messages,
@@ -280,7 +319,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model: resolveModel(),
     messages: messages.map(normalizeMessage),
   };
 
@@ -296,10 +335,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
-  payload.thinking = {
-    "budget_tokens": 128
-  }
+  payload.max_tokens = params.maxTokens ?? params.max_tokens ?? 32768;
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
@@ -312,17 +348,34 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetch(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  const timeoutMs = resolveTimeoutMs();
+  let response: Response;
+  try {
+    response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "TimeoutError") {
+      throw new Error(`LLM invoke timed out after ${timeoutMs}ms`);
+    }
+    throw new Error(
+      `LLM invoke failed to reach the provider: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await response.text().catch(() => "");
+    if (response.status === 429) {
+      throw new Error(
+        `LLM invoke rate-limited by provider (429)${errorText ? `: ${errorText}` : ""}`,
+      );
+    }
     throw new Error(
       `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
     );

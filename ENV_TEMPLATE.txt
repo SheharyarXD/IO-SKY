@@ -67,23 +67,50 @@ SUPABASE_SECRET_KEY=
 # outside the supabase-js SDK's own session handling.
 SUPABASE_JWKS_URL=
 
+# Milestone 2 §2.3 — BLOCKED, external dashboard configuration, no env var
+# here and no code path in this repo: Supabase Auth's own password-reset
+# email (client/src/pages/Login.tsx already calls
+# supabase.auth.resetPasswordForEmail() — RM-50) is sent BY Supabase's
+# servers, not by this app's backend, using Supabase's default mailer
+# (a few emails/hour, not production-suitable, generic unbranded template)
+# unless Custom SMTP is configured. To route it through the same Resend
+# infrastructure as every other email in this app: Supabase Dashboard →
+# Authentication → Emails → SMTP Settings → enable Custom SMTP, host
+# smtp.resend.com, port 587, username "resend", password = the Resend API
+# key. Also consider replacing Supabase's default email template text
+# under Authentication → Emails → Templates to match this app's branding
+# (server/email.ts's HTML templates are the reference for tone/styling —
+# Supabase's template editor is separate from this codebase and can't be
+# driven from here). Needs live Supabase dashboard access this environment
+# doesn't have; nothing to implement in code once the account owner does this.
+
 # Frontend — Vite only exposes VITE_-prefixed vars to the browser bundle.
 # The publishable key is safe to expose client-side by design.
 VITE_SUPABASE_URL=
 VITE_SUPABASE_PUBLISHABLE_KEY=
 
 # -----------------------------------------------------------------------------
-# LLM + IMAGE GENERATION + VOICE + DATA API + MAPS + OWNER NOTIFICATIONS
-# (all routed through one OpenAI-compatible "Forge" gateway today)
+# LLM (Milestone 2 §2.2 — direct provider integration, replacing the
+# Forge/Manus LLM proxy). Powers the AI Scan scoring engine
+# (server/_core/aiScanScoring.ts). Provider-neutral: server/_core/llm.ts
+# speaks OpenAI's Chat Completions wire format (messages[], response_format
+# json_schema) directly — no separate gateway/proxy in front of it anymore.
+# Any provider that accepts that format at a URL works with no code change:
+# OpenAI itself, Azure OpenAI, Google's Gemini OpenAI-compatibility
+# endpoint, OpenRouter, Together, Groq, etc.
+#
+# BLOCKED — production activation: no provider has been selected yet. Pick
+# one, fill in its full chat-completions endpoint + API key + model name
+# below. See MILESTONE2_PROGRESS.md §2.2 for the exact decision needed.
 # -----------------------------------------------------------------------------
-# Base URL of an OpenAI-compatible endpoint. Helper appends /v1/chat/completions.
-# Standalone: https://api.openai.com  (or Azure OpenAI / OpenRouter / Together)
-BUILT_IN_FORGE_API_URL=
-BUILT_IN_FORGE_API_KEY=
-
-# Frontend-side LLM access (only if the browser calls the LLM directly).
-VITE_FRONTEND_FORGE_API_URL=
-VITE_FRONTEND_FORGE_API_KEY=
+# Full endpoint URL, e.g. https://api.openai.com/v1/chat/completions
+LLM_API_URL=
+LLM_API_KEY=
+# Model name as the chosen provider expects it, e.g. "gpt-4o-mini",
+# "gpt-4o", or a Gemini/OpenRouter model id. Defaults to "gpt-4o-mini" if unset.
+LLM_MODEL=
+# Request timeout in ms. Defaults to 60000 (60s) if unset.
+LLM_TIMEOUT_MS=
 
 # -----------------------------------------------------------------------------
 # AUTHENTICATION
@@ -100,6 +127,15 @@ OWNER_NAME=
 # -----------------------------------------------------------------------------
 # EMAIL (transactional — booking + contact confirmations)
 # Transport auto-selected at runtime: Resend > SMTP > console fallback.
+#
+# Milestone 2 §2.3 — BLOCKED, production activation: the code side (this
+# module, the Resend/SMTP/console fallback chain, delivery logging) is
+# done — see MILESTONE2_PROGRESS.md §2.3. What's still needed from
+# whoever owns the Resend account: (1) a verified sending domain in the
+# Resend dashboard (SPF/DKIM DNS records — BOOKING_FROM_EMAIL/SMTP_FROM
+# below must be an address at that domain, or Resend will reject sends);
+# (2) a production (not test-mode) RESEND_API_KEY; (3) the webhook
+# configured per RESEND_WEBHOOK_SECRET's comment below.
 # -----------------------------------------------------------------------------
 # Option A — Resend (preferred)
 RESEND_API_KEY=
@@ -108,6 +144,24 @@ SMTP_URL=
 # From address / name used by outbound mail (falls back to SMTP_FROM).
 BOOKING_FROM_EMAIL=IO SKY <noreply@iosky.nl>
 SMTP_FROM=IO SKY <noreply@iosky.nl>
+
+# Milestone 2 §2.3 — delivery tracking. Signing secret for Resend's
+# bounce/complaint/delivery webhook (Resend dashboard → Webhooks → your
+# endpoint → "Signing Secret", starts with "whsec_"). Point the webhook at
+# POST {PUBLIC_BASE_URL}/api/webhooks/resend, subscribed to at least
+# email.delivered/email.bounced/email.complained. Without this set, the
+# webhook route rejects every request (fails closed, not silently).
+RESEND_WEBHOOK_SECRET=
+
+# -----------------------------------------------------------------------------
+# OWNER ALERTS (Milestone 2 §2.2 — replaces the Manus push-notification
+# call). Fires on new leads/bookings/messages/uploads etc.
+# (server/_core/notification.ts's notifyOwner(), ~12 call sites). Email
+# reuses the same Resend/SMTP transport as the EMAIL section above — no
+# separate credential needed for that part. Slack is optional and additive.
+# -----------------------------------------------------------------------------
+OWNER_NOTIFY_EMAIL=
+OWNER_NOTIFY_SLACK_WEBHOOK_URL=
 
 # -----------------------------------------------------------------------------
 # SMS (MFA one-time codes) — Twilio
@@ -118,18 +172,27 @@ TWILIO_AUTH_TOKEN=
 TWILIO_FROM_NUMBER=
 
 # -----------------------------------------------------------------------------
-# OBJECT STORAGE
-# Today: served via the Forge presign proxy at /manus-storage/*. There is no
-# code path yet that reads S3_* variables — do NOT fill these in expecting
-# storage to switch automatically. Wiring server/storage.ts to a direct S3
-# client (or Supabase Storage) is real development work, tracked separately
-# in the Milestone 2 Manus-removal / storage-migration plan.
+# OBJECT STORAGE (Milestone 2 §2.1 — migrated to Supabase Storage)
+# client_documents/client_reports/client_invoices/developer_project_files/
+# AI Scan report PDFs are all served through server/storage.ts against
+# Supabase Storage now (buckets + RLS in drizzle/0007_storage_buckets.sql,
+# applied via SUPABASE_URL/SUPABASE_SECRET_KEY above — no separate env vars
+# needed for this part). No S3_* variables are read anywhere in the
+# codebase; do not fill them in expecting anything to happen.
 # -----------------------------------------------------------------------------
-# S3_ENDPOINT=
-# S3_BUCKET=
-# S3_ACCESS_KEY_ID=
-# S3_SECRET_ACCESS_KEY=
-# S3_REGION=
+
+# -----------------------------------------------------------------------------
+# LEGACY FORGE STORAGE PROXY (branding assets ONLY — logo/mark/favicon)
+# server/_core/storageProxy.ts's /manus-storage/* route still calls Forge
+# directly for exactly 3 files. BLOCKED from migrating to the Supabase
+# `branding` bucket above: the original image bytes exist only in Forge
+# storage (no copy anywhere in this repo) and this environment has neither
+# Forge nor Supabase credentials to move them. Keep these configured until
+# that migration happens — removing them would break the visible site logo.
+# See MILESTONE2_PROGRESS.md §2.1 for the exact blocker.
+# -----------------------------------------------------------------------------
+BUILT_IN_FORGE_API_URL=
+BUILT_IN_FORGE_API_KEY=
 
 # -----------------------------------------------------------------------------
 # PRE-LAUNCH STAGING GATE (optional)

@@ -25,10 +25,13 @@ import {
   organizations,
   users as usersTable,
   type ClientInvoice,
+  type ClientProject,
+  type ClientProjectMilestone,
   type ClientReport,
   type Organization,
 } from "../../drizzle/schema";
 import { getDb } from "./connection";
+import { generatePublicRef } from "../_core/publicRef";
 
 // ---------------------------------------------------------------------------
 // Organizations
@@ -99,6 +102,67 @@ export async function getClientReportById(orgId: number, id: number) {
       and(eq(clientReports.organizationId, orgId), eq(clientReports.id, id)),
     )
     .limit(1);
+  return rows[0] ?? null;
+}
+
+/**
+ * Milestone 2 §2.4 — admin-authored report creation, including the AI Scan
+ * funnel bridge (server/routers/admin.ts's promoteAiScanToClientReport
+ * passes the scan's own score/summary through here). publicRef is
+ * generated the same way every other public-facing reference in this app
+ * is (server/_core/publicRef.ts), not caller-supplied.
+ */
+export async function createClientReport(input: {
+  organizationId: number;
+  title: string;
+  scanType?: string;
+  score: number;
+  delta?: number;
+  summary?: string | null;
+  pdfKey?: string | null;
+  status?: "draft" | "ready" | "delivered";
+  pages?: number | null;
+}): Promise<ClientReport | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .insert(clientReports)
+    .values({
+      organizationId: input.organizationId,
+      publicRef: generatePublicRef("R"),
+      title: input.title,
+      scanType: input.scanType ?? "ai-scan",
+      score: input.score,
+      delta: input.delta ?? 0,
+      summary: input.summary ?? null,
+      pdfKey: input.pdfKey ?? null,
+      status: input.status ?? "ready",
+      pages: input.pages ?? null,
+    })
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateClientReport(
+  orgId: number,
+  id: number,
+  updates: Partial<{
+    title: string;
+    score: number;
+    delta: number;
+    summary: string | null;
+    pdfKey: string | null;
+    status: "draft" | "ready" | "delivered";
+    pages: number | null;
+  }>,
+): Promise<ClientReport | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(clientReports)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(and(eq(clientReports.organizationId, orgId), eq(clientReports.id, id)))
+    .returning();
   return rows[0] ?? null;
 }
 
@@ -178,6 +242,124 @@ export async function listClientProjectMilestones(projectIds: number[]) {
         sql`,`,
       )})`,
     );
+}
+
+/** By-id helper, tenant-scoped — needed to verify a projectId belongs to
+ * the calling admin's target org before creating/updating a milestone
+ * under it (client_project_milestones has no organizationId of its own —
+ * see the schema comment above clientProjectMilestonesStatusEnum). */
+export async function getClientProjectById(
+  orgId: number,
+  id: number,
+): Promise<ClientProject | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(clientProjects)
+    .where(and(eq(clientProjects.organizationId, orgId), eq(clientProjects.id, id)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createClientProject(input: {
+  organizationId: number;
+  name: string;
+  phase?: string;
+  status?: "planning" | "active" | "on_hold" | "completed";
+  progress?: number;
+  startMs?: number | null;
+  targetMs?: number | null;
+  summary?: string | null;
+}): Promise<ClientProject | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .insert(clientProjects)
+    .values({
+      organizationId: input.organizationId,
+      name: input.name,
+      phase: input.phase ?? "Discovery",
+      status: input.status ?? "active",
+      progress: input.progress ?? 0,
+      startMs: input.startMs ?? null,
+      targetMs: input.targetMs ?? null,
+      summary: input.summary ?? null,
+    })
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateClientProject(
+  orgId: number,
+  id: number,
+  updates: Partial<{
+    name: string;
+    phase: string;
+    status: "planning" | "active" | "on_hold" | "completed";
+    progress: number;
+    startMs: number | null;
+    targetMs: number | null;
+    summary: string | null;
+  }>,
+): Promise<ClientProject | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(clientProjects)
+    .set(updates)
+    .where(and(eq(clientProjects.organizationId, orgId), eq(clientProjects.id, id)))
+    .returning();
+  return rows[0] ?? null;
+}
+
+/**
+ * Tenant-scoped via an explicit projectId ownership check by the caller
+ * (server/routers/admin.ts calls getClientProjectById first) — mirrors
+ * exactly what client_project_milestones' own RLS policy does at the
+ * database layer (an EXISTS join through client_projects, since this
+ * table carries no organizationId column of its own).
+ */
+export async function createClientProjectMilestone(input: {
+  projectId: number;
+  title: string;
+  dueMs?: number | null;
+  status?: "pending" | "in_progress" | "completed";
+  body?: string | null;
+}): Promise<ClientProjectMilestone | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .insert(clientProjectMilestones)
+    .values({
+      projectId: input.projectId,
+      title: input.title,
+      dueMs: input.dueMs ?? null,
+      status: input.status ?? "pending",
+      body: input.body ?? null,
+    })
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateClientProjectMilestone(
+  projectId: number,
+  id: number,
+  updates: Partial<{
+    title: string;
+    dueMs: number | null;
+    status: "pending" | "in_progress" | "completed";
+    body: string | null;
+  }>,
+): Promise<ClientProjectMilestone | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(clientProjectMilestones)
+    .set(updates)
+    .where(and(eq(clientProjectMilestones.projectId, projectId), eq(clientProjectMilestones.id, id)))
+    .returning();
+  return rows[0] ?? null;
 }
 
 // ---------------------------------------------------------------------------

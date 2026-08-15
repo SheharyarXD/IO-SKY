@@ -1106,7 +1106,6 @@ export const it: Record<string, string> = {
   "ui.empty": "Ancora niente qui",
   "ui.permissionDenied": "Permesso negato",
   "ui.error": "Qualcosa è andato storto",
-  "auth.continueWithManus": "Continua con Manus",
   "auth.mfa.code": "Codice di 6 cifre",
   "auth.mfa.submit": "Verifica",
   "auth.mfa.subtitle": "Conferma con il tuo autenticatore o codice di recupero.",

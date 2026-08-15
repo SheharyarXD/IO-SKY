@@ -1223,7 +1223,6 @@ export const nl: Record<string, string> = {
   "ui.empty": "Nog niets hier",
   "ui.permissionDenied": "Toegang geweigerd",
   "ui.error": "Er is iets misgegaan",
-  "auth.continueWithManus": "Doorgaan met Manus",
   "auth.mfa.code": "6-cijferige code",
   "auth.mfa.submit": "Verifiëren",
   "auth.mfa.subtitle": "Bevestig met uw authenticator of herstelcode.",

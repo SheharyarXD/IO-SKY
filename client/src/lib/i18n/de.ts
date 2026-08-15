@@ -1156,7 +1156,6 @@ export const de: Record<string, string> = {
   "ui.empty": "Noch nichts vorhanden",
   "ui.permissionDenied": "Zugriff verweigert",
   "ui.error": "Es ist ein Fehler aufgetreten",
-  "auth.continueWithManus": "Mit Manus fortfahren",
   "auth.mfa.code": "6-stelliger Code",
   "auth.mfa.submit": "Verifizieren",
   "auth.mfa.subtitle": "Bestätigen Sie mit Ihrem Authentifikator oder Wiederherstellungscode.",

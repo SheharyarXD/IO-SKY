@@ -24,6 +24,8 @@ import {
   devAppStrings,
   fill,
 } from "./email-i18n";
+import { insertEmailDeliveryLog } from "./db/emailDelivery";
+import type { InsertEmailDeliveryLog } from "../drizzle/schema";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -249,7 +251,7 @@ function renderText(input: BookingEmailInput): string {
   ].filter(Boolean).join("\n");
 }
 
-function escapeHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -266,12 +268,31 @@ export async function sendBookingConfirmation(
   input: BookingEmailInput
 ): Promise<BookingEmailResult> {
   const subject = fill(bookingStrings(normaliseLocale(input.locale)).subject, { ref: input.publicRef });
+  const to = input.email;
+  const result = await attemptSendBookingConfirmation(input, subject, to);
+  await insertEmailDeliveryLog({
+    messageType: "booking-confirmation",
+    transport: result.transport,
+    providerMessageId: result.messageId ?? null,
+    recipient: to,
+    subject,
+    relatedRef: input.publicRef,
+    status: result.ok ? "sent" : "failed",
+    errorMessage: result.ok ? null : result.error ?? null,
+  });
+  return result;
+}
+
+async function attemptSendBookingConfirmation(
+  input: BookingEmailInput,
+  subject: string,
+  to: string,
+): Promise<BookingEmailResult> {
   const html = renderHtml(input);
   const text = renderText(input);
   const ics = buildIcs(input);
   const icsBase64 = Buffer.from(ics, "utf8").toString("base64");
   const from = getFromEmail();
-  const to = input.email;
 
   // 1) Resend
   if (process.env.RESEND_API_KEY) {
@@ -441,6 +462,8 @@ export async function sendContactConfirmation(
     html,
     text,
     refHeader: input.publicRef,
+    messageType: "contact-confirmation",
+    relatedRef: input.publicRef,
   });
 }
 
@@ -499,6 +522,8 @@ export async function sendDevApplicationAck(
     html,
     text,
     refHeader: input.publicRef,
+    messageType: "devapp-ack",
+    relatedRef: input.publicRef,
   });
 }
 
@@ -506,7 +531,40 @@ export async function sendDevApplicationAck(
 // Shared simple-email dispatch (no attachments)
 // ---------------------------------------------------------------------------
 
-async function dispatchSimpleEmail(args: {
+/**
+ * Shared Resend/SMTP/console dispatch, used by every "simple" (no
+ * attachment) transactional email above. Exported so other modules that
+ * need a plain email sent through the same production transport — without
+ * a bespoke template — can reuse it instead of re-implementing the
+ * Resend/SMTP fallback chain (server/_core/notification.ts's owner-alert
+ * email, Milestone 2 §2.2, is the first such caller). Milestone 2 §2.3:
+ * every call is logged to email_delivery_log — messageType is required
+ * precisely so that log entry is meaningful, not a generic "email" row.
+ */
+export async function dispatchSimpleEmail(args: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  refHeader: string;
+  messageType: InsertEmailDeliveryLog["messageType"];
+  relatedRef?: string | null;
+}): Promise<GenericEmailResult> {
+  const result = await attemptDispatchSimpleEmail(args);
+  await insertEmailDeliveryLog({
+    messageType: args.messageType,
+    transport: result.transport,
+    providerMessageId: result.messageId ?? null,
+    recipient: args.to,
+    subject: args.subject,
+    relatedRef: args.relatedRef ?? null,
+    status: result.ok ? "sent" : "failed",
+    errorMessage: result.ok ? null : result.error ?? null,
+  });
+  return result;
+}
+
+async function attemptDispatchSimpleEmail(args: {
   to: string;
   subject: string;
   html: string;
