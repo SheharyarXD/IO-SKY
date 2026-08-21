@@ -52,6 +52,8 @@ import {
   setUserRole,
   assignUserOrganization,
   getUserById,
+  listPlatformSettings,
+  updatePlatformSetting,
 } from "../db";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import {
@@ -1236,21 +1238,39 @@ export const adminRouter = router({
    * client/src/pages/admin/sections/AutomationsAnalyticsRest.tsx's
    * SystemSettings component carries the matching `sampleData` disclosure.
    */
+  /**
+   * Milestone 2 §2.5 — platform configuration store. Was a hardcoded
+   * literal list (explicitly disclosed as `source: "static"` since §2.4);
+   * now backed by the real `platform_settings` table (auto-seeded with the
+   * same original copy on first read, so nothing visually regresses until
+   * a super_admin actually edits a row). See platformSettings.ts /
+   * drizzle/schema.ts for the deliberate scope boundary — this is a
+   * labeled config-state store, not live third-party provider wiring.
+   */
   settings: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.settings" });
+    const rows = await safe(() => listPlatformSettings(), []);
     return {
-      sections: [
-        { key: "branding",   title: "Branding",         desc: "Logo, accent colour, favicon and admin portal name.",            state: "Configured" },
-        { key: "storage",    title: "Cloud storage",    desc: "S3-compatible bucket, region, encryption and retention.",         state: "Configured" },
-        { key: "security",   title: "Security policies",desc: "MFA enforcement, session length, IP allowlists, password policy.",state: "Hardened" },
-        { key: "i18n",       title: "Localisation",     desc: "Default timezone (Europe/Amsterdam), languages and currency.",    state: "EN · NL" },
-        { key: "integrations",title:"Integrations",     desc: "Stripe, Twilio, SendGrid, Postmark, OpenAI, Google Maps, Manus.", state: "Connected" },
-        { key: "observability", title: "Observability", desc: "Audit retention, error reporting, performance budgets, alerting.",state: "Active" },
-      ],
+      sections: rows.map((r) => ({ key: r.key, title: r.title, desc: r.description ?? "", state: r.value })),
       generatedAtMs: Date.now(),
-      source: "static" as const,
+      source: rows.length > 0 ? ("db" as const) : ("unavailable" as const),
     };
   }),
+  updateSetting: superAdminProcedure
+    .input(
+      z.object({
+        key: z.string().min(1).max(128),
+        value: z.string().min(1).max(500),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updated = await updatePlatformSetting(input.key, { value: input.value }, ctx.user.id);
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Setting not found." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.settings.update(${input.key})` });
+      return updated;
+    }),
   support: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.support" });
     return readSupport();

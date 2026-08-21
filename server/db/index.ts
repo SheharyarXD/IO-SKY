@@ -20,6 +20,7 @@
  *   solutions          — ecosystem clicks, proposals, custom discovery
  *   legal              — legal documents, agreement versions, acceptances, cookie consent
  *   emailDelivery      — email delivery log (Milestone 2 §2.3)
+ *   platformSettings   — platform configuration store (Milestone 2 §2.5)
  */
 
 export { getDb } from "./connection";
@@ -34,3 +35,4 @@ export * from "./aiScans";
 export * from "./solutions";
 export * from "./legal";
 export * from "./emailDelivery";
+export * from "./platformSettings";

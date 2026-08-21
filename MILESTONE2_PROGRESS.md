@@ -22,7 +22,7 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 | 2.2 Manus Dependency Removal | ✅ Done + verified · ⛔ LLM/owner-alert production activation blocked |
 | 2.3 Email Productionisation | ✅ Delivery tracking done · ⛔ Resend domain + Supabase Auth email routing blocked |
 | 2.4 Core Workflow Verification & Conversion | ✅ Done this session — every previously-undisclosed fabricated panel on Executive Overview now wired to real data or disclosed; the underlying admin.summary fabrication bug fixed too |
-| 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, and Business Intelligence dashboards done and tested; AI governance config, platform/integration/notification-template configuration, broader MFA-enforcement surfacing NOT started |
+| 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, Business Intelligence dashboards, and the platform configuration store done and tested; AI governance config, real integration/notification-template management, broader MFA-enforcement surfacing NOT started |
 | 2.6 Document Lifecycle / Workflow Engine / Integrations | ⏭ Not started |
 | 2.7 Notification Infrastructure | ⏭ Not started |
 
@@ -638,16 +638,60 @@ super_admin-exclusive endpoint, unauthenticated rejection, the self-role-
 change guard, slug-uniqueness/NOT_FOUND/audit-logging paths. `pnpm run
 build` → succeeds.
 
+### Platform configuration store
+
+Turned `SystemSettings` from a hardcoded literal list (`source: "static"`,
+disclosed via `sampleData`) into a real, persisted, super_admin-editable
+config surface. Deliberately narrow: this stores a label/description/state
+string per named setting, not live third-party provider wiring — no
+Stripe/Twilio/SendGrid credentials are read from or written to it. Building
+real provider integration is separate, substantial work with real provider
+accounts behind it, not something to fabricate.
+
+- `drizzle/schema.ts` + `drizzle/0011_platform_settings.sql`: new
+  `platform_settings` table (section/key/title/description/value/
+  updatedByUserId), RLS-hardened same pattern as every table in this repo
+  (`ENABLE`/`FORCE ROW LEVEL SECURITY`, admin-only read via `app_is_admin()`,
+  super_admin-only write via `app_is_super_admin()`). Same apply/verify
+  caveat as every migration since `0006` — authored and locally verified
+  only.
+- `server/db/platformSettings.ts` (new): `listPlatformSettings()`
+  auto-seeds the six original section rows (branding/storage/security/
+  i18n/integrations/observability) with their original copy on first read,
+  so the page renders identically until a super_admin actually edits
+  something — at which point it's real persisted state, not a literal.
+  `updatePlatformSetting(key, updates, updatedByUserId)`.
+- `server/routers/admin.ts`: `admin.settings` now reads the real table;
+  new `admin.updateSetting` (super_admin-exclusive, matching RM-57's
+  decision record naming "platform & integration configuration" as a
+  super_admin-only capability) with NOT_FOUND for an unknown key.
+- `client/.../AutomationsAnalyticsRest.tsx`'s `SystemSettings`: now
+  actually queries `trpc.admin.settings` (it never did before — the
+  section cards were a second, independently-hardcoded local array,
+  disconnected from the query hook entirely). super_admin sees a real
+  "Edit" action (`window.prompt`, matching the established lightweight-flow
+  convention); other admins see the same read-only "Manage" audited stub
+  as before. `sampleData` badge removed.
+- `server/admin.platformSettings.test.ts` (new, 6 tests): real data flowing
+  through, honest offline/empty shape, super_admin-exclusive write gating,
+  NOT_FOUND for an unknown key.
+
+Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 466/466 passing,
+33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
+`drizzle-kit generate` → "No schema changes, nothing to migrate".
+
 ### Not started (real scope, not small)
 
 - **AI governance config** — no concrete spec exists in this repo for what
   this means operationally (model allow-list? prompt/response logging
   retention? per-org AI feature toggles?) — needs a decision, not a guess,
   before it's buildable.
-- **Platform configuration / integration management / notification-template
-  management** — `SystemSettings` (§2.4, prior session) is an honestly-
-  labeled static reference view, not a live editor; building a real one is
-  a separate, substantial deliverable.
+- **Real third-party integration management / notification-template
+  content management** — the platform configuration *store* is now real
+  (see above), but it does not wire real Stripe/Twilio/SendGrid provider
+  credentials, and notification templates need §2.7's notification schema
+  to exist first (a template is meaningless without the typed notification
+  system it renders for) — tracked there, not duplicated here.
 - **Broader MFA-enforcement surfacing** — beyond the per-user MFA column
   already on the Users & Permissions table, there's no admin-side
   "require MFA for this role/org" enforcement control.

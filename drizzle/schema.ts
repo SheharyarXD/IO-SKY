@@ -1838,3 +1838,37 @@ export const aiScans = pgTable(
 
 export type AiScan = typeof aiScans.$inferSelect;
 export type InsertAiScan = typeof aiScans.$inferInsert;
+
+/**
+ * Milestone 2 §2.5 — platform configuration store. Turns the admin
+ * console's "System Settings" page from a hardcoded reference view into a
+ * real, persisted, super_admin-editable config surface — one row per
+ * named setting, grouped by `section` (branding / storage / security /
+ * i18n / integrations / observability, matching the page's existing
+ * section keys). Deliberately narrow: this stores a label/description/
+ * state string per setting, not live third-party provider wiring (no
+ * Stripe/Twilio/SendGrid credentials are read from here) — building that
+ * out is separate, substantial work with real provider accounts behind
+ * it, not something to fabricate.
+ */
+export const platformSettings = pgTable(
+  "platform_settings",
+  {
+    id: serial("id").primaryKey(),
+    section: varchar("section", { length: 64 }).notNull(),
+    /** Stable machine key within its section, e.g. "storage.retention_days". */
+    key: varchar("key", { length: 128 }).notNull().unique(),
+    title: varchar("title", { length: 200 }).notNull(),
+    description: text("description"),
+    /** Free-text current value/state shown on the settings card (e.g. "Configured", "EN · NL", "30 days"). */
+    value: text("value").notNull(),
+    updatedByUserId: integer("updatedByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("platform_settings_section_idx").on(table.section),
+  ],
+);
+export type PlatformSetting = typeof platformSettings.$inferSelect;
+export type InsertPlatformSetting = typeof platformSettings.$inferInsert;

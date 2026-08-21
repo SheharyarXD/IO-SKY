@@ -473,28 +473,47 @@ export function AuditLogs() {
 }
 
 // =============================================================================
-// System Settings
+// System Settings — Milestone 2 §2.5 platform configuration store.
+// Previously a hardcoded local array never even wired to trpc.admin.settings,
+// disclosed as `sampleData`. Now backed by the real `platform_settings`
+// table (server/db/platformSettings.ts): any admin can read it, only
+// super_admin can edit a value (matching RM-57's decision that platform
+// configuration is a super_admin-exclusive capability). Deliberately still
+// NOT live third-party provider wiring — editing a card updates its stored
+// label/state string, not real Stripe/Twilio/SendGrid credentials.
 // =============================================================================
 export function SystemSettings() {
+  const { user: me } = useAuth();
+  const isSuperAdmin = me?.role === "super_admin";
+  const q = trpc.admin.settings.useQuery(undefined, { staleTime: 30_000 });
+  const utils = trpc.useUtils();
   const audited = useAuditedAction();
-  const sections = [
-    { key: "branding", title: "Branding", desc: "Logo, accent colour, favicon and admin portal name.", state: "Configured" },
-    { key: "storage", title: "Cloud storage", desc: "Supabase Storage buckets (client-portal, developer-workspace, ai-scan-reports, branding) — see Milestone 2 §2.1.", state: "Configured" },
-    { key: "security", title: "Security policies", desc: "MFA enforcement, session length, IP allowlists, password policy.", state: "Hardened" },
-    { key: "i18n", title: "Localisation", desc: "Default timezone (Europe/Amsterdam), languages and currency formats.", state: "EN · NL" },
-    { key: "integrations", title: "Integrations", desc: "Resend (email), Supabase (auth/db/storage). LLM provider and Slack owner-alerts are configured but not yet activated — see Milestone 2 §2.2/§2.3.", state: "Partial" },
-    { key: "observability", title: "Observability", desc: "Audit retention, error reporting, performance budgets, alerting.", state: "Active" },
-  ];
+  const updateSetting = trpc.admin.updateSetting.useMutation({
+    onSuccess: () => utils.admin.settings.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not update setting"),
+  });
+
+  const onEdit = (key: string, title: string, current: string) => {
+    const value = window.prompt(`New value for "${title}"?`, current);
+    if (!value || value.trim() === current) return;
+    updateSetting.mutate({ key, value: value.trim() });
+  };
+
   return (
+    <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
+      {(data) => (
     <OperationalPage
       eyebrow="Configuration"
-      sampleData
       title="System Settings"
-      tagline="Reference view of platform configuration — not yet a live settings editor. Real per-section management (branding upload, security policy editing, etc) is not built."
+      tagline={
+        isSuperAdmin
+          ? "Live platform configuration store — edit a card to persist a new value. Third-party provider credentials are configured outside this app, not here."
+          : "Platform configuration (read-only for your role — super_admin can edit)."
+      }
       primary={
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {sections.map((s) => (
-            <div key={s.title} className="rounded-[12px] border border-white/[0.06] bg-white/[0.02] p-4">
+          {data.sections.map((s) => (
+            <div key={s.key} className="rounded-[12px] border border-white/[0.06] bg-white/[0.02] p-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-[14px] font-medium text-white">{s.title}</h3>
                 <StatusPill tone={s.state === "Partial" ? "warn" : "ok"} label={s.state} />
@@ -502,16 +521,22 @@ export function SystemSettings() {
               <p className="mt-1.5 text-[12.5px] text-white/65 leading-relaxed">{s.desc}</p>
               <button
                 className="mt-3 inline-flex items-center gap-1.5 text-[11.5px] font-mono text-[#FF6A00] hover:text-[#FF7A1A]"
-                onClick={() => audited.fire("settings", `view-${s.key}`)}
+                onClick={() =>
+                  isSuperAdmin
+                    ? onEdit(s.key, s.title, s.state)
+                    : audited.fire("settings", `view-${s.key}`)
+                }
               >
                 <SettingsIcon className="w-3 h-3" />
-                Manage
+                {isSuperAdmin ? "Edit" : "Manage"}
               </button>
             </div>
           ))}
         </div>
       }
     />
+      )}
+    </ModuleStateBoundary>
   );
 }
 
