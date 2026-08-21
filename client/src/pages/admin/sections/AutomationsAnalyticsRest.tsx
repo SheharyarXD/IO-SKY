@@ -14,6 +14,7 @@ import OperationalPage, {
 } from "./_shared/OperationalPage";
 import { ModuleStateBoundary, useAuditedAction } from "./_shared/ModuleState";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Workflow,
   BarChart3,
@@ -192,18 +193,135 @@ interface UserRow {
 
 type UsersPayload = { rows: UserRow[]; total: number };
 
-const USER_COLS: DataColumn<UserRow>[] = [
-  { key: "id", header: "Ref", width: "70px", render: (r) => <span className="font-mono text-white/55">U-{r.id}</span> },
-  { key: "name", header: "User", render: (r) => <span>{r.name ?? "—"}</span> },
-  { key: "email", header: "Email", render: (r) => <span className="font-mono text-white/65">{r.email ?? "—"}</span> },
-  { key: "role", header: "Role" },
-  { key: "mfaMethod", header: "MFA", render: (r) => <StatusPill tone={r.mfaMethod !== "none" ? "ok" : "warn"} label={r.mfaMethod !== "none" ? r.mfaMethod : "disabled"} /> },
-  { key: "lastSignedIn", header: "Last seen", align: "right", render: (r) => <span className="font-mono text-white/55">{new Date(r.lastSignedIn).toLocaleDateString()}</span> },
-];
+interface OrgRow {
+  id: number;
+  slug: string;
+  name: string;
+  memberCount: number;
+}
+
+const ROLE_OPTIONS = ["user", "client", "developer", "admin", "super_admin"] as const;
+
+/**
+ * Milestone 2 §2.5 — real role/org-assignment actions, built on
+ * admin.setUserRole / admin.assignUserOrganization (server/routers/admin.ts,
+ * both superAdminProcedure-gated). window.prompt()-based, matching the
+ * established lightweight-flow convention already used for View-As's
+ * reason prompt (AdminLayout.tsx) and Reports/Projects' "Generate" flow -
+ * not a full modal form, but a genuine mutation, not an audit-only stub.
+ * Only rendered for callers who are actually super_admin - a plain admin
+ * would just get FORBIDDEN from the backend, but hiding the buttons
+ * avoids a dead-end click.
+ */
+function buildUserCols(opts: {
+  isSuperAdmin: boolean;
+  orgsById: Map<number, OrgRow>;
+  onChangeRole: (row: UserRow) => void;
+  onAssignOrg: (row: UserRow) => void;
+}): DataColumn<UserRow>[] {
+  const cols: DataColumn<UserRow>[] = [
+    { key: "id", header: "Ref", width: "70px", render: (r) => <span className="font-mono text-white/55">U-{r.id}</span> },
+    { key: "name", header: "User", render: (r) => <span>{r.name ?? "—"}</span> },
+    { key: "email", header: "Email", render: (r) => <span className="font-mono text-white/65">{r.email ?? "—"}</span> },
+    { key: "role", header: "Role" },
+    {
+      key: "organizationId",
+      header: "Organization",
+      render: (r) =>
+        r.organizationId ? (
+          <span className="text-white/75">{opts.orgsById.get(r.organizationId)?.name ?? `#${r.organizationId}`}</span>
+        ) : (
+          <span className="text-white/35">—</span>
+        ),
+    },
+    { key: "mfaMethod", header: "MFA", render: (r) => <StatusPill tone={r.mfaMethod !== "none" ? "ok" : "warn"} label={r.mfaMethod !== "none" ? r.mfaMethod : "disabled"} /> },
+    { key: "lastSignedIn", header: "Last seen", align: "right", render: (r) => <span className="font-mono text-white/55">{new Date(r.lastSignedIn).toLocaleDateString()}</span> },
+  ];
+  if (opts.isSuperAdmin) {
+    cols.push({
+      key: "id" as keyof UserRow,
+      header: "Actions",
+      render: (r) => (
+        <div className="flex items-center gap-2 justify-end">
+          <button onClick={() => opts.onChangeRole(r)} className="text-[11px] text-[#FF6A00] hover:underline">
+            Role
+          </button>
+          <button onClick={() => opts.onAssignOrg(r)} className="text-[11px] text-[#FF6A00] hover:underline">
+            Org
+          </button>
+        </div>
+      ),
+    });
+  }
+  return cols;
+}
 
 export function UsersPermissions() {
+  const { user: me } = useAuth();
+  const isSuperAdmin = me?.role === "super_admin";
   const q = trpc.admin.users.useQuery(undefined, { staleTime: 30_000 });
+  const orgsQuery = trpc.admin.listOrganizations.useQuery(undefined, { staleTime: 30_000 });
+  const utils = trpc.useUtils();
   const audited = useAuditedAction();
+
+  const setRole = trpc.admin.setUserRole.useMutation({
+    onSuccess: () => utils.admin.users.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not update role"),
+  });
+  const assignOrg = trpc.admin.assignUserOrganization.useMutation({
+    onSuccess: () => utils.admin.users.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not update organization"),
+  });
+  const createOrg = trpc.admin.createOrganization.useMutation({
+    onSuccess: () => utils.admin.listOrganizations.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not create organization"),
+  });
+
+  const onChangeRole = (row: UserRow) => {
+    const role = window.prompt(
+      `New role for ${row.name ?? row.email ?? `user #${row.id}`}?\n(${ROLE_OPTIONS.join(" / ")})`,
+      row.role,
+    );
+    if (!role) return;
+    if (!(ROLE_OPTIONS as readonly string[]).includes(role)) {
+      window.alert(`Not a valid role. Must be one of: ${ROLE_OPTIONS.join(", ")}`);
+      return;
+    }
+    setRole.mutate({ userId: row.id, role: role as (typeof ROLE_OPTIONS)[number] });
+  };
+
+  const onAssignOrg = (row: UserRow) => {
+    const orgs = orgsQuery.data ?? [];
+    const list = orgs.map((o) => `${o.id}: ${o.name}`).join("\n") || "(no organizations yet)";
+    const input = window.prompt(
+      `Organization id for ${row.name ?? row.email ?? `user #${row.id}`}? Leave blank to clear.\n\n${list}`,
+      row.organizationId ? String(row.organizationId) : "",
+    );
+    if (input === null) return;
+    const trimmed = input.trim();
+    if (trimmed === "") {
+      assignOrg.mutate({ userId: row.id, organizationId: null });
+      return;
+    }
+    const orgId = Number(trimmed);
+    if (!Number.isInteger(orgId) || orgId <= 0) {
+      window.alert("Organization id must be a positive number");
+      return;
+    }
+    assignOrg.mutate({ userId: row.id, organizationId: orgId });
+  };
+
+  const onCreateOrg = () => {
+    const name = window.prompt("New organization name?");
+    if (!name || !name.trim()) return;
+    const slug = window.prompt(
+      "Slug (lowercase letters, numbers, hyphens only)?",
+      name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 64),
+    );
+    if (!slug || !slug.trim()) return;
+    createOrg.mutate({ slug: slug.trim(), name: name.trim() });
+  };
+
   return (
     <ModuleStateBoundary<UsersPayload>
       isLoading={q.isLoading}
@@ -217,29 +335,65 @@ export function UsersPermissions() {
         for (const r of data.rows) byRole.set(r.role, (byRole.get(r.role) ?? 0) + 1);
         const mfaEnabled = data.rows.filter((r) => r.mfaMethod !== "none").length;
         const mfaPct = data.rows.length > 0 ? ((mfaEnabled / data.rows.length) * 100).toFixed(1) : "0.0";
+        const orgs = (orgsQuery.data ?? []) as OrgRow[];
+        const orgsById = new Map(orgs.map((o) => [o.id, o]));
         return (
     <OperationalPage
       eyebrow="Identity"
       title="Users & Permissions"
-      tagline="Every registered account, role and MFA status. Role/permission mutations are Super Admin-only — see Milestone 2 §2.5."
+      tagline={
+        isSuperAdmin
+          ? "Every registered account, role and organization assignment. Role and organization changes are audited."
+          : "Every registered account, role and MFA status. Role/organization mutations are Super Admin-only — see Milestone 2 §2.5."
+      }
       kpis={[
         { id: "tot", label: "Total users", value: String(data.total), icon: Users, accent: "orange" },
         { id: "adm", label: "Admins + Super Admins", value: String((byRole.get("admin") ?? 0) + (byRole.get("super_admin") ?? 0)), icon: ShieldCheck, accent: "violet" },
         { id: "mfa", label: "MFA enabled", value: `${mfaPct}%`, icon: ShieldCheck, accent: "green" },
+        { id: "org", label: "Organizations", value: String(orgs.length), icon: Users, accent: "green" },
       ]}
       toolbar={<DefaultToolbar searchPlaceholder="Search users, roles…" filters={["Role", "MFA", "Status"]} primaryAction={{ label: "Invite user", onClick: () => audited.fire("users", "invite-user") }} />}
-      primary={<DataTable columns={USER_COLS} rows={data.rows} />}
+      primary={
+        <DataTable
+          columns={buildUserCols({ isSuperAdmin, orgsById, onChangeRole, onAssignOrg })}
+          rows={data.rows}
+        />
+      }
       aside={
-        <SideCard title="Role catalogue">
-          <ul className="space-y-2.5 text-[12.5px] text-white/85">
-            {["super_admin", "admin", "developer", "client", "user"].map((role) => (
-              <li key={role} className="flex items-center justify-between">
-                <span>{role}</span>
-                <span className="font-mono text-white/55">{byRole.get(role) ?? 0}</span>
-              </li>
-            ))}
-          </ul>
-        </SideCard>
+        <div className="space-y-4">
+          <SideCard title="Role catalogue">
+            <ul className="space-y-2.5 text-[12.5px] text-white/85">
+              {["super_admin", "admin", "developer", "client", "user"].map((role) => (
+                <li key={role} className="flex items-center justify-between">
+                  <span>{role}</span>
+                  <span className="font-mono text-white/55">{byRole.get(role) ?? 0}</span>
+                </li>
+              ))}
+            </ul>
+          </SideCard>
+          <SideCard title="Organizations">
+            <ul className="space-y-2 text-[12.5px] text-white/85 mb-3 max-h-[220px] overflow-y-auto">
+              {orgs.length === 0 ? (
+                <li className="text-white/40">No organizations yet</li>
+              ) : (
+                orgs.map((o) => (
+                  <li key={o.id} className="flex items-center justify-between gap-2">
+                    <span className="truncate">{o.name}</span>
+                    <span className="font-mono text-white/55 shrink-0">{o.memberCount} members</span>
+                  </li>
+                ))
+              )}
+            </ul>
+            {isSuperAdmin && (
+              <button
+                onClick={onCreateOrg}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF6A00] text-[#0B1020] text-[12px] font-semibold"
+              >
+                New organization
+              </button>
+            )}
+          </SideCard>
+        </div>
       }
     />
         );
