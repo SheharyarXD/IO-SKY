@@ -11,26 +11,32 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 
 ---
 
-## Handoff summary (as of 2026-08-15, end of session)
+## Handoff summary (as of 2026-08-21, end of latest session)
 
-**Overall: 4 of 7 Milestone 2 workstreams touched (§2.1–2.4), 3 not started (§2.5–2.7). Exit gate NOT passed.**
+**Overall: 5 of 7 Milestone 2 workstreams touched (§2.1–2.5), 2 not started (§2.6–2.7). Exit gate NOT passed.**
 
 | Workstream | Status |
 |---|---|
-| M1 prerequisite (RM-57, Super Admin) | ✅ Code done + locally verified · ⛔ not applied to live DB |
+| M1 prerequisite (RM-57, Super Admin) | ✅ Code done + locally verified · ⛔ still not applied to any live DB (see below — the previously-connected project is gone) |
 | 2.1 Storage Migration | ✅ Done + verified · ⛔ branding assets + live DB application blocked |
 | 2.2 Manus Dependency Removal | ✅ Done + verified · ⛔ LLM/owner-alert production activation blocked |
 | 2.3 Email Productionisation | ✅ Delivery tracking done · ⛔ Resend domain + Supabase Auth email routing blocked |
-| 2.4 Core Workflow Verification & Conversion | 🔶 Partial — highest-severity mocks fixed, some remain |
-| 2.5 Enterprise Super Admin & Platform Governance | ⏭ Not started |
+| 2.4 Core Workflow Verification & Conversion | ✅ Done this session — every previously-undisclosed fabricated panel on Executive Overview now wired to real data or disclosed; the underlying admin.summary fabrication bug fixed too |
+| 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management + role/tenant assignment done and tested; Technical Operator role, Security Center, BI dashboards, AI governance config, platform/integration/notification-template configuration NOT started |
 | 2.6 Document Lifecycle / Workflow Engine / Integrations | ⏭ Not started |
 | 2.7 Notification Infrastructure | ⏭ Not started |
 
-**Verification baseline this session**: `npx tsc --noEmit` → 0 errors · `npx vitest run` → 424/457 passing, 33 correctly skipped, 0 regressions (one pre-existing flaky test, `viewAs.test.ts`'s tampered-payload case, reproduces intermittently — confirmed unrelated to any change made this session) · `pnpm run build` → succeeds. Toolchain (Node 24.19 LTS + pnpm 10.4.1) was installed fresh this session via winget/corepack — this environment had none at the start.
+**This session's central finding — the connected Supabase project is gone.** The `.env` credentials from the session that did RM-41..60 (a different session than the one that wrote §2.1–2.4 above, which had no credentials at all) no longer work: `rhgzcgcqlypuvislwjlf.supabase.co` returns `NXDOMAIN` — the project's own subdomain doesn't resolve in DNS at all, not a transient outage. Confirmed via direct `nslookup`, a raw Postgres connection attempt (pooler responds "tenant/user not found"), and a plain `fetch` to the Auth health endpoint (connection refused). This means **migrations `0006` through `0009` are still authored-and-locally-verified only, same as before** — nothing in this session or the previous one has actually reached a live database. A real test-suite bug this surfaced and fixed: `server/rls.negative.test.ts`'s skip condition only checked that env vars were *present*, not that the project was *reachable*, so it hard-failed the whole suite instead of skipping cleanly — now does a real reachability probe first.
 
-**Everything blocked this session needs either**: a Supabase project connection (`.env` with `DATABASE_URL`/`SUPABASE_*`) to apply migrations `0006`–`0008` and live-verify RLS, or a client decision/credential (LLM provider, Resend domain, owner-alert email, branding image files, Supabase dashboard access for Custom SMTP). None of it is a code gap — see each workstream's ⛔ notes below for exact detail.
+**Verification baseline this session** (re-established from scratch per the standing rule to verify, not trust, the doc): `npx tsc --noEmit` → 0 errors (after running `pnpm install` to sync `node_modules` — `svix` was declared in `package.json`/lockfile but not actually installed, a real gap the previous session's own verification missed) · `npx vitest run` → 441/441 passing, 33 correctly skipped, 0 regressions · `pnpm run build` → succeeds.
 
-**Uncommitted work**: everything from §2.2 onward (LLM/notification rewrite, email delivery tracking, admin mockup conversion, Reports/Projects mutations) is sitting in the working tree, not yet committed. RM-57 + §2.1 storage work was committed separately (commit `477c962`).
+**What this session actually did, beyond re-verifying**:
+1. Fixed the RLS-suite skip-condition bug above.
+2. **§2.4 completion**: `ExecutiveOverview.tsx` had ~9 panels rendering fabricated numbers with zero disclosure (same severity class as the already-fixed Billing chart) — each wired to real data where a real source existed (Revenue Intelligence's headline + a genuinely new day-by-day real revenue chart; Recent Activity, which the backend already computed but the UI never bound) or given the established `sampleData` disclosure badge where no real backing exists. Found and fixed the same underlying bug in `admin.summary`'s `buildSummary()` that fed the KPI strip itself: every KPI silently substituted a fabricated positive number whenever the real count was 0, plus several hardcoded-constant "deltas" and an entirely invented `systemHealthPct`. See §2.4 detail below.
+3. **§2.5 first deliverable**: Organization Management + role/tenant assignment, built on the existing (previously unused) `superAdminProcedure`. Before this, there was no way anywhere in the app to create an organization or link a user to one. New `admin.createOrganization`/`updateOrganization`/`listOrganizations`/`setUserRole`/`assignUserOrganization` endpoints (super_admin-exclusive except the read), a matching RLS policy tightening (`organizations` writes: admin → super_admin only, matching RM-57's own decision record), and a real UI (Users & Permissions page: role/org actions per user, an Organizations panel with real member counts and creation). 17 new tests.
+4. Found and fixed a real migration-tooling bug while touching the migration chain: the `0008` snapshot had a stray `isRLSEnabled: true` flag on `email_delivery_log` (schema.ts doesn't declare it, no other table has this flag) that made `drizzle-kit generate` start auto-proposing a migration to *disable* RLS on that table. Fixed before it could ever be applied.
+
+**Still uncommitted work from before this session**: none — everything through the previous session's §2.1-2.4 work was already committed (`477c962`, `7cb3bc6`) before this session started. This session's own work is committed incrementally, one logical change per commit, all pushed.
 
 ---
 
@@ -436,9 +442,172 @@ may have an edge case), not investigated further here since it's orthogonal to t
 
 ---
 
+## 2.4 completion (later session)
+
+**Status: ✅ Done.** The one item carried forward from the section above —
+`ExecutiveOverview.tsx`'s undisclosed fabricated panels — is now resolved.
+
+**Root-cause fix, not just a UI patch**: `server/routers/admin.ts`'s `buildSummary()`
+(the function feeding the KPI strip at the top of the page) had the exact same
+"real 0 silently becomes a fabricated positive number" bug this workstream already
+fixed in `ReportsProjectsBillingDocs.tsx` — just missed here, in a different file
+feeding a different page. `activeClients`/`aiScans`/`openProjects`/`openTickets`/
+`revenueMTD` all used a `real > 0 ? real : hardcodedSeed` pattern; fixed so real
+values (including real zeros) flow through directly. Three of the KPI "deltas"
+(`activeClientsDelta`, `openProjectsDelta`, `openTicketsDelta`) were hardcoded
+constants never computed from anything; `activeClientsDelta` now has a real
+month-over-month computation (new organizations this period vs last, mirroring
+the pattern already used correctly for `aiScansDelta`), the other two honestly
+report 0 since this schema has no historical snapshot to compute a real trend
+from (no fabricated proxy invented). `systemHealthPct` (99.99%, always) removed
+entirely — no real infra health-check system exists anywhere in this app,
+matching this workstream's own established precedent of removing KPIs with no
+real backing query. The all-database-unavailable fallback branch also returned
+this same fake-numbers shape as a normal success; fixed to report honest
+zeros/empty arrays while still succeeding (not throwing), preserving the
+graceful-degradation pattern every other read in this file already uses.
+
+**Panel-by-panel**, on the Executive Overview page itself:
+- **Wired to real data**: Revenue Intelligence (headline number/delta now the
+  real `kpis.revenueMTD`/`revenueDelta` — was a hardcoded €127,430 sitting
+  right next to the real, different number in the KPI tile above it, actively
+  contradictory, not just fake; the trend chart was a hand-drawn SVG with
+  hardcoded points and a fabricated "May 20, 2026" annotation, replaced with a
+  real day-by-day cumulative paid-revenue series backed by a new
+  `AdminSummary.revenueByDay` field and query). Recent Activity (was a
+  hardcoded fake feed; now renders `AdminSummary.recentActivity`, which
+  `buildSummary()` already computed from real bookings/leads but the UI never
+  bound).
+- **Disclosed with the sample-data badge** (no real backing system exists for
+  any of these — alerting, workflow automation, AI voice/IVR, infra
+  health-check, campaign management, a temp-access-grant workflow, or a
+  contracts/e-signature system): AI Operations Agent's insight chips (also
+  removed a contradictory pulsing "Live" badge sitting right next to it),
+  Operational Command Center, Critical Alerts (the most sensitive one — fake
+  specific security incidents with fake client names presented as real),
+  Automation Center, AI Agents & IVR (also dropped the false "Real-time" label
+  and per-row "LIVE" chips), Temporary Access Control, Email & SMS Campaigns,
+  System Health Overview, Upcoming & Pending.
+- The one dead button found here (Temporary Access Control's "Grant New
+  Access", no `onClick` at all) now fires the audited stub, matching the
+  established per-button convention. The wider "several buttons still call
+  only `admin.action`" item from earlier in this doc was not exhaustively
+  swept across the whole console this pass — that remains open, see below.
+
+Files: `client/src/pages/admin/sections/ExecutiveOverview.tsx`,
+`server/routers/admin.ts`, `server/admin.summary.test.ts` (rewrote the test
+that had asserted the fake seed numbers were *correct* behavior — it was
+encoding the bug as a passing test).
+
+---
+
+## 2.5 Enterprise Super Admin & Platform Governance
+
+**Status: 🔶 Partial. Organization Management + role/tenant assignment done,
+tested, and RLS-hardened. Everything else in this workstream's scope
+(Technical Operator role, Security Center, BI dashboards, AI governance
+config, platform configuration, integration management, notification-template
+management, broader MFA-enforcement surfacing) is genuinely not started —
+each is a separately-specified, substantial feature area, not a small
+follow-on to what's built.**
+
+### Organization Management + role/tenant assignment
+
+Built on `superAdminProcedure` (existed since RM-57, unused by any endpoint
+until now). Closed a real, total gap: there was no way anywhere in this app
+to create an organization or link a user to one — every existing endpoint
+took an `organizationId` as *input*, assuming the row already existed.
+
+- `server/db/clientPortal.ts`: `listOrganizations` (with a real per-org
+  member count via a join, not a second round-trip), `createOrganization`
+  (slug-uniqueness checked by the caller before insert), `updateOrganization`,
+  `getOrganizationBySlug`.
+- `server/db/users.ts`: `setUserRole`, `assignUserOrganization`, `getUserById`.
+- `server/routers/admin.ts`: `admin.listOrganizations` (readable by any admin
+  — reading is not the restricted part), `admin.createOrganization`/
+  `updateOrganization`/`setUserRole`/`assignUserOrganization` (all
+  `superAdminProcedure`-gated — plain admin gets FORBIDDEN). `setUserRole`
+  refuses to let a caller change their own role: only super_admin can call
+  it at all, so a self-demotion could strand every super_admin with no way
+  to undo it.
+- `drizzle/0009_super_admin_org_management.sql`: tightens the `organizations`
+  RLS write policy from admin-level to super_admin-only, matching RM-57's own
+  decision record (`0006_super_admin_role.sql`'s header comment names
+  "organization management" as a super_admin-exclusive capability). Defense
+  in depth alongside the tRPC gate, same reasoning as every other RLS policy
+  in this codebase.
+- UI: `client/src/pages/admin/sections/AutomationsAnalyticsRest.tsx`'s Users
+  & Permissions page — a new "Organization" column (was invisible before),
+  a new "Actions" column (Role / Org buttons, `window.prompt()`-based
+  matching the established lightweight-flow convention, rendered only for
+  actual super_admin callers), a new "Organizations" side panel (real list +
+  member counts + a "New organization" action), a new KPI tile.
+
+**Real bug found and fixed while touching the migration chain** (unrelated to
+this feature, discovered because it required regenerating a migration): the
+`0008` snapshot had a stray `isRLSEnabled: true` flag on `email_delivery_log`
+— the only table with it set, and `schema.ts` doesn't declare it via
+Drizzle's `.enableRLS()` builder (no table in this codebase does; RLS is
+managed entirely via raw SQL migrations here) — so `drizzle-kit generate`
+had started auto-proposing a migration to *disable* RLS on that table to
+"reconcile" the mismatch. Fixed the snapshot, deleted the wrong
+auto-generated migration before it was ever applied anywhere.
+
+**⛔ Live verification gap** — same shape as every migration since `0006`:
+this session's connected Supabase project turned out to be unreachable (see
+the handoff summary above), so `0009` has not been applied to any live
+database. `npx tsc --noEmit` → 0 errors. `npx vitest run` → 441/441 passing
+(+17 new, `server/admin.superAdmin.test.ts`): plain-admin rejection on every
+super_admin-exclusive endpoint, unauthenticated rejection, the self-role-
+change guard, slug-uniqueness/NOT_FOUND/audit-logging paths. `pnpm run
+build` → succeeds.
+
+### Not started (real scope, not small)
+
+- **Technical Operator role** — a new RBAC tier scoped to infra visibility,
+  explicitly walled off from customer/financial data. This needs its own
+  role-boundary design (what exactly counts as "infra visibility" against
+  this schema) before it can be built, not just a new enum value.
+- **Security Center** — a dedicated admin surface aggregating
+  `developer_security_events`, `login_audit`, and MFA posture into one place
+  with real investigation/acknowledgment actions. `admin.security` already
+  surfaces some of this data (§2.4, prior session) but there's no dedicated
+  Security Center page or workflow yet.
+- **Business Intelligence dashboards** — genuinely new: no analytics
+  aggregation/reporting layer exists beyond the Executive Overview KPIs
+  fixed this session.
+- **AI governance config** — no concrete spec exists in this repo for what
+  this means operationally (model allow-list? prompt/response logging
+  retention? per-org AI feature toggles?) — needs a decision, not a guess,
+  before it's buildable.
+- **Platform configuration / integration management / notification-template
+  management** — `SystemSettings` (§2.4, prior session) is an honestly-
+  labeled static reference view, not a live editor; building a real one is
+  a separate, substantial deliverable.
+- **Broader MFA-enforcement surfacing** — beyond the per-user MFA column
+  already on the Users & Permissions table, there's no admin-side
+  "require MFA for this role/org" enforcement control.
+
+---
+
 ## Remaining Milestone 2 workstreams
 
-Not yet started (sequenced next, per the agreed one-workstream-at-a-time approach):
-2.5 Enterprise Super Admin & Platform Governance, 2.6 Document Lifecycle/Workflow Engine/Integration
-Layer, 2.7 Notification Infrastructure. Also carried forward from §2.4: `ExecutiveOverview.tsx`'s
-undisclosed fabricated panels, and the remaining `admin.action`-only buttons across the console.
+Not yet started:
+- **2.5** (remainder) — see the not-started list immediately above.
+- **2.6 Document Lifecycle, Workflow Engine & Integration Layer** — document
+  versioning/approval/rejection/retention (`client_documents` currently has
+  none of this, it's flat upload/download only), a reusable
+  workflow-definition engine, an integration/webhook registry. All new
+  subsystems; none of the schema for this exists yet.
+- **2.7 Notification Infrastructure** — a central typed notification write
+  service, a real Notification Center UI (bell/list/mark-as-read — currently
+  non-functional per the original Milestone 1 audit), a schema extension
+  (priority/channel/template/action-URL/lifecycle-status), a delivery queue,
+  a bridge to the Resend transport §2.3 already built. `client_notifications`/
+  `developer_notifications` tables exist today but are minimal (no priority,
+  channel, or template concept) — this is a real schema migration plus a
+  UI build, not just wiring.
+- Also still open from §2.4: an exhaustive sweep of every remaining
+  `admin.action`-only button across the whole admin console (invoice
+  creation, document upload, others) was not attempted this pass — only the
+  one found on Executive Overview was fixed.
