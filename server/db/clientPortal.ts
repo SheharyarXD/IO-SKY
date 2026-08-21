@@ -60,6 +60,81 @@ export async function getOrganizationMemberCount(orgId: number) {
   return Number(rows[0]?.c ?? 0);
 }
 
+/**
+ * Milestone 2 §2.5 — Organization Management. Previously there was no way
+ * to create an organization anywhere in this app at all (every existing
+ * admin endpoint takes an organizationId as *input*, assuming the row
+ * already exists) - a brand-new client account had no tenant to belong to
+ * short of a hand-run SQL insert. Real member count included per row so
+ * the admin UI doesn't need a second round-trip per organization.
+ */
+export async function listOrganizations(): Promise<Array<Organization & { memberCount: number }>> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({
+      org: organizations,
+      memberCount: sql<number>`COUNT(${usersTable.id})`,
+    })
+    .from(organizations)
+    .leftJoin(usersTable, eq(usersTable.organizationId, organizations.id))
+    .groupBy(organizations.id)
+    .orderBy(desc(organizations.createdAt));
+  return rows.map((r) => ({ ...r.org, memberCount: Number(r.memberCount) }));
+}
+
+export async function createOrganization(input: {
+  slug: string;
+  name: string;
+  legalName?: string | null;
+  industry?: string | null;
+  size?: string | null;
+  country?: string | null;
+}): Promise<Organization | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .insert(organizations)
+    .values({
+      slug: input.slug,
+      name: input.name,
+      legalName: input.legalName ?? null,
+      industry: input.industry ?? null,
+      size: input.size ?? null,
+      country: input.country ?? null,
+    })
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function updateOrganization(
+  id: number,
+  updates: Partial<{
+    name: string;
+    legalName: string | null;
+    industry: string | null;
+    size: string | null;
+    country: string | null;
+    statusLabel: string;
+  }>,
+): Promise<Organization | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(organizations)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(eq(organizations.id, id))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function getOrganizationBySlug(slug: string): Promise<Organization | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(organizations).where(eq(organizations.slug, slug)).limit(1);
+  return rows[0] ?? null;
+}
+
 // ---------------------------------------------------------------------------
 // Reports
 // ---------------------------------------------------------------------------

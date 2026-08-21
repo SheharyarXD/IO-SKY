@@ -28,7 +28,7 @@
 import { z } from "zod";
 import { count, desc, eq, gte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { adminProcedure, isAdminRole, router } from "../_core/trpc";
+import { adminProcedure, superAdminProcedure, isAdminRole, router } from "../_core/trpc";
 import { getRequestMeta } from "../_core/requestMeta";
 import {
   getDb,
@@ -45,6 +45,13 @@ import {
   getClientProjectById,
   createClientProjectMilestone,
   updateClientProjectMilestone,
+  listOrganizations,
+  createOrganization,
+  updateOrganization,
+  getOrganizationBySlug,
+  setUserRole,
+  assignUserOrganization,
+  getUserById,
 } from "../db";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import {
@@ -1418,6 +1425,124 @@ export const adminRouter = router({
         redirect: input.target === "client" ? "/client-portal" : "/developer-workspace",
         expiresInSec: 30 * 60,
       };
+    }),
+
+  // -- Milestone 2 §2.5: Organization Management (super_admin-exclusive
+  // writes, per RM-57's decision record - drizzle/0009_super_admin_org_management.sql
+  // enforces the same boundary at the RLS layer as defense-in-depth) -----
+
+  listOrganizations: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.org.list" });
+    return listOrganizations();
+  }),
+
+  createOrganization: superAdminProcedure
+    .input(
+      z.object({
+        slug: z
+          .string()
+          .trim()
+          .min(2)
+          .max(64)
+          .regex(/^[a-z0-9-]+$/, "lowercase letters, numbers and hyphens only"),
+        name: z.string().trim().min(1).max(200),
+        legalName: z.string().trim().max(200).nullable().optional(),
+        industry: z.string().trim().max(64).nullable().optional(),
+        size: z.string().trim().max(64).nullable().optional(),
+        country: z.string().trim().max(64).nullable().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const existing = await getOrganizationBySlug(input.slug);
+      if (existing) {
+        throw new TRPCError({ code: "CONFLICT", message: "slug_already_in_use" });
+      }
+      const org = await createOrganization(input);
+      if (!org) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "create_failed" });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.org.create(${org.id}:${org.slug})` });
+      return org;
+    }),
+
+  updateOrganization: superAdminProcedure
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+        name: z.string().trim().min(1).max(200).optional(),
+        legalName: z.string().trim().max(200).nullable().optional(),
+        industry: z.string().trim().max(64).nullable().optional(),
+        size: z.string().trim().max(64).nullable().optional(),
+        country: z.string().trim().max(64).nullable().optional(),
+        statusLabel: z.string().trim().max(64).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...updates } = input;
+      const org = await updateOrganization(id, updates);
+      if (!org) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "organization_not_found" });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.org.update(${id})` });
+      return org;
+    }),
+
+  // -- Milestone 2 §2.5: role / tenant assignment (super_admin-exclusive) --
+
+  setUserRole: superAdminProcedure
+    .input(
+      z.object({
+        userId: z.number().int().positive(),
+        role: z.enum(["user", "client", "developer", "admin", "super_admin"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Safety guard: a super_admin changing their OWN role through this
+      // endpoint risks locking every super_admin out of the one capability
+      // that can undo it (only super_admin can call setUserRole at all).
+      // Self-demotion/self-promotion isn't a real product need this
+      // endpoint needs to serve, so it's simplest and safest to refuse it
+      // outright rather than add "don't demote the last super_admin"
+      // bookkeeping.
+      if (ctx.user.id === input.userId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "cannot_change_own_role" });
+      }
+      const before = await getUserById(input.userId);
+      if (!before) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "user_not_found" });
+      }
+      const after = await setUserRole(input.userId, input.role);
+      if (!after) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "update_failed" });
+      }
+      await recordAdminEvent({
+        ctx,
+        reason: `admin.user.set_role(${input.userId}: ${before.role} -> ${input.role})`,
+      });
+      return { id: after.id, role: after.role };
+    }),
+
+  assignUserOrganization: superAdminProcedure
+    .input(
+      z.object({
+        userId: z.number().int().positive(),
+        organizationId: z.number().int().positive().nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const before = await getUserById(input.userId);
+      if (!before) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "user_not_found" });
+      }
+      const after = await assignUserOrganization(input.userId, input.organizationId);
+      if (!after) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "update_failed" });
+      }
+      await recordAdminEvent({
+        ctx,
+        reason: `admin.user.assign_org(${input.userId}: ${before.organizationId ?? "none"} -> ${input.organizationId ?? "none"})`,
+      });
+      return { id: after.id, organizationId: after.organizationId };
     }),
 });
 

@@ -205,3 +205,57 @@ export async function updateUserMfaMethod(
     .set({ mfaMethod: method })
     .where(eq(users.id, userId));
 }
+
+/**
+ * Milestone 2 §2.5 — role/permission management. Gated at the caller
+ * (server/routers/admin.ts's superAdmin router) to super_admin only - this
+ * helper itself has no authorization opinion, same convention as every
+ * other db/*.ts helper in this codebase (RBAC is enforced at the tRPC
+ * procedure layer, not the DB layer, which only enforces tenant isolation
+ * via RLS). Returns the updated row so the caller can audit the before/
+ * after role change.
+ */
+export async function setUserRole(
+  userId: number,
+  role: "user" | "client" | "developer" | "admin" | "super_admin",
+) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(users)
+    .set({ role, updatedAt: new Date() })
+    .where(eq(users.id, userId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+/**
+ * Milestone 2 §2.5 — assigns (or clears, via organizationId: null) a
+ * user's tenant. This is the missing piece that makes a newly-created
+ * organization (server/db/clientPortal.ts's createOrganization) actually
+ * usable - before this, a client-role account had no way to ever get an
+ * organizationId at all short of a hand-run SQL update. Does not change
+ * role - the caller decides separately whether the user should also become
+ * role="client" (matches every existing "one thing per mutation" admin.ts
+ * convention rather than silently bundling two decisions into one call).
+ */
+export async function assignUserOrganization(
+  userId: number,
+  organizationId: number | null,
+) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(users)
+    .set({ organizationId, updatedAt: new Date() })
+    .where(eq(users.id, userId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function getUserById(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return result[0] ?? undefined;
+}
