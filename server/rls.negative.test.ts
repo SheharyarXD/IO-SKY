@@ -12,7 +12,18 @@
  * SKIPS CLEANLY when live credentials aren't configured (e.g. CI, which
  * has no DATABASE_URL/SUPABASE_* secrets) — this suite needs real
  * infrastructure, not something CI can fabricate. Runs for real whenever
- * `.env` is present, as it is in this development environment.
+ * `.env` is present AND the project is actually reachable.
+ *
+ * Presence of the env vars is NOT the same as reachability: a Supabase
+ * free-tier project can be paused/deprovisioned (its own subdomain can
+ * stop resolving in DNS entirely - `ENOTFOUND`/pooler "tenant/user not
+ * found" errors are the observed symptom) while `.env` still has
+ * old-but-well-formed values sitting in it. Originally this file only
+ * checked var presence, so a stale-but-configured `.env` made the whole
+ * suite hard-fail instead of skip - fixed by adding a real, short-timeout
+ * reachability probe up front (a top-level `await`, evaluated once during
+ * this file's own collection - does not add a network call to any other
+ * test file's collection, each is its own module).
  *
  * All fixtures (2 orgs, 2 client users, 2 developer users, an admin user,
  * report/invoice/lead/legal-document rows) are created via the Supabase
@@ -33,14 +44,35 @@ const liveConfigured = Boolean(
   SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY && SUPABASE_SECRET_KEY && DATABASE_URL,
 );
 
+async function isReachable(): Promise<boolean> {
+  if (!liveConfigured) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/health`, {
+      headers: { apikey: SUPABASE_PUBLISHABLE_KEY! },
+      signal: AbortSignal.timeout(5000),
+    });
+    return res.ok || res.status === 404; // 404 = server answered, just no such route
+  } catch {
+    return false;
+  }
+}
+
+const liveReachable = await isReachable();
+
 if (!liveConfigured) {
   // eslint-disable-next-line no-console
   console.warn(
     "[rls.negative.test] Skipping RM-60 live RLS suite - DATABASE_URL/SUPABASE_* not configured in this environment.",
   );
+} else if (!liveReachable) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    "[rls.negative.test] Skipping RM-60 live RLS suite - SUPABASE_URL is configured but not reachable " +
+      "(project may be paused/deleted - its subdomain may not even resolve in DNS). Configured value is present but stale/unreachable, not missing.",
+  );
 }
 
-describe.skipIf(!liveConfigured)("RM-60: RLS negative tests (live Supabase project)", () => {
+describe.skipIf(!liveReachable)("RM-60: RLS negative tests (live Supabase project)", () => {
   // NOTE: describe.skipIf still runs this callback body synchronously
   // during test collection (only the it()/beforeAll() callbacks
   // themselves are skipped) - so nothing that touches the network or
