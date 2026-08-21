@@ -10,89 +10,92 @@ trusting it blindly — then continue only the incomplete work.
 
 ## Source of truth
 
-- `Milestone 2.md` — the requirements spec (not present in this repo as of this writing — work from
-  `MILESTONE2_PROGRESS.md`'s own description of each workstream's scope instead).
+- `Milestone 2.md` — the requirements spec (still not present in this repo as of this writing — work
+  from `MILESTONE2_PROGRESS.md`'s own description of each workstream's scope instead).
 - `MILESTONE2_PROGRESS.md` — live tracking doc, updated after every workstream. Read its "Handoff
-  summary" section first, then §2.1–2.5 for exact evidence.
+  summary" section first, then §2.5's "Not started" section and the `admin.action` dead-button sweep
+  section for exact evidence of what's genuinely left.
 - `PHASE1_CHECKLIST.md` / `MILESTONE1_SUPABASE_MIGRATION_REPORT.md` — Milestone 1 status.
 
 ## What's already done (verify, don't redo)
 
-- **RM-57 (Super Admin role)** — schema, RLS, RBAC all written and locally verified.
-- **Milestone 2 §2.1 Storage Migration** — `server/storage.ts` rewritten against Supabase Storage.
-- **Milestone 2 §2.2 Manus Dependency Removal** — LLM proxy replaced, owner notifications replaced,
-  build-tool plugin removed and verified gone.
-- **Milestone 2 §2.3 Email Productionisation** — delivery-log table + webhook, every send path
-  instrumented.
-- **Milestone 2 §2.4 Core Workflow Verification & Conversion — fully done.** Every previously-
-  undisclosed fabricated panel on `ExecutiveOverview.tsx` is now wired to real data or disclosed with
-  the `sampleData` badge. The underlying `admin.summary`/`buildSummary()` fabrication bug (real 0s
-  silently becoming fake positive numbers, feeding the KPI strip) is fixed too.
-- **Milestone 2 §2.5 (partial) — Organization Management + role/tenant assignment.** Real
-  `admin.createOrganization`/`updateOrganization`/`listOrganizations`/`setUserRole`/
-  `assignUserOrganization` endpoints (super_admin-exclusive except the read), RLS tightened to match
-  (`drizzle/0009_super_admin_org_management.sql`), real UI on the Users & Permissions page.
+**All of Milestone 2 §2.1–2.4, §2.6, §2.7 are done. §2.5 is done except two deliberately-deferred
+items. The `admin.action` dead-button sweep closed six real stubs; the rest are documented as needing
+either new subsystems or third-party integrations.**
 
-**Verification baseline**: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 441/441 passing, 33
+- §2.1 Storage Migration, §2.2 Manus Dependency Removal, §2.3 Email Productionisation, §2.4 Core
+  Workflow Verification & Conversion — all done, see `MILESTONE2_PROGRESS.md` for detail.
+- §2.5 Enterprise Super Admin & Platform Governance — done: Organization Management, Technical
+  Operator role (`opsProcedure`, `/ops` console) + Security Center, Business Intelligence dashboards
+  (real funnel/top-scans on Analytics & Insights), the platform configuration store (`platform_settings`
+  table, real `SystemSettings` editor), MFA compliance visibility (per-role breakdown on Security
+  Monitoring), AI governance config (three real settings rows: LLM provider status, AI Scan tiers,
+  retention policy record). **Not built** (deliberately, with reasoning recorded in
+  `MILESTONE2_PROGRESS.md`): a hard blocking per-role/org MFA gate, real third-party integration
+  wiring (Stripe/Twilio/SendGrid credentials) and real notification-template *content* management.
+- §2.6 Document Lifecycle, Workflow Engine & Integration Layer — fully done: document
+  versioning/approval/rejection/retention on `client_documents`, a bounded workflow-definition engine
+  (`workflow_definitions`/`workflow_runs`, closed trigger/action enums), an integration/webhook
+  registry (`webhook_registrations`/`webhook_deliveries`, HMAC-signed outbound dispatch).
+- §2.7 Notification Infrastructure — fully done: central typed notification write service
+  (`server/notifications.ts`), schema extension (priority/channel/templateKey/status on both
+  notification tables), mark-as-read/archive mutations, a real Notification Center UI (bell dropdown)
+  on both the Client Portal and Developer Workspace headers (previously decorative — real unread
+  badge, no click handler at all).
+- `admin.action` dead-button sweep — six real fixes (Audit Logs CSV export, Billing "New invoice",
+  Clients "Onboard client", CRM "New lead" + "View AI Scan pipeline" navigation, Support Desk "New
+  ticket"). The rest (AI Scans "Trigger scan", Users "Invite user", Developer Management "Grant
+  access", Security "Run scan", Campaigns "New campaign", Agents "New agent") are documented in
+  `MILESTONE2_PROGRESS.md` as needing either a new subsystem or a real third-party integration.
+
+**Verification baseline**: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 525/525 passing, 33
 correctly skipped, 0 regressions. `pnpm run build` → succeeds. Run `pnpm install` first if
-`node_modules` looks stale after a pull — a real gap was found this session where `svix` was
-declared in `package.json`/lockfile but not actually installed.
+`node_modules` looks stale after a pull.
 
 ## Central blocker — the connected Supabase project is gone
 
 `rhgzcgcqlypuvislwjlf.supabase.co` no longer resolves in DNS at all (`NXDOMAIN`) — confirmed via
 `nslookup`, a raw Postgres connection attempt, and a plain `fetch` to the Auth health endpoint, all
-failing the same way. This is not a transient outage. **Migrations `0006` through `0009` remain
+failing the same way. This is not a transient outage. **Migrations `0006` through `0015` remain
 authored-and-locally-verified only** — nothing has reached a live database since RM-60. If a working
 Supabase project connection becomes available: apply all migrations in order, then live-verify RLS
-(including the two new super_admin-related policies) the same way `MILESTONE1_SUPABASE_MIGRATION_REPORT.md`
-§5a did for the original set. `server/rls.negative.test.ts` now does a real reachability probe before
-running (not just an env-var presence check) — if credentials are restored, it will pick this up and
-run for real automatically; no code change needed there.
+the same way `MILESTONE1_SUPABASE_MIGRATION_REPORT.md` §5a did for the original set.
+`server/rls.negative.test.ts` does a real reachability probe before running (not just an env-var
+presence check) — if credentials are restored, it will pick this up and run for real automatically;
+no code change needed there.
 
 ## Exact remaining work, in order
 
-1. **Finish §2.5**: Technical Operator role (new RBAC tier, infra visibility only, walled off from
-   customer/financial data — needs its own permission-boundary design against this schema before it's
-   buildable, not just a new enum value), Security Center (dedicated page aggregating
-   `developer_security_events`/`login_audit`/MFA posture with real investigation actions — `admin.security`
-   already surfaces some raw data, no dedicated UI/workflow exists), Business Intelligence dashboards
-   (no analytics aggregation layer exists at all beyond the KPIs already on Executive Overview),
-   AI governance config (no concrete spec exists anywhere in this repo for what this means
-   operationally — get a real decision before building, don't guess), platform/integration/
-   notification-template configuration (`SystemSettings` is an honestly-labeled static reference view,
-   not a live editor — building one is separate, substantial work), broader MFA-enforcement surfacing
-   (a "require MFA for this role/org" admin control doesn't exist yet).
-2. **Milestone 2 §2.6 — Document Lifecycle, Workflow Engine & Integration Layer**: document
-   versioning/approval/rejection/retention (`client_documents` is flat upload/download only today —
-   none of this schema exists yet), a reusable workflow-definition engine, an integration/webhook
-   registry. All new subsystems.
-3. **Milestone 2 §2.7 — Notification Infrastructure**: central typed notification write service, real
-   Notification Center UI (bell/list/mark-as-read — currently non-functional), schema extension
-   (`client_notifications`/`developer_notifications` exist today but have no priority/channel/template/
-   action-URL/lifecycle-status concept — this needs a real migration, not just wiring), delivery
-   queue, bridge to the Resend transport §2.3 already built.
-4. Also still open from §2.4: an exhaustive sweep of every remaining `admin.action`-only button
-   across the whole admin console (invoice creation, document upload, others) — only the one found on
-   Executive Overview was fixed this pass, the wider sweep wasn't attempted.
-5. Re-run the full exit-gate checklist in `Milestone 2.md`'s final section once 2.5–2.7 land (that
-   file isn't in this repo as of this writing — get it from wherever the spec actually lives, or ask
-   the client for it, before treating "exit gate passed" as achievable).
+1. **A hard, blocking per-role/org MFA gate** — needs live-session verification before shipping
+   (would modify `requireUser`/`protectedProcedure`, the middleware nearly every authenticated
+   endpoint is built on). Blocked on the Supabase project being reachable again, not on more design
+   work — the visibility half (MFA compliance panel) is already real.
+2. **Real third-party integration wiring** — actual Stripe/Twilio/SendGrid/etc. credentials and
+   provider-specific code behind the platform configuration store's "Integrations" setting. Needs
+   real provider accounts from the client, not buildable speculatively.
+3. **Remaining `admin.action` dead buttons** — see `MILESTONE2_PROGRESS.md`'s sweep section for the
+   full list and why each was deferred (new subsystem needed: user invite/signup flow, developer
+   access-grant flow, AI-scan-trigger entry point; or third-party integration needed: campaigns,
+   agents/IVR).
+4. Once 1–3 (or whichever the client prioritizes) land: re-run the full exit-gate checklist in
+   `Milestone 2.md`'s final section — that file still isn't in this repo as of this writing, get it
+   from wherever the spec actually lives, or ask the client for it, before treating "exit gate
+   passed" as achievable.
 
 ## Blockers — need from the user, not resolvable in code
 
 - **A working Supabase project connection** — see "Central blocker" above. This is now the single
-  highest-leverage unblock: it gates live-verifying every migration since `0006`, not just new work.
+  highest-leverage unblock: it gates live-verifying every migration since `0006`, not just new work,
+  and is a prerequisite for safely building the hard MFA gate.
 - **LLM provider choice + API key** (`LLM_API_URL`/`LLM_API_KEY` in `ENV_TEMPLATE.txt`) — blocks
-  §2.2's AI Scan production activation.
+  §2.2's AI Scan production activation. Note: the AI governance config's "LLM Provider" setting
+  already reads these env vars and will flip to "Configured" automatically once set.
 - **Resend production domain + key**, **`OWNER_NOTIFY_EMAIL`** — blocks §2.3/§2.2 production activation.
 - **Original branding image files** (logo/mark/favicon) or Forge credentials to retrieve them — blocks
   re-uploading them to the new Supabase `branding` bucket; `/manus-storage/*` is correctly still
   serving them via Forge in the meantime, do not remove that path until this is resolved.
 - **Supabase dashboard access** — needed to configure Custom SMTP and real OAuth providers if desired.
-- **A concrete spec for "AI governance config"** and **the Technical Operator role's exact permission
-  boundary** — both named in the Milestone 2 scope but not concretely specified anywhere available to
-  this repo; don't invent either.
+- **Real third-party provider accounts** (Stripe/Twilio/SendGrid/etc.) — see "Remaining work" item 2.
 
 ## Rules to follow (carried over)
 
