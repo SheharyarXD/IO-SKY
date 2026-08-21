@@ -15,6 +15,7 @@ import OperationalPage, {
 import { ModuleStateBoundary, useAuditedAction } from "./_shared/ModuleState";
 import { Building2, Heart, AlertTriangle, TrendingUp, Sparkles } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 interface OrgRow {
   id: number;
@@ -33,20 +34,44 @@ const tone = (s: string) =>
 export default function Clients() {
   const query = trpc.admin.clients.useQuery(undefined, { staleTime: 30_000 });
   const audited = useAuditedAction();
+  const { user: me } = useAuth();
+  const isSuperAdmin = me?.role === "super_admin";
+  const utils = trpc.useUtils();
+  const createOrg = trpc.admin.createOrganization.useMutation({
+    onSuccess: () => utils.admin.clients.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not create organization"),
+  });
   const data = query.data;
+
+  const onOnboardClient = () => {
+    if (!isSuperAdmin) {
+      audited.fire("clients", "open-onboarding");
+      return;
+    }
+    const name = window.prompt("Organization name?");
+    if (!name?.trim()) return;
+    const slug = window.prompt(
+      "URL slug (lowercase, letters/numbers/hyphens only)?",
+      name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+    );
+    if (!slug?.trim()) return;
+    createOrg.mutate({ slug: slug.trim(), name: name.trim() });
+  };
 
   const kpis: KpiTile[] = useMemo(() => {
     const rows = (data?.rows ?? []) as OrgRow[];
     const watch = rows.filter((r) => /watch/i.test(r.statusLabel)).length;
     const avg =
       rows.length === 0
-        ? 84
+        ? 0
         : Math.round(rows.reduce((acc, r) => acc + (r.operationalScore ?? 0), 0) / rows.length);
+    const since30d = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const newThisMonth = rows.filter((r) => new Date(r.createdAt).getTime() >= since30d).length;
     return [
-      { id: "active", label: "Active clients", value: String(rows.length || 62), delta: { value: "12.6%", positive: true }, icon: Building2, accent: "orange", spark: [50, 53, 55, 57, 58, 60, rows.length || 62] },
-      { id: "watch", label: "On watch", value: String(watch || 7), delta: { value: "1", positive: false }, icon: AlertTriangle, accent: "red", spark: [4, 5, 5, 6, 6, 7, watch || 7] },
-      { id: "health", label: "Avg. health", value: String(avg), delta: { value: "1.4%", positive: true }, icon: Heart, accent: "green", spark: [80, 81, 82, 82, 83, 83, avg] },
-      { id: "exp", label: "Expansion ARR", value: "€212k", delta: { value: "8.2%", positive: true }, icon: TrendingUp, accent: "violet", spark: [180, 188, 192, 198, 205, 209, 212] },
+      { id: "active", label: "Active clients", value: String(rows.length), icon: Building2, accent: "orange" },
+      { id: "watch", label: "On watch", value: String(watch), icon: AlertTriangle, accent: watch > 0 ? "red" : "green" },
+      { id: "health", label: "Avg. health", value: String(avg), icon: Heart, accent: "green" },
+      { id: "new", label: "New (30d)", value: String(newThisMonth), icon: TrendingUp, accent: "violet" },
     ];
   }, [data]);
 
@@ -91,7 +116,7 @@ export default function Clients() {
                 filters={["Status", "Industry", "Tier"]}
                 primaryAction={{
                   label: "Onboard client",
-                  onClick: () => audited.fire("clients", "open-onboarding"),
+                  onClick: onOnboardClient,
                 }}
               />
             }

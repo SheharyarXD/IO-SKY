@@ -468,6 +468,37 @@ export async function getClientInvoiceById(orgId: number, id: number) {
   return rows[0] ?? null;
 }
 
+/**
+ * Milestone 2 — closes the "New invoice" admin.action dead-button stub.
+ * `number` is generated the same way every other public-ref-style id in
+ * this codebase is (generatePublicRef), not left to caller input, so
+ * invoice numbers stay collision-safe and consistently formatted.
+ */
+export async function createClientInvoice(input: {
+  organizationId: number;
+  description: string;
+  amountCents: number;
+  currency?: string;
+  dueMs?: number | null;
+}): Promise<ClientInvoice | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .insert(clientInvoices)
+    .values({
+      organizationId: input.organizationId,
+      number: generatePublicRef("INV"),
+      description: input.description,
+      amountCents: input.amountCents,
+      currency: input.currency ?? "EUR",
+      status: "open",
+      issuedMs: Date.now(),
+      dueMs: input.dueMs ?? null,
+    })
+    .returning();
+  return rows[0] ?? null;
+}
+
 // ---------------------------------------------------------------------------
 // Documents
 // ---------------------------------------------------------------------------

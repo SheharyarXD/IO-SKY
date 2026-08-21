@@ -243,8 +243,34 @@ function fmtCents(cents: number, currency: string) {
 
 export function Billing() {
   const query = trpc.admin.billing.useQuery(undefined, { staleTime: 30_000 });
-  const audited = useAuditedAction();
+  const orgsQuery = trpc.admin.listOrganizations.useQuery(undefined, { staleTime: 30_000 });
+  const utils = trpc.useUtils();
+  const createInvoice = trpc.admin.createInvoice.useMutation({
+    onSuccess: () => utils.admin.billing.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not create invoice"),
+  });
   const data = query.data;
+
+  const onNewInvoice = () => {
+    const orgs = orgsQuery.data ?? [];
+    const list = orgs.map((o) => `${o.id}: ${o.name}`).join("\n") || "(no organizations yet)";
+    const orgIdRaw = window.prompt(`Organization id for this invoice?\n\n${list}`);
+    const organizationId = orgIdRaw ? Number(orgIdRaw) : NaN;
+    if (!Number.isFinite(organizationId) || organizationId <= 0) return;
+    const description = window.prompt("Invoice description?");
+    if (!description?.trim()) return;
+    const amountRaw = window.prompt("Amount (EUR, e.g. 1500.00)?");
+    const amount = amountRaw ? Number(amountRaw) : NaN;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      window.alert("Enter a valid positive amount.");
+      return;
+    }
+    createInvoice.mutate({
+      organizationId,
+      description: description.trim(),
+      amountCents: Math.round(amount * 100),
+    });
+  };
 
   const kpis: KpiTile[] = useMemo(() => {
     const rows = (data?.rows ?? []) as InvoiceRow[];
@@ -279,7 +305,7 @@ export function Billing() {
           title="Billing & Payments"
           tagline="Invoice tracking is real (client_invoices). No payment processor is integrated yet — invoices are settled manually; see requestInvoiceCheckout's 'manual' mode in the Client Portal."
           kpis={kpis}
-          toolbar={<DefaultToolbar searchPlaceholder="Search invoices, clients…" filters={["Status", "Period"]} primaryAction={{ label: "New invoice", onClick: () => audited.fire("billing", "new-invoice") }} />}
+          toolbar={<DefaultToolbar searchPlaceholder="Search invoices, clients…" filters={["Status", "Period"]} primaryAction={{ label: "New invoice", onClick: onNewInvoice }} />}
           primary={
             (d.rows ?? []).length === 0 ? (
               <div className="rounded-[12px] border border-dashed border-white/[0.08] p-6 text-center text-[12.5px] text-white/55">No invoices yet.</div>

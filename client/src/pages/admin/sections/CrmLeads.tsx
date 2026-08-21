@@ -15,9 +15,10 @@ import OperationalPage, {
   type KpiTile,
   type DataColumn,
 } from "./_shared/OperationalPage";
-import { ModuleStateBoundary, useAuditedAction } from "./_shared/ModuleState";
+import { ModuleStateBoundary } from "./_shared/ModuleState";
 import { Users, ScanSearch, Target, Wallet, Sparkles, ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 
 interface LeadRow {
   id: number;
@@ -40,7 +41,21 @@ function ageInDays(d: string | Date) {
 
 export default function CrmLeads() {
   const query = trpc.admin.crm.useQuery(undefined, { staleTime: 30_000 });
-  const audited = useAuditedAction();
+  const [, navigate] = useLocation();
+  const utils = trpc.useUtils();
+  const createLead = trpc.admin.createLead.useMutation({
+    onSuccess: () => utils.admin.crm.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not create lead"),
+  });
+
+  const onNewLead = () => {
+    const fullName = window.prompt("Lead full name?");
+    if (!fullName?.trim()) return;
+    const email = window.prompt("Lead email?");
+    if (!email?.trim()) return;
+    const company = window.prompt("Company (optional)?") || undefined;
+    createLead.mutate({ fullName: fullName.trim(), email: email.trim(), company: company?.trim() || undefined });
+  };
 
   const data = query.data;
 
@@ -116,7 +131,7 @@ export default function CrmLeads() {
               filters={["Stage", "Source", "Owner"]}
               primaryAction={{
                 label: "New lead",
-                onClick: () => audited.fire("crm", "open-new-lead"),
+                onClick: onNewLead,
               }}
             />
           }
@@ -190,7 +205,7 @@ export default function CrmLeads() {
                       ))}
                       <button
                         type="button"
-                        onClick={() => audited.fire("crm", "open-ai-scan-pipeline")}
+                        onClick={() => navigate("/admin/ai-scans")}
                         className="w-full mt-1 inline-flex items-center justify-between px-2.5 py-1.5 rounded-[8px] border border-white/[0.08] text-[11.5px] text-white/75 hover:bg-white/[0.04] transition-colors"
                       >
                         View AI Scan pipeline <ArrowRight className="w-3 h-3" />

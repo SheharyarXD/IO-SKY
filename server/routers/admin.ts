@@ -54,6 +54,9 @@ import {
   getUserById,
   listPlatformSettings,
   updatePlatformSetting,
+  createClientInvoice,
+  createLead,
+  createClientSupportTicket,
   reviewClientDocument,
   setClientDocumentRetentionNote,
   listClientDocumentVersions,
@@ -70,6 +73,7 @@ import { runWorkflowsForTrigger } from "../workflowEngine";
 import { dispatchWebhooksForTrigger } from "../webhookDispatcher";
 import { notifyClient } from "../notifications";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
+import { generatePublicRef } from "../_core/publicRef";
 import {
   organizations,
   bookings,
@@ -1307,6 +1311,89 @@ export const adminRouter = router({
     .query(async ({ ctx, input }) => {
       await recordAdminEvent({ ctx, reason: `admin.document.list_versions(${input.documentId})` });
       return safe(() => listClientDocumentVersions(input.organizationId, input.documentId), []);
+    }),
+
+  /**
+   * Closes the "New lead" admin.action dead-button stub. `source: "manual"`
+   * is one of the values the leads schema's own doc comment already
+   * anticipates ("booking | contact | ai-scan | eng-access | manual") —
+   * this endpoint was the missing piece, not a new concept.
+   */
+  createLead: adminProcedure
+    .input(
+      z.object({
+        fullName: z.string().min(1).max(200),
+        email: z.string().email().max(320),
+        company: z.string().max(200).optional(),
+        phone: z.string().max(64).optional(),
+        interest: z.string().max(64).optional(),
+        note: z.string().max(2000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const lead = await createLead({
+        source: "manual",
+        fullName: input.fullName,
+        email: input.email,
+        company: input.company ?? null,
+        phone: input.phone ?? null,
+        interest: input.interest ?? null,
+        note: input.note ?? null,
+      });
+      if (!lead) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create lead." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.lead.create(${lead.id})` });
+      return lead;
+    }),
+
+  /** Closes the "New ticket" admin.action dead-button stub — an admin opening a ticket on a client's behalf (e.g. from a phone call). */
+  createSupportTicket: adminProcedure
+    .input(
+      z.object({
+        organizationId: z.number().int().positive(),
+        subject: z.string().min(1).max(200),
+        body: z.string().min(1).max(4000),
+        category: z.string().max(64).optional(),
+        priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const publicRef = generatePublicRef("T");
+      const ticket = await createClientSupportTicket({
+        organizationId: input.organizationId,
+        openedByUserId: null,
+        publicRef,
+        subject: input.subject,
+        body: input.body,
+        category: input.category,
+        priority: input.priority,
+      });
+      if (!ticket) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create ticket." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.support.create_ticket(${publicRef})` });
+      return ticket;
+    }),
+
+  /** Closes the "New invoice" admin.action dead-button stub. */
+  createInvoice: adminProcedure
+    .input(
+      z.object({
+        organizationId: z.number().int().positive(),
+        description: z.string().min(1).max(200),
+        amountCents: z.number().int().positive(),
+        currency: z.string().length(3).optional(),
+        dueMs: z.number().int().positive().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const invoice = await createClientInvoice(input);
+      if (!invoice) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create invoice." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.invoice.create(org=${input.organizationId})` });
+      return invoice;
     }),
 
   // -- Workflow-definition engine (Milestone 2 §2.6) -----------------------

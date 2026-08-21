@@ -13,7 +13,13 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 
 ## Handoff summary (as of 2026-08-21, end of latest session)
 
-**Overall: 5 of 7 Milestone 2 workstreams touched (§2.1–2.5), 2 not started (§2.6–2.7). Exit gate NOT passed.**
+**Overall (updated same day, after the continuation pass below): all 7 Milestone 2 workstreams
+touched; §2.1–2.4 and §2.6–2.7 fully done; §2.5 done except two deliberately-deferred items
+(hard MFA gate, real third-party integration wiring — both need either live-environment
+verification or external provider accounts this session doesn't have). Exit gate NOT passed —
+`Milestone 2.md` itself isn't present in this repo to check criteria against, and every migration
+since `0006` is still authored-and-locally-verified only (the connected Supabase project is gone,
+see below).**
 
 | Workstream | Status |
 |---|---|
@@ -38,7 +44,25 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 
 **Still uncommitted work from before this session**: none — everything through the previous session's §2.1-2.4 work was already committed (`477c962`, `7cb3bc6`) before this session started. This session's own work is committed incrementally, one logical change per commit, all pushed.
 
-**Continuation pass (same day, 2026-08-21)**: per an explicit "complete all remaining features" instruction, continued straight into §2.5's remainder. Landed Technical Operator role + Security Center and Business Intelligence dashboards (both detailed above, both committed/pushed separately). Continuing through the rest of §2.5, then §2.6, then §2.7, then the admin.action dead-button sweep, updating this file after each workstream.
+**Continuation pass (same day, 2026-08-21)** — per an explicit "complete all remaining features"
+instruction, worked straight through the rest of Milestone 2 in one pass, one logical
+commit/push per workstream:
+1. §2.5: Technical Operator role + Security Center, Business Intelligence dashboards, platform
+   configuration store, MFA compliance visibility, AI governance config — 5 separate commits.
+2. §2.6 (fully done): document lifecycle (versioning/approval/rejection/retention), the
+   workflow-definition engine, the integration/webhook registry — 3 separate commits.
+3. §2.7 (fully done): central typed notification write service, schema extension,
+   mark-as-read/archive, a real Notification Center UI on both portals — 1 commit.
+4. The `admin.action` dead-button sweep — closed six real, cheap, genuinely-buildable stubs;
+   documented the rest as needing either new subsystems or third-party integrations this
+   session doesn't have — 1 commit.
+
+Two items were deliberately NOT built, both with reasoning recorded at the point of the
+decision rather than silently skipped: a hard blocking per-role/org MFA gate (would touch the
+middleware nearly every authenticated endpoint is built on — needs live-session verification
+the unreachable Supabase project makes unsafe to skip) and real third-party integration/
+notification-template wiring (needs actual provider accounts, not fabricable). See §2.5's
+"Not started" section for full detail on both.
 
 ---
 
@@ -1051,14 +1075,85 @@ gate re-run once `Milestone 2.md` itself is available in this repo.
 
 ---
 
+## `admin.action` dead-button sweep
+
+Closed the cheap, real, genuinely-buildable ones (no new subsystem, no
+third-party integration required):
+
+- **Audit Logs "Export"** — real client-side CSV export of the currently-
+  loaded rows (the data's already in hand from the page's own query; no
+  new endpoint needed).
+- **Billing "New invoice"** — new `admin.createInvoice` (real insert into
+  the already-existing `client_invoices` table, which had a schema and
+  read path but no create path anywhere in the app).
+- **Clients "Onboard client"** — wired to the already-existing
+  `admin.createOrganization` (super_admin; plain admin still gets the
+  audited stub, matching this page's own gating). While touching this
+  page, also found and fixed the same undisclosed-fabrication bug pattern
+  already fixed elsewhere this session: three of its four KPI tiles used
+  a `real || fakeNumber` fallback (62/7/84) and a fourth ("Expansion ARR
+  €212k") was entirely invented with no backing metric anywhere in this
+  schema — replaced with real counts and a real "New (30d)" tile.
+- **CRM & Leads "New lead"** — new `admin.createLead`, using
+  `source: "manual"`, one of the values the `leads` table's own doc
+  comment already anticipated ("booking | contact | ai-scan | eng-access |
+  manual") — the endpoint was the missing piece, not a new concept.
+- **CRM & Leads "View AI Scan pipeline"** — was firing an audit-only stub
+  for what is actually just a navigation action; now really navigates to
+  `/admin/ai-scans`.
+- **Support Desk "New ticket"** — new `admin.createSupportTicket`, reusing
+  the already-existing `createClientSupportTicket` DB helper (previously
+  only reachable from the client-side `clientPortal.createTicket` — an
+  admin had no way to open a ticket on a client's behalf, e.g. from a
+  phone call).
+
+Each of the six above has real tests: `server/admin.createInvoice.test.ts`
+(4), `server/admin.createLead.test.ts` (4), `server/admin.createSupportTicket.test.ts`
+(3) — RBAC, NOT_FOUND/INTERNAL_SERVER_ERROR paths, audit logging, zod
+validation.
+
+**Deliberately not attempted** — each of these needs either a real
+third-party integration this app doesn't have, or a genuinely new
+subsystem comparable in scope to §2.5–2.7's own workstreams, not a button
+wiring fix:
+- **AI Scans "Trigger scan"** — would need a real target-picking flow and
+  invoking the actual AI Scan generation pipeline for an arbitrary
+  lead/org; the pipeline itself is real (`aiScans.ts`) but there's no
+  admin-initiated entry point into it today.
+- **Users & Permissions "Invite user"** — needs a real invite/signup
+  email flow (token generation, an acceptance page, account creation) —
+  a new subsystem, not a create-row mutation.
+- **Developer Management "Grant access"** — developer access requests
+  already have a self-service creation path
+  (`developer.createDeveloperAccessRequest`); an admin-initiated *grant*
+  flow (picking a developer, a project, a scope) doesn't exist and is a
+  real design decision, not a stub fix.
+- **Security Monitoring "Run scan"** — there is no real security-scanning
+  system anywhere in this codebase to invoke; inventing one would be
+  fabrication.
+- **Email/SMS Campaigns "New campaign" / AI Agents & IVR "New agent"** —
+  both pages are 100%-`sampleData`-disclosed already (no Twilio/SendGrid/
+  IVR integration exists); a real "new campaign" action needs an actual
+  provider account behind it, same reasoning as §2.5's "real third-party
+  integration management" deferral.
+- **Executive Overview "Grant temp access"** — already an audited stub by
+  design from an earlier session's pass (a deliberate, documented choice
+  at the time, not an oversight).
+
+Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 525/525
+passing, 33 correctly skipped, 0 regressions. `pnpm run build` →
+succeeds.
+
+---
+
 ## Remaining Milestone 2 workstreams
 
-- Exhaustive sweep of every remaining `admin.action`-only button across
-  the whole admin console (invoice creation, others) — only the ones found
-  on Executive Overview (§2.4) and folded into feature work this pass
-  (Security Monitoring's acknowledge action, Documents' approve/reject,
-  System Settings' edit, Analytics' now-real data, Automations' workflow
-  engine) were fixed; a full sweep of the remainder was not attempted.
+- The dead-button items listed as "deliberately not attempted" immediately
+  above.
 - See the §2.5 "Not started" list above for the two deliberately-deferred
   items (hard MFA gate, real third-party integration/notification-template
   content).
+- Re-run the full exit-gate checklist in `Milestone 2.md`'s final section
+  once that file is available in this repo (it wasn't found anywhere in
+  this working tree as of this writing) — "exit gate passed" can't be
+  honestly claimed without checking against its actual criteria.

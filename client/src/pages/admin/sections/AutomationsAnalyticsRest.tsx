@@ -587,6 +587,40 @@ const AUDIT_COLS: DataColumn<AuditEntry>[] = [
   { key: "outcome", header: "Outcome", render: (r) => <StatusPill tone={r.outcome === "success" ? "ok" : "err"} label={r.outcome} /> },
 ];
 
+/**
+ * Real CSV export of the currently-loaded audit rows — was previously an
+ * audited.fire("audit", "export") stub that did nothing visible to the
+ * operator besides an audit-log row. The rows are already in hand (this
+ * page's own query result), so this needs no new endpoint.
+ */
+function exportAuditRowsAsCsv(rows: AuditEntry[]) {
+  const header = ["Time", "Actor", "Action", "Via", "Outcome"];
+  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const lines = [
+    header.join(","),
+    ...rows.map((r) =>
+      [
+        new Date(r.createdAt).toISOString(),
+        r.identifier ?? "",
+        r.reason ?? r.provider,
+        r.provider,
+        r.outcome,
+      ]
+        .map((v) => escape(String(v)))
+        .join(","),
+    ),
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `io-sky-audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export function AuditLogs() {
   const q = trpc.admin.audit.useQuery(undefined, { staleTime: 30_000 });
   const audited = useAuditedAction();
@@ -609,7 +643,7 @@ export function AuditLogs() {
         { id: "ev", label: "Events (recent)", value: String(data.rows.length), icon: ScrollText, accent: "orange" },
         { id: "fail", label: "Failures", value: String(failures), icon: AlertTriangle, accent: failures > 0 ? "red" : "green" },
       ]}
-      toolbar={<DefaultToolbar searchPlaceholder="Search actor, action, target…" filters={["Outcome", "Actor", "Period"]} primaryAction={{ label: "Export", onClick: () => audited.fire("audit", "export") }} />}
+      toolbar={<DefaultToolbar searchPlaceholder="Search actor, action, target…" filters={["Outcome", "Actor", "Period"]} primaryAction={{ label: "Export", onClick: () => { audited.fire("audit", "export"); exportAuditRowsAsCsv(data.rows); } }} />}
       primary={<DataTable columns={AUDIT_COLS} rows={data.rows} />}
     />
         );
@@ -716,7 +750,26 @@ const SUP_COLS: DataColumn<Ticket>[] = [
 
 export function SupportDesk() {
   const q = trpc.admin.support.useQuery(undefined, { staleTime: 30_000 });
-  const audited = useAuditedAction();
+  const orgsQuery = trpc.admin.listOrganizations.useQuery(undefined, { staleTime: 30_000 });
+  const utils = trpc.useUtils();
+  const createTicket = trpc.admin.createSupportTicket.useMutation({
+    onSuccess: () => utils.admin.support.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not create ticket"),
+  });
+
+  const onNewTicket = () => {
+    const orgs = orgsQuery.data ?? [];
+    const list = orgs.map((o) => `${o.id}: ${o.name}`).join("\n") || "(no organizations yet)";
+    const orgIdRaw = window.prompt(`Organization id for this ticket?\n\n${list}`);
+    const organizationId = orgIdRaw ? Number(orgIdRaw) : NaN;
+    if (!Number.isFinite(organizationId) || organizationId <= 0) return;
+    const subject = window.prompt("Ticket subject?");
+    if (!subject?.trim()) return;
+    const body = window.prompt("Ticket details?");
+    if (!body?.trim()) return;
+    createTicket.mutate({ organizationId, subject: subject.trim(), body: body.trim() });
+  };
+
   return (
     <ModuleStateBoundary<SupportPayload>
       isLoading={q.isLoading}
@@ -738,7 +791,7 @@ export function SupportDesk() {
         { id: "urgent", label: "Urgent", value: String(urgent), icon: AlertTriangle, accent: urgent > 0 ? "red" : "green" },
         { id: "total", label: "Total (recent)", value: String(data.total), icon: Activity, accent: "blue" },
       ]}
-      toolbar={<DefaultToolbar searchPlaceholder="Search tickets, clients…" filters={["Status", "Priority", "Owner"]} primaryAction={{ label: "New ticket", onClick: () => audited.fire("support", "new-ticket") }} />}
+      toolbar={<DefaultToolbar searchPlaceholder="Search tickets, clients…" filters={["Status", "Priority", "Owner"]} primaryAction={{ label: "New ticket", onClick: onNewTicket }} />}
       primary={<DataTable columns={SUP_COLS} rows={data.rows} />}
     />
         );
