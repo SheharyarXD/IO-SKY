@@ -31,6 +31,54 @@ const DEFAULT_SETTINGS: Array<{
   { section: "observability", key: "observability.summary", title: "Observability", description: "Audit retention, error reporting, performance budgets, alerting.", value: "Active" },
 ];
 
+/**
+ * Milestone 2 §2.5 — AI governance config. No concrete spec for this
+ * exists anywhere in this repo (not in a design doc, not in any code
+ * comment), so rather than inventing an enforcement system (model
+ * allow-lists? per-org feature toggles? none of that exists to govern),
+ * this is scoped to what's actually true and checkable today: which LLM
+ * provider AI Scan report generation is configured against (real, derived
+ * from env at seed time — not editable, since it should reflect actual
+ * config, not a claim), which AI Scan tiers exist (real, derived from the
+ * schema's own `ai_scans_tier` enum), and a data-retention *policy record*
+ * (editable free text — `ai_scans.responses`/`reportPayload` have no
+ * automated deletion job anywhere in this codebase, so this field is
+ * explicitly a documented policy statement for operators to record their
+ * actual retention decision, not a TTL this app enforces).
+ */
+function buildAiGovernanceSeed(): Array<{
+  section: string;
+  key: string;
+  title: string;
+  description: string;
+  value: string;
+}> {
+  const llmConfigured = Boolean(process.env.LLM_API_KEY && process.env.LLM_API_URL);
+  return [
+    {
+      section: "ai_governance",
+      key: "ai_governance.llm_provider",
+      title: "LLM Provider (AI Scan)",
+      description: "Backend that generates AI Scan executive reports. Reflects LLM_API_URL/LLM_API_KEY env config, not editable here.",
+      value: llmConfigured ? "Configured" : "Not configured",
+    },
+    {
+      section: "ai_governance",
+      key: "ai_governance.tiers",
+      title: "AI Scan tiers",
+      description: "Tiers defined in the schema (ai_scans_tier enum).",
+      value: "free, growth, elite",
+    },
+    {
+      section: "ai_governance",
+      key: "ai_governance.data_retention",
+      title: "AI Scan data retention policy",
+      description: "Documented retention decision for ai_scans.responses/reportPayload. No automated deletion job exists in this codebase — this is a policy record, not an enforced TTL.",
+      value: "Indefinite (no automated deletion configured)",
+    },
+  ];
+}
+
 export async function listPlatformSettings(): Promise<PlatformSetting[]> {
   const db = await getDb();
   if (!db) return [];
@@ -39,7 +87,10 @@ export async function listPlatformSettings(): Promise<PlatformSetting[]> {
 
   // First-ever read: seed the default rows so the page has real persisted
   // state from day one instead of silently staying empty forever.
-  await db.insert(platformSettings).values(DEFAULT_SETTINGS).onConflictDoNothing();
+  await db
+    .insert(platformSettings)
+    .values([...DEFAULT_SETTINGS, ...buildAiGovernanceSeed()])
+    .onConflictDoNothing();
   return db.select().from(platformSettings).orderBy(asc(platformSettings.section));
 }
 

@@ -22,7 +22,7 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 | 2.2 Manus Dependency Removal | ✅ Done + verified · ⛔ LLM/owner-alert production activation blocked |
 | 2.3 Email Productionisation | ✅ Delivery tracking done · ⛔ Resend domain + Supabase Auth email routing blocked |
 | 2.4 Core Workflow Verification & Conversion | ✅ Done this session — every previously-undisclosed fabricated panel on Executive Overview now wired to real data or disclosed; the underlying admin.summary fabrication bug fixed too |
-| 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, Business Intelligence dashboards, platform configuration store, and MFA compliance visibility done and tested; AI governance config, real integration/notification-template management, and a hard blocking MFA gate NOT started (the last one deliberately deferred — see detail below) |
+| 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, Business Intelligence dashboards, platform configuration store, MFA compliance visibility, and AI governance config done and tested; real third-party integration/notification-template management and a hard blocking MFA gate NOT started (both deliberately deferred — see detail below) |
 | 2.6 Document Lifecycle / Workflow Engine / Integrations | ⏭ Not started |
 | 2.7 Notification Infrastructure | ⏭ Not started |
 
@@ -717,12 +717,37 @@ real, safe, honestly-scoped deliverable for this pass.
 Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 468/468 passing,
 33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
 
+### AI governance config
+
+No concrete spec for this exists anywhere in this repo — not in a design
+doc, not in a code comment. Rather than inventing an enforcement system
+(model allow-lists, per-org AI feature toggles — none of that exists to
+govern), scoped this narrowly to what's actually true and checkable today,
+reusing the platform configuration store built above (three new rows,
+section `ai_governance`):
+
+- **LLM Provider (AI Scan)** — real, derived from whether
+  `LLM_API_KEY`/`LLM_API_URL` are set in the environment at seed time
+  ("Configured"/"Not configured"). Not editable through this UI — it should
+  reflect actual env config, not a claim a super_admin types in.
+- **AI Scan tiers** — real, lists the tiers the schema's own `ai_scans_tier`
+  enum actually defines (free/growth/elite).
+- **AI Scan data retention policy** — an editable *policy record*, not an
+  enforced TTL: `ai_scans.responses`/`reportPayload` have no automated
+  deletion job anywhere in this codebase, so this field exists for
+  operators to document their actual retention decision honestly, seeded
+  with the true current state ("Indefinite — no automated deletion
+  configured") rather than a value implying enforcement that doesn't exist.
+
+`server/db/platformSettings.ts`'s `buildAiGovernanceSeed()`. Uses the same
+`admin.settings`/`admin.updateSetting` endpoints and `SystemSettings` UI
+already built — no new schema, router, or page needed.
+
+Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 468/468 passing,
+33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
+
 ### Not started (real scope, not small)
 
-- **AI governance config** — no concrete spec exists in this repo for what
-  this means operationally (model allow-list? prompt/response logging
-  retention? per-org AI feature toggles?) — needs a decision, not a guess,
-  before it's buildable.
 - **Real third-party integration management / notification-template
   content management** — the platform configuration *store* is now real
   (see above), but it does not wire real Stripe/Twilio/SendGrid provider
