@@ -474,6 +474,13 @@ export const clientPortalRouter = router({
         mimeType: z.string().max(96).optional(),
         // base64-encoded payload; ~15 MB ceiling translates to ~20 MB string.
         contentBase64: z.string().min(8).max(20_000_000),
+        /**
+         * Milestone 2 §2.6 — when set, this upload becomes a new version of
+         * an existing document rather than a brand-new one: it's linked
+         * into that document's version group and the previous version is
+         * flipped to status "superseded" (see insertClientDocument).
+         */
+        supersedesDocumentId: z.number().int().positive().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -529,16 +536,25 @@ export const clientPortalRouter = router({
           cause: err,
         });
       }
-      const inserted = await insertClientDocument({
-        organizationId: ctx.organizationId,
-        name: input.name,
-        category: input.category,
-        fileKey: putKey,
-        sizeBytes,
-        mimeType: input.mimeType ?? null,
-        uploadedByUserId: ctx.user.id ?? null,
-        uploadedBy: ctx.user.name ?? ctx.user.email ?? null,
-      });
+      let inserted: Awaited<ReturnType<typeof insertClientDocument>>;
+      try {
+        inserted = await insertClientDocument({
+          organizationId: ctx.organizationId,
+          name: input.name,
+          category: input.category,
+          fileKey: putKey,
+          sizeBytes,
+          mimeType: input.mimeType ?? null,
+          uploadedByUserId: ctx.user.id ?? null,
+          uploadedBy: ctx.user.name ?? ctx.user.email ?? null,
+          supersedesDocumentId: input.supersedesDocumentId ?? null,
+        });
+      } catch (err) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: err instanceof Error ? err.message : "Could not link this upload to the specified document version.",
+        });
+      }
       try {
         await appendLoginAudit({
           userId: ctx.user.id,

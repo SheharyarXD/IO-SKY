@@ -54,6 +54,9 @@ import {
   getUserById,
   listPlatformSettings,
   updatePlatformSetting,
+  reviewClientDocument,
+  setClientDocumentRetentionNote,
+  listClientDocumentVersions,
 } from "../db";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import {
@@ -606,7 +609,7 @@ async function readDocuments() {
       rows: [],
       total: 0,
       generatedAtMs: Date.now(),
-      source: "seed" as const,
+      source: "unavailable" as const,
     };
   }
   const rows = await safe(
@@ -620,6 +623,11 @@ async function readDocuments() {
           sizeBytes: clientDocuments.sizeBytes,
           uploadedBy: clientDocuments.uploadedBy,
           createdAt: clientDocuments.createdAt,
+          version: clientDocuments.version,
+          status: clientDocuments.status,
+          reviewedAt: clientDocuments.reviewedAt,
+          reviewNote: clientDocuments.reviewNote,
+          retentionNote: clientDocuments.retentionNote,
         })
         .from(clientDocuments)
         .orderBy(desc(clientDocuments.createdAt))
@@ -1228,6 +1236,51 @@ export const adminRouter = router({
     await recordAdminEvent({ ctx, reason: "admin.read.documents" });
     return readDocuments();
   }),
+  /**
+   * Milestone 2 §2.6 — document lifecycle: approve/reject a pending
+   * document. `documentId` alone (no organizationId) is enough since this
+   * is an admin-side action across all orgs, matching every other
+   * admin.* mutation's scope.
+   */
+  reviewDocument: adminProcedure
+    .input(
+      z.object({
+        documentId: z.number().int().positive(),
+        decision: z.enum(["approved", "rejected"]),
+        note: z.string().max(1000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updated = await reviewClientDocument(
+        input.documentId,
+        input.decision,
+        ctx.user.id,
+        input.note ?? null,
+      );
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Document not found." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.document.${input.decision}(${input.documentId})` });
+      return updated;
+    }),
+  /** Milestone 2 §2.6 — documented retention policy record (not an enforced TTL, see schema doc comment). */
+  setDocumentRetention: adminProcedure
+    .input(z.object({ documentId: z.number().int().positive(), note: z.string().min(1).max(500) }))
+    .mutation(async ({ ctx, input }) => {
+      const updated = await setClientDocumentRetentionNote(input.documentId, input.note);
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Document not found." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.document.set_retention(${input.documentId})` });
+      return updated;
+    }),
+  /** Milestone 2 §2.6 — full version chain for one document's group. */
+  listDocumentVersions: adminProcedure
+    .input(z.object({ organizationId: z.number().int().positive(), documentId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      await recordAdminEvent({ ctx, reason: `admin.document.list_versions(${input.documentId})` });
+      return safe(() => listClientDocumentVersions(input.organizationId, input.documentId), []);
+    }),
   developers: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.developers" });
     return readDevelopers();

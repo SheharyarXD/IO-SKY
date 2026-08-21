@@ -331,59 +331,131 @@ interface DocRow {
   sizeBytes: number | null;
   uploadedBy: string | null;
   createdAt: string | Date;
+  version: number;
+  status: "pending_review" | "approved" | "rejected" | "superseded";
+  reviewedAt: string | Date | null;
+  reviewNote: string | null;
+  retentionNote: string | null;
 }
 
+const DOC_STATUS_TONE: Record<DocRow["status"], "ok" | "warn" | "err" | "muted"> = {
+  pending_review: "warn",
+  approved: "ok",
+  rejected: "err",
+  superseded: "muted",
+};
+
+/**
+ * Milestone 2 §2.6 — document lifecycle. Previously every KPI on this page
+ * except "Files in vault" was fabricated and undisclosed (Encrypted-at-rest
+ * 100%, Active signed URLs 127, Malware scans 412 — none backed by any
+ * real system: there is no malware scanner or signed-URL counter anywhere
+ * in this codebase). Replaced with real review-queue counts. The
+ * "Retention policies" panel was the same shape of bug (7/5/10-years/
+ * indefinite by category — no such policy table exists); replaced with
+ * real per-document retention notes (documented policy records, not an
+ * enforced TTL — see drizzle/schema.ts's clientDocuments doc comment).
+ */
 export function Documents() {
   const query = trpc.admin.documents.useQuery(undefined, { staleTime: 30_000 });
   const audited = useAuditedAction();
+  const utils = trpc.useUtils();
   const data = query.data;
+  const review = trpc.admin.reviewDocument.useMutation({
+    onSuccess: () => utils.admin.documents.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not review this document"),
+  });
+  const setRetention = trpc.admin.setDocumentRetention.useMutation({
+    onSuccess: () => utils.admin.documents.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not set retention note"),
+  });
 
   const kpis: KpiTile[] = useMemo(() => {
     const rows = (data?.rows ?? []) as DocRow[];
+    const pending = rows.filter((r) => r.status === "pending_review").length;
+    const approved = rows.filter((r) => r.status === "approved").length;
+    const rejected = rows.filter((r) => r.status === "rejected").length;
     return [
-      { id: "files", label: "Files in vault", value: String(rows.length || 8142), delta: { value: "3.2%", positive: true }, icon: FolderLock, accent: "orange", spark: [7400, 7600, 7800, 7900, 8000, 8080, rows.length || 8142] },
-      { id: "enc", label: "Encrypted-at-rest", value: "100%", icon: ShieldCheck, accent: "green", spark: [100, 100, 100, 100, 100, 100, 100] },
-      { id: "links", label: "Active signed URLs", value: "127", icon: Activity, accent: "violet", spark: [105, 110, 114, 118, 121, 124, 127] },
-      { id: "scans", label: "Malware scans (24h)", value: "412", icon: Activity, accent: "blue", spark: [320, 350, 370, 380, 395, 405, 412] },
+      { id: "files", label: "Files in vault", value: String(rows.length), icon: FolderLock, accent: "orange" },
+      { id: "pending", label: "Pending review", value: String(pending), icon: Activity, accent: pending > 0 ? "red" : "green" },
+      { id: "approved", label: "Approved", value: String(approved), icon: ShieldCheck, accent: "green" },
+      { id: "rejected", label: "Rejected", value: String(rejected), icon: Activity, accent: rejected > 0 ? "red" : "green" },
     ];
   }, [data]);
 
+  const onReview = (r: DocRow, decision: "approved" | "rejected") => {
+    const note = window.prompt(`Note for ${decision === "approved" ? "approving" : "rejecting"} "${r.name}"? (optional)`, "");
+    review.mutate({ documentId: r.id, decision, note: note?.trim() || undefined });
+  };
+
+  const onSetRetention = (r: DocRow) => {
+    const note = window.prompt(`Retention policy note for "${r.name}"?`, r.retentionNote ?? "");
+    if (!note || !note.trim()) return;
+    setRetention.mutate({ documentId: r.id, note: note.trim() });
+  };
+
   const cols: DataColumn<DocRow>[] = [
-    { key: "id", header: "Ref", width: "82px", render: (r) => <span className="font-mono">D-{String(r.id).padStart(4, "0")}</span> },
+    { key: "id", header: "Ref", width: "82px", render: (r) => <span className="font-mono">D-{String(r.id).padStart(4, "0")}{r.version > 1 ? ` v${r.version}` : ""}</span> },
     { key: "name", header: "File" },
     { key: "category", header: "Category", render: (r) => <StatusPill tone="muted" label={r.category} /> },
+    { key: "status", header: "Status", render: (r) => <StatusPill tone={DOC_STATUS_TONE[r.status]} label={r.status.replace("_", " ")} /> },
     { key: "sizeBytes", header: "Size", align: "right", render: (r) => <span className="font-mono text-white/65">{r.sizeBytes ? `${(r.sizeBytes / 1_048_576).toFixed(1)} MB` : "—"}</span> },
     { key: "createdAt", header: "Uploaded", align: "right", render: (r) => <span className="font-mono text-white/55">{fmtDate(r.createdAt)}</span> },
+    {
+      key: "id" as keyof DocRow,
+      header: "Actions",
+      render: (r) => (
+        <div className="flex items-center gap-2 justify-end">
+          {r.status === "pending_review" && (
+            <>
+              <button onClick={() => onReview(r, "approved")} className="text-[11px] text-emerald-400 hover:underline">Approve</button>
+              <button onClick={() => onReview(r, "rejected")} className="text-[11px] text-red-400 hover:underline">Reject</button>
+            </>
+          )}
+          <button onClick={() => onSetRetention(r)} className="text-[11px] text-[#FF6A00] hover:underline">Retention</button>
+        </div>
+      ),
+    },
   ];
 
   return (
     <ModuleStateBoundary isLoading={query.isLoading} error={query.error as any} data={data} onRetry={() => query.refetch()}>
-      {(d) => (
+      {(d) => {
+        const rows = (d.rows ?? []) as DocRow[];
+        const withRetention = rows.filter((r) => r.retentionNote);
+        return (
         <OperationalPage
           eyebrow="Vault"
           title="Documents & Storage"
-          tagline="Encrypted cloud storage with signed URLs, retention policies, automated backups and continuous malware scanning."
+          tagline="Cloud-stored client documents with versioning, an approve/reject review workflow, and per-document retention policy notes."
           kpis={kpis}
           toolbar={<DefaultToolbar searchPlaceholder="Search files, clients, categories…" filters={["Category", "Client", "Period"]} primaryAction={{ label: "Upload", onClick: () => audited.fire("documents", "upload") }} />}
           primary={
-            (d.rows ?? []).length === 0 ? (
+            rows.length === 0 ? (
               <div className="rounded-[12px] border border-dashed border-white/[0.08] p-6 text-center text-[12.5px] text-white/55">No documents in the vault yet.</div>
             ) : (
-              <DataTable columns={cols} rows={d.rows as DocRow[]} />
+              <DataTable columns={cols} rows={rows} />
             )
           }
           aside={
-            <SideCard title="Retention policies">
-              <ul className="space-y-2.5 text-[12.5px] text-white/85">
-                <li className="flex items-center justify-between"><span>Contracts</span><span className="font-mono text-white/55">7 years</span></li>
-                <li className="flex items-center justify-between"><span>Reports</span><span className="font-mono text-white/55">5 years</span></li>
-                <li className="flex items-center justify-between"><span>Audits</span><span className="font-mono text-white/55">10 years</span></li>
-                <li className="flex items-center justify-between"><span>Assets</span><span className="font-mono text-white/55">indefinite</span></li>
-              </ul>
+            <SideCard title="Retention policy notes">
+              {withRetention.length === 0 ? (
+                <p className="text-[12.5px] text-white/45">No per-document retention notes recorded yet. Use the "Retention" action on a file to document one.</p>
+              ) : (
+                <ul className="space-y-2.5 text-[12.5px] text-white/85">
+                  {withRetention.slice(0, 8).map((r) => (
+                    <li key={r.id} className="flex items-center justify-between gap-2">
+                      <span className="truncate">{r.name}</span>
+                      <span className="font-mono text-white/55 shrink-0">{r.retentionNote}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </SideCard>
           }
         />
-      )}
+        );
+      }}
     </ModuleStateBoundary>
   );
 }

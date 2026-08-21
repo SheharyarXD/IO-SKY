@@ -680,6 +680,26 @@ export type ClientInvoice = typeof clientInvoices.$inferSelect;
 /**
  * Secure documents library. Cascade with org.
  */
+/**
+ * Milestone 2 §2.6 — document lifecycle: versioning, approval/rejection,
+ * retention. Previously flat upload/download only. `documentGroupId` links
+ * every version of "the same logical document" together (null on the
+ * first version — a null group means the row is its own group root, so
+ * callers resolve the effective group as `documentGroupId ?? id`); `version`
+ * increments within a group. `status` moves pending_review -> approved /
+ * rejected via an admin decision, or -> superseded automatically when a
+ * newer version in the same group is uploaded. `retentionNote` is a
+ * documented policy record (no automated deletion job exists in this
+ * codebase — same honest-non-enforcement pattern as the AI governance
+ * config's data-retention setting), not an enforced TTL.
+ */
+export const clientDocumentsStatusEnum = pgEnum("client_documents_status", [
+  "pending_review",
+  "approved",
+  "rejected",
+  "superseded",
+]);
+
 export const clientDocuments = pgTable(
   "client_documents",
   {
@@ -694,9 +714,20 @@ export const clientDocuments = pgTable(
     mimeType: varchar("mimeType", { length: 96 }),
     uploadedByUserId: integer("uploadedByUserId").references(() => users.id),
     uploadedBy: varchar("uploadedBy", { length: 200 }),
+    /** Null on the first version of a document; the first version's own id otherwise (see doc comment above). */
+    documentGroupId: integer("documentGroupId"),
+    version: integer("version").default(1).notNull(),
+    status: clientDocumentsStatusEnum("status").default("pending_review").notNull(),
+    reviewedByUserId: integer("reviewedByUserId").references(() => users.id),
+    reviewedAt: timestamp("reviewedAt"),
+    reviewNote: text("reviewNote"),
+    retentionNote: text("retentionNote"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("client_documents_organization_id_idx").on(table.organizationId)],
+  (table) => [
+    index("client_documents_organization_id_idx").on(table.organizationId),
+    index("client_documents_document_group_id_idx").on(table.documentGroupId),
+  ],
 );
 export type ClientDocument = typeof clientDocuments.$inferSelect;
 

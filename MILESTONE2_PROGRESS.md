@@ -23,7 +23,7 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 | 2.3 Email Productionisation | ✅ Delivery tracking done · ⛔ Resend domain + Supabase Auth email routing blocked |
 | 2.4 Core Workflow Verification & Conversion | ✅ Done this session — every previously-undisclosed fabricated panel on Executive Overview now wired to real data or disclosed; the underlying admin.summary fabrication bug fixed too |
 | 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, Business Intelligence dashboards, platform configuration store, MFA compliance visibility, and AI governance config done and tested; real third-party integration/notification-template management and a hard blocking MFA gate NOT started (both deliberately deferred — see detail below) |
-| 2.6 Document Lifecycle / Workflow Engine / Integrations | ⏭ Not started |
+| 2.6 Document Lifecycle / Workflow Engine / Integrations | 🔶 Partial — document lifecycle (versioning/approval/rejection/retention) done and tested; workflow engine and integration/webhook registry NOT started |
 | 2.7 Notification Infrastructure | ⏭ Not started |
 
 **This session's central finding — the connected Supabase project is gone.** The `.env` credentials from the session that did RM-41..60 (a different session than the one that wrote §2.1–2.4 above, which had no credentials at all) no longer work: `rhgzcgcqlypuvislwjlf.supabase.co` returns `NXDOMAIN` — the project's own subdomain doesn't resolve in DNS at all, not a transient outage. Confirmed via direct `nslookup`, a raw Postgres connection attempt (pooler responds "tenant/user not found"), and a plain `fetch` to the Auth health endpoint (connection refused). This means **migrations `0006` through `0009` are still authored-and-locally-verified only, same as before** — nothing in this session or the previous one has actually reached a live database. A real test-suite bug this surfaced and fixed: `server/rls.negative.test.ts`'s skip condition only checked that env vars were *present*, not that the project was *reachable*, so it hard-failed the whole suite instead of skipping cleanly — now does a real reachability probe first.
@@ -759,15 +759,91 @@ Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 468/468 passing,
 
 ---
 
+## 2.6 Document Lifecycle, Workflow Engine & Integration Layer
+
+**Status: 🔶 Partial. Document lifecycle (versioning/approval/rejection/
+retention) done and tested. Workflow-definition engine and integration/
+webhook registry not started — both are new subsystems, not extensions of
+anything that exists.**
+
+### Document lifecycle (versioning, approval/rejection, retention)
+
+`client_documents` was flat upload/download only — no version concept, no
+review workflow, no retention record of any kind.
+
+- `drizzle/schema.ts` + `drizzle/0012_document_lifecycle.sql`: new columns
+  `documentGroupId`/`version`/`status`/`reviewedByUserId`/`reviewedAt`/
+  `reviewNote`/`retentionNote` on `client_documents`, plus a new
+  `client_documents_status` enum (`pending_review`/`approved`/`rejected`/
+  `superseded`). A null `documentGroupId` means the row is its own version-
+  group root; every subsequent version of "the same logical document"
+  points its `documentGroupId` at that root. No RLS changes needed — the
+  existing org-scoped-or-admin policies from `0004_rls_policies.sql`
+  already cover these new columns. Same apply/verify caveat as every
+  migration since `0006` — authored and locally verified only.
+- `server/db/clientPortal.ts`: `insertClientDocument` gained an optional
+  `supersedesDocumentId` — when given, the new row is linked into that
+  document's version group (`version` = predecessor + 1) and the
+  predecessor is flipped to `status: "superseded"` in the same call, so a
+  group never has two "current" versions. Without it, behavior is
+  unchanged (a brand-new document, its own group root). New:
+  `listClientDocumentVersions` (full version chain for a group),
+  `reviewClientDocument` (approve/reject + note + reviewer + timestamp),
+  `setClientDocumentRetentionNote`.
+- `server/routers/clientPortal.ts`: `uploadDocument` accepts
+  `supersedesDocumentId`; a version-linking failure (e.g. the referenced
+  document doesn't exist in this org) now surfaces as `BAD_REQUEST` with a
+  real message instead of an unhandled 500.
+- `server/routers/admin.ts`: new `admin.reviewDocument` (approve/reject,
+  `adminProcedure`), `admin.setDocumentRetention` (documented retention
+  policy record — **not** an enforced TTL; no automated deletion job exists
+  anywhere in this codebase, same honest-non-enforcement pattern as the AI
+  governance config's retention setting), `admin.listDocumentVersions`.
+  `admin.documents`'s read now also returns `version`/`status`/
+  `reviewedAt`/`reviewNote`/`retentionNote`.
+- `client/.../ReportsProjectsBillingDocs.tsx`'s `Documents` page: while
+  wiring this in, found and fixed the same undisclosed-fabrication bug
+  already fixed elsewhere this session — three of its four KPI tiles
+  ("Encrypted-at-rest 100%", "Active signed URLs 127", "Malware scans
+  (24h) 412") and its entire "Retention policies" side panel
+  (7/5/10-years/indefinite by category) were fabricated literals with no
+  disclosure and no backing system (there is no malware scanner or
+  signed-URL counter anywhere in this codebase). Replaced the KPIs with
+  real review-queue counts (pending/approved/rejected) and the retention
+  panel with real per-document retention notes. Added Approve/Reject/
+  Retention row actions and a status pill per document.
+- `server/admin.documentLifecycle.test.ts` (new, 7 tests) +
+  2 new tests in `server/clientPortal.test.ts`: review/retention RBAC and
+  NOT_FOUND paths, version-chain listing, `supersedesDocumentId` passthrough,
+  and the version-link-failure → BAD_REQUEST path.
+
+**Deliberately not built this pass**: a client-portal UI control for
+"upload a new version of this document" — the backend
+(`supersedesDocumentId`) is real and tested, but no button in
+`ClientDocuments.tsx` calls it yet. The review/retention workflow (the
+governance-facing half of this deliverable) was prioritized as the more
+load-bearing piece.
+
+Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 477/477 passing,
+33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
+`drizzle-kit generate` → "No schema changes, nothing to migrate".
+
+### Not started
+
+- **Workflow-definition engine** — a reusable subsystem (definitions table,
+  run/execution log, at minimum a bounded executor for real existing
+  trigger types in this app). Nothing like this exists yet.
+- **Integration/webhook registry** — outbound webhook registration +
+  delivery log + dispatch on real events. Nothing like this exists yet.
+
+---
+
 ## Remaining Milestone 2 workstreams
 
 Not yet started:
-- **2.5** (remainder) — see the not-started list immediately above.
-- **2.6 Document Lifecycle, Workflow Engine & Integration Layer** — document
-  versioning/approval/rejection/retention (`client_documents` currently has
-  none of this, it's flat upload/download only), a reusable
-  workflow-definition engine, an integration/webhook registry. All new
-  subsystems; none of the schema for this exists yet.
+- **2.5** (remainder) — see the not-started list above (§2.5 section).
+- **2.6** (remainder) — workflow-definition engine, integration/webhook
+  registry — see immediately above.
 - **2.7 Notification Infrastructure** — a central typed notification write
   service, a real Notification Center UI (bell/list/mark-as-read — currently
   non-functional per the original Milestone 1 audit), a schema extension

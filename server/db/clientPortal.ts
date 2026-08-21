@@ -499,6 +499,16 @@ export async function getClientDocumentById(orgId: number, id: number) {
   return rows[0] ?? null;
 }
 
+/**
+ * Milestone 2 §2.6 — document lifecycle. `supersedesDocumentId`, when
+ * given, links the new row into that document's version group
+ * (`documentGroupId ?? id` of the superseded row) with `version` = its
+ * predecessor's version + 1, and flips the predecessor to
+ * `status: "superseded"` in the same call so a group never has two
+ * "current" versions. Without it, the insert behaves exactly as before —
+ * a brand-new document, its own group root (`documentGroupId: null`,
+ * `version: 1`).
+ */
 export async function insertClientDocument(input: {
   organizationId: number;
   name: string;
@@ -508,11 +518,94 @@ export async function insertClientDocument(input: {
   mimeType: string | null;
   uploadedByUserId: number | null;
   uploadedBy: string | null;
+  supersedesDocumentId?: number | null;
 }) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.insert(clientDocuments).values(input).returning();
+  const { supersedesDocumentId, ...rest } = input;
+
+  if (supersedesDocumentId) {
+    const prevRows = await db
+      .select()
+      .from(clientDocuments)
+      .where(
+        and(
+          eq(clientDocuments.organizationId, input.organizationId),
+          eq(clientDocuments.id, supersedesDocumentId),
+        ),
+      )
+      .limit(1);
+    const prev = prevRows[0];
+    if (!prev) {
+      throw new Error(`Cannot supersede document ${supersedesDocumentId}: not found in this organization.`);
+    }
+    const groupId = prev.documentGroupId ?? prev.id;
+    const rows = await db
+      .insert(clientDocuments)
+      .values({ ...rest, documentGroupId: groupId, version: prev.version + 1 })
+      .returning();
+    await db
+      .update(clientDocuments)
+      .set({ status: "superseded" })
+      .where(eq(clientDocuments.id, prev.id));
+    return rows[0] ? { id: rows[0].id } : null;
+  }
+
+  const rows = await db.insert(clientDocuments).values(rest).returning();
   return rows[0] ? { id: rows[0].id } : null;
+}
+
+/** All versions in the same group as `documentId`, newest first. */
+export async function listClientDocumentVersions(orgId: number, documentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const anchorRows = await db
+    .select()
+    .from(clientDocuments)
+    .where(and(eq(clientDocuments.organizationId, orgId), eq(clientDocuments.id, documentId)))
+    .limit(1);
+  const anchor = anchorRows[0];
+  if (!anchor) return [];
+  const groupId = anchor.documentGroupId ?? anchor.id;
+  return db
+    .select()
+    .from(clientDocuments)
+    .where(
+      and(
+        eq(clientDocuments.organizationId, orgId),
+        sql`(${clientDocuments.documentGroupId} = ${groupId} OR ${clientDocuments.id} = ${groupId})`,
+      ),
+    )
+    .orderBy(desc(clientDocuments.version));
+}
+
+/** Admin decision on a document (approve/reject), with an optional note. */
+export async function reviewClientDocument(
+  documentId: number,
+  decision: "approved" | "rejected",
+  reviewedByUserId: number,
+  reviewNote: string | null,
+) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(clientDocuments)
+    .set({ status: decision, reviewedByUserId, reviewedAt: new Date(), reviewNote })
+    .where(eq(clientDocuments.id, documentId))
+    .returning();
+  return rows[0] ?? null;
+}
+
+/** Sets/updates the documented retention policy note for one document. Not an enforced TTL — see the schema doc comment. */
+export async function setClientDocumentRetentionNote(documentId: number, retentionNote: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(clientDocuments)
+    .set({ retentionNote })
+    .where(eq(clientDocuments.id, documentId))
+    .returning();
+  return rows[0] ?? null;
 }
 
 export async function deleteClientDocumentById(

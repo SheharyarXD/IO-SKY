@@ -457,6 +457,46 @@ describe("clientPortal router", () => {
     expect(notifyOwner).toHaveBeenCalledTimes(1);
   });
 
+  it("uploadDocument: passes supersedesDocumentId through to insertClientDocument (Milestone 2 §2.6 versioning)", async () => {
+    const db = await import("./db");
+    const storage = await import("./storage");
+    (storage.storagePut as any).mockResolvedValueOnce({
+      bucket: "client-portal",
+      key: "7/documents/456-brief-v2.pdf",
+    });
+    const caller = appRouter.createCaller(makeCtx({ role: "client", orgId: 7 }));
+    await caller.clientPortal.uploadDocument({
+      name: "brief-v2.pdf",
+      category: "deliverable",
+      contentBase64: Buffer.from("hello world v2").toString("base64"),
+      supersedesDocumentId: 5,
+    });
+    expect((db.insertClientDocument as any).mock.calls.at(-1)[0]).toMatchObject({
+      supersedesDocumentId: 5,
+    });
+  });
+
+  it("uploadDocument: surfaces a version-linking failure as BAD_REQUEST", async () => {
+    const db = await import("./db");
+    const storage = await import("./storage");
+    (storage.storagePut as any).mockResolvedValueOnce({
+      bucket: "client-portal",
+      key: "7/documents/456-brief-v2.pdf",
+    });
+    (db.insertClientDocument as any).mockRejectedValueOnce(
+      new Error("Cannot supersede document 999: not found in this organization."),
+    );
+    const caller = appRouter.createCaller(makeCtx({ role: "client", orgId: 7 }));
+    await expect(
+      caller.clientPortal.uploadDocument({
+        name: "brief-v2.pdf",
+        category: "deliverable",
+        contentBase64: Buffer.from("hello world v2").toString("base64"),
+        supersedesDocumentId: 999,
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
   it("requestDocumentDeletion: only the uploader can delete their file", async () => {
     const db = await import("./db");
     (db.getClientDocumentById as any).mockResolvedValueOnce({
