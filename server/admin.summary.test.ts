@@ -108,7 +108,6 @@ describe("admin.summary RBAC", () => {
       aiScans: expect.any(Number),
       openProjects: expect.any(Number),
       openTickets: expect.any(Number),
-      systemHealthPct: expect.any(Number),
       compareLabel: expect.any(String),
     });
     expect(Array.isArray(result.recentActivity)).toBe(true);
@@ -117,16 +116,28 @@ describe("admin.summary RBAC", () => {
   });
 });
 
-describe("admin.summary fallback values when DB is offline", () => {
-  it("returns the seed defaults that match the master spec", async () => {
+describe("admin.summary when DB is offline", () => {
+  it("reports honest zeros/empty arrays, never fabricated positive numbers", async () => {
+    // Was: this test asserted a hardcoded "seed defaults" shape
+    // (revenueMTD 127430, activeClients 62, etc) was the *expected,
+    // correct* behavior when the database is unreachable - i.e. it
+    // encoded the fabrication bug as a passing test. A real "no data yet"
+    // state must be indistinguishable from a real "genuinely zero
+    // activity" state, and both must render as 0, not a fake positive
+    // number dressed up as a believable KPI.
     const caller = appRouter.createCaller(makeCtx("admin"));
     const r = await caller.admin.summary();
-    expect(r.kpis.revenueMTD).toBe(127_430);
-    expect(r.kpis.activeClients).toBe(62);
-    expect(r.kpis.aiScans).toBe(1_247);
-    expect(r.kpis.openProjects).toBe(23);
-    expect(r.kpis.openTickets).toBe(14);
-    expect(r.kpis.systemHealthPct).toBeCloseTo(99.99, 2);
+    expect(r.kpis.revenueMTD).toBe(0);
+    expect(r.kpis.activeClients).toBe(0);
+    expect(r.kpis.aiScans).toBe(0);
+    expect(r.kpis.openProjects).toBe(0);
+    expect(r.kpis.openTickets).toBe(0);
+    expect(r.kpis.revenueDelta).toBe(0);
+    expect(r.kpis.activeClientsDelta).toBe(0);
+    expect(r.kpis.openProjectsDelta).toBe(0);
+    expect(r.kpis.openTicketsDelta).toBe(0);
+    expect(r.recentActivity).toEqual([]);
+    expect(r.liveFeed).toEqual([]);
   });
 });
 

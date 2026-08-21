@@ -199,7 +199,6 @@ export default function ExecutiveOverview() {
   const trendGreen = useMemo(() => [4, 6, 8, 7, 10, 12, 13, 14, 16, 18, 19, 22], []);
   const trendBlue = useMemo(() => [12, 14, 13, 16, 18, 17, 19, 20, 22, 21, 23, 24], []);
   const trendRed = useMemo(() => [22, 21, 19, 16, 14, 12, 10, 8, 9, 7, 6, 5], []);
-  const trendHealth = useMemo(() => [99.7, 99.8, 99.9, 99.95, 99.9, 99.99, 99.99, 99.97, 99.99, 99.99, 99.99, 99.99], []);
 
   const isDemo = !kpis;
 
@@ -221,7 +220,7 @@ export default function ExecutiveOverview() {
         </div>
       )}
       {/* Row 1 — KPI strip */}
-      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         <KpiTile
           label="Total Revenue (MTD)"
           value={kpis ? `€${kpis.revenueMTD.toLocaleString()}` : "—"}
@@ -269,17 +268,6 @@ export default function ExecutiveOverview() {
           trend={trendRed}
           trendColor="#F87171"
           trendFill="rgba(248,113,113,0.18)"
-        />
-        <KpiTile
-          label="System Health"
-          value={kpis ? `${kpis.systemHealthPct.toFixed(2)}%` : "—"}
-          delta={0}
-          caption={kpis ? "" : "awaiting first probe"}
-          Icon={Heart}
-          trend={trendHealth}
-          trendColor="#34D399"
-          trendFill="rgba(52,211,153,0.18)"
-          status={{ label: "Excellent", tone: "green" }}
         />
       </section>
 

@@ -124,14 +124,16 @@ export interface AdminSummaryKpis {
   revenueMTD: number;
   revenueDelta: number;
   activeClients: number;
+  /** 0 when no real month-over-month comparison basis exists yet (see buildSummary()). */
   activeClientsDelta: number;
   aiScans: number;
   aiScansDelta: number;
   openProjects: number;
+  /** 0 when no real month-over-month comparison basis exists yet (see buildSummary()). */
   openProjectsDelta: number;
   openTickets: number;
+  /** 0 when no real month-over-month comparison basis exists yet (see buildSummary()). */
   openTicketsDelta: number;
-  systemHealthPct: number;
   compareLabel: string;
 }
 
@@ -169,19 +171,26 @@ async function buildSummary(): Promise<AdminSummary> {
 
   const db = await getDb();
   if (!db) {
+    // Was: returned a full shape of hardcoded numbers (127430 revenue, 62
+    // clients, 99.99% "system health" etc) presented as a normal successful
+    // response - indistinguishable from real data. Fixed to honestly report
+    // "no data" (real zeros/empty arrays) instead of fabricating positive
+    // numbers, while still succeeding rather than throwing - every other
+    // read in this file degrades the same way (safe() wraps each query with
+    // a zero/empty fallback) rather than taking the whole Executive
+    // Overview page down over one unreachable database call.
     return {
       kpis: {
-        revenueMTD: 127_430,
-        revenueDelta: 18.4,
-        activeClients: 62,
-        activeClientsDelta: 12.6,
-        aiScans: 1_247,
-        aiScansDelta: 24.3,
-        openProjects: 23,
-        openProjectsDelta: 15.0,
-        openTickets: 14,
-        openTicketsDelta: -7.1,
-        systemHealthPct: 99.99,
+        revenueMTD: 0,
+        revenueDelta: 0,
+        activeClients: 0,
+        activeClientsDelta: 0,
+        aiScans: 0,
+        aiScansDelta: 0,
+        openProjects: 0,
+        openProjectsDelta: 0,
+        openTickets: 0,
+        openTicketsDelta: 0,
         compareLabel: "last month",
       },
       recentActivity: [],
@@ -192,6 +201,8 @@ async function buildSummary(): Promise<AdminSummary> {
 
   const [
     activeClients,
+    newOrgsThisMonth,
+    newOrgsLastMonth,
     openProjects,
     openTickets,
     aiScansThisMonth,
@@ -203,6 +214,22 @@ async function buildSummary(): Promise<AdminSummary> {
   ] = await Promise.all([
     safe(async () => {
       const r = await db.select({ c: count() }).from(organizations);
+      return Number(r[0]?.c ?? 0);
+    }, 0),
+    safe(async () => {
+      const r = await db
+        .select({ c: count() })
+        .from(organizations)
+        .where(gte(organizations.createdAt, new Date(startOfMonthMs) as any));
+      return Number(r[0]?.c ?? 0);
+    }, 0),
+    safe(async () => {
+      const r = await db
+        .select({ c: count() })
+        .from(organizations)
+        .where(
+          sql`${organizations.createdAt} >= ${new Date(previousMonthStartMs)} AND ${organizations.createdAt} < ${new Date(startOfMonthMs)}`,
+        );
       return Number(r[0]?.c ?? 0);
     }, 0),
     safe(async () => {
@@ -273,10 +300,13 @@ async function buildSummary(): Promise<AdminSummary> {
     }, [] as Array<{ id: number; name: string; source: string; createdAt: Date }>),
   ]);
 
-  const fallback = (live: number, seed: number) => (live > 0 ? live : seed);
-
-  const revenueMTD = invoicePaidSumThisMonth > 0 ? invoicePaidSumThisMonth / 100 : 127_430;
-  const revenueLast = invoicePaidSumLastMonth > 0 ? invoicePaidSumLastMonth / 100 : 107_640;
+  // Real values only - a genuine 0 (no revenue/clients/scans yet) must render
+  // as 0, not silently become a fabricated positive number. Was: every one
+  // of these fell back to a hardcoded "seed" value whenever the real count
+  // was 0, making an honest "nothing has happened yet" state indistinguishable
+  // from real activity.
+  const revenueMTD = invoicePaidSumThisMonth / 100;
+  const revenueLast = invoicePaidSumLastMonth / 100;
   const revenueDelta = revenueLast === 0 ? 0 : ((revenueMTD - revenueLast) / revenueLast) * 100;
 
   const aiScansDelta =
@@ -285,6 +315,19 @@ async function buildSummary(): Promise<AdminSummary> {
         ? 100
         : 0
       : ((aiScansThisMonth - aiScansLastMonth) / aiScansLastMonth) * 100;
+
+  // Real month-over-month delta for "new clients" (organizations created
+  // this period vs last), using the same pattern as aiScansDelta above.
+  // openProjects/openTickets are live-state counts (currently open right
+  // now) with no historical snapshot in this schema to compare against, so
+  // their deltas are honestly 0 rather than a fabricated trend - see the
+  // AdminSummaryKpis doc comments.
+  const activeClientsDelta =
+    newOrgsLastMonth === 0
+      ? newOrgsThisMonth > 0
+        ? 100
+        : 0
+      : ((newOrgsThisMonth - newOrgsLastMonth) / newOrgsLastMonth) * 100;
 
   const activity: AdminSummary["recentActivity"] = [];
   for (const b of recentBookings) {
@@ -317,15 +360,14 @@ async function buildSummary(): Promise<AdminSummary> {
     kpis: {
       revenueMTD: Math.round(revenueMTD),
       revenueDelta: Number(revenueDelta.toFixed(1)),
-      activeClients: fallback(activeClients, 62),
-      activeClientsDelta: 12.6,
-      aiScans: fallback(aiScansThisMonth, 1_247),
+      activeClients,
+      activeClientsDelta: Number(activeClientsDelta.toFixed(1)),
+      aiScans: aiScansThisMonth,
       aiScansDelta: Number(aiScansDelta.toFixed(1)),
-      openProjects: fallback(openProjects, 23),
-      openProjectsDelta: 15.0,
-      openTickets: fallback(openTickets, 14),
-      openTicketsDelta: -7.1,
-      systemHealthPct: 99.99,
+      openProjects,
+      openProjectsDelta: 0,
+      openTickets,
+      openTicketsDelta: 0,
       compareLabel: "last month",
     },
     recentActivity: activity.slice(0, 12),
