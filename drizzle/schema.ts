@@ -1972,3 +1972,58 @@ export const workflowRuns = pgTable(
 );
 export type WorkflowRun = typeof workflowRuns.$inferSelect;
 export type InsertWorkflowRun = typeof workflowRuns.$inferInsert;
+
+/**
+ * Milestone 2 §2.6 — integration/webhook registry. Reuses the same closed
+ * `triggerType` enum the workflow engine uses (real events this app
+ * emits) so a super_admin subscribes an outbound URL to one of the same
+ * known events, not an arbitrary string. `secret`, when set, is used to
+ * HMAC-SHA256-sign the delivered payload (`X-IOSKY-Signature` header) so
+ * the receiving endpoint can verify authenticity — same shape as
+ * Resend's/most providers' own outbound webhook signing convention. Every
+ * dispatch attempt is logged to `webhook_deliveries`, success or failure,
+ * via `server/webhookDispatcher.ts` — never allowed to block or fail the
+ * real operation that triggered it (same non-blocking pattern as the
+ * workflow engine above).
+ */
+export const webhookRegistrations = pgTable(
+  "webhook_registrations",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 200 }).notNull(),
+    url: text("url").notNull(),
+    secret: varchar("secret", { length: 128 }),
+    triggerType: workflowDefinitionsTriggerTypeEnum("triggerType").notNull(),
+    /** 0/1, matching this schema's boolean-as-integer convention. */
+    enabled: integer("enabled").default(1).notNull(),
+    createdByUserId: integer("createdByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [index("webhook_registrations_trigger_type_idx").on(table.triggerType)],
+);
+export type WebhookRegistration = typeof webhookRegistrations.$inferSelect;
+export type InsertWebhookRegistration = typeof webhookRegistrations.$inferInsert;
+
+export const webhookDeliveries = pgTable(
+  "webhook_deliveries",
+  {
+    id: serial("id").primaryKey(),
+    webhookRegistrationId: integer("webhookRegistrationId")
+      .notNull()
+      .references(() => webhookRegistrations.id, { onDelete: "cascade" }),
+    triggerType: workflowDefinitionsTriggerTypeEnum("triggerType").notNull(),
+    triggerEntityRef: varchar("triggerEntityRef", { length: 128 }),
+    /** 0/1 — matches boolean-as-integer convention. Null statusCode means the request never got a response (network/timeout error). */
+    success: integer("success").notNull(),
+    statusCode: integer("statusCode"),
+    errorMessage: text("errorMessage"),
+    requestedAt: timestamp("requestedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("webhook_deliveries_registration_id_idx").on(table.webhookRegistrationId),
+    index("webhook_deliveries_requested_at_idx").on(table.requestedAt),
+  ],
+);
+export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
+export type InsertWebhookDelivery = typeof webhookDeliveries.$inferInsert;

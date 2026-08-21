@@ -23,7 +23,7 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 | 2.3 Email Productionisation | ✅ Delivery tracking done · ⛔ Resend domain + Supabase Auth email routing blocked |
 | 2.4 Core Workflow Verification & Conversion | ✅ Done this session — every previously-undisclosed fabricated panel on Executive Overview now wired to real data or disclosed; the underlying admin.summary fabrication bug fixed too |
 | 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, Business Intelligence dashboards, platform configuration store, MFA compliance visibility, and AI governance config done and tested; real third-party integration/notification-template management and a hard blocking MFA gate NOT started (both deliberately deferred — see detail below) |
-| 2.6 Document Lifecycle / Workflow Engine / Integrations | 🔶 Partial — document lifecycle and the workflow-definition engine done and tested; integration/webhook registry NOT started |
+| 2.6 Document Lifecycle / Workflow Engine / Integrations | ✅ Done — document lifecycle, workflow-definition engine, and integration/webhook registry all built and tested |
 | 2.7 Notification Infrastructure | ⏭ Not started |
 
 **This session's central finding — the connected Supabase project is gone.** The `.env` credentials from the session that did RM-41..60 (a different session than the one that wrote §2.1–2.4 above, which had no credentials at all) no longer work: `rhgzcgcqlypuvislwjlf.supabase.co` returns `NXDOMAIN` — the project's own subdomain doesn't resolve in DNS at all, not a transient outage. Confirmed via direct `nslookup`, a raw Postgres connection attempt (pooler responds "tenant/user not found"), and a plain `fetch` to the Auth health endpoint (connection refused). This means **migrations `0006` through `0009` are still authored-and-locally-verified only, same as before** — nothing in this session or the previous one has actually reached a live database. A real test-suite bug this surfaced and fixed: `server/rls.negative.test.ts`'s skip condition only checked that env vars were *present*, not that the project was *reachable*, so it hard-failed the whole suite instead of skipping cleanly — now does a real reachability probe first.
@@ -761,10 +761,8 @@ Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 468/468 passing,
 
 ## 2.6 Document Lifecycle, Workflow Engine & Integration Layer
 
-**Status: 🔶 Partial. Document lifecycle (versioning/approval/rejection/
-retention) done and tested. Workflow-definition engine and integration/
-webhook registry not started — both are new subsystems, not extensions of
-anything that exists.**
+**Status: ✅ Done. Document lifecycle, the workflow-definition engine, and
+the integration/webhook registry are all built, RLS-hardened, and tested.**
 
 ### Document lifecycle (versioning, approval/rejection, retention)
 
@@ -882,10 +880,58 @@ Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 491/491 passing,
 33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
 `drizzle-kit generate` → "No schema changes, nothing to migrate".
 
-### Not started
+### Integration/webhook registry
 
-- **Integration/webhook registry** — outbound webhook registration +
-  delivery log + dispatch on real events. Nothing like this exists yet.
+Reuses the same closed `triggerType` enum the workflow engine uses (real
+events this app emits) so a super_admin subscribes an outbound URL to a
+known event, not an arbitrary string — outbound dispatch, not a general
+inbound-integration platform.
+
+- `drizzle/schema.ts` + `drizzle/0014_webhook_registry.sql`: new
+  `webhook_registrations` (name/url/secret/triggerType/enabled/
+  createdByUserId) and `webhook_deliveries` (one row per dispatch attempt:
+  success/statusCode/errorMessage) tables. RLS: registrations are
+  super_admin-exclusive for **both** read and write (stricter than
+  workflow definitions — a registration holds a signing secret, so unlike
+  workflow definitions this isn't plain-admin-readable); deliveries are
+  admin-readable, admin-write (only the server-side dispatcher writes
+  them). Same apply/verify caveat as every migration since `0006`.
+- `server/webhookDispatcher.ts` (new): `dispatchWebhooksForTrigger`
+  mirrors `workflowEngine.ts`'s shape — POSTs a JSON payload to every
+  enabled registration matching the trigger, HMAC-SHA256-signs the body
+  (`X-IOSKY-Signature` header) when a secret is set, records one
+  `webhook_deliveries` row per attempt, and never throws — a bad URL,
+  timeout (8s `AbortSignal.timeout`), non-2xx response, or network error
+  is caught and logged as a failed delivery instead of breaking the real
+  operation that fired it (same non-blocking guarantee as the workflow
+  engine).
+- `server/routers/admin.ts`: `admin.webhookRegistrations`
+  (`superAdminProcedure` read), `admin.webhookDeliveries` (`adminProcedure`
+  read), `admin.createWebhookRegistration` (validates `https://` only —
+  basic SSRF-reduction given a super_admin is already a trusted actor, not
+  full SSRF protection), `admin.setWebhookRegistrationEnabled`. Wired into
+  the same real call site as the workflow engine:
+  `admin.reviewDocument` now also dispatches
+  `document_approved`/`document_rejected` webhooks after a review
+  decision.
+- `client/.../AutomationsAnalyticsRest.tsx`'s `Automations` page: new
+  super_admin-only "Webhook registry" side panel — list + enable/disable
+  toggle + a "New webhook" registration flow (`window.prompt`-based,
+  matching the established convention).
+- `server/webhookDispatcher.test.ts` (new, 5 tests) +
+  `server/admin.webhooks.test.ts` (new, 8 tests): dispatch behavior
+  (no-match no-op, successful POST + delivery record, HMAC signature only
+  sent when a secret is set, non-2xx response caught as a failed delivery
+  not a throw, network error caught the same way), router RBAC (read
+  split between super_admin-only registrations and admin-readable
+  deliveries), https-only URL validation, NOT_FOUND.
+
+Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 504/504 passing,
+33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
+`drizzle-kit generate` → "No schema changes, nothing to migrate".
+
+**Milestone 2 §2.6 is now fully done** — document lifecycle, workflow
+engine, and integration/webhook registry all built and tested.
 
 ---
 
@@ -893,8 +939,6 @@ Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 491/491 passing,
 
 Not yet started:
 - **2.5** (remainder) — see the not-started list above (§2.5 section).
-- **2.6** (remainder) — workflow-definition engine, integration/webhook
-  registry — see immediately above.
 - **2.7 Notification Infrastructure** — a central typed notification write
   service, a real Notification Center UI (bell/list/mark-as-read — currently
   non-functional per the original Milestone 1 audit), a schema extension

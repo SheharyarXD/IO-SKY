@@ -61,8 +61,13 @@ import {
   createWorkflowDefinition,
   setWorkflowDefinitionEnabled,
   listWorkflowRuns,
+  listWebhookRegistrations,
+  createWebhookRegistration,
+  setWebhookRegistrationEnabled,
+  listWebhookDeliveries,
 } from "../db";
 import { runWorkflowsForTrigger } from "../workflowEngine";
+import { dispatchWebhooksForTrigger } from "../webhookDispatcher";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import {
   organizations,
@@ -1266,11 +1271,9 @@ export const adminRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Document not found." });
       }
       await recordAdminEvent({ ctx, reason: `admin.document.${input.decision}(${input.documentId})` });
-      await runWorkflowsForTrigger(
-        input.decision === "approved" ? "document_approved" : "document_rejected",
-        { documentName: updated.name },
-        String(input.documentId),
-      );
+      const triggerType = input.decision === "approved" ? "document_approved" : "document_rejected";
+      await runWorkflowsForTrigger(triggerType, { documentName: updated.name }, String(input.documentId));
+      await dispatchWebhooksForTrigger(triggerType, { documentId: input.documentId, name: updated.name, status: updated.status }, String(input.documentId));
       return updated;
     }),
   /** Milestone 2 §2.6 — documented retention policy record (not an enforced TTL, see schema doc comment). */
@@ -1338,6 +1341,56 @@ export const adminRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Workflow definition not found." });
       }
       await recordAdminEvent({ ctx, reason: `admin.workflow.set_enabled(${input.id}:${input.enabled})` });
+      return updated;
+    }),
+
+  // -- Integration/webhook registry (Milestone 2 §2.6) ----------------------
+  /** super_admin-only read: registrations carry a signing secret, so unlike workflow definitions this isn't plain-admin-readable. */
+  webhookRegistrations: superAdminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.webhook_registrations" });
+    return safe(() => listWebhookRegistrations(), []);
+  }),
+  webhookDeliveries: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.webhook_deliveries" });
+    return safe(() => listWebhookDeliveries(100), []);
+  }),
+  createWebhookRegistration: superAdminProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(200),
+        url: z.string().url().refine((u) => u.startsWith("https://"), "Webhook URL must use https://"),
+        secret: z.string().min(8).max(128).optional(),
+        triggerType: z.enum([
+          "document_approved",
+          "document_rejected",
+          "booking_completed",
+          "lead_won",
+          "ai_scan_completed",
+        ]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const created = await createWebhookRegistration({
+        name: input.name,
+        url: input.url,
+        secret: input.secret ?? null,
+        triggerType: input.triggerType,
+        createdByUserId: ctx.user.id,
+      });
+      if (!created) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create webhook registration." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.webhook.create(${created.id})` });
+      return created;
+    }),
+  setWebhookRegistrationEnabled: superAdminProcedure
+    .input(z.object({ id: z.number().int().positive(), enabled: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const updated = await setWebhookRegistrationEnabled(input.id, input.enabled);
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Webhook registration not found." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.webhook.set_enabled(${input.id}:${input.enabled})` });
       return updated;
     }),
   developers: adminProcedure.query(async ({ ctx }) => {

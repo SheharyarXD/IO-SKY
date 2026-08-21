@@ -101,6 +101,34 @@ export function Automations() {
     onSuccess: () => utils.admin.workflowDefinitions.invalidate(),
     onError: (e) => window.alert(e.message || "Could not create workflow"),
   });
+  const webhooksQ = trpc.admin.webhookRegistrations.useQuery(undefined, { staleTime: 30_000, enabled: isSuperAdmin });
+  const createWebhook = trpc.admin.createWebhookRegistration.useMutation({
+    onSuccess: () => utils.admin.webhookRegistrations.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not register webhook"),
+  });
+  const toggleWebhook = trpc.admin.setWebhookRegistrationEnabled.useMutation({
+    onSuccess: () => utils.admin.webhookRegistrations.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not update webhook"),
+  });
+
+  const onNewWebhook = () => {
+    const name = window.prompt("Webhook name?");
+    if (!name?.trim()) return;
+    const url = window.prompt("Webhook URL (https:// only)?");
+    if (!url?.trim()) return;
+    const triggerType = window.prompt(`Trigger type?\n(${TRIGGER_TYPES.join(" / ")})`, TRIGGER_TYPES[0]);
+    if (!triggerType || !(TRIGGER_TYPES as readonly string[]).includes(triggerType)) {
+      window.alert(`Not a valid trigger. Must be one of: ${TRIGGER_TYPES.join(", ")}`);
+      return;
+    }
+    const secret = window.prompt("Signing secret (min 8 chars, optional — leave blank for none)?") || undefined;
+    createWebhook.mutate({
+      name: name.trim(),
+      url: url.trim(),
+      triggerType: triggerType as (typeof TRIGGER_TYPES)[number],
+      secret: secret?.trim() || undefined,
+    });
+  };
 
   const onNewWorkflow = () => {
     const name = window.prompt("Workflow name?");
@@ -163,20 +191,51 @@ export function Automations() {
         )
       }
       aside={
-        <SideCard title="Recent runs">
-          {runs.length === 0 ? (
-            <p className="text-[12.5px] text-white/45">No workflow runs recorded yet.</p>
-          ) : (
-            <ul className="space-y-2.5 text-[12.5px] text-white/85">
-              {runs.slice(0, 8).map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-2">
-                  <span className="truncate">{r.triggerType}{r.triggerEntityRef ? ` #${r.triggerEntityRef}` : ""}</span>
-                  <span className={`font-mono shrink-0 ${r.status === "succeeded" ? "text-emerald-400" : "text-red-400"}`}>{r.status}</span>
-                </li>
-              ))}
-            </ul>
+        <>
+          <SideCard title="Recent runs">
+            {runs.length === 0 ? (
+              <p className="text-[12.5px] text-white/45">No workflow runs recorded yet.</p>
+            ) : (
+              <ul className="space-y-2.5 text-[12.5px] text-white/85">
+                {runs.slice(0, 8).map((r) => (
+                  <li key={r.id} className="flex items-center justify-between gap-2">
+                    <span className="truncate">{r.triggerType}{r.triggerEntityRef ? ` #${r.triggerEntityRef}` : ""}</span>
+                    <span className={`font-mono shrink-0 ${r.status === "succeeded" ? "text-emerald-400" : "text-red-400"}`}>{r.status}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SideCard>
+          {isSuperAdmin && (
+            <SideCard title="Webhook registry">
+              <div className="space-y-2.5">
+                {(webhooksQ.data ?? []).length === 0 ? (
+                  <p className="text-[12.5px] text-white/45">No webhooks registered yet.</p>
+                ) : (
+                  <ul className="space-y-2 text-[12.5px] text-white/85">
+                    {(webhooksQ.data ?? []).map((w: any) => (
+                      <li key={w.id} className="flex items-center justify-between gap-2">
+                        <span className="truncate">{w.name} · {w.triggerType}</span>
+                        <button
+                          onClick={() => toggleWebhook.mutate({ id: w.id, enabled: w.enabled !== 1 })}
+                          className="font-mono text-[11px] shrink-0 text-[#FF6A00] hover:underline"
+                        >
+                          {w.enabled === 1 ? "Disable" : "Enable"}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  onClick={onNewWebhook}
+                  className="w-full text-[11.5px] font-mono uppercase tracking-[0.16em] py-1.5 rounded-md border border-white/[0.08] hover:border-[#FF6A00]/45 hover:bg-[#FF6A00]/10 text-white/75 hover:text-white transition-colors"
+                >
+                  New webhook
+                </button>
+              </div>
+            </SideCard>
           )}
-        </SideCard>
+        </>
       }
     />
         );
