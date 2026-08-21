@@ -155,6 +155,8 @@ export interface AdminSummary {
     occurredAtMs: number;
   }>;
   liveFeed: Array<{ id: string; message: string; occurredAtMs: number }>;
+  /** Real day-by-day paid revenue for the current month, sorted ascending by day. Empty when no invoices have been paid yet. */
+  revenueByDay: Array<{ day: string; amountCents: number }>;
   generatedAtMs: number;
 }
 
@@ -195,6 +197,7 @@ async function buildSummary(): Promise<AdminSummary> {
       },
       recentActivity: [],
       liveFeed: [],
+      revenueByDay: [],
       generatedAtMs: now,
     };
   }
@@ -209,6 +212,7 @@ async function buildSummary(): Promise<AdminSummary> {
     aiScansLastMonth,
     invoicePaidSumThisMonth,
     invoicePaidSumLastMonth,
+    revenueByDayThisMonth,
     recentBookings,
     recentLeads,
   ] = await Promise.all([
@@ -284,6 +288,25 @@ async function buildSummary(): Promise<AdminSummary> {
         );
       return Number(r[0]?.s ?? 0);
     }, 0),
+    // Real day-by-day paid-revenue series for the Executive Overview's
+    // Revenue Intelligence chart (client/src/pages/admin/sections/
+    // ExecutiveOverview.tsx) - was previously a hand-drawn SVG shape with
+    // hardcoded points and a fabricated "May 20, 2026 - EUR127,430"
+    // annotation, entirely disconnected from real invoice data.
+    safe(async () => {
+      const rows = await db
+        .select({
+          day: sql<string>`to_char(to_timestamp(${clientInvoices.paidMs} / 1000.0), 'YYYY-MM-DD')`,
+          s: sql<number>`COALESCE(SUM(${clientInvoices.amountCents}), 0)`,
+        })
+        .from(clientInvoices)
+        .where(
+          sql`${clientInvoices.status} = 'paid' AND ${clientInvoices.paidMs} >= ${startOfMonthMs}`,
+        )
+        .groupBy(sql`1`)
+        .orderBy(sql`1`);
+      return rows.map((r) => ({ day: r.day, amountCents: Number(r.s) }));
+    }, [] as Array<{ day: string; amountCents: number }>),
     safe(async () => listRecentBookings(8), [] as Awaited<ReturnType<typeof listRecentBookings>>),
     safe(async () => {
       const rows = await db
@@ -372,6 +395,7 @@ async function buildSummary(): Promise<AdminSummary> {
     },
     recentActivity: activity.slice(0, 12),
     liveFeed: feed,
+    revenueByDay: revenueByDayThisMonth,
     generatedAtMs: now,
   };
 }

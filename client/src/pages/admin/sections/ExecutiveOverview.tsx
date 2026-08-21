@@ -12,6 +12,7 @@
  */
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAuditedAction } from "./_shared/ModuleState";
 import { cn } from "@/lib/utils";
 import IOSkyLogo from "@/components/IOSkyLogo";
 import {
@@ -79,6 +80,58 @@ function Sparkline({
   );
 }
 
+/**
+ * Real day-by-day revenue trend for the Revenue Intelligence panel — was a
+ * hand-drawn SVG shape with hardcoded points and a fabricated "May 20,
+ * 2026 - EUR127,430" annotation, unrelated to any real data. Driven by
+ * `AdminSummary.revenueByDay` (server/routers/admin.ts's buildSummary()).
+ * Unlike `Sparkline` above (fixed 96px width, used inside a KPI tile),
+ * this needs to fill its panel's full width, so it's a separate component
+ * rather than a Sparkline variant.
+ */
+function RevenueTrendChart({ points }: { points: Array<{ day: string; amountCents: number }> }) {
+  const w = 320;
+  const h = 150;
+  if (points.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-[11.5px] text-white/40">
+        No paid invoices yet this month
+      </div>
+    );
+  }
+  // Cumulative month-to-date running total, matching the "climbing through
+  // the month" shape the panel is meant to convey.
+  let running = 0;
+  const cumulative = points.map((p) => (running += p.amountCents / 100));
+  const min = 0;
+  const max = Math.max(...cumulative);
+  const span = max - min || 1;
+  const step = points.length > 1 ? w / (points.length - 1) : 0;
+  const coords = cumulative.map((v, i) => [i * step, h - ((v - min) / span) * (h - 12) - 6] as const);
+  const line = coords.map(([x, y]) => `${x},${y}`).join(" ");
+  const area = `0,${h} ${line} ${w},${h}`;
+  const last = points[points.length - 1];
+  const lastTotal = cumulative[cumulative.length - 1];
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FF6A00" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#FF6A00" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon fill="url(#rev)" points={area} />
+      <polyline fill="none" stroke="#FF6A00" strokeWidth={1.8} strokeLinejoin="round" points={line} />
+      {coords.length > 0 && (
+        <circle cx={coords[coords.length - 1][0]} cy={coords[coords.length - 1][1]} r={3} fill="#FF6A00" />
+      )}
+      <text x={w / 2} y={12} textAnchor="middle" fill="#E6EAF0" fontSize="9" fontFamily="monospace">
+        {last.day} · €{Math.round(lastTotal).toLocaleString()} cumulative
+      </text>
+    </svg>
+  );
+}
+
 function Donut({
   segments,
   size = 132,
@@ -116,6 +169,26 @@ function Donut({
         return el;
       })}
     </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sample-data disclosure badge — same visual convention as OperationalPage's
+// page-level `sampleData` badge (client/src/pages/admin/sections/_shared/
+// OperationalPage.tsx), sized for a panel header instead of a page header.
+// Applied to every panel below that has no real backing query — Automations/
+// Campaigns/Agents/Analytics elsewhere in the admin console already use the
+// page-level version of this same pattern for the same reason.
+// ---------------------------------------------------------------------------
+
+function SampleBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-amber-400/40 bg-amber-400/10 font-mono text-[9px] uppercase tracking-[0.14em] text-amber-300"
+      title="Illustrative placeholder — not live data. No backing system exists yet."
+    >
+      Sample
+    </span>
   );
 }
 
@@ -179,6 +252,33 @@ function KpiTile({ label, value, delta, caption, Icon, trend, trendColor, trendF
 }
 
 // ---------------------------------------------------------------------------
+// Recent Activity — real data (AdminSummary.recentActivity)
+// ---------------------------------------------------------------------------
+
+const ACTIVITY_ICON: Record<string, typeof Users> = {
+  lead: Users,
+  scan: ScanSearch,
+  report: FileWarning,
+  payment: Receipt,
+  developer: ShieldAlert,
+  automation: AlertTriangle,
+  security: ShieldAlert,
+  client: Users,
+};
+
+function timeAgo(ms: number) {
+  if (!ms) return "—";
+  const diff = Date.now() - ms;
+  const min = Math.round(diff / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const d = Math.round(hr / 24);
+  return `${d}d ago`;
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -187,6 +287,7 @@ export default function ExecutiveOverview() {
     refetchOnWindowFocus: false,
     staleTime: 30_000,
   });
+  const audited = useAuditedAction();
 
   // Stable mock fallbacks so the screen never feels empty during early
   // milestones — replaced by live data the moment the backend wires more
@@ -279,10 +380,7 @@ export default function ExecutiveOverview() {
             <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
               AI Operations Agent
             </div>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FF6A00]/15 border border-[#FF6A00]/35 text-[#FF6A00] font-mono text-[10px] uppercase tracking-[0.18em]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00] animate-pulse shadow-[0_0_8px_#FF6A00]" />
-              Live
-            </span>
+            <SampleBadge />
           </div>
 
           {/* IO SYMBOL replaces robot — neural pulse halo */}
@@ -347,8 +445,11 @@ export default function ExecutiveOverview() {
 
         {/* Operational Command Center */}
         <div className="lg:col-span-5 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4 flex flex-col">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
-            Operational Command Center
+          <div className="flex items-center justify-between">
+            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
+              Operational Command Center
+            </div>
+            <SampleBadge />
           </div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="relative h-[220px] rounded-[14px] border border-white/[0.05] bg-[radial-gradient(circle_at_50%_50%,rgba(255,106,0,0.08)_0%,rgba(11,16,32,0.6)_60%)] flex items-center justify-center overflow-hidden">
@@ -417,8 +518,11 @@ export default function ExecutiveOverview() {
         {/* Critical Alerts */}
         <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4 flex flex-col">
           <div className="flex items-center justify-between">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
-              Critical Alerts
+            <div className="flex items-center gap-2">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
+                Critical Alerts
+              </div>
+              <SampleBadge />
             </div>
             <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
           </div>
@@ -464,52 +568,39 @@ export default function ExecutiveOverview() {
             </button>
           </div>
           <div className="mt-2 flex items-end gap-2">
-            <div className="font-display font-semibold text-[26px] tracking-tight">€127,430</div>
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-400/10 text-emerald-300 border border-emerald-400/25 text-[11px] font-mono">
-              <TrendingUp className="w-3 h-3" /> 18.4%
-            </span>
-          </div>
-          <div className="text-[11px] text-white/45">vs Apr 20, 2026</div>
-          <div className="mt-3 relative h-[150px] rounded-[12px] bg-[radial-gradient(circle_at_70%_30%,rgba(255,106,0,0.08)_0%,rgba(11,16,32,0)_70%)] border border-white/[0.04] overflow-hidden">
-            <svg viewBox="0 0 320 150" className="w-full h-full">
-              <defs>
-                <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#FF6A00" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#FF6A00" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <polyline
-                fill="none"
-                stroke="#FF6A00"
-                strokeWidth={1.8}
-                points="0,120 30,110 60,100 90,95 120,80 150,72 180,60 210,50 240,38 270,30 300,22 320,18"
-              />
-              <polygon fill="url(#rev)" points="0,120 30,110 60,100 90,95 120,80 150,72 180,60 210,50 240,38 270,30 300,22 320,18 320,150 0,150" />
-              <polyline
-                fill="none"
-                stroke="#FFB347"
-                strokeWidth={1.4}
-                strokeDasharray="3,3"
-                points="0,135 60,128 120,118 180,108 240,90 300,72"
-              />
-              <circle cx={300} cy={22} r={3} fill="#FF6A00" />
-              <text x="180" y="14" fill="#E6EAF0" fontSize="9" fontFamily="monospace">May 20, 2026 · €127,430</text>
-            </svg>
-            <div className="absolute bottom-1 left-2 right-2 flex justify-between text-[9.5px] font-mono text-white/35">
-              {["May 1", "May 5", "May 10", "May 15", "May 20", "May 25", "May 30"].map(d => <span key={d}>{d}</span>)}
+            <div className="font-display font-semibold text-[26px] tracking-tight">
+              {kpis ? `€${kpis.revenueMTD.toLocaleString()}` : "—"}
             </div>
+            {kpis && (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-mono",
+                  kpis.revenueDelta >= 0
+                    ? "bg-emerald-400/10 text-emerald-300 border border-emerald-400/25"
+                    : "bg-red-500/10 text-red-300 border border-red-400/25",
+                )}
+              >
+                {kpis.revenueDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {Math.abs(kpis.revenueDelta).toFixed(1)}%
+              </span>
+            )}
+          </div>
+          <div className="text-[11px] text-white/45">{kpis ? `vs ${kpis.compareLabel}` : "awaiting first billing cycle"}</div>
+          <div className="mt-3 relative h-[150px] rounded-[12px] bg-[radial-gradient(circle_at_70%_30%,rgba(255,106,0,0.08)_0%,rgba(11,16,32,0)_70%)] border border-white/[0.04] overflow-hidden">
+            <RevenueTrendChart points={data?.revenueByDay ?? []} />
           </div>
           <div className="mt-2 flex items-center gap-3 text-[10.5px] font-mono text-white/55">
-            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FF6A00]" /> MTD Revenue</span>
-            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FFB347]" /> Projected</span>
-            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-white/30" /> Last Month</span>
+            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FF6A00]" /> MTD Revenue (cumulative, real)</span>
           </div>
         </div>
 
         {/* Automation Center */}
         <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
           <div className="flex items-center justify-between">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Automation Center</div>
+            <div className="flex items-center gap-2">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Automation Center</div>
+              <SampleBadge />
+            </div>
             <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
           </div>
           <div className="mt-3 flex items-center justify-center relative">
@@ -557,22 +648,23 @@ export default function ExecutiveOverview() {
         {/* AI Agents & IVR */}
         <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
           <div className="flex items-center justify-between">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">AI Agents & IVR Real-time</div>
+            <div className="flex items-center gap-2">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">AI Agents & IVR</div>
+              <SampleBadge />
+            </div>
             <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
           </div>
           <ul className="mt-3 space-y-2 text-[12px]">
             {[
-              { lab: "Outbound AI Calls", v: "24", d: "+18.5%", live: true, trend: trendOrange, c: "#FF6A00" },
-              { lab: "Inbound AI (IVR)", v: "37", d: "+11.3%", live: true, trend: trendBlue, c: "#60A5FA" },
-              { lab: "Calls Booked", v: "16", d: "+23.1%", today: true, trend: trendGreen, c: "#34D399" },
-              { lab: "Avg. Call Duration", v: "04:32", d: "-8.2%", today: true, trend: trendRed, c: "#F87171" },
-              { lab: "Escalations", v: "3", d: "+12.5%", today: true, trend: trendPurple, c: "#A78BFA" },
+              { lab: "Outbound AI Calls", v: "24", d: "+18.5%", trend: trendOrange, c: "#FF6A00" },
+              { lab: "Inbound AI (IVR)", v: "37", d: "+11.3%", trend: trendBlue, c: "#60A5FA" },
+              { lab: "Calls Booked", v: "16", d: "+23.1%", trend: trendGreen, c: "#34D399" },
+              { lab: "Avg. Call Duration", v: "04:32", d: "-8.2%", trend: trendRed, c: "#F87171" },
+              { lab: "Escalations", v: "3", d: "+12.5%", trend: trendPurple, c: "#A78BFA" },
             ].map(r => (
               <li key={r.lab} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-white/75 truncate">{r.lab}</span>
-                  {r.live && <span className="text-[9.5px] font-mono px-1 py-0.5 rounded bg-[#FF6A00]/15 text-[#FF6A00]">LIVE</span>}
-                  {r.today && <span className="text-[9.5px] font-mono px-1 py-0.5 rounded bg-white/[0.04] text-white/55">TODAY</span>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="font-mono">{r.v}</span>
@@ -590,27 +682,27 @@ export default function ExecutiveOverview() {
             <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Recent Activity</div>
             <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
           </div>
-          <ul className="mt-3 space-y-2">
-            {[
-              { Icon: Users, title: "New client onboarded", body: "TechVision Enterprises", ago: "2m ago" },
-              { Icon: ScanSearch, title: "AI scan completed", body: "Growth Accelerator Scan", ago: "15m ago" },
-              { Icon: FileWarning, title: "Report approved", body: "TechVision Report 2.0", ago: "25m ago" },
-              { Icon: Receipt, title: "Payment received", body: "Invoice #INV-2026-1297", ago: "40m ago" },
-              { Icon: ShieldAlert, title: "Developer access granted", body: "Temporary Access", ago: "1h ago" },
-              { Icon: AlertTriangle, title: "Automation workflow failed", body: "Report Generation", ago: "1h ago" },
-            ].map((row, i) => (
-              <li key={i} className="flex gap-2.5">
-                <div className="w-7 h-7 rounded-[8px] bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/65 shrink-0">
-                  <row.Icon className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[12px] text-[#E6EAF0] truncate">{row.title}</div>
-                  <div className="text-[10.5px] text-white/55 truncate">{row.body}</div>
-                  <div className="text-[10px] font-mono text-white/40">{row.ago}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {data && data.recentActivity.length === 0 ? (
+            <div className="mt-3 text-[11.5px] text-white/40">No activity yet</div>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {(data?.recentActivity ?? []).slice(0, 6).map((row) => {
+                const Icon = ACTIVITY_ICON[row.icon] ?? Users;
+                return (
+                  <li key={row.id} className="flex gap-2.5">
+                    <div className="w-7 h-7 rounded-[8px] bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/65 shrink-0">
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[12px] text-[#E6EAF0] truncate">{row.title}</div>
+                      <div className="text-[10.5px] text-white/55 truncate">{row.body}</div>
+                      <div className="text-[10px] font-mono text-white/40">{timeAgo(row.occurredAtMs)}</div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </section>
 
@@ -619,7 +711,10 @@ export default function ExecutiveOverview() {
         {/* Temporary Access Control */}
         <div className="lg:col-span-4 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
           <div className="flex items-center justify-between">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Temporary Access Control</div>
+            <div className="flex items-center gap-2">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Temporary Access Control</div>
+              <SampleBadge />
+            </div>
             <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
           </div>
           <div className="mt-3 overflow-x-auto -mx-2">
@@ -670,7 +765,10 @@ export default function ExecutiveOverview() {
               </tbody>
             </table>
           </div>
-          <button className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF6A00] text-[#0B1020] text-[12px] font-semibold">
+          <button
+            onClick={() => audited.fire("executive-overview", "grant-temp-access")}
+            className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF6A00] text-[#0B1020] text-[12px] font-semibold"
+          >
             <Plus className="w-3.5 h-3.5" /> Grant New Access
           </button>
         </div>
@@ -678,7 +776,10 @@ export default function ExecutiveOverview() {
         {/* Email & SMS Campaigns */}
         <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
           <div className="flex items-center justify-between">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Email & SMS Campaigns</div>
+            <div className="flex items-center gap-2">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Email & SMS Campaigns</div>
+              <SampleBadge />
+            </div>
             <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
           </div>
           <ul className="mt-3 space-y-2.5">
@@ -713,7 +814,10 @@ export default function ExecutiveOverview() {
         {/* System Health Overview */}
         <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
           <div className="flex items-center justify-between">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">System Health Overview</div>
+            <div className="flex items-center gap-2">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">System Health Overview</div>
+              <SampleBadge />
+            </div>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 text-[12px]">
             {[
@@ -742,7 +846,10 @@ export default function ExecutiveOverview() {
         {/* Upcoming & Pending */}
         <div className="lg:col-span-2 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
           <div className="flex items-center justify-between">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Upcoming & Pending</div>
+            <div className="flex items-center gap-2">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Upcoming & Pending</div>
+              <SampleBadge />
+            </div>
             <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
           </div>
           <ul className="mt-3 space-y-1.5 text-[12px]">
