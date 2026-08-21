@@ -11,6 +11,7 @@ import { clientPortalRouter } from "./routers/clientPortal";
 import { developerRouter } from "./routers/developer";
 import { mfaRouter } from "./routers/mfa";
 import { adminRouter } from "./routers/admin";
+import { opsRouter } from "./routers/ops";
 import { bookingAdminRouter } from "./routers/bookingAdmin";
 import { solutionsRouter } from "./routers/solutions";
 import { legalRouter } from "./routers/legal";
@@ -97,6 +98,7 @@ export const appRouter = router({
   developer: developerRouter,
   mfa: mfaRouter,
   admin: adminRouter,
+  ops: opsRouter,
   bookingAdmin: bookingAdminRouter,
   solutions: solutionsRouter,
   legal: legalRouter,

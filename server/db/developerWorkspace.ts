@@ -777,3 +777,39 @@ export async function listDeveloperSecurityEventsForDeveloper(
     .orderBy(desc(developerSecurityEvents.createdAt))
     .limit(limit);
 }
+
+/**
+ * Milestone 2 §2.5 — Security Center: platform-wide (not per-developer)
+ * recent security events, for the ops/admin investigation surface.
+ */
+export async function listRecentSecurityEvents(
+  limit = 100,
+): Promise<DeveloperSecurityEvent[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(developerSecurityEvents)
+    .orderBy(desc(developerSecurityEvents.createdAt))
+    .limit(limit);
+}
+
+/**
+ * Milestone 2 §2.5 — Security Center acknowledgment action. Marks an event
+ * reviewed by a specific admin/ops user; idempotent (re-acknowledging just
+ * overwrites the timestamp/actor, no error). Returns the updated row, or
+ * null if no event with that id exists.
+ */
+export async function acknowledgeDeveloperSecurityEvent(
+  eventId: number,
+  acknowledgedByUserId: number,
+): Promise<DeveloperSecurityEvent | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .update(developerSecurityEvents)
+    .set({ acknowledgedAt: Date.now(), acknowledgedByUserId })
+    .where(eq(developerSecurityEvents.id, eventId))
+    .returning();
+  return result[0] ?? null;
+}

@@ -217,7 +217,7 @@ export async function updateUserMfaMethod(
  */
 export async function setUserRole(
   userId: number,
-  role: "user" | "client" | "developer" | "admin" | "super_admin",
+  role: "user" | "client" | "developer" | "admin" | "super_admin" | "technical_operator",
 ) {
   const db = await getDb();
   if (!db) return null;

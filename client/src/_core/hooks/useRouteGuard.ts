@@ -26,7 +26,7 @@
  */
 import { useAuth } from "./useAuth";
 
-export type PortalRole = "user" | "client" | "developer" | "admin" | "super_admin";
+export type PortalRole = "user" | "client" | "developer" | "admin" | "super_admin" | "technical_operator";
 export type ImpersonationTarget = "client" | "developer";
 
 /**
@@ -67,6 +67,8 @@ export function roleHome(role: string | null | undefined): string {
       return "/client-portal";
     case "developer":
       return "/developer-workspace";
+    case "technical_operator":
+      return "/ops";
     default:
       return "/";
   }

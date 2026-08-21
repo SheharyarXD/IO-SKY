@@ -43,6 +43,7 @@ import AdminBookings from "./pages/AdminBookings";
 import AdminPortal from "./pages/admin/AdminPortal";
 import ClientPortal from "./pages/client-portal/ClientPortal";
 import DeveloperWorkspace from "./pages/developer-workspace/DeveloperWorkspace";
+import OpsConsole from "./pages/ops/OpsConsole";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -82,6 +83,7 @@ function Router() {
       <Route path="/client-portal" component={() => <PortalErrorBoundary><ClientPortal /></PortalErrorBoundary>} />
       <Route path="/developer-workspace/:section*" component={() => <PortalErrorBoundary><DeveloperWorkspace /></PortalErrorBoundary>} />
       <Route path="/developer-workspace" component={() => <PortalErrorBoundary><DeveloperWorkspace /></PortalErrorBoundary>} />
+      <Route path="/ops" component={() => <PortalErrorBoundary><OpsConsole /></PortalErrorBoundary>} />
       <Route path="/security" component={Security} />
       <Route path="/legal/:doc" component={Legal} />
       <Route path="/privacy"><Legal /></Route>

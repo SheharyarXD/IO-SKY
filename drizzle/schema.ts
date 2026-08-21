@@ -94,7 +94,22 @@ import {
  * `server/_core/trpc.ts`'s `isAdminRole()`/`superAdminProcedure` for the
  * application-layer equivalent.
  */
-export const usersRoleEnum = pgEnum("users_role", ["user", "client", "developer", "admin", "super_admin"]);
+/**
+ * Milestone 2 §2.5 — "technical_operator" added: a new tier scoped to
+ * infrastructure/operational visibility (system health, email delivery
+ * health, security event volume), deliberately walled off from customer
+ * and financial data (no leads/invoices/reports/documents access). Not a
+ * superset or subset of "admin" - a distinct lateral tier, gated by its
+ * own `opsProcedure` (server/_core/trpc.ts), not `adminProcedure`.
+ */
+export const usersRoleEnum = pgEnum("users_role", [
+  "user",
+  "client",
+  "developer",
+  "admin",
+  "super_admin",
+  "technical_operator",
+]);
 
 /**
  * Core user table backing auth flow.

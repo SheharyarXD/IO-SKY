@@ -54,6 +54,8 @@ export function roleBasedDestination(
       return "/client-portal";
     case "developer":
       return "/developer-workspace";
+    case "technical_operator":
+      return "/ops";
     default:
       return fallback;
   }

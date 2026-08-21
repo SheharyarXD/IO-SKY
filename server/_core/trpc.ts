@@ -225,6 +225,38 @@ export const superAdminProcedure = t.procedure.use(
 );
 
 /**
+ * Milestone 2 §2.5 — "technical_operator" is a distinct, lateral RBAC tier
+ * (not a superset or subset of admin) scoped to infrastructure/operational
+ * visibility, deliberately walled off from customer and financial data.
+ * `opsProcedure` gates the small set of ops-only endpoints (system health,
+ * email delivery health, security-event volume) to
+ * technical_operator + admin + super_admin — admins keep everything they
+ * already had (this is additive), and a technical_operator gets exactly
+ * this ops slice and nothing else: they do NOT pass `adminProcedure`, so
+ * every customer/financial/leads/documents endpoint stays out of reach.
+ */
+export function isOpsRole(role: string | null | undefined): boolean {
+  return role === "technical_operator" || isAdminRole(role);
+}
+
+export const opsProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    if (!ctx.user || !isOpsRole(ctx.user.role)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  }),
+);
+
+/**
  * requireAcceptances(kinds) — server-side enforcement that the calling
  * user has accepted the **currently live** version of each given legal
  * document kind. Use this to wrap any mutation that legally requires the

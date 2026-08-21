@@ -200,7 +200,7 @@ interface OrgRow {
   memberCount: number;
 }
 
-const ROLE_OPTIONS = ["user", "client", "developer", "admin", "super_admin"] as const;
+const ROLE_OPTIONS = ["user", "client", "developer", "admin", "super_admin", "technical_operator"] as const;
 
 /**
  * Milestone 2 §2.5 — real role/org-assignment actions, built on
