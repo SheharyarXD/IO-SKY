@@ -21,6 +21,7 @@
  *   legal              — legal documents, agreement versions, acceptances, cookie consent
  *   emailDelivery      — email delivery log (Milestone 2 §2.3)
  *   platformSettings   — platform configuration store (Milestone 2 §2.5)
+ *   workflows          — workflow-definition engine (Milestone 2 §2.6)
  */
 
 export { getDb } from "./connection";
@@ -36,3 +37,4 @@ export * from "./solutions";
 export * from "./legal";
 export * from "./emailDelivery";
 export * from "./platformSettings";
+export * from "./workflows";

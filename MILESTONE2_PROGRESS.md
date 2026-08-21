@@ -23,7 +23,7 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 | 2.3 Email Productionisation | ✅ Delivery tracking done · ⛔ Resend domain + Supabase Auth email routing blocked |
 | 2.4 Core Workflow Verification & Conversion | ✅ Done this session — every previously-undisclosed fabricated panel on Executive Overview now wired to real data or disclosed; the underlying admin.summary fabrication bug fixed too |
 | 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, Business Intelligence dashboards, platform configuration store, MFA compliance visibility, and AI governance config done and tested; real third-party integration/notification-template management and a hard blocking MFA gate NOT started (both deliberately deferred — see detail below) |
-| 2.6 Document Lifecycle / Workflow Engine / Integrations | 🔶 Partial — document lifecycle (versioning/approval/rejection/retention) done and tested; workflow engine and integration/webhook registry NOT started |
+| 2.6 Document Lifecycle / Workflow Engine / Integrations | 🔶 Partial — document lifecycle and the workflow-definition engine done and tested; integration/webhook registry NOT started |
 | 2.7 Notification Infrastructure | ⏭ Not started |
 
 **This session's central finding — the connected Supabase project is gone.** The `.env` credentials from the session that did RM-41..60 (a different session than the one that wrote §2.1–2.4 above, which had no credentials at all) no longer work: `rhgzcgcqlypuvislwjlf.supabase.co` returns `NXDOMAIN` — the project's own subdomain doesn't resolve in DNS at all, not a transient outage. Confirmed via direct `nslookup`, a raw Postgres connection attempt (pooler responds "tenant/user not found"), and a plain `fetch` to the Auth health endpoint (connection refused). This means **migrations `0006` through `0009` are still authored-and-locally-verified only, same as before** — nothing in this session or the previous one has actually reached a live database. A real test-suite bug this surfaced and fixed: `server/rls.negative.test.ts`'s skip condition only checked that env vars were *present*, not that the project was *reachable*, so it hard-failed the whole suite instead of skipping cleanly — now does a real reachability probe first.
@@ -828,11 +828,62 @@ Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 477/477 passing,
 33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
 `drizzle-kit generate` → "No schema changes, nothing to migrate".
 
+### Workflow-definition engine
+
+Deliberately bounded, not a general-purpose automation/BPMN system: a
+closed `triggerType` enum of real events this app emits (currently:
+document approved/rejected — from the document lifecycle work above; the
+executor is designed so a new trigger call site is a one-line addition,
+not a redesign) mapped to a closed `actionType` enum of safe,
+already-existing capabilities (owner notification via the §2.3 Resend
+transport, or an audit-log entry) — not an open-ended scripting system.
+
+- `drizzle/schema.ts` + `drizzle/0013_workflow_engine.sql`: new
+  `workflow_definitions` (name/triggerType/actionType/actionConfig/
+  enabled/createdByUserId) and `workflow_runs` (one row per execution,
+  succeeded/failed + resultMessage) tables, RLS-hardened (definitions:
+  admin-read/super_admin-write, matching RM-57's platform-configuration
+  boundary; runs: admin-read/admin-write since only the server-side
+  executor writes them — same service-role-bypasses-RLS pattern as every
+  other write path in this app). Same apply/verify caveat as every
+  migration since `0006`.
+- `server/db/workflows.ts`: CRUD + `listEnabledWorkflowDefinitionsForTrigger`
+  + `recordWorkflowRun`.
+- `server/workflowEngine.ts` (new): `runWorkflowsForTrigger(triggerType,
+  context, entityRef)` — looks up every enabled definition matching the
+  trigger, runs its action (with `{{field}}` template substitution for
+  `notify_owner`), and records a `workflow_runs` row per execution, success
+  or failure. A workflow failure (e.g. owner email not configured) is
+  caught and logged, never allowed to break the real operation that fired
+  it — verified by test (approving a document must still succeed even if
+  its notify_owner action throws).
+- `server/routers/admin.ts`: `admin.workflowDefinitions`/`workflowRuns`
+  (read, `adminProcedure`), `admin.createWorkflowDefinition`/
+  `setWorkflowDefinitionEnabled` (write, `superAdminProcedure`). Wired the
+  executor into the one real call site that exists today:
+  `admin.reviewDocument` now fires `document_approved`/`document_rejected`
+  after a successful review.
+- `client/.../AutomationsAnalyticsRest.tsx`'s `Automations` component: was
+  100% hardcoded literals (disclosed via `sampleData`) with no real system
+  behind any of it. Replaced entirely with real definitions/runs data —
+  KPI strip, workflow list with a super_admin enable/disable toggle and a
+  "New workflow" creation flow (`window.prompt`-based, matching the
+  established convention), and a "Recent runs" panel. `sampleData` badge
+  removed.
+- `server/workflowEngine.test.ts` (new, 5 tests) +
+  `server/admin.workflows.test.ts` (new, 9 tests): executor behavior
+  (no-match no-op, notify_owner template substitution, audit_log action,
+  failure-is-caught-not-thrown, multiple matching definitions all run),
+  router RBAC (read admin-gated, write super_admin-exclusive, NOT_FOUND),
+  and that `admin.reviewDocument` actually invokes the executor with the
+  right trigger type.
+
+Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 491/491 passing,
+33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
+`drizzle-kit generate` → "No schema changes, nothing to migrate".
+
 ### Not started
 
-- **Workflow-definition engine** — a reusable subsystem (definitions table,
-  run/execution log, at minimum a bounded executor for real existing
-  trigger types in this app). Nothing like this exists yet.
 - **Integration/webhook registry** — outbound webhook registration +
   delivery log + dispatch on real events. Nothing like this exists yet.
 

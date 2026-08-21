@@ -1903,3 +1903,72 @@ export const platformSettings = pgTable(
 );
 export type PlatformSetting = typeof platformSettings.$inferSelect;
 export type InsertPlatformSetting = typeof platformSettings.$inferInsert;
+
+/**
+ * Milestone 2 §2.6 — workflow-definition engine. Deliberately bounded, not
+ * a general-purpose BPMN system: `triggerType` is a closed enum of real
+ * events this app already emits (document review decisions today; the
+ * executor — server/workflowEngine.ts — is designed so new trigger call
+ * sites are a one-line addition, not a redesign), and `actionType` is a
+ * closed enum of safe, already-existing capabilities (owner notification
+ * via the Resend transport built in §2.3, or an audit-log entry) — not an
+ * open-ended scripting/automation system. A super_admin defines which
+ * trigger fires which action; the executor runs every enabled definition
+ * matching a trigger and logs one `workflow_runs` row per execution,
+ * success or failure, so behavior is always inspectable.
+ */
+export const workflowDefinitionsTriggerTypeEnum = pgEnum("workflow_definitions_trigger_type", [
+  "document_approved",
+  "document_rejected",
+  "booking_completed",
+  "lead_won",
+  "ai_scan_completed",
+]);
+export const workflowDefinitionsActionTypeEnum = pgEnum("workflow_definitions_action_type", [
+  "notify_owner",
+  "audit_log",
+]);
+
+export const workflowDefinitions = pgTable(
+  "workflow_definitions",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 200 }).notNull(),
+    triggerType: workflowDefinitionsTriggerTypeEnum("triggerType").notNull(),
+    actionType: workflowDefinitionsActionTypeEnum("actionType").notNull(),
+    /** Optional template for the notify_owner action; {{field}} tokens are substituted from the trigger context. Ignored by audit_log. */
+    actionConfig: text("actionConfig"),
+    /** 0/1, matching this schema's existing boolean-as-integer convention (see the MySQL-migration translation notes at the top of this file). */
+    enabled: integer("enabled").default(1).notNull(),
+    createdByUserId: integer("createdByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [index("workflow_definitions_trigger_type_idx").on(table.triggerType)],
+);
+export type WorkflowDefinition = typeof workflowDefinitions.$inferSelect;
+export type InsertWorkflowDefinition = typeof workflowDefinitions.$inferInsert;
+
+export const workflowRunsStatusEnum = pgEnum("workflow_runs_status", ["succeeded", "failed"]);
+
+export const workflowRuns = pgTable(
+  "workflow_runs",
+  {
+    id: serial("id").primaryKey(),
+    workflowDefinitionId: integer("workflowDefinitionId")
+      .notNull()
+      .references(() => workflowDefinitions.id, { onDelete: "cascade" }),
+    triggerType: workflowDefinitionsTriggerTypeEnum("triggerType").notNull(),
+    /** Free-text id of whatever fired the trigger (a document id, booking id, etc) — no FK, the entity type varies by triggerType. */
+    triggerEntityRef: varchar("triggerEntityRef", { length: 128 }),
+    status: workflowRunsStatusEnum("status").notNull(),
+    resultMessage: text("resultMessage"),
+    ranAt: timestamp("ranAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("workflow_runs_definition_id_idx").on(table.workflowDefinitionId),
+    index("workflow_runs_ran_at_idx").on(table.ranAt),
+  ],
+);
+export type WorkflowRun = typeof workflowRuns.$inferSelect;
+export type InsertWorkflowRun = typeof workflowRuns.$inferInsert;

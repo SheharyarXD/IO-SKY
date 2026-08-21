@@ -57,7 +57,12 @@ import {
   reviewClientDocument,
   setClientDocumentRetentionNote,
   listClientDocumentVersions,
+  listWorkflowDefinitions,
+  createWorkflowDefinition,
+  setWorkflowDefinitionEnabled,
+  listWorkflowRuns,
 } from "../db";
+import { runWorkflowsForTrigger } from "../workflowEngine";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import {
   organizations,
@@ -1261,6 +1266,11 @@ export const adminRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Document not found." });
       }
       await recordAdminEvent({ ctx, reason: `admin.document.${input.decision}(${input.documentId})` });
+      await runWorkflowsForTrigger(
+        input.decision === "approved" ? "document_approved" : "document_rejected",
+        { documentName: updated.name },
+        String(input.documentId),
+      );
       return updated;
     }),
   /** Milestone 2 §2.6 — documented retention policy record (not an enforced TTL, see schema doc comment). */
@@ -1280,6 +1290,55 @@ export const adminRouter = router({
     .query(async ({ ctx, input }) => {
       await recordAdminEvent({ ctx, reason: `admin.document.list_versions(${input.documentId})` });
       return safe(() => listClientDocumentVersions(input.organizationId, input.documentId), []);
+    }),
+
+  // -- Workflow-definition engine (Milestone 2 §2.6) -----------------------
+  workflowDefinitions: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.workflow_definitions" });
+    return safe(() => listWorkflowDefinitions(), []);
+  }),
+  workflowRuns: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.workflow_runs" });
+    return safe(() => listWorkflowRuns(100), []);
+  }),
+  createWorkflowDefinition: superAdminProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(200),
+        triggerType: z.enum([
+          "document_approved",
+          "document_rejected",
+          "booking_completed",
+          "lead_won",
+          "ai_scan_completed",
+        ]),
+        actionType: z.enum(["notify_owner", "audit_log"]),
+        actionConfig: z.string().max(2000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const created = await createWorkflowDefinition({
+        name: input.name,
+        triggerType: input.triggerType,
+        actionType: input.actionType,
+        actionConfig: input.actionConfig ?? null,
+        createdByUserId: ctx.user.id,
+      });
+      if (!created) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create workflow definition." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.workflow.create(${created.id})` });
+      return created;
+    }),
+  setWorkflowDefinitionEnabled: superAdminProcedure
+    .input(z.object({ id: z.number().int().positive(), enabled: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const updated = await setWorkflowDefinitionEnabled(input.id, input.enabled);
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Workflow definition not found." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.workflow.set_enabled(${input.id}:${input.enabled})` });
+      return updated;
     }),
   developers: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.developers" });

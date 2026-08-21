@@ -31,69 +31,156 @@ import {
 } from "lucide-react";
 
 // =============================================================================
-// Notifications & Automations
+// Notifications & Automations — Milestone 2 §2.6 workflow-definition engine.
+// Previously every row/KPI here was a hardcoded literal (disclosed via
+// sampleData) with no real system behind it at all. Now backed by the real
+// workflow_definitions/workflow_runs tables (server/workflowEngine.ts):
+// a bounded set of trigger types (real events this app emits — currently
+// document approve/reject) mapped to a bounded set of safe actions
+// (owner notification via the §2.3 Resend transport, or an audit-log
+// entry), with every execution logged and inspectable.
 // =============================================================================
-interface Automation {
-  id: string;
+interface WorkflowDefRow {
+  id: number;
   name: string;
-  trigger: string;
-  runs24h: number;
-  successRate: number;
-  status: "Healthy" | "Degraded" | "Paused";
+  triggerType: string;
+  actionType: string;
+  actionConfig: string | null;
+  enabled: number;
+  createdAt: string | Date;
+}
+interface WorkflowRunRow {
+  id: number;
+  workflowDefinitionId: number;
+  triggerType: string;
+  triggerEntityRef: string | null;
+  status: "succeeded" | "failed";
+  resultMessage: string | null;
+  ranAt: string | Date;
 }
 
-const AUTO_KPIS: KpiTile[] = [
-  { id: "wf", label: "Total workflows", value: "128", delta: { value: "6", positive: true }, icon: Workflow, accent: "orange", spark: [110, 115, 118, 121, 124, 126, 128] },
-  { id: "ok", label: "Healthy", value: "96", icon: CheckCircle2, accent: "green", spark: [88, 90, 92, 93, 94, 95, 96] },
-  { id: "deg", label: "Degraded", value: "5", delta: { value: "1", positive: false }, icon: AlertTriangle, accent: "red", spark: [3, 4, 4, 5, 5, 5, 5] },
-  { id: "rate", label: "Success rate", value: "99.1%", delta: { value: "0.2%", positive: true }, icon: Activity, accent: "violet", spark: [98.6, 98.7, 98.8, 98.9, 99.0, 99.0, 99.1] },
-];
+const TRIGGER_TYPES = ["document_approved", "document_rejected", "booking_completed", "lead_won", "ai_scan_completed"] as const;
+const ACTION_TYPES = ["notify_owner", "audit_log"] as const;
 
-const AUTOMATIONS: Automation[] = [
-  { id: "WF-218", name: "AI Scan → Lead",            trigger: "Scan completed", runs24h: 142, successRate: 99.4, status: "Healthy" },
-  { id: "WF-217", name: "Strategy call confirmation",trigger: "Booking created", runs24h: 28, successRate: 100,   status: "Healthy" },
-  { id: "WF-216", name: "Invoice retry",             trigger: "Payment failed",  runs24h: 12, successRate: 91.7,  status: "Degraded" },
-  { id: "WF-215", name: "Owner alert · critical",    trigger: "Critical event",  runs24h: 4,  successRate: 100,   status: "Healthy" },
-  { id: "WF-214", name: "Renewal nudge",             trigger: "Cron · 09:00",    runs24h: 1,  successRate: 100,   status: "Healthy" },
-];
-
-const AUTO_COLS: DataColumn<Automation>[] = [
-  { key: "id", header: "Ref", width: "84px" },
-  { key: "name", header: "Workflow" },
-  { key: "trigger", header: "Trigger" },
-  { key: "runs24h", header: "Runs (24h)", align: "right" },
-  { key: "successRate", header: "Success", align: "right", render: (r) => (
-    <span className={r.successRate >= 99 ? "text-emerald-400 font-mono" : "text-amber-400 font-mono"}>{r.successRate.toFixed(1)}%</span>
-  )},
-  { key: "status", header: "Status", render: (r) => <StatusPill tone={r.status === "Healthy" ? "ok" : r.status === "Degraded" ? "warn" : "muted"} label={r.status} /> },
-];
+function workflowCols(opts: {
+  isSuperAdmin: boolean;
+  onToggle: (row: WorkflowDefRow) => void;
+}): DataColumn<WorkflowDefRow>[] {
+  const cols: DataColumn<WorkflowDefRow>[] = [
+    { key: "id", header: "Ref", width: "70px", render: (r) => <span className="font-mono text-white/55">WF-{r.id}</span> },
+    { key: "name", header: "Workflow" },
+    { key: "triggerType", header: "Trigger", render: (r) => <span className="font-mono text-white/65">{r.triggerType}</span> },
+    { key: "actionType", header: "Action", render: (r) => <span className="font-mono text-white/65">{r.actionType}</span> },
+    { key: "enabled", header: "Status", render: (r) => <StatusPill tone={r.enabled === 1 ? "ok" : "muted"} label={r.enabled === 1 ? "Enabled" : "Disabled"} /> },
+  ];
+  if (opts.isSuperAdmin) {
+    cols.push({
+      key: "id" as keyof WorkflowDefRow,
+      header: "Actions",
+      render: (r) => (
+        <button onClick={() => opts.onToggle(r)} className="text-[11px] text-[#FF6A00] hover:underline">
+          {r.enabled === 1 ? "Disable" : "Enable"}
+        </button>
+      ),
+    });
+  }
+  return cols;
+}
 
 export function Automations() {
-  const q = trpc.admin.automations.useQuery(undefined, { staleTime: 30_000 });
-  const audited = useAuditedAction();
+  const { user: me } = useAuth();
+  const isSuperAdmin = me?.role === "super_admin";
+  const q = trpc.admin.workflowDefinitions.useQuery(undefined, { staleTime: 30_000 });
+  const runsQ = trpc.admin.workflowRuns.useQuery(undefined, { staleTime: 30_000 });
+  const utils = trpc.useUtils();
+  const toggle = trpc.admin.setWorkflowDefinitionEnabled.useMutation({
+    onSuccess: () => utils.admin.workflowDefinitions.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not update workflow"),
+  });
+  const create = trpc.admin.createWorkflowDefinition.useMutation({
+    onSuccess: () => utils.admin.workflowDefinitions.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not create workflow"),
+  });
+
+  const onNewWorkflow = () => {
+    const name = window.prompt("Workflow name?");
+    if (!name?.trim()) return;
+    const triggerType = window.prompt(`Trigger type?\n(${TRIGGER_TYPES.join(" / ")})`, TRIGGER_TYPES[0]);
+    if (!triggerType || !(TRIGGER_TYPES as readonly string[]).includes(triggerType)) {
+      window.alert(`Not a valid trigger. Must be one of: ${TRIGGER_TYPES.join(", ")}`);
+      return;
+    }
+    const actionType = window.prompt(`Action type?\n(${ACTION_TYPES.join(" / ")})`, ACTION_TYPES[0]);
+    if (!actionType || !(ACTION_TYPES as readonly string[]).includes(actionType)) {
+      window.alert(`Not a valid action. Must be one of: ${ACTION_TYPES.join(", ")}`);
+      return;
+    }
+    create.mutate({
+      name: name.trim(),
+      triggerType: triggerType as (typeof TRIGGER_TYPES)[number],
+      actionType: actionType as (typeof ACTION_TYPES)[number],
+    });
+  };
+
   return (
     <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
-      {() => (
+      {(defs) => {
+        const rows = defs as WorkflowDefRow[];
+        const runs = (runsQ.data ?? []) as WorkflowRunRow[];
+        const enabled = rows.filter((r) => r.enabled === 1).length;
+        const succeeded = runs.filter((r) => r.status === "succeeded").length;
+        const failed = runs.filter((r) => r.status === "failed").length;
+        const successRate = runs.length === 0 ? 0 : Math.round((succeeded / runs.length) * 1000) / 10;
+        const kpis: KpiTile[] = [
+          { id: "wf", label: "Total workflows", value: String(rows.length), icon: Workflow, accent: "orange" },
+          { id: "ok", label: "Enabled", value: String(enabled), icon: CheckCircle2, accent: "green" },
+          { id: "runs", label: "Runs (recent)", value: String(runs.length), icon: Activity, accent: "violet" },
+          { id: "rate", label: "Success rate", value: runs.length === 0 ? "—" : `${successRate}%`, icon: TrendingUp, accent: failed > 0 ? "red" : "green" },
+        ];
+        return (
     <OperationalPage
-      eyebrow="Automation hub"
-      sampleData
+      eyebrow="Workflow engine"
       title="Notifications & Automations"
-      tagline="Automation queues, retries, webhooks, reminders and AI generation pipelines. Surface failed runs, retry on-demand and audit every change."
-      kpis={AUTO_KPIS}
-      toolbar={<DefaultToolbar searchPlaceholder="Search workflows, triggers…" filters={["Status", "Trigger"]} primaryAction={{ label: "New workflow", onClick: () => audited.fire("automations", "new-workflow") }} />}
-      primary={<DataTable columns={AUTO_COLS} rows={AUTOMATIONS} />}
+      tagline="Bounded workflow-definition engine: real trigger events (document review decisions today) mapped to real, safe actions (owner notification or an audit-log entry), every run logged."
+      kpis={kpis}
+      toolbar={
+        <DefaultToolbar
+          searchPlaceholder="Search workflows, triggers…"
+          filters={["Status", "Trigger"]}
+          primaryAction={isSuperAdmin ? { label: "New workflow", onClick: onNewWorkflow } : undefined}
+        />
+      }
+      primary={
+        rows.length === 0 ? (
+          <div className="rounded-[12px] border border-dashed border-white/[0.08] p-6 text-center text-[12.5px] text-white/55">
+            No workflow definitions yet.{isSuperAdmin ? " Use \"New workflow\" to create one." : ""}
+          </div>
+        ) : (
+          <DataTable
+            columns={workflowCols({ isSuperAdmin, onToggle: (r) => toggle.mutate({ id: r.id, enabled: r.enabled !== 1 }) })}
+            rows={rows}
+          />
+        )
+      }
       aside={
-        <SideCard title="Queue health">
-          <ul className="space-y-2.5 text-[12.5px] text-white/85">
-            <li className="flex items-center justify-between"><span>Pending jobs</span><span className="font-mono text-white/65">12</span></li>
-            <li className="flex items-center justify-between"><span>Retrying</span><span className="font-mono text-amber-400">3</span></li>
-            <li className="flex items-center justify-between"><span>Avg. latency</span><span className="font-mono text-white/65">320 ms</span></li>
-            <li className="flex items-center justify-between"><span>Worker pool</span><span className="font-mono text-emerald-400">healthy</span></li>
-          </ul>
+        <SideCard title="Recent runs">
+          {runs.length === 0 ? (
+            <p className="text-[12.5px] text-white/45">No workflow runs recorded yet.</p>
+          ) : (
+            <ul className="space-y-2.5 text-[12.5px] text-white/85">
+              {runs.slice(0, 8).map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-2">
+                  <span className="truncate">{r.triggerType}{r.triggerEntityRef ? ` #${r.triggerEntityRef}` : ""}</span>
+                  <span className={`font-mono shrink-0 ${r.status === "succeeded" ? "text-emerald-400" : "text-red-400"}`}>{r.status}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </SideCard>
       }
     />
-      )}
+        );
+      }}
     </ModuleStateBoundary>
   );
 }
