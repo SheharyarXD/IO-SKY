@@ -22,7 +22,7 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 | 2.2 Manus Dependency Removal | ✅ Done + verified · ⛔ LLM/owner-alert production activation blocked |
 | 2.3 Email Productionisation | ✅ Delivery tracking done · ⛔ Resend domain + Supabase Auth email routing blocked |
 | 2.4 Core Workflow Verification & Conversion | ✅ Done this session — every previously-undisclosed fabricated panel on Executive Overview now wired to real data or disclosed; the underlying admin.summary fabrication bug fixed too |
-| 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, Business Intelligence dashboards, and the platform configuration store done and tested; AI governance config, real integration/notification-template management, broader MFA-enforcement surfacing NOT started |
+| 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, Business Intelligence dashboards, platform configuration store, and MFA compliance visibility done and tested; AI governance config, real integration/notification-template management, and a hard blocking MFA gate NOT started (the last one deliberately deferred — see detail below) |
 | 2.6 Document Lifecycle / Workflow Engine / Integrations | ⏭ Not started |
 | 2.7 Notification Infrastructure | ⏭ Not started |
 
@@ -680,6 +680,43 @@ Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 466/466 passing,
 33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
 `drizzle-kit generate` → "No schema changes, nothing to migrate".
 
+### MFA compliance visibility (the honestly-buildable half of "MFA-enforcement surfacing")
+
+`admin.mfaPosture` existed (aggregate enrollment %) but was never consumed
+by any client component — a dead endpoint. Extended it with a real
+per-role breakdown and wired it into the Security Monitoring page, plus
+gave that page's security-event table a real acknowledge action (reusing
+`ops.acknowledgeSecurityEvent` — `opsProcedure` already accepts admin/
+super_admin, so this needed no new endpoint).
+
+- `server/routers/admin.ts`'s `readMfa()`: new `byRole` array — one grouped
+  query (`LEFT JOIN mfa_factors ... GROUP BY role`) returning
+  `{role, total, enrolled}` per role. Honest `byRole: []` in the offline
+  fallback (also relabeled that fallback's `source` from `"seed"` to
+  `"unavailable"`, matching this session's established honesty convention
+  — it was the one remaining `"seed"` label of this shape left in the
+  file).
+- `client/.../DevSecCampAgents.tsx`'s `Security` component: new "MFA
+  compliance by role" side panel (real enrolled/total per role); security
+  events table gets a real "Acknowledge" action per unacknowledged row.
+- `server/admin.mfaPosture.test.ts` (new, 2 tests): honest offline shape
+  including `byRole: []`, admin-only gating.
+
+**Deliberately NOT built**: a hard, blocking "require MFA for this role/org"
+login-time gate. Unlike `developer` (which already has one via
+`resolveDeveloperContext`/`evaluateDeveloperGate`), adding this for
+admin/client/super_admin/technical_operator would mean modifying
+`requireUser`/`protectedProcedure` — the middleware nearly every
+authenticated endpoint in this app is built on — which needs to be
+verified against a live session/login flow before shipping. The connected
+Supabase project is unreachable this session (see the handoff summary), so
+that verification isn't safely possible right now; building it unverified
+risks locking real users out of the entire app. Visibility (above) is the
+real, safe, honestly-scoped deliverable for this pass.
+
+Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 468/468 passing,
+33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
+
 ### Not started (real scope, not small)
 
 - **AI governance config** — no concrete spec exists in this repo for what
@@ -692,9 +729,8 @@ Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 466/466 passing,
   credentials, and notification templates need §2.7's notification schema
   to exist first (a template is meaningless without the typed notification
   system it renders for) — tracked there, not duplicated here.
-- **Broader MFA-enforcement surfacing** — beyond the per-user MFA column
-  already on the Users & Permissions table, there's no admin-side
-  "require MFA for this role/org" enforcement control.
+- **A hard, blocking per-role/org MFA gate** — deliberately not built this
+  pass. See "MFA compliance visibility" below for what *is* real now.
 
 ---
 

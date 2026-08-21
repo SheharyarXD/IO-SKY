@@ -149,7 +149,13 @@ const SEC_COLS: DataColumn<SecurityEventRow>[] = [
 
 export function Security() {
   const q = trpc.admin.security.useQuery(undefined, { staleTime: 30_000 });
+  const mfaQ = trpc.admin.mfaPosture.useQuery(undefined, { staleTime: 30_000 });
   const audited = useAuditedAction();
+  const utils = trpc.useUtils();
+  const acknowledge = trpc.ops.acknowledgeSecurityEvent.useMutation({
+    onSuccess: () => utils.admin.security.invalidate(),
+    onError: (e) => window.alert(e.message || "Could not acknowledge event"),
+  });
   return (
     <ModuleStateBoundary<SecurityPayload>
       isLoading={q.isLoading}
@@ -160,6 +166,22 @@ export function Security() {
     >
       {(data) => {
         const highCritical = data.rows.filter((r) => r.severity === "high" || r.severity === "critical").length;
+        const cols: DataColumn<SecurityEventRow>[] = [
+          ...SEC_COLS,
+          {
+            key: "id" as keyof SecurityEventRow,
+            header: "Action",
+            render: (r) =>
+              r.acknowledgedAt ? null : (
+                <button
+                  onClick={() => acknowledge.mutate({ eventId: r.id })}
+                  className="text-[11px] text-[#FF6A00] hover:underline"
+                >
+                  Acknowledge
+                </button>
+              ),
+          },
+        ];
         return (
     <OperationalPage
       eyebrow="SecOps"
@@ -171,14 +193,32 @@ export function Security() {
         { id: "failed", label: "Failed logins (24h)", value: String(data.failedLogins24h), icon: ShieldCheck, accent: data.failedLogins24h > 0 ? "red" : "green" },
       ]}
       toolbar={<DefaultToolbar searchPlaceholder="Search events, sources, IPs…" filters={["Severity", "Type", "Status"]} primaryAction={{ label: "Run scan", onClick: () => audited.fire("security", "run-scan") }} />}
-      primary={<DataTable columns={SEC_COLS} rows={data.rows} />}
+      primary={<DataTable columns={cols} rows={data.rows} />}
       aside={
-        <SideCard title="Live posture">
-          <ul className="space-y-2.5 text-[12.5px] text-white/85">
-            <li className="flex items-center justify-between"><span>Failed logins (24h)</span><span className="font-mono text-white/65">{data.failedLogins24h}</span></li>
-            <li className="flex items-center justify-between"><span>Unacknowledged events</span><span className="font-mono text-white/65">{data.rows.filter((r) => !r.acknowledgedAt).length}</span></li>
-          </ul>
-        </SideCard>
+        <>
+          <SideCard title="Live posture">
+            <ul className="space-y-2.5 text-[12.5px] text-white/85">
+              <li className="flex items-center justify-between"><span>Failed logins (24h)</span><span className="font-mono text-white/65">{data.failedLogins24h}</span></li>
+              <li className="flex items-center justify-between"><span>Unacknowledged events</span><span className="font-mono text-white/65">{data.rows.filter((r) => !r.acknowledgedAt).length}</span></li>
+            </ul>
+          </SideCard>
+          <SideCard title="MFA compliance by role">
+            <ul className="space-y-2.5 text-[12.5px] text-white/85">
+              {(mfaQ.data?.byRole ?? []).length === 0 ? (
+                <li className="text-white/45">{mfaQ.isLoading ? "Loading…" : "No user data yet."}</li>
+              ) : (
+                mfaQ.data!.byRole.map((r) => (
+                  <li key={r.role} className="flex items-center justify-between">
+                    <span className="capitalize">{r.role.replace(/_/g, " ")}</span>
+                    <span className="font-mono text-white/65">
+                      {r.enrolled}/{r.total}
+                    </span>
+                  </li>
+                ))
+              )}
+            </ul>
+          </SideCard>
+        </>
       }
     />
         );

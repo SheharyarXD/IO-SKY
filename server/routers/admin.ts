@@ -882,7 +882,7 @@ async function readAudit() {
 
 async function readMfa() {
   const db = await getDb();
-  if (!db) return { totalUsers: 0, mfaEnrolled: 0, mfaEnrolledPct: 0, source: "seed" as const };
+  if (!db) return { totalUsers: 0, mfaEnrolled: 0, mfaEnrolledPct: 0, byRole: [] as Array<{ role: string; total: number; enrolled: number }>, source: "unavailable" as const };
   const totalUsers = await safe(
     async () => {
       const r = await db.select({ c: count() }).from(users);
@@ -902,7 +902,41 @@ async function readMfa() {
   );
   const mfaEnrolledPct =
     totalUsers === 0 ? 0 : Number(((mfaEnrolled / totalUsers) * 100).toFixed(1));
-  return { totalUsers, mfaEnrolled, mfaEnrolledPct, source: "db" as const };
+
+  /**
+   * Milestone 2 §2.5 — "broader MFA-enforcement surfacing". Per-role
+   * compliance breakdown, real (grouped query, not the previously-dead
+   * `mfaPosture` endpoint's aggregate-only shape). Deliberately visibility
+   * only: this surfaces who is/isn't enrolled per role so an operator can
+   * actually see and follow up on gaps. It does NOT add a hard login-time
+   * MFA gate for admin/client/super_admin/technical_operator roles (unlike
+   * `developer`, which already has one via resolveDeveloperContext) —
+   * that would touch every authenticated request path in the app and
+   * needs to be verified against a live session flow, which the currently
+   * unreachable Supabase project makes impossible to do safely in this
+   * pass. Documented here rather than silently built half-checked.
+   */
+  const byRole = await safe(
+    async () => {
+      const rows = await db
+        .select({
+          role: users.role,
+          total: count(),
+          enrolled: sql<number>`COUNT(DISTINCT CASE WHEN ${mfaFactors.verifiedAt} IS NOT NULL THEN ${users.id} END)`,
+        })
+        .from(users)
+        .leftJoin(mfaFactors, eq(mfaFactors.userId, users.id))
+        .groupBy(users.role);
+      return rows.map((r) => ({
+        role: r.role,
+        total: Number(r.total ?? 0),
+        enrolled: Number(r.enrolled ?? 0),
+      }));
+    },
+    [] as Array<{ role: string; total: number; enrolled: number }>,
+  );
+
+  return { totalUsers, mfaEnrolled, mfaEnrolledPct, byRole, source: "db" as const };
 }
 
 // Synthesised but typed module data — for surfaces with no schema yet
