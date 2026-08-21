@@ -22,7 +22,7 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 | 2.2 Manus Dependency Removal | ✅ Done + verified · ⛔ LLM/owner-alert production activation blocked |
 | 2.3 Email Productionisation | ✅ Delivery tracking done · ⛔ Resend domain + Supabase Auth email routing blocked |
 | 2.4 Core Workflow Verification & Conversion | ✅ Done this session — every previously-undisclosed fabricated panel on Executive Overview now wired to real data or disclosed; the underlying admin.summary fabrication bug fixed too |
-| 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management + role/tenant assignment done and tested; Technical Operator role, Security Center, BI dashboards, AI governance config, platform/integration/notification-template configuration NOT started |
+| 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, and Business Intelligence dashboards done and tested; AI governance config, platform/integration/notification-template configuration, broader MFA-enforcement surfacing NOT started |
 | 2.6 Document Lifecycle / Workflow Engine / Integrations | ⏭ Not started |
 | 2.7 Notification Infrastructure | ⏭ Not started |
 
@@ -37,6 +37,8 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 4. Found and fixed a real migration-tooling bug while touching the migration chain: the `0008` snapshot had a stray `isRLSEnabled: true` flag on `email_delivery_log` (schema.ts doesn't declare it, no other table has this flag) that made `drizzle-kit generate` start auto-proposing a migration to *disable* RLS on that table. Fixed before it could ever be applied.
 
 **Still uncommitted work from before this session**: none — everything through the previous session's §2.1-2.4 work was already committed (`477c962`, `7cb3bc6`) before this session started. This session's own work is committed incrementally, one logical change per commit, all pushed.
+
+**Continuation pass (same day, 2026-08-21)**: per an explicit "complete all remaining features" instruction, continued straight into §2.5's remainder. Landed Technical Operator role + Security Center and Business Intelligence dashboards (both detailed above, both committed/pushed separately). Continuing through the rest of §2.5, then §2.6, then §2.7, then the admin.action dead-button sweep, updating this file after each workstream.
 
 ---
 
@@ -503,13 +505,87 @@ encoding the bug as a passing test).
 
 ## 2.5 Enterprise Super Admin & Platform Governance
 
-**Status: 🔶 Partial. Organization Management + role/tenant assignment done,
-tested, and RLS-hardened. Everything else in this workstream's scope
-(Technical Operator role, Security Center, BI dashboards, AI governance
-config, platform configuration, integration management, notification-template
-management, broader MFA-enforcement surfacing) is genuinely not started —
-each is a separately-specified, substantial feature area, not a small
-follow-on to what's built.**
+**Status: 🔶 Partial. Organization Management + role/tenant assignment,
+Technical Operator role + Security Center, and Business Intelligence
+dashboards are done, tested, and (where applicable) RLS-hardened. Still
+not started: AI governance config, platform configuration, integration
+management, notification-template management, broader MFA-enforcement
+surfacing — each is a separately-specified, substantial feature area.**
+
+### Technical Operator role + Security Center
+
+A new, deliberately *lateral* RBAC tier (not a superset/subset of admin,
+unlike super_admin) scoped to infrastructure/operational visibility only.
+
+- `drizzle/schema.ts` + `drizzle/0010_technical_operator_role.sql`: new
+  `users_role` enum value + `app_is_technical_operator()` RLS helper.
+  Same apply/verify caveat as every migration since `0006` — authored and
+  locally verified only, the connected Supabase project is still
+  unreachable.
+- `server/_core/trpc.ts`: new `opsProcedure` gate (`isOpsRole` = 
+  `technical_operator` OR `isAdminRole`) — deliberately a *separate* gate
+  from `adminProcedure`, not a subset of it, so this tier never inherits
+  leads/billing/documents/client access no matter how `adminProcedure`
+  evolves.
+- `server/routers/ops.ts` (new): `systemHealth` (email delivery health,
+  failed-login volume, security-event volume by severity, MFA enrollment
+  posture — all real queries against `email_delivery_log`/`login_audit`/
+  `developer_security_events`/`mfa_factors`, honest zeros when the DB is
+  offline, no customer/financial figures anywhere in the shape),
+  `emailDeliveryLog`, and the Security Center workflow: `securityEvents`
+  (recent platform-wide events) + `acknowledgeSecurityEvent` (a real
+  investigation/acknowledgment action against
+  `developer_security_events.acknowledgedAt/acknowledgedByUserId` — those
+  columns already existed but nothing ever wrote to them before this).
+- `client/src/pages/ops/OpsConsole.tsx` (new) at `/ops`: a standalone shell,
+  deliberately *not* `AdminLayout` — that sidebar links to 21 sections
+  almost all gated by `adminProcedure`, none of which this role can reach;
+  reusing it would either show a wall of FORBIDDEN links or require
+  silently widening the role's access, both wrong. Admin/super_admin can
+  also open `/ops` (the server gate accepts them too) for a fast
+  infra-only view.
+- `useRouteGuard.ts` (client) / `oauth.ts` (server): role→home routing
+  recognizes `technical_operator` (→ `/ops`), kept in sync both sides.
+- Users & Permissions role picker (`AutomationsAnalyticsRest.tsx`) can now
+  actually assign `technical_operator`.
+- `server/ops.test.ts` (new, 16 tests): RBAC gating across all five roles
+  (technical_operator/admin/super_admin allowed, client/developer/
+  unauthenticated rejected), explicit proof technical_operator is walled
+  off from `admin.billing`/`documents`/`crm`/`reports`, the offline-DB
+  fallback shape, and the acknowledge workflow (including NOT_FOUND for an
+  unknown event id).
+
+### Business Intelligence dashboards
+
+Interpreted narrowly and defensibly: rather than inventing a new page, wired
+the *existing* "Analytics & Insights" admin surface (already named in the
+master nav spec) to real computed data — it had been rendering entirely
+hardcoded literals (a fake 412/367/318/187/134 funnel, "top scans by
+converted revenue" with invented EUR figures) since before this session,
+disclosed only via a page-level `sampleData` badge.
+
+- `server/routers/admin.ts`'s new `readBusinessIntelligence()`: a real
+  rolling-30-day funnel (bookings created → completed → AI Scans triggered
+  → qualified leads → won deals, computed from `bookings`/`aiScans`/`leads`),
+  a real "top scoring scans" list (ranked by actual AI Scan `overallScore` —
+  there is no per-scan revenue attribution anywhere in this schema, so the
+  old "by converted revenue" framing was never honestly fixable; ranking by
+  the score the engine actually produced is the real equivalent), and real
+  KPI inputs (leads/bookings/AI-Scans/won-deals over 30 days, with a real
+  month-over-month leads delta using the same pattern as `buildSummary()`'s
+  `aiScansDelta`). Honest empty shape (not fake seed numbers) when the
+  database is unreachable.
+- `client/src/pages/admin/sections/AutomationsAnalyticsRest.tsx`'s
+  `Analytics` component: KPI tiles, funnel bars, and the top-scans list are
+  now all driven by `trpc.admin.analytics`'s real response; the page-level
+  `sampleData` badge is removed (nothing left on this page is fabricated).
+- `server/admin.analytics.test.ts` (new, 3 tests): honest offline-fallback
+  shape, admin-only gating, super_admin passthrough.
+
+Verified (both features above): `npx tsc --noEmit` → 0 errors. `npx vitest
+run` → 460/460 passing, 33 correctly skipped, 0 regressions. `pnpm run
+build` → succeeds. `drizzle-kit generate` → "No schema changes, nothing to
+migrate" (schema.ts matches the new snapshot).
 
 ### Organization Management + role/tenant assignment
 
@@ -564,18 +640,6 @@ build` → succeeds.
 
 ### Not started (real scope, not small)
 
-- **Technical Operator role** — a new RBAC tier scoped to infra visibility,
-  explicitly walled off from customer/financial data. This needs its own
-  role-boundary design (what exactly counts as "infra visibility" against
-  this schema) before it can be built, not just a new enum value.
-- **Security Center** — a dedicated admin surface aggregating
-  `developer_security_events`, `login_audit`, and MFA posture into one place
-  with real investigation/acknowledgment actions. `admin.security` already
-  surfaces some of this data (§2.4, prior session) but there's no dedicated
-  Security Center page or workflow yet.
-- **Business Intelligence dashboards** — genuinely new: no analytics
-  aggregation/reporting layer exists beyond the Executive Overview KPIs
-  fixed this session.
 - **AI governance config** — no concrete spec exists in this repo for what
   this means operationally (model allow-list? prompt/response logging
   retention? per-org AI feature toggles?) — needs a decision, not a guess,

@@ -99,26 +99,46 @@ export function Automations() {
 }
 
 // =============================================================================
-// Analytics & Insights
+// Analytics & Insights — Milestone 2 §2.5 Business Intelligence dashboards.
+// Previously every KPI/funnel/scan number here was a hardcoded literal,
+// disconnected from trpc.admin.analytics's response entirely. Now driven
+// by server/routers/admin.ts's readBusinessIntelligence(): a real 30-day
+// funnel over bookings/ai_scans/leads, and scans ranked by real score
+// (there is no per-scan revenue attribution anywhere in this schema, so
+// the previous "by converted revenue" framing was never honestly fixable).
 // =============================================================================
-const ANALYTICS_KPIS: KpiTile[] = [
-  { id: "conv", label: "Conversion (30d)", value: "32.4%", delta: { value: "2.1%", positive: true }, icon: TrendingUp, accent: "green", spark: [28, 29, 30, 31, 31, 32, 32.4] },
-  { id: "mau", label: "Active operators", value: "47", delta: { value: "4", positive: true }, icon: Users, accent: "orange", spark: [38, 40, 42, 43, 45, 46, 47] },
-  { id: "scn", label: "AI Scans → leads", value: "89%", delta: { value: "1.6%", positive: true }, icon: Activity, accent: "violet", spark: [82, 84, 85, 86, 87, 88, 89] },
-  { id: "ret", label: "Net retention", value: "118%", delta: { value: "3.2%", positive: true }, icon: TrendingUp, accent: "blue", spark: [108, 110, 112, 114, 115, 117, 118] },
-];
+function buildAnalyticsKpis(data: {
+  leads30d: number;
+  leadsDelta: number;
+  bookings30d: number;
+  aiScans30d: number;
+  wonDeals30d: number;
+}): KpiTile[] {
+  return [
+    {
+      id: "leads",
+      label: "Leads (30d)",
+      value: String(data.leads30d),
+      delta: { value: `${Math.abs(data.leadsDelta)}%`, positive: data.leadsDelta >= 0 },
+      icon: TrendingUp,
+      accent: "green",
+    },
+    { id: "bookings", label: "Bookings (30d)", value: String(data.bookings30d), icon: Users, accent: "orange" },
+    { id: "scans", label: "AI Scans (30d)", value: String(data.aiScans30d), icon: Activity, accent: "violet" },
+    { id: "won", label: "Won deals (30d)", value: String(data.wonDeals30d), icon: TrendingUp, accent: "blue" },
+  ];
+}
 
 export function Analytics() {
   const q = trpc.admin.analytics.useQuery(undefined, { staleTime: 30_000 });
   return (
     <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
-      {() => (
+      {(data) => (
     <OperationalPage
       eyebrow="Insights"
-      sampleData
       title="Analytics & Insights"
       tagline="Conversion, ecosystem, AI Scan, operational and campaign analytics. Drill from KPI to source event in one click."
-      kpis={ANALYTICS_KPIS}
+      kpis={buildAnalyticsKpis(data)}
       primary={
         <div className="space-y-5">
           <div>
@@ -127,48 +147,45 @@ export function Analytics() {
               <span className="font-mono text-[11px] text-white/55">Booking → Won</span>
             </div>
             <div className="space-y-2.5">
-              {[
-                { stage: "Strategy calls booked", count: 412, pct: 100 },
-                { stage: "Calls completed",       count: 367, pct: 89 },
-                { stage: "AI Scans triggered",    count: 318, pct: 77 },
-                { stage: "Qualified leads",       count: 187, pct: 45 },
-                { stage: "Won deals",             count: 134, pct: 32 },
-              ].map((f) => (
-                <div key={f.stage}>
-                  <div className="flex items-center justify-between text-[12.5px]">
-                    <span className="text-white/85">{f.stage}</span>
-                    <span className="font-mono text-white/65">
-                      {f.count} <span className="text-white/35">· {f.pct}%</span>
-                    </span>
+              {data.funnel.length === 0 ? (
+                <p className="text-[12.5px] text-white/45">No funnel activity in the last 30 days.</p>
+              ) : (
+                data.funnel.map((f) => (
+                  <div key={f.stage}>
+                    <div className="flex items-center justify-between text-[12.5px]">
+                      <span className="text-white/85">{f.stage}</span>
+                      <span className="font-mono text-white/65">
+                        {f.count} <span className="text-white/35">· {f.pct}%</span>
+                      </span>
+                    </div>
+                    <div className="h-2 mt-1 rounded-full bg-white/[0.05] overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-[#FF6A00] to-[#FF8E3D]"
+                        style={{ width: `${f.pct}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 mt-1 rounded-full bg-white/[0.05] overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[#FF6A00] to-[#FF8E3D]"
-                      style={{ width: `${f.pct}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
           <div className="border-t border-white/[0.06] pt-5">
             <div className="flex items-center justify-between mb-2.5">
-              <h3 className="text-[14px] font-medium text-white">Top contributing scans</h3>
-              <span className="font-mono text-[11px] text-white/55">By converted revenue</span>
+              <h3 className="text-[14px] font-medium text-white">Top scoring scans</h3>
+              <span className="font-mono text-[11px] text-white/55">By AI Scan score</span>
             </div>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[12.5px]">
-              {[
-                { name: "Operational efficiency",  rev: "€96,400" },
-                { name: "Workflow automation",     rev: "€72,180" },
-                { name: "Voice agent rollout",     rev: "€54,920" },
-                { name: "Centralised storage",     rev: "€38,560" },
-              ].map((s) => (
-                <li key={s.name} className="flex items-center justify-between rounded-[10px] border border-white/[0.06] bg-white/[0.02] px-3 py-2">
-                  <span className="text-white/85">{s.name}</span>
-                  <span className="font-mono text-emerald-400">{s.rev}</span>
-                </li>
-              ))}
-            </ul>
+            {data.topScans.length === 0 ? (
+              <p className="text-[12.5px] text-white/45">No scored AI Scans yet.</p>
+            ) : (
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[12.5px]">
+                {data.topScans.map((s) => (
+                  <li key={s.name} className="flex items-center justify-between rounded-[10px] border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+                    <span className="text-white/85">{s.name}</span>
+                    <span className="font-mono text-emerald-400">{s.score}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       }

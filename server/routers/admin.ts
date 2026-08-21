@@ -56,6 +56,7 @@ import {
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import {
   organizations,
+  bookings,
   leads,
   clientProjects,
   clientProjectMilestones,
@@ -943,6 +944,113 @@ async function synthesisedAiScans() {
   };
 }
 
+/**
+ * Milestone 2 §2.5 — Business Intelligence dashboards. Previously
+ * `admin.analytics` returned a hardcoded funnel (412/367/318/187/134) and
+ * a "top contributing scans by revenue" list with fabricated EUR figures —
+ * neither backed by any real table. Real funnel, computed over a rolling
+ * 30-day window from the three tables that actually exist for it
+ * (bookings, ai_scans, leads); "top scans" now ranks by real AI Scan
+ * score (there is no per-scan revenue attribution anywhere in this schema,
+ * so ranking by fabricated revenue was never honestly fixable — ranking by
+ * the score the engine actually produced is the real equivalent).
+ */
+async function readBusinessIntelligence() {
+  const db = await getDb();
+  if (!db) {
+    return {
+      funnel: [] as Array<{ stage: string; count: number; pct: number }>,
+      topScans: [] as Array<{ name: string; score: number }>,
+      leads30d: 0,
+      leadsDelta: 0,
+      bookings30d: 0,
+      aiScans30d: 0,
+      wonDeals30d: 0,
+      generatedAtMs: Date.now(),
+      source: "unavailable" as const,
+    };
+  }
+
+  const now = Date.now();
+  const since30d = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  const since60d = new Date(now - 60 * 24 * 60 * 60 * 1000);
+
+  const bookingsTotal = await safe(async () => {
+    const r = await db.select({ c: count() }).from(bookings).where(gte(bookings.createdAt, since30d));
+    return Number(r[0]?.c ?? 0);
+  }, 0);
+  const bookingsCompleted = await safe(async () => {
+    const r = await db
+      .select({ c: count() })
+      .from(bookings)
+      .where(sql`${bookings.status} = 'completed' AND ${bookings.createdAt} >= ${since30d}`);
+    return Number(r[0]?.c ?? 0);
+  }, 0);
+  const aiScans30d = await safe(async () => {
+    const r = await db.select({ c: count() }).from(aiScans).where(gte(aiScans.createdAt, since30d));
+    return Number(r[0]?.c ?? 0);
+  }, 0);
+  const qualifiedLeads = await safe(async () => {
+    const r = await db
+      .select({ c: count() })
+      .from(leads)
+      .where(
+        sql`${leads.status} IN ('qualified', 'engaged', 'won') AND ${leads.createdAt} >= ${since30d}`,
+      );
+    return Number(r[0]?.c ?? 0);
+  }, 0);
+  const wonDeals30d = await safe(async () => {
+    const r = await db
+      .select({ c: count() })
+      .from(leads)
+      .where(sql`${leads.status} = 'won' AND ${leads.createdAt} >= ${since30d}`);
+    return Number(r[0]?.c ?? 0);
+  }, 0);
+  const leads30d = await safe(async () => {
+    const r = await db.select({ c: count() }).from(leads).where(gte(leads.createdAt, since30d));
+    return Number(r[0]?.c ?? 0);
+  }, 0);
+  const leadsPrior30d = await safe(async () => {
+    const r = await db
+      .select({ c: count() })
+      .from(leads)
+      .where(sql`${leads.createdAt} >= ${since60d} AND ${leads.createdAt} < ${since30d}`);
+    return Number(r[0]?.c ?? 0);
+  }, 0);
+  const leadsDelta =
+    leadsPrior30d === 0 ? (leads30d > 0 ? 100 : 0) : ((leads30d - leadsPrior30d) / leadsPrior30d) * 100;
+
+  const pct = (n: number) => (bookingsTotal === 0 ? 0 : Math.round((n / bookingsTotal) * 100));
+  const funnel = [
+    { stage: "Discovery calls booked", count: bookingsTotal, pct: 100 },
+    { stage: "Calls completed", count: bookingsCompleted, pct: pct(bookingsCompleted) },
+    { stage: "AI Scans triggered", count: aiScans30d, pct: pct(aiScans30d) },
+    { stage: "Qualified leads", count: qualifiedLeads, pct: pct(qualifiedLeads) },
+    { stage: "Won deals", count: wonDeals30d, pct: pct(wonDeals30d) },
+  ];
+
+  const topScans = await safe(async () => {
+    const rows = await listRecentAiScans(50);
+    return rows
+      .filter((s) => s.overallScore != null)
+      .sort((a, b) => (b.overallScore ?? 0) - (a.overallScore ?? 0))
+      .slice(0, 4)
+      .map((s) => ({ name: s.company || s.fullName || `Scan #${s.id}`, score: s.overallScore ?? 0 }));
+  }, [] as Array<{ name: string; score: number }>);
+
+  return {
+    funnel,
+    topScans,
+    leads30d,
+    leadsDelta: Number(leadsDelta.toFixed(1)),
+    bookings30d: bookingsTotal,
+    aiScans30d,
+    wonDeals30d,
+    generatedAtMs: Date.now(),
+    source: "db" as const,
+  };
+}
+
 function synthesisedCampaigns() {
   return {
     rows: [
@@ -1106,25 +1214,7 @@ export const adminRouter = router({
   }),
   analytics: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.analytics" });
-    const summary = await buildSummary();
-    return {
-      kpis: summary.kpis,
-      funnel: [
-        { stage: "Discovery calls booked", count: 412, pct: 100 },
-        { stage: "Calls completed",       count: 367, pct: 89 },
-        { stage: "AI Scans triggered",    count: 318, pct: 77 },
-        { stage: "Qualified leads",       count: 187, pct: 45 },
-        { stage: "Won deals",             count: 134, pct: 32 },
-      ],
-      topScans: [
-        { name: "Operational efficiency", revenueEur: 96_400 },
-        { name: "Workflow automation",    revenueEur: 72_180 },
-        { name: "Voice agent rollout",    revenueEur: 54_920 },
-        { name: "Centralised storage",    revenueEur: 38_560 },
-      ],
-      generatedAtMs: Date.now(),
-      source: "db" as const,
-    };
+    return readBusinessIntelligence();
   }),
   users: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.users" });
