@@ -25,12 +25,12 @@ import {
   UserCog,
   ShieldCheck,
   LifeBuoy,
-  Bell,
   CalendarClock,
   Menu,
 } from "lucide-react";
 import IOSkyLogo from "@/components/IOSkyLogo";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import NotificationBell from "@/components/NotificationBell";
 
 interface NavItem {
   id: string;
@@ -97,12 +97,17 @@ export default function ClientPortalLayout({
     retry: false,
   });
 
+  const utils = trpc.useUtils();
+  const markRead = trpc.clientPortal.markNotificationRead.useMutation({
+    onSuccess: () => utils.clientPortal.dashboard.invalidate(),
+  });
+  const archiveNotif = trpc.clientPortal.archiveNotification.useMutation({
+    onSuccess: () => utils.clientPortal.dashboard.invalidate(),
+  });
+
   const orgName = dashboard.data?.organization?.name ?? null;
   const statusLabel = dashboard.data?.organization?.statusLabel ?? "Healthy";
   const notifications = dashboard.data?.notifications ?? [];
-  const unreadNotifs = notifications.filter(
-    (n: { readAt: unknown }) => n.readAt === null || n.readAt === undefined,
-  ).length;
   const unreadMessages = (dashboard.data?.messages ?? []).filter(
     (m: { sender: string; readAt: unknown }) =>
       m.sender === "io-sky" && (m.readAt === null || m.readAt === undefined),
@@ -273,18 +278,11 @@ export default function ClientPortalLayout({
                     </Button>
                   </Link>
 
-                  <button
-                    type="button"
-                    className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.02] text-white/70 hover:text-orange-200 hover:border-orange-500/40 transition-colors"
-                    aria-label="Notifications"
-                  >
-                    <Bell className="h-4 w-4" />
-                    {unreadNotifs > 0 && (
-                      <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-black">
-                        {unreadNotifs}
-                      </span>
-                    )}
-                  </button>
+                  <NotificationBell
+                    notifications={notifications as any}
+                    onMarkRead={(id) => markRead.mutate({ notificationId: id })}
+                    onArchive={(id) => archiveNotif.mutate({ notificationId: id })}
+                  />
 
                   <div className="flex items-center gap-2 pl-3 border-l border-white/10">
                     <Avatar className="h-8 w-8 bg-orange-500/15 ring-1 ring-orange-500/25">

@@ -12,11 +12,13 @@ const {
   reviewClientDocumentMock,
   setClientDocumentRetentionNoteMock,
   listClientDocumentVersionsMock,
+  notifyClientMock,
 } = vi.hoisted(() => ({
   appendLoginAuditMock: vi.fn(async () => {}),
   reviewClientDocumentMock: vi.fn(),
   setClientDocumentRetentionNoteMock: vi.fn(),
   listClientDocumentVersionsMock: vi.fn(async () => [] as any[]),
+  notifyClientMock: vi.fn(async () => {}),
 }));
 
 vi.mock("./db", async (importOriginal) => {
@@ -29,6 +31,10 @@ vi.mock("./db", async (importOriginal) => {
     listClientDocumentVersions: listClientDocumentVersionsMock,
   };
 });
+
+vi.mock("./notifications", () => ({
+  notifyClient: notifyClientMock,
+}));
 
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
@@ -67,14 +73,21 @@ beforeEach(() => {
 });
 
 describe("admin.reviewDocument", () => {
-  it("approves a document and audits it", async () => {
-    reviewClientDocumentMock.mockResolvedValueOnce({ id: 5, status: "approved" });
+  it("approves a document, audits it, and notifies the owning org (Milestone 2 §2.7)", async () => {
+    reviewClientDocumentMock.mockResolvedValueOnce({ id: 5, name: "brief.pdf", organizationId: 7, status: "approved" });
     const caller = appRouter.createCaller(makeCtx("admin", 8));
     const r = await caller.admin.reviewDocument({ documentId: 5, decision: "approved" });
     expect(r).toMatchObject({ id: 5, status: "approved" });
     expect(reviewClientDocumentMock).toHaveBeenCalledWith(5, "approved", 8, null);
     expect(appendLoginAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({ reason: expect.stringContaining("admin.document.approved(5)") }),
+    );
+    expect(notifyClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: 7,
+        channel: "in_app_and_email",
+        title: expect.stringContaining("brief.pdf"),
+      }),
     );
   });
 

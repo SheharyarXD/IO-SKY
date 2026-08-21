@@ -33,6 +33,7 @@ import {
   developerSupportTickets,
   developerTaskAssignments,
   developerTasks,
+  users,
   type DeveloperAccessScope,
   type DeveloperAgreement,
   type DeveloperAudit,
@@ -657,10 +658,80 @@ export async function appendDeveloperNotification(args: {
   title: string;
   body: string | null;
   href: string | null;
-}): Promise<void> {
+  priority?: "low" | "normal" | "high" | "critical";
+  channel?: "in_app" | "in_app_and_email";
+  templateKey?: string | null;
+}): Promise<DeveloperNotification | null> {
   const db = await getDb();
-  if (!db) return;
-  await db.insert(developerNotifications).values(args);
+  if (!db) return null;
+  const rows = await db
+    .insert(developerNotifications)
+    .values({
+      developerId: args.developerId,
+      kind: args.kind,
+      title: args.title,
+      body: args.body,
+      href: args.href,
+      priority: args.priority ?? "normal",
+      channel: args.channel ?? "in_app",
+      templateKey: args.templateKey ?? null,
+    })
+    .returning();
+  return rows[0] ?? null;
+}
+
+/** Milestone 2 §2.7 — mark one of this developer's notifications read (or unread). Scoped by developerId so cross-developer leakage is structurally impossible. */
+export async function setDeveloperNotificationRead(
+  developerId: number,
+  notificationId: number,
+  read: boolean,
+): Promise<DeveloperNotification | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(developerNotifications)
+    .set({ readAt: read ? Date.now() : null })
+    .where(
+      and(
+        eq(developerNotifications.developerId, developerId),
+        eq(developerNotifications.id, notificationId),
+      ),
+    )
+    .returning();
+  return rows[0] ?? null;
+}
+
+/** Milestone 2 §2.7 — archive (dismiss) one of this developer's notifications. */
+export async function archiveDeveloperNotification(
+  developerId: number,
+  notificationId: number,
+): Promise<DeveloperNotification | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(developerNotifications)
+    .set({ status: "archived" })
+    .where(
+      and(
+        eq(developerNotifications.developerId, developerId),
+        eq(developerNotifications.id, notificationId),
+      ),
+    )
+    .returning();
+  return rows[0] ?? null;
+}
+
+/** Milestone 2 §2.7 — this developer's account email, for the notify-and-email bridge. */
+export async function getDeveloperEmail(developerId: number): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select({ email: users.email })
+    .from(developerProfiles)
+    .innerJoin(users, eq(users.id, developerProfiles.userId))
+    .where(eq(developerProfiles.id, developerId))
+    .limit(1);
+  return rows[0]?.email ?? null;
 }
 
 /** List recent notifications for the workspace bell. */

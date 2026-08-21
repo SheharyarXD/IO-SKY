@@ -702,16 +702,75 @@ export async function appendClientNotification(input: {
   title: string;
   body?: string | null;
   href?: string | null;
+  priority?: "low" | "normal" | "high" | "critical";
+  channel?: "in_app" | "in_app_and_email";
+  templateKey?: string | null;
 }) {
   const db = await getDb();
   if (!db) return null;
-  await db.insert(clientNotifications).values({
-    organizationId: input.organizationId,
-    kind: input.kind,
-    title: input.title,
-    body: input.body ?? null,
-    href: input.href ?? null,
-  });
+  const rows = await db
+    .insert(clientNotifications)
+    .values({
+      organizationId: input.organizationId,
+      kind: input.kind,
+      title: input.title,
+      body: input.body ?? null,
+      href: input.href ?? null,
+      priority: input.priority ?? "normal",
+      channel: input.channel ?? "in_app",
+      templateKey: input.templateKey ?? null,
+    })
+    .returning();
+  return rows[0] ?? null;
+}
+
+/** Milestone 2 §2.7 — mark one of this org's notifications read (or unread if `read: false`). Scoped by organizationId so a client can never touch another tenant's row. */
+export async function setClientNotificationRead(
+  organizationId: number,
+  notificationId: number,
+  read: boolean,
+) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(clientNotifications)
+    .set({ readAt: read ? Date.now() : null })
+    .where(
+      and(
+        eq(clientNotifications.organizationId, organizationId),
+        eq(clientNotifications.id, notificationId),
+      ),
+    )
+    .returning();
+  return rows[0] ?? null;
+}
+
+/** Milestone 2 §2.7 — archive (dismiss) one of this org's notifications. */
+export async function archiveClientNotification(organizationId: number, notificationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .update(clientNotifications)
+    .set({ status: "archived" })
+    .where(
+      and(
+        eq(clientNotifications.organizationId, organizationId),
+        eq(clientNotifications.id, notificationId),
+      ),
+    )
+    .returning();
+  return rows[0] ?? null;
+}
+
+/** Milestone 2 §2.7 — email addresses of every user in this organization (for the notify-and-email bridge). */
+export async function listOrganizationMemberEmails(organizationId: number): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ email: usersTable.email })
+    .from(usersTable)
+    .where(and(eq(usersTable.organizationId, organizationId), sql`${usersTable.email} IS NOT NULL`));
+  return rows.map((r) => r.email).filter((e): e is string => Boolean(e));
 }
 
 // ---------------------------------------------------------------------------

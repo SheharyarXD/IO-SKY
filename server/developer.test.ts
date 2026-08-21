@@ -60,6 +60,8 @@ vi.mock("./db", () => {
     listDeveloperMessages: vi.fn(async () => []),
     listSignedAgreementsForDeveloper: vi.fn(async () => []),
     listDeveloperNotifications: vi.fn(async () => []),
+    setDeveloperNotificationRead: vi.fn(async () => ({ id: 1, readAt: Date.now() })),
+    archiveDeveloperNotification: vi.fn(async () => ({ id: 1, status: "archived" })),
     listDeveloperFiles: vi.fn(async () => []),
     getApprovedFileForDeveloper: vi.fn(async () => state.accessibleFile),
     getAssignedDeveloperProject: vi.fn(async ({ projectId }: any) =>
@@ -352,6 +354,39 @@ describe("developer router — messages + agreements", () => {
   });
 });
 
+// -------------------------------------------------------------------
+// Notification Center — Milestone 2 §2.7. Bell was previously
+// non-functional (no mark-as-read/archive path existed at all).
+// -------------------------------------------------------------------
+describe("developer router — Notification Center (Milestone 2 §2.7)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const s = gateState();
+    s.gate = { ok: true };
+    s.assignments = [{ projectId: 500, developerId: 100, status: "active" }];
+  });
+
+  it("marks a notification read and surfaces NOT_FOUND for an unknown one", async () => {
+    const caller = appRouter.createCaller(makeCtx({}));
+    const r = await caller.developer.markNotificationRead({ notificationId: 5 });
+    expect(r).toMatchObject({ id: 1 });
+    const { setDeveloperNotificationRead } = await import("./db");
+    expect(setDeveloperNotificationRead).toHaveBeenCalledWith(100, 5, true);
+
+    (setDeveloperNotificationRead as any).mockResolvedValueOnce(null);
+    await expect(
+      caller.developer.markNotificationRead({ notificationId: 999 }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("archives a notification", async () => {
+    const caller = appRouter.createCaller(makeCtx({}));
+    const r = await caller.developer.archiveNotification({ notificationId: 5 });
+    expect(r).toMatchObject({ status: "archived" });
+    const { archiveDeveloperNotification } = await import("./db");
+    expect(archiveDeveloperNotification).toHaveBeenCalledWith(100, 5);
+  });
+});
 
 // -------------------------------------------------------------------
 // Support tickets + access extension — proves the audit + admin-notify

@@ -35,6 +35,8 @@ vi.mock("./db", () => ({
   listClientInvoices: vi.fn(async () => []),
   listClientMessages: vi.fn(async () => []),
   listClientNotifications: vi.fn(async () => []),
+  setClientNotificationRead: vi.fn(async () => ({ id: 1, readAt: Date.now() })),
+  archiveClientNotification: vi.fn(async () => ({ id: 1, status: "archived" })),
   listClientProjectMilestones: vi.fn(async () => []),
   listClientProjects: vi.fn(async () => []),
   listClientRecommendations: vi.fn(async () => []),
@@ -495,6 +497,27 @@ describe("clientPortal router", () => {
         supersedesDocumentId: 999,
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("markNotificationRead: marks a notification read and surfaces NOT_FOUND for an unknown one (Milestone 2 §2.7)", async () => {
+    const db = await import("./db");
+    const caller = appRouter.createCaller(makeCtx({ role: "client", orgId: 7 }));
+    const r = await caller.clientPortal.markNotificationRead({ notificationId: 5 });
+    expect(r).toMatchObject({ id: 1 });
+    expect(db.setClientNotificationRead).toHaveBeenCalledWith(7, 5, true);
+
+    (db.setClientNotificationRead as any).mockResolvedValueOnce(null);
+    await expect(
+      caller.clientPortal.markNotificationRead({ notificationId: 999 }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("archiveNotification: archives a notification (Milestone 2 §2.7)", async () => {
+    const db = await import("./db");
+    const caller = appRouter.createCaller(makeCtx({ role: "client", orgId: 7 }));
+    const r = await caller.clientPortal.archiveNotification({ notificationId: 5 });
+    expect(r).toMatchObject({ status: "archived" });
+    expect(db.archiveClientNotification).toHaveBeenCalledWith(7, 5);
   });
 
   it("requestDocumentDeletion: only the uploader can delete their file", async () => {

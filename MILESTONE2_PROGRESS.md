@@ -24,7 +24,7 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 | 2.4 Core Workflow Verification & Conversion | ✅ Done this session — every previously-undisclosed fabricated panel on Executive Overview now wired to real data or disclosed; the underlying admin.summary fabrication bug fixed too |
 | 2.5 Enterprise Super Admin & Platform Governance | 🔶 Partial — Organization Management, Technical Operator role + Security Center, Business Intelligence dashboards, platform configuration store, MFA compliance visibility, and AI governance config done and tested; real third-party integration/notification-template management and a hard blocking MFA gate NOT started (both deliberately deferred — see detail below) |
 | 2.6 Document Lifecycle / Workflow Engine / Integrations | ✅ Done — document lifecycle, workflow-definition engine, and integration/webhook registry all built and tested |
-| 2.7 Notification Infrastructure | ⏭ Not started |
+| 2.7 Notification Infrastructure | ✅ Done — central notification service, schema extension, mark-as-read/archive, and a real Notification Center UI on both portals, all built and tested |
 
 **This session's central finding — the connected Supabase project is gone.** The `.env` credentials from the session that did RM-41..60 (a different session than the one that wrote §2.1–2.4 above, which had no credentials at all) no longer work: `rhgzcgcqlypuvislwjlf.supabase.co` returns `NXDOMAIN` — the project's own subdomain doesn't resolve in DNS at all, not a transient outage. Confirmed via direct `nslookup`, a raw Postgres connection attempt (pooler responds "tenant/user not found"), and a plain `fetch` to the Auth health endpoint (connection refused). This means **migrations `0006` through `0009` are still authored-and-locally-verified only, same as before** — nothing in this session or the previous one has actually reached a live database. A real test-suite bug this surfaced and fixed: `server/rls.negative.test.ts`'s skip condition only checked that env vars were *present*, not that the project was *reachable*, so it hard-failed the whole suite instead of skipping cleanly — now does a real reachability probe first.
 
@@ -935,19 +935,130 @@ engine, and integration/webhook registry all built and tested.
 
 ---
 
+## 2.7 Notification Infrastructure
+
+**Status: ✅ Done. Central typed notification write service, schema
+extension, mark-as-read/archive mutations, and a real Notification Center
+UI on both the Client Portal and Developer Workspace are all built and
+tested. The bell icon on both portals had a real unread-count badge
+already (reading real data) but no `onClick` at all — clicking it did
+nothing; that's the "currently non-functional" gap this closes.**
+
+### Schema extension
+
+- `drizzle/schema.ts` + `drizzle/0015_notification_infrastructure.sql`:
+  `client_notifications`/`developer_notifications` already had kind/title/
+  body/`href` (already served as the action-URL)/`readAt` — added
+  `priority` (low/normal/high/critical), `channel` (`in_app` vs
+  `in_app_and_email`), `templateKey` (which email template rendered the
+  email side, null for in-app-only), and `status` (`active`/`archived` —
+  the lifecycle field beyond read/unread, which `readAt` already covered).
+  Also added `"notification"` to `email_message_type` (the enum
+  `email_delivery_log` uses) so the email bridge is a real, trackable
+  message type, not miscategorized as something else. No new RLS policies
+  needed — `0004_rls_policies.sql`'s existing "own org/developer can
+  SELECT+UPDATE, admin-only INSERT/DELETE" policies on both tables already
+  cover the new columns (RLS is table-scoped), and the "own org/developer
+  can UPDATE" policy is exactly what backs the new mark-as-read/archive
+  mutations. Same apply/verify caveat as every migration since `0006`.
+
+### Central typed notification write service
+
+- `server/notifications.ts` (new): `notifyClient`/`notifyDeveloper` are
+  the typed entry points. The in-app DB row is always written first,
+  unconditionally; when `channel: "in_app_and_email"` is passed, this
+  bridges to the **exact same** Resend transport built in §2.3
+  (`server/email.ts`'s `dispatchSimpleEmail`, which already logs to
+  `email_delivery_log` — no new send path, no new delivery-tracking table,
+  reusing what's proven and already the honest answer to "delivery
+  queue/log" for every other transactional email in this app). An
+  email-bridge failure is caught and logged, never allowed to undo or
+  block the in-app notification that already exists — verified by test.
+  Recipient resolution: `listOrganizationMemberEmails` (every user in the
+  org, for client notifications) / `getDeveloperEmail` (the developer's
+  own account email, via `developerProfiles.userId -> users.email`).
+- This doesn't replace the existing `appendClientNotification`/
+  `appendDeveloperNotification` DB writers other call sites already use
+  (both extended with the new priority/channel/templateKey fields) — it's
+  the one new place that decides whether an email should ride along. Wired
+  into one real, high-value call site to prove the pipeline end-to-end:
+  `admin.reviewDocument` (§2.6) now calls `notifyClient` with
+  `channel: "in_app_and_email"` after an approve/reject decision, in
+  addition to the workflow-engine and webhook triggers already firing
+  there — one real event now produces an in-app notification, an emailed
+  notification, a workflow run, and a webhook dispatch, all from the same
+  three lines.
+- **"Delivery queue" — honest scope note**: there is no async worker/queue
+  infrastructure anywhere in this app (no Redis/BullMQ/cron-consumer — see
+  `MILESTONE2_PROGRESS.md`'s own notes on the workflow engine and webhook
+  registry above, which are equally synchronous-dispatch, log-tracked, not
+  deferred-and-consumed). `email_delivery_log` **is** this app's real,
+  existing "delivery tracking" answer, and every notification email now
+  flows through it. Building a genuine deferred queue with a worker
+  process would be new infrastructure with no consumer to prove it against
+  — not attempted, documented rather than half-built.
+
+### Mark-as-read / archive mutations
+
+- `server/db/clientPortal.ts`: `setClientNotificationRead`,
+  `archiveClientNotification`, `listOrganizationMemberEmails` (all
+  organizationId-scoped, so a client can never touch another tenant's
+  row).
+- `server/db/developerWorkspace.ts`: `setDeveloperNotificationRead`,
+  `archiveDeveloperNotification`, `getDeveloperEmail` (all
+  developerId-scoped).
+- `server/routers/clientPortal.ts` / `server/routers/developer.ts`:
+  `markNotificationRead`/`archiveNotification` mutations, NOT_FOUND for an
+  unknown/cross-tenant notification id.
+
+### Real Notification Center UI
+
+- `client/src/components/NotificationBell.tsx` (new): a shared dropdown
+  (Radix `DropdownMenu`) used identically by both portals since the two
+  notification shapes are structurally identical — list, unread badge,
+  per-item mark-as-read + dismiss, "Mark all read", clicking a notification
+  with an `href` navigates there and marks it read.
+- `ClientPortalLayout.tsx` / `WorkspaceLayout.tsx`: replaced the
+  decorative `<button>` (real unread badge, no click handler at all) with
+  `<NotificationBell>`, wired to the real queries/mutations.
+  `WorkspaceLayout.tsx` previously received an `unreadNotifs` prop that
+  **no caller ever actually passed** (`DeveloperWorkspace.tsx` never set
+  it, so it silently defaulted to 0 forever) — removed that dead prop and
+  made the layout fetch its own notifications directly via
+  `trpc.developer.listNotifications`, matching `ClientPortalLayout`'s
+  already-self-contained pattern.
+
+### Tests
+
+`server/notifications.test.ts` (new, 6 tests): in-app row always written,
+email bridge only fires for `in_app_and_email`, reuses the real
+`dispatchSimpleEmail`, email-bridge failure never blocks the in-app write,
+developer email-bridge skips silently when no email is on file. Plus new
+tests in `server/clientPortal.test.ts` and `server/developer.test.ts`
+(mark-read/archive RBAC and NOT_FOUND paths) and an extended assertion in
+`server/admin.documentLifecycle.test.ts` (reviewing a document actually
+calls `notifyClient` with the right org/channel).
+
+Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 514/514 passing,
+33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
+`drizzle-kit generate` → "No schema changes, nothing to migrate".
+
+**All of Milestone 2 §2.5, §2.6, and §2.7's buildable scope is now done.**
+What remains across the whole milestone: the admin.action dead-button
+sweep (below), a hard blocking MFA gate and real third-party integration
+wiring (both deliberately deferred in §2.5 with reasoning), and the exit
+gate re-run once `Milestone 2.md` itself is available in this repo.
+
+---
+
 ## Remaining Milestone 2 workstreams
 
-Not yet started:
-- **2.5** (remainder) — see the not-started list above (§2.5 section).
-- **2.7 Notification Infrastructure** — a central typed notification write
-  service, a real Notification Center UI (bell/list/mark-as-read — currently
-  non-functional per the original Milestone 1 audit), a schema extension
-  (priority/channel/template/action-URL/lifecycle-status), a delivery queue,
-  a bridge to the Resend transport §2.3 already built. `client_notifications`/
-  `developer_notifications` tables exist today but are minimal (no priority,
-  channel, or template concept) — this is a real schema migration plus a
-  UI build, not just wiring.
-- Also still open from §2.4: an exhaustive sweep of every remaining
-  `admin.action`-only button across the whole admin console (invoice
-  creation, document upload, others) was not attempted this pass — only the
-  one found on Executive Overview was fixed.
+- Exhaustive sweep of every remaining `admin.action`-only button across
+  the whole admin console (invoice creation, others) — only the ones found
+  on Executive Overview (§2.4) and folded into feature work this pass
+  (Security Monitoring's acknowledge action, Documents' approve/reject,
+  System Settings' edit, Analytics' now-real data, Automations' workflow
+  engine) were fixed; a full sweep of the remainder was not attempted.
+- See the §2.5 "Not started" list above for the two deliberately-deferred
+  items (hard MFA gate, real third-party integration/notification-template
+  content).

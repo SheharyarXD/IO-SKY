@@ -401,11 +401,17 @@ export type InsertLoginAudit = typeof loginAudit.$inferInsert;
  * "sent" permanently, which is honest — there is no delivery confirmation
  * to have for those transports).
  */
+/**
+ * Milestone 2 §2.7 added "notification" — the email side of a
+ * client/developer notification bridged through this same transport (see
+ * server/notifications.ts). Every other value predates this change.
+ */
 export const emailMessageTypeEnum = pgEnum("email_message_type", [
   "booking-confirmation",
   "contact-confirmation",
   "devapp-ack",
   "owner-alert",
+  "notification",
 ]);
 
 export const emailDeliveryStatusEnum = pgEnum("email_delivery_status", [
@@ -758,7 +764,34 @@ export type ClientMessage = typeof clientMessages.$inferSelect;
 /**
  * Notifications shown in the portal bell + recent-activity feed. Cascade
  * with org.
+ *
+ * Milestone 2 §2.7 extension: `priority`/`channel`/`templateKey`/`status`.
+ * `href` already served as the "action-URL" the spec calls for, so it's
+ * unchanged. `channel` records where this notification was (or should be)
+ * delivered — `in_app` writes only this row; `in_app_and_email` also
+ * bridges to the §2.3 Resend transport (see server/notifications.ts,
+ * which reuses email.ts's existing dispatchSimpleEmail — the same
+ * function/email_delivery_log every other transactional email in this
+ * app already goes through, not a new send path). `status` is the
+ * lifecycle field beyond read/unread (`readAt` already covers that):
+ * `active` -> `archived` when a user dismisses a notification without
+ * necessarily marking it read first.
  */
+export const notificationsPriorityEnum = pgEnum("notifications_priority", [
+  "low",
+  "normal",
+  "high",
+  "critical",
+]);
+export const notificationsChannelEnum = pgEnum("notifications_channel", [
+  "in_app",
+  "in_app_and_email",
+]);
+export const notificationsStatusEnum = pgEnum("notifications_status", [
+  "active",
+  "archived",
+]);
+
 export const clientNotifications = pgTable(
   "client_notifications",
   {
@@ -771,6 +804,11 @@ export const clientNotifications = pgTable(
     title: varchar("title", { length: 200 }).notNull(),
     body: text("body"),
     href: varchar("href", { length: 512 }),
+    priority: notificationsPriorityEnum("priority").default("normal").notNull(),
+    channel: notificationsChannelEnum("channel").default("in_app").notNull(),
+    /** Which email template rendered this notification's email side, if channel included email. Null for in_app-only. */
+    templateKey: varchar("templateKey", { length: 64 }),
+    status: notificationsStatusEnum("status").default("active").notNull(),
     readAt: bigint("readAt", { mode: "number" }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
@@ -1332,6 +1370,11 @@ export const developerNotifications = pgTable(
     title: varchar("title", { length: 200 }).notNull(),
     body: text("body"),
     href: varchar("href", { length: 512 }),
+    /** Milestone 2 §2.7 extension — same shape as clientNotifications above. */
+    priority: notificationsPriorityEnum("priority").default("normal").notNull(),
+    channel: notificationsChannelEnum("channel").default("in_app").notNull(),
+    templateKey: varchar("templateKey", { length: 64 }),
+    status: notificationsStatusEnum("status").default("active").notNull(),
     readAt: bigint("readAt", { mode: "number" }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },

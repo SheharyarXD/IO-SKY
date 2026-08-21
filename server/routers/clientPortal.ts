@@ -3,6 +3,8 @@ import { z } from "zod";
 import {
   appendClientMessage,
   appendClientNotification,
+  setClientNotificationRead,
+  archiveClientNotification,
   appendLoginAudit,
   createClientSupportTicket,
   getClientDocumentById,
@@ -114,6 +116,25 @@ export const clientPortalRouter = router({
   notifications: clientProcedure.query(async ({ ctx }) =>
     listClientNotifications(ctx.organizationId),
   ),
+  /** Milestone 2 §2.7 — real Notification Center mark-as-read (bell was previously non-functional). */
+  markNotificationRead: clientProcedure
+    .input(z.object({ notificationId: z.number().int().positive(), read: z.boolean().default(true) }))
+    .mutation(async ({ ctx, input }) => {
+      const updated = await setClientNotificationRead(ctx.organizationId, input.notificationId, input.read);
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Notification not found." });
+      }
+      return updated;
+    }),
+  archiveNotification: clientProcedure
+    .input(z.object({ notificationId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const updated = await archiveClientNotification(ctx.organizationId, input.notificationId);
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Notification not found." });
+      }
+      return updated;
+    }),
 
   strategyCalls: clientProcedure.query(async ({ ctx }) =>
     listStrategyCallsForOrg(ctx.organizationId),

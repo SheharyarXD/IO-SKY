@@ -13,6 +13,7 @@
  */
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,11 +31,11 @@ import {
   UserCog,
   KeyRound,
   LifeBuoy,
-  Bell,
   Menu,
 } from "lucide-react";
 import IOSkyLogo from "@/components/IOSkyLogo";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import NotificationBell from "@/components/NotificationBell";
 
 interface NavItem {
   id: string;
@@ -96,7 +97,6 @@ interface WorkspaceLayoutProps {
   userDisplayName: string;
   userEmail: string | null;
   availability?: "available" | "limited" | "unavailable" | null;
-  unreadNotifs?: number;
   unreadMessages?: number;
   children: ReactNode;
 }
@@ -141,12 +141,23 @@ export default function WorkspaceLayout({
   userDisplayName,
   userEmail,
   availability,
-  unreadNotifs = 0,
   unreadMessages = 0,
   children,
 }: WorkspaceLayoutProps) {
   const [location] = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const utils = trpc.useUtils();
+  const notifsQuery = trpc.developer.listNotifications.useQuery(undefined, {
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const notifications = notifsQuery.data ?? [];
+  const markRead = trpc.developer.markNotificationRead.useMutation({
+    onSuccess: () => utils.developer.listNotifications.invalidate(),
+  });
+  const archiveNotif = trpc.developer.archiveNotification.useMutation({
+    onSuccess: () => utils.developer.listNotifications.invalidate(),
+  });
 
   // Active state matches by exact URL or by being a prefix of a deeper
   // route (e.g. `/developer-workspace/projects/500` should still light up
@@ -304,18 +315,11 @@ export default function WorkspaceLayout({
                 </div>
 
                 <div className="ml-auto flex items-center gap-3">
-                  <button
-                    type="button"
-                    className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.02] text-white/70 hover:text-orange-200 hover:border-orange-500/40 transition-colors"
-                    aria-label="Notifications"
-                  >
-                    <Bell className="h-4 w-4" />
-                    {unreadNotifs > 0 && (
-                      <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-black">
-                        {unreadNotifs}
-                      </span>
-                    )}
-                  </button>
+                  <NotificationBell
+                    notifications={notifications as any}
+                    onMarkRead={(id) => markRead.mutate({ notificationId: id })}
+                    onArchive={(id) => archiveNotif.mutate({ notificationId: id })}
+                  />
 
                   <div className="flex items-center gap-2 pl-3 border-l border-white/10">
                     <Avatar className="h-8 w-8 bg-orange-500/15 ring-1 ring-orange-500/25">

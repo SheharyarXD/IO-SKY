@@ -26,6 +26,8 @@ import {
   listDeveloperFiles,
   listDeveloperMessages,
   listDeveloperNotifications,
+  setDeveloperNotificationRead,
+  archiveDeveloperNotification,
   listDeveloperSubmissions,
   listDeveloperTasks,
   listSignedAgreementsForDeveloper,
@@ -521,6 +523,25 @@ export const developerRouter = router({
   listNotifications: developerProcedure.query(async ({ ctx }) => {
     return listDeveloperNotifications(ctx.developer.id, 50);
   }),
+  /** Milestone 2 §2.7 — real Notification Center mark-as-read (bell was previously non-functional). */
+  markNotificationRead: developerProcedure
+    .input(z.object({ notificationId: z.number().int().positive(), read: z.boolean().default(true) }))
+    .mutation(async ({ ctx, input }) => {
+      const updated = await setDeveloperNotificationRead(ctx.developer.id, input.notificationId, input.read);
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Notification not found." });
+      }
+      return updated;
+    }),
+  archiveNotification: developerProcedure
+    .input(z.object({ notificationId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const updated = await archiveDeveloperNotification(ctx.developer.id, input.notificationId);
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Notification not found." });
+      }
+      return updated;
+    }),
 
   // -----------------------------------------------------------------
   // Step 2 — Editable profile + security

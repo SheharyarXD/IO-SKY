@@ -68,6 +68,7 @@ import {
 } from "../db";
 import { runWorkflowsForTrigger } from "../workflowEngine";
 import { dispatchWebhooksForTrigger } from "../webhookDispatcher";
+import { notifyClient } from "../notifications";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import {
   organizations,
@@ -1274,6 +1275,19 @@ export const adminRouter = router({
       const triggerType = input.decision === "approved" ? "document_approved" : "document_rejected";
       await runWorkflowsForTrigger(triggerType, { documentName: updated.name }, String(input.documentId));
       await dispatchWebhooksForTrigger(triggerType, { documentId: input.documentId, name: updated.name, status: updated.status }, String(input.documentId));
+      // Milestone 2 §2.7 — the client org that owns this document is the
+      // one real, high-value audience for this event, so it goes through
+      // the central notification service with the email bridge on
+      // (not just in-app) rather than the audit-only trail above.
+      await notifyClient({
+        organizationId: updated.organizationId,
+        kind: "document",
+        title: input.decision === "approved" ? `Document approved: ${updated.name}` : `Document rejected: ${updated.name}`,
+        body: input.note ?? null,
+        href: "/client-portal/documents",
+        priority: input.decision === "rejected" ? "high" : "normal",
+        channel: "in_app_and_email",
+      });
       return updated;
     }),
   /** Milestone 2 §2.6 — documented retention policy record (not an enforced TTL, see schema doc comment). */
