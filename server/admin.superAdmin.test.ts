@@ -34,6 +34,7 @@ vi.mock("./db", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
+    listVerifiedMfaFactorsForUser: vi.fn(async () => [{ id: 1, userId: 1, kind: "totp", verifiedAt: new Date() }]),
     appendLoginAudit: appendLoginAuditMock,
     listOrganizations: listOrganizationsMock,
     createOrganization: createOrganizationMock,

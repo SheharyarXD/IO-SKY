@@ -27,6 +27,7 @@ vi.mock("./db", () => {
 
   return {
     __state: state,
+    listVerifiedMfaFactorsForUser: vi.fn(async () => [{ id: 1, userId: 1, kind: "totp", verifiedAt: new Date() }]),
     recordEcosystemClick: vi.fn(async (input: Record<string, unknown>) => {
       state.clicks.push(input);
       return { id: state.clicks.length, ...input };

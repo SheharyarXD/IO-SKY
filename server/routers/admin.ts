@@ -28,7 +28,14 @@
 import { z } from "zod";
 import { count, desc, eq, gte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { adminProcedure, superAdminProcedure, isAdminRole, router } from "../_core/trpc";
+import {
+  adminProcedure,
+  superAdminProcedure,
+  isAdminRole,
+  router,
+  protectedProcedure,
+  evaluatePrivilegedMfaGate,
+} from "../_core/trpc";
 import { getRequestMeta } from "../_core/requestMeta";
 import {
   getDb,
@@ -1786,6 +1793,24 @@ export const adminRouter = router({
       await recordAdminEvent({ ctx, reason: `admin.milestone.update(${id})` });
       return milestone;
     }),
+
+  /**
+   * Milestone 2 §2.5 — hard MFA gate status. Deliberately built on
+   * `protectedProcedure`, NOT `adminProcedure` — the whole point is that a
+   * caller who is failing the gate (no verified MFA factor yet) must still
+   * be able to see *why*, so the UI can render a calm "set up MFA"
+   * interstitial instead of a raw FORBIDDEN error. Never throws for a
+   * non-admin role; just reports `denied` so the UI's last line of
+   * defence (matching WorkspaceGate's own convention) can redirect.
+   */
+  gateStatus: protectedProcedure.query(async ({ ctx }) => {
+    if (!isAdminRole(ctx.user.role)) {
+      return { ok: false as const, reason: "denied" as const };
+    }
+    const gate = await evaluatePrivilegedMfaGate(ctx.user);
+    if (!gate.ok) return { ok: false as const, reason: gate.reason };
+    return { ok: true as const };
+  }),
 
   // -- Health / extra read endpoints --------------------------------------
   mfaPosture: adminProcedure.query(async ({ ctx }) => {

@@ -18,18 +18,23 @@ const {
   listEmailDeliveryLogMock,
   listRecentSecurityEventsMock,
   acknowledgeDeveloperSecurityEventMock,
+  listVerifiedMfaFactorsForUserMock,
 } = vi.hoisted(() => ({
   appendLoginAuditMock: vi.fn(async () => {}),
   getDbMock: vi.fn(async () => null),
   listEmailDeliveryLogMock: vi.fn(async () => [] as any[]),
   listRecentSecurityEventsMock: vi.fn(async () => [] as any[]),
   acknowledgeDeveloperSecurityEventMock: vi.fn(),
+  listVerifiedMfaFactorsForUserMock: vi.fn(async () => [
+    { id: 1, userId: 77, kind: "totp", verifiedAt: new Date() },
+  ]),
 }));
 
 vi.mock("./db", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
+    listVerifiedMfaFactorsForUser: listVerifiedMfaFactorsForUserMock,
     appendLoginAudit: appendLoginAuditMock,
     getDb: getDbMock,
     listEmailDeliveryLog: listEmailDeliveryLogMock,
@@ -73,6 +78,9 @@ function makeCtx(role: AuthenticatedUser["role"] | null, id = 77): TrpcContext {
 beforeEach(() => {
   vi.clearAllMocks();
   getDbMock.mockResolvedValue(null);
+  listVerifiedMfaFactorsForUserMock.mockResolvedValue([
+    { id: 1, userId: 77, kind: "totp", verifiedAt: new Date() },
+  ]);
 });
 
 describe("ops RBAC gating (isOpsRole)", () => {
@@ -192,5 +200,58 @@ describe("ops.acknowledgeSecurityEvent", () => {
       code: "FORBIDDEN",
     });
     expect(acknowledgeDeveloperSecurityEventMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("Milestone 2 §2.5 — hard MFA gate (opsProcedure)", () => {
+  it("blocks technical_operator/admin/super_admin with no verified MFA factor from every ops.* endpoint", async () => {
+    listVerifiedMfaFactorsForUserMock.mockResolvedValue([]);
+    for (const role of ["technical_operator", "admin", "super_admin"] as const) {
+      const caller = appRouter.createCaller(makeCtx(role));
+      await expect(caller.ops.systemHealth()).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "privileged_gate:mfa_required",
+      });
+    }
+  });
+
+  it("an unverified (pending) factor does not satisfy the gate — only verifiedAt-set factors count", async () => {
+    listVerifiedMfaFactorsForUserMock.mockResolvedValue([]);
+    const caller = appRouter.createCaller(makeCtx("technical_operator"));
+    await expect(caller.ops.systemHealth()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "privileged_gate:mfa_required",
+    });
+  });
+
+  it("does not affect client/developer roles at all — the gate only applies to admin/super_admin/technical_operator", async () => {
+    listVerifiedMfaFactorsForUserMock.mockResolvedValue([]);
+    const caller = appRouter.createCaller(makeCtx("client"));
+    // Still FORBIDDEN, but for the role gate (opsProcedure rejects client
+    // outright before ever reaching the MFA check) — not the MFA message.
+    await expect(caller.ops.systemHealth()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.ops.systemHealth()).rejects.not.toMatchObject({
+      message: "privileged_gate:mfa_required",
+    });
+  });
+
+  it("ops.gateStatus reports mfa_required without throwing, so the console can render a calm interstitial", async () => {
+    listVerifiedMfaFactorsForUserMock.mockResolvedValue([]);
+    const caller = appRouter.createCaller(makeCtx("technical_operator"));
+    await expect(caller.ops.gateStatus()).resolves.toEqual({
+      ok: false,
+      reason: "mfa_required",
+    });
+  });
+
+  it("ops.gateStatus reports ok once a verified factor exists", async () => {
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    await expect(caller.ops.gateStatus()).resolves.toEqual({ ok: true });
+  });
+
+  it("ops.gateStatus reports denied (not mfa_required) for a non-ops role", async () => {
+    listVerifiedMfaFactorsForUserMock.mockResolvedValue([]);
+    const caller = appRouter.createCaller(makeCtx("client"));
+    await expect(caller.ops.gateStatus()).resolves.toEqual({ ok: false, reason: "denied" });
   });
 });

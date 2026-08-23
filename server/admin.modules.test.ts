@@ -13,16 +13,20 @@
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-const { appendLoginAuditMock, listRecentBookingsMock, getDbMock } = vi.hoisted(() => ({
+const { appendLoginAuditMock, listRecentBookingsMock, getDbMock, listVerifiedMfaFactorsForUserMock } = vi.hoisted(() => ({
   appendLoginAuditMock: vi.fn(async () => {}),
   listRecentBookingsMock: vi.fn(async () => [] as any[]),
   getDbMock: vi.fn(async () => null),
+  listVerifiedMfaFactorsForUserMock: vi.fn(async () => [
+    { id: 1, userId: 99, kind: "totp", verifiedAt: new Date() },
+  ]),
 }));
 
 vi.mock("./db", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
+    listVerifiedMfaFactorsForUser: listVerifiedMfaFactorsForUserMock,
     appendLoginAudit: appendLoginAuditMock,
     listRecentBookings: listRecentBookingsMock,
     getDb: getDbMock,
@@ -65,6 +69,10 @@ beforeEach(() => {
   appendLoginAuditMock.mockClear();
   listRecentBookingsMock.mockClear();
   getDbMock.mockClear();
+  listVerifiedMfaFactorsForUserMock.mockClear();
+  listVerifiedMfaFactorsForUserMock.mockResolvedValue([
+    { id: 1, userId: 99, kind: "totp", verifiedAt: new Date() },
+  ]);
 });
 
 const MODULES = [
@@ -187,5 +195,58 @@ describe("admin.viewAs", () => {
       typeof c[0]?.reason === "string" && c[0].reason.startsWith("admin.view_as.developer"),
     );
     expect(audited).toBe(true);
+  });
+});
+
+describe("Milestone 2 §2.5 — hard MFA gate (adminProcedure)", () => {
+  it("blocks admin/super_admin with no verified MFA factor from every admin.* endpoint", async () => {
+    listVerifiedMfaFactorsForUserMock.mockResolvedValue([]);
+    for (const role of ["admin", "super_admin"] as const) {
+      const caller = appRouter.createCaller(makeCtx(role));
+      await expect(caller.admin.summary()).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "privileged_gate:mfa_required",
+      });
+    }
+  });
+
+  it("does not block client/developer roles with the MFA message (they never reach adminProcedure at all)", async () => {
+    listVerifiedMfaFactorsForUserMock.mockResolvedValue([]);
+    const caller = appRouter.createCaller(makeCtx("user"));
+    await expect(caller.admin.summary()).rejects.not.toMatchObject({
+      message: "privileged_gate:mfa_required",
+    });
+  });
+
+  it("admin.gateStatus reports mfa_required without throwing", async () => {
+    listVerifiedMfaFactorsForUserMock.mockResolvedValue([]);
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    await expect(caller.admin.gateStatus()).resolves.toEqual({
+      ok: false,
+      reason: "mfa_required",
+    });
+  });
+
+  it("admin.gateStatus reports ok once a verified factor exists", async () => {
+    const caller = appRouter.createCaller(makeCtx("super_admin"));
+    await expect(caller.admin.gateStatus()).resolves.toEqual({ ok: true });
+  });
+
+  it("admin.gateStatus reports denied for a non-admin role, never mfa_required", async () => {
+    listVerifiedMfaFactorsForUserMock.mockResolvedValue([]);
+    const caller = appRouter.createCaller(makeCtx("user"));
+    await expect(caller.admin.gateStatus()).resolves.toEqual({ ok: false, reason: "denied" });
+  });
+
+  it("an unverified pending factor (verifiedAt still null) does not satisfy the gate", async () => {
+    // listVerifiedMfaFactorsForUser only ever returns verified rows by
+    // contract (server/db/mfa.ts) — an empty result here IS the "user has
+    // a pending, unverified factor" case from the gate's point of view.
+    listVerifiedMfaFactorsForUserMock.mockResolvedValue([]);
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    await expect(caller.admin.summary()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "privileged_gate:mfa_required",
+    });
   });
 });

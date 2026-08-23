@@ -52,6 +52,7 @@ vi.mock("./db", () => {
 
   return {
     __state: state,
+    listVerifiedMfaFactorsForUser: vi.fn(async () => [{ id: 1, userId: 1, kind: "totp", verifiedAt: new Date() }]),
     createBooking: vi.fn(async (input: Record<string, unknown>) => {
       const row = {
         id: state.nextId++,

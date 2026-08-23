@@ -13,10 +13,11 @@
  * throws before the resolver runs, so no DB access happens and no mocking
  * of server/db is required — the middleware itself is what's under test.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import type { User } from "../drizzle/schema";
+import { NOT_ADMIN_ERR_MSG } from "../shared/const";
 
 function manusUser(overrides: Partial<User> = {}): User {
   return {
@@ -118,27 +119,28 @@ describe("RBAC is identical regardless of auth origin (RM-55)", () => {
   }
 
   it("role gating never inspects openId/authUserId - a Supabase-shaped admin passes the SAME adminProcedure check a Manus-shaped admin would reach for", async () => {
-    // Both should fail for the SAME reason (FORBIDDEN, not some
-    // identity-shape-specific error) once they're past the role gate -
-    // proves the gate itself doesn't branch on auth origin. We can't run
+    // Both should fail for the SAME reason once they're past the role gate
+    // - proves the gate itself doesn't branch on auth origin. We can't run
     // the full resolver here without DB mocks (out of scope for this
     // file), but we can assert both reach the resolver (i.e. neither is
     // rejected by the role check) by confirming neither throws the
-    // UNAUTHORIZED/FORBIDDEN error the earlier tests assert on.
+    // UNAUTHORIZED/role-FORBIDDEN error the earlier tests assert on. A
+    // FORBIDDEN with the hard MFA gate's own message (Milestone 2 §2.5)
+    // still counts as "passed the role gate" - it's a different, later
+    // middleware in the same chain, not the role check under test here.
     const manusAdmin = manusUser({ role: "admin" });
     const supabaseAdmin = supabaseUser({ role: "admin" });
     for (const admin of [manusAdmin, supabaseAdmin]) {
       const caller = appRouter.createCaller(makeCtx(admin));
-      // admin.summary's resolver will itself throw/reject once it tries to
-      // touch the DB (no DATABASE_URL in the test environment) - what
-      // matters for this test is that it's NOT a FORBIDDEN/UNAUTHORIZED
-      // tRPC error, which would indicate the role gate rejected a real admin.
       try {
         await caller.admin.summary();
       } catch (err) {
         const code = (err as { code?: string })?.code;
-        expect(code).not.toBe("FORBIDDEN");
+        const message = (err as { message?: string })?.message;
         expect(code).not.toBe("UNAUTHORIZED");
+        if (code === "FORBIDDEN") {
+          expect(message).not.toBe(NOT_ADMIN_ERR_MSG);
+        }
       }
     }
   });
@@ -152,8 +154,11 @@ describe("RBAC is identical regardless of auth origin (RM-55)", () => {
         await caller.admin.summary();
       } catch (err) {
         const code = (err as { code?: string })?.code;
-        expect(code).not.toBe("FORBIDDEN");
+        const message = (err as { message?: string })?.message;
         expect(code).not.toBe("UNAUTHORIZED");
+        if (code === "FORBIDDEN") {
+          expect(message).not.toBe(NOT_ADMIN_ERR_MSG);
+        }
       }
     }
   });
@@ -163,14 +168,24 @@ describe("RBAC is identical regardless of auth origin (RM-55)", () => {
     // (Milestone 2 §2.5 adds those) — this asserts the middleware
     // contract directly instead of through a router path.
     const { superAdminProcedure, router } = await import("./_core/trpc");
-    const testRouter = router({
-      probe: superAdminProcedure.query(() => "ok" as const),
-    });
-    await expect(
-      testRouter.createCaller(makeCtx(manusUser({ role: "admin" }))).probe(),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(
-      testRouter.createCaller(makeCtx(manusUser({ role: "super_admin" }))).probe(),
-    ).resolves.toBe("ok");
+    const dbModule = await import("./db");
+    const mfaSpy = vi
+      .spyOn(dbModule, "listVerifiedMfaFactorsForUser")
+      .mockResolvedValue([
+        { id: 1, userId: 1, kind: "totp", verifiedAt: new Date() } as any,
+      ]);
+    try {
+      const testRouter = router({
+        probe: superAdminProcedure.query(() => "ok" as const),
+      });
+      await expect(
+        testRouter.createCaller(makeCtx(manusUser({ role: "admin" }))).probe(),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        testRouter.createCaller(makeCtx(manusUser({ role: "super_admin" }))).probe(),
+      ).resolves.toBe("ok");
+    } finally {
+      mfaSpy.mockRestore();
+    }
   });
 });

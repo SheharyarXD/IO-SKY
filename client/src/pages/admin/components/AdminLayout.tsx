@@ -19,6 +19,8 @@ import IOSkyLogo from "@/components/IOSkyLogo";
 import { cn } from "@/lib/utils";
 import { getLoginUrl } from "@/const";
 import { debugLog } from "@/lib/debugLog";
+import { trpc } from "@/lib/trpc";
+import AdminSecurityCenter from "../sections/AdminSecurityCenter";
 import {
   LayoutDashboard,
   Users,
@@ -113,6 +115,22 @@ export function AdminLayout({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const { user, loading, isAuthenticated, roleHome, isAdminRole } = useRouteGuard();
+
+  // Milestone 2 §2.5 — hard, blocking MFA gate for admin/super_admin.
+  // Deliberately polls while blocked (rather than requiring a manual
+  // refresh/navigation) so the console unlocks the instant enrollment
+  // succeeds, matching the calm-interstitial pattern the Developer
+  // Workspace's WorkspaceGate already established for its own mfa_required
+  // state.
+  const gateStatus = trpc.admin.gateStatus.useQuery(undefined, {
+    enabled: isAuthenticated && !!(user as any)?.role && isAdminRole((user as any).role),
+    refetchOnWindowFocus: false,
+    retry: false,
+    refetchInterval: (query) =>
+      query.state.data && !query.state.data.ok ? 4000 : false,
+  });
+  const mfaGateBlocked =
+    !!gateStatus.data && !gateStatus.data.ok && gateStatus.data.reason === "mfa_required";
 
   // Tick the date/time chip once a minute so it doesn't feel frozen.
   useEffect(() => {
@@ -451,7 +469,28 @@ export function AdminLayout({
           </header>
 
           {/* Page content */}
-          <main className="flex-1 px-5 lg:px-7 py-5 lg:py-6">{children}</main>
+          <main className="flex-1 px-5 lg:px-7 py-5 lg:py-6">
+            {mfaGateBlocked ? (
+              <div className="space-y-4">
+                <div className="rounded-[14px] border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 flex items-start gap-3">
+                  <KeyRound className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[13px] font-medium text-amber-200">
+                      Multi-factor authentication is required for this account
+                    </p>
+                    <p className="text-[12px] text-amber-200/70 mt-0.5">
+                      Administrator and Super Administrator accounts must enroll a second factor
+                      before the rest of the console is reachable. This section unlocks
+                      automatically once you've enrolled below.
+                    </p>
+                  </div>
+                </div>
+                <AdminSecurityCenter />
+              </div>
+            ) : (
+              children
+            )}
+          </main>
 
           {/* Bottom feed strip */}
           <footer className="border-t border-white/[0.06] bg-[#080C18]/80 backdrop-blur-xl">

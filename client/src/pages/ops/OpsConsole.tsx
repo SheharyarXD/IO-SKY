@@ -19,6 +19,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useRouteGuard } from "@/_core/hooks/useRouteGuard";
 import { getLoginUrl } from "@/const";
+import AdminSecurityCenter from "@/pages/admin/sections/AdminSecurityCenter";
 import {
   Loader2,
   ServerCog,
@@ -78,9 +79,26 @@ export default function OpsConsole() {
 
   const enabled = isAuthenticated && isOpsRole(user?.role);
 
-  const health = trpc.ops.systemHealth.useQuery(undefined, { enabled, refetchInterval: 60_000 });
-  const emailLog = trpc.ops.emailDeliveryLog.useQuery(undefined, { enabled });
-  const securityEvents = trpc.ops.securityEvents.useQuery(undefined, { enabled });
+  // Milestone 2 §2.5 — hard, blocking MFA gate for technical_operator/
+  // admin/super_admin. Polls while blocked so the console unlocks
+  // automatically the instant enrollment succeeds (see AdminLayout for
+  // the same pattern on the admin side).
+  const gateStatus = trpc.ops.gateStatus.useQuery(undefined, {
+    enabled,
+    refetchOnWindowFocus: false,
+    retry: false,
+    refetchInterval: (query) =>
+      query.state.data && !query.state.data.ok ? 4000 : false,
+  });
+  const mfaGateBlocked =
+    !!gateStatus.data && !gateStatus.data.ok && gateStatus.data.reason === "mfa_required";
+
+  const health = trpc.ops.systemHealth.useQuery(undefined, {
+    enabled: enabled && !mfaGateBlocked,
+    refetchInterval: 60_000,
+  });
+  const emailLog = trpc.ops.emailDeliveryLog.useQuery(undefined, { enabled: enabled && !mfaGateBlocked });
+  const securityEvents = trpc.ops.securityEvents.useQuery(undefined, { enabled: enabled && !mfaGateBlocked });
   const utils = trpc.useUtils();
   const acknowledge = trpc.ops.acknowledgeSecurityEvent.useMutation({
     onSuccess: () => {
@@ -137,6 +155,25 @@ export default function OpsConsole() {
       </header>
 
       <main className="px-5 lg:px-7 py-6 max-w-[1200px] mx-auto space-y-6">
+        {mfaGateBlocked ? (
+          <div className="space-y-4">
+            <div className="rounded-[14px] border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 flex items-start gap-3">
+              <KeyRound className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[13px] font-medium text-amber-200">
+                  Multi-factor authentication is required for this account
+                </p>
+                <p className="text-[12px] text-amber-200/70 mt-0.5">
+                  Technical Operator, Administrator, and Super Administrator accounts must enroll
+                  a second factor before the console is reachable. This page unlocks
+                  automatically once you've enrolled below.
+                </p>
+              </div>
+            </div>
+            <AdminSecurityCenter />
+          </div>
+        ) : (
+          <>
         {/* Infra health strip */}
         <section>
           <h2 className="text-[13px] font-mono uppercase tracking-[0.16em] text-white/50 mb-3">System Health (24h)</h2>
@@ -294,6 +331,8 @@ export default function OpsConsole() {
             </table>
           </div>
         </section>
+          </>
+        )}
       </main>
     </div>
   );

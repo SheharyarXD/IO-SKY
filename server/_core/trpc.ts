@@ -180,6 +180,42 @@ export const developerSelfProcedure = t.procedure.use(
   }),
 );
 
+/**
+ * Milestone 2 §2.5 — the hard, blocking per-role MFA gate. Deliberately
+ * scoped to the highest-privilege roles only (admin, super_admin,
+ * technical_operator) rather than every role: client/developer are
+ * self-service accounts with their own separate MFA UX (clientPortal's
+ * lite toggle, the developer gate's own mfa_required check), while these
+ * three roles hold the platform's most sensitive capabilities (customer
+ * data, financial records, infra visibility) and were previously the only
+ * authenticated tier with NO enforcement at all. Uses the same
+ * `mfa_factors`/`listVerifiedMfaFactorsForUser` source of truth
+ * `admin.mfaPosture`'s compliance dashboard already reads — a verified
+ * factor, not just `users.mfaMethod` (which clients/developers can set
+ * without proof of possession via the lite toggle).
+ */
+const PRIVILEGED_MFA_ROLES = new Set(["admin", "super_admin", "technical_operator"]);
+
+export async function evaluatePrivilegedMfaGate(
+  user: User,
+): Promise<{ ok: true } | { ok: false; reason: "mfa_required" }> {
+  if (!PRIVILEGED_MFA_ROLES.has(user.role)) return { ok: true };
+  const { listVerifiedMfaFactorsForUser } = await import("../db");
+  const factors = await listVerifiedMfaFactorsForUser(user.id);
+  if (factors.length === 0) return { ok: false, reason: "mfa_required" };
+  return { ok: true };
+}
+
+async function assertPrivilegedMfaGate(user: User) {
+  const result = await evaluatePrivilegedMfaGate(user);
+  if (!result.ok) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `privileged_gate:${result.reason}`,
+    });
+  }
+}
+
 export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
@@ -187,6 +223,7 @@ export const adminProcedure = t.procedure.use(
     if (!ctx.user || !isAdminRole(ctx.user.role)) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
+    await assertPrivilegedMfaGate(ctx.user);
 
     return next({
       ctx: {
@@ -214,6 +251,7 @@ export const superAdminProcedure = t.procedure.use(
     if (!ctx.user || ctx.user.role !== "super_admin") {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
+    await assertPrivilegedMfaGate(ctx.user);
 
     return next({
       ctx: {
@@ -246,6 +284,7 @@ export const opsProcedure = t.procedure.use(
     if (!ctx.user || !isOpsRole(ctx.user.role)) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
+    await assertPrivilegedMfaGate(ctx.user);
 
     return next({
       ctx: {

@@ -19,7 +19,13 @@
 import { z } from "zod";
 import { count, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { opsProcedure, router } from "../_core/trpc";
+import {
+  opsProcedure,
+  protectedProcedure,
+  isOpsRole,
+  evaluatePrivilegedMfaGate,
+  router,
+} from "../_core/trpc";
 import { getRequestMeta } from "../_core/requestMeta";
 import {
   getDb,
@@ -67,6 +73,22 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 }
 
 export const opsRouter = router({
+  /**
+   * Milestone 2 §2.5 — hard MFA gate status for the ops console. See
+   * admin.gateStatus's doc comment for the full reasoning; this is the
+   * technical_operator-reachable twin of it (technical_operator never
+   * passes `isAdminRole`, so it needs its own entry point built on
+   * `protectedProcedure` rather than `adminProcedure`).
+   */
+  gateStatus: protectedProcedure.query(async ({ ctx }) => {
+    if (!isOpsRole(ctx.user.role)) {
+      return { ok: false as const, reason: "denied" as const };
+    }
+    const gate = await evaluatePrivilegedMfaGate(ctx.user);
+    if (!gate.ok) return { ok: false as const, reason: gate.reason };
+    return { ok: true as const };
+  }),
+
   /**
    * Aggregate infra-health snapshot: email delivery health (24h), failed
    * logins (24h), security event volume by severity (24h), MFA enrollment
