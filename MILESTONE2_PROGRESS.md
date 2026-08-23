@@ -11,6 +11,63 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 
 ---
 
+## Handoff summary (as of 2026-08-23, latest session — supersedes the 2026-08-21 entry below)
+
+**The central blocker is resolved: the Supabase project is back online.** `rhgzcgcqlypuvislwjlf.supabase.co`
+resolves again and the client provided working credentials (`.env` created this session). Direct
+`nslookup`, a raw Postgres connection, and a `fetch` to the Auth health endpoint all confirmed
+reachability before anything was touched.
+
+**Migrations `0006` through `0015` are now genuinely applied and live-verified** — not just
+authored. A real bookkeeping bug was found and fixed along the way: `drizzle.__drizzle_migrations`
+had 3 rows (originally IDs 6/7/8) claiming `0006`-`0008` were applied, but direct schema inspection
+proved none of their DDL had actually landed (no `super_admin` enum value, no storage buckets, no
+`email_delivery_log` table) — evidence points to the apply run being interrupted when the project
+went unreachable partway through a prior session. After correcting the tracking table (matched by
+`created_at` timestamp against the migration journal, not by row id — the id numbering had its own
+unrelated offset from years of history) and hand-rolling a statement-by-statement runner (needed
+because Postgres forbids using a fresh enum value in the same transaction that added it, and
+`storage.objects` is owned by `supabase_storage_admin` so its RLS-enable statement needs a
+known-safe skip — already enabled by Supabase default, confirmed via `pg_class.relrowsecurity`),
+all 10 pending migrations applied cleanly. Live-verified: 4 storage buckets + 7 RLS policies on
+`storage.objects`, `platform_settings`/`workflow_definitions`/`workflow_runs`/
+`webhook_registrations`/`webhook_deliveries`/`email_delivery_log` all exist, `users_role` enum has
+`super_admin`+`technical_operator`, `client_documents` has its 7 new lifecycle columns,
+`client_notifications`/`developer_notifications` have their 4 new columns, 113 RLS policies total
+(up from 102). `server/rls.negative.test.ts`'s 18 tests now run for real against the live project
+(previously always skipped) and all pass, including live cross-tenant denial checks.
+
+**§2.5's previously-deferred hard MFA gate is now built, tested, and live-verified.** Per explicit
+client decision: enforced for `admin`/`super_admin`/`technical_operator` only (client/developer
+keep their own separate MFA paths, unaffected). `adminProcedure`/`superAdminProcedure`/
+`opsProcedure` now require a verified `mfa_factors` row before granting access — the same
+`listVerifiedMfaFactorsForUser` source of truth `admin.mfaPosture`'s compliance dashboard already
+reads, not just the self-toggleable `users.mfaMethod` field. New `admin.gateStatus`/`ops.gateStatus`
+queries (built on `protectedProcedure`, not `adminProcedure` — the whole point is a blocked caller
+must still be able to see *why*) let `AdminLayout`/`OpsConsole` render a calm interstitial (reusing
+the existing `AdminSecurityCenter` TOTP/SMS enrollment UI) instead of a raw FORBIDDEN, polling every
+4s while blocked so the console unlocks the instant enrollment succeeds — mirrors the Developer
+Workspace's own `WorkspaceGate`/`mfa_required` pattern. 12 new unit tests (mocked DB state) plus a
+genuine one-off live-session script: created a temp admin user in the real database, confirmed
+`admin.gateStatus`/`admin.summary` were blocked, enrolled a real TOTP factor end-to-end (computed an
+actual valid 6-digit code the same way an authenticator app would, not a stub), confirmed the gate
+opened immediately after, then cleaned up every row it created. Zero admin/super_admin/
+technical_operator accounts exist in the live database yet, so turning this on could not lock
+anyone out — the safest possible moment to ship it.
+
+**Verification this session**: `npx tsc --noEmit` → 0 errors · `npx vitest run` → 555/570 passing,
+15 correctly skipped, 0 regressions (up from 543/558 — +12 new MFA-gate tests) · `pnpm run build` →
+succeeds · `npx drizzle-kit generate` → "No schema changes, nothing to migrate".
+
+**Still open**: real third-party integration wiring (Stripe/Twilio/SendGrid/production Resend/an
+LLM provider) — client confirmed no credentials are available yet, deliberately not attempted.
+Remaining `admin.action` dead buttons needing new subsystems (Users & Permissions "Invite user",
+Developer Management "Grant access", AI Scans "Trigger scan") or third-party integrations
+(Campaigns, Agents/IVR, Security "Run scan") — see that section below for current status. The exit
+gate re-run still needs `Milestone 2.md` itself, not present in this repo.
+
+---
+
 ## Handoff summary (as of 2026-08-21, end of latest session)
 
 **Overall (updated same day, after the continuation pass below): all 7 Milestone 2 workstreams
@@ -726,17 +783,18 @@ super_admin, so this needed no new endpoint).
 - `server/admin.mfaPosture.test.ts` (new, 2 tests): honest offline shape
   including `byRole: []`, admin-only gating.
 
-**Deliberately NOT built**: a hard, blocking "require MFA for this role/org"
-login-time gate. Unlike `developer` (which already has one via
-`resolveDeveloperContext`/`evaluateDeveloperGate`), adding this for
-admin/client/super_admin/technical_operator would mean modifying
-`requireUser`/`protectedProcedure` — the middleware nearly every
-authenticated endpoint in this app is built on — which needs to be
-verified against a live session/login flow before shipping. The connected
-Supabase project is unreachable this session (see the handoff summary), so
-that verification isn't safely possible right now; building it unverified
-risks locking real users out of the entire app. Visibility (above) is the
-real, safe, honestly-scoped deliverable for this pass.
+**Update (2026-08-23 session): the hard MFA gate is now built.** See the
+2026-08-23 handoff summary at the top of this document for full detail —
+`admin`/`super_admin`/`technical_operator` now require a verified
+`mfa_factors` row via `adminProcedure`/`superAdminProcedure`/`opsProcedure`,
+client-side interstitials on both `AdminLayout` and `OpsConsole`, 12 new
+tests plus a genuine live-session verification against the real Supabase
+project (temp admin created, blocked pre-enrollment, real TOTP enrolled,
+confirmed unblocked, cleaned up). This was safely buildable now because (1)
+the Supabase project is reachable again, letting the gate be verified
+against a live session as this section originally required, and (2) zero
+admin/super_admin/technical_operator accounts exist in the live database,
+so enabling it could not lock out any real user.
 
 Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 468/468 passing,
 33 correctly skipped, 0 regressions. `pnpm run build` → succeeds.
@@ -777,9 +835,12 @@ Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 468/468 passing,
   (see above), but it does not wire real Stripe/Twilio/SendGrid provider
   credentials, and notification templates need §2.7's notification schema
   to exist first (a template is meaningless without the typed notification
-  system it renders for) — tracked there, not duplicated here.
-- **A hard, blocking per-role/org MFA gate** — deliberately not built this
-  pass. See "MFA compliance visibility" below for what *is* real now.
+  system it renders for) — tracked there, not duplicated here. Still
+  blocked as of 2026-08-23: client confirmed no provider credentials are
+  available yet.
+- ~~A hard, blocking per-role/org MFA gate~~ — **done as of 2026-08-23**,
+  see the "MFA compliance visibility" section above and the 2026-08-23
+  handoff summary at the top of this document.
 
 ---
 
@@ -1112,22 +1173,56 @@ Each of the six above has real tests: `server/admin.createInvoice.test.ts`
 (3) — RBAC, NOT_FOUND/INTERNAL_SERVER_ERROR paths, audit logging, zod
 validation.
 
-**Deliberately not attempted** — each of these needs either a real
+**Update (2026-08-23 session): two more closed**, now that the live
+Supabase project made further verification possible:
+
+- **Developer Management "Grant access"** — new `admin.grantDeveloperAccess`
+  mutation, inserting into the existing `developer_access_scopes` table
+  (no new schema needed — the table already existed for the storage-RLS
+  and developer-gate work, just had no admin-side writer). Picks an
+  existing developer, an access level (baseline/extended/elevated), and an
+  optional expiry (`window.prompt`-based, matching the established
+  lightweight-flow convention). While touching the Developers page, also
+  found and fixed a latent bug: its scope-lookup `Map` was built via
+  `new Map(scopes.map(...))` over a desc-sorted-by-createdAt array, which
+  silently keeps the *last* write for a duplicate key — i.e. a developer's
+  *oldest* scope, not newest. Harmless while no developer could have more
+  than one scope row (nothing ever wrote a second one), but this feature
+  makes multi-row developers real, so fixed it to correctly keep the
+  newest. 6 new tests (`server/admin.grantDeveloperAccess.test.ts`).
+- **AI Scans "Trigger scan"** — deliberately reframed, not fabricated:
+  there is no honest way to run the AI Scan engine for an arbitrary
+  lead/org, because the engine scores a client's *actual questionnaire
+  answers* — it doesn't invent them. The real, useful admin action here is
+  a **retry**: `admin.retriggerAiScan` re-invokes the exact same scoring
+  pipeline (extracted out of `aiScans.submitQuestionnaire` into a shared
+  `runAiScanEngine()` so there's only one real implementation) against a
+  scan's own already-stored `responses`, scoped to `pending`/`failed`
+  scans only (rejects `scoring`/`ready` with `PRECONDITION_FAILED`, and
+  rejects a scan with no valid stored answers with `BAD_REQUEST` rather
+  than inventing some). The admin UI's "Retry scan" button only offers
+  scans in the *failed* display state — the table's status mapping
+  collapses the real `pending`/`scoring` states into one ambiguous
+  "in_progress" label, so offering retry for that label risked the UI
+  suggesting an action the backend would correctly reject. 8 new tests
+  (`server/admin.retriggerAiScan.test.ts`).
+
+**Deliberately still not attempted** — each of these needs either a real
 third-party integration this app doesn't have, or a genuinely new
 subsystem comparable in scope to §2.5–2.7's own workstreams, not a button
 wiring fix:
-- **AI Scans "Trigger scan"** — would need a real target-picking flow and
-  invoking the actual AI Scan generation pipeline for an arbitrary
-  lead/org; the pipeline itself is real (`aiScans.ts`) but there's no
-  admin-initiated entry point into it today.
 - **Users & Permissions "Invite user"** — needs a real invite/signup
-  email flow (token generation, an acceptance page, account creation) —
-  a new subsystem, not a create-row mutation.
-- **Developer Management "Grant access"** — developer access requests
-  already have a self-service creation path
-  (`developer.createDeveloperAccessRequest`); an admin-initiated *grant*
-  flow (picking a developer, a project, a scope) doesn't exist and is a
-  real design decision, not a stub fix.
+  flow: a new `user_invites`-shaped table (or equivalent), an email with a
+  signed token, an acceptance page, and — the genuinely sensitive part —
+  wiring into the shared Supabase Auth *user-provisioning* path
+  (`server/_core/oauth.ts`/`supabaseAuthRoute.ts`) so a freshly-created
+  account picks up the invited role/org instead of the default. That
+  provisioning path is shared by every login on the platform; changing it
+  needs a real browser-based signup click-through to verify (this
+  environment has no browser tool) before it's safe to ship, the same
+  class of caution that gated the hard MFA gate until live-session
+  verification was possible. Distinct from a plain create-row mutation —
+  tracked here, not attempted this pass.
 - **Security Monitoring "Run scan"** — there is no real security-scanning
   system anywhere in this codebase to invoke; inventing one would be
   fabrication.
@@ -1135,24 +1230,27 @@ wiring fix:
   both pages are 100%-`sampleData`-disclosed already (no Twilio/SendGrid/
   IVR integration exists); a real "new campaign" action needs an actual
   provider account behind it, same reasoning as §2.5's "real third-party
-  integration management" deferral.
+  integration management" deferral. Confirmed again 2026-08-23: client has
+  no such credentials yet.
 - **Executive Overview "Grant temp access"** — already an audited stub by
   design from an earlier session's pass (a deliberate, documented choice
   at the time, not an oversight).
 
-Verified: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 525/525
-passing, 33 correctly skipped, 0 regressions. `pnpm run build` →
+Verified (2026-08-23): `npx tsc --noEmit` → 0 errors. `npx vitest run` →
+569/584 passing, 15 correctly skipped, 0 regressions. `pnpm run build` →
 succeeds.
 
 ---
 
 ## Remaining Milestone 2 workstreams
 
-- The dead-button items listed as "deliberately not attempted" immediately
-  above.
-- See the §2.5 "Not started" list above for the two deliberately-deferred
-  items (hard MFA gate, real third-party integration/notification-template
-  content).
+- **Users & Permissions "Invite user"** — see the dead-button section
+  above for exact scope and why it's distinct from the two closed
+  2026-08-23.
+- Real third-party integration wiring (Stripe/Twilio/SendGrid/production
+  Resend/an LLM provider) and the remaining `sampleData`-disclosed
+  dead-button items above (Security "Run scan", Campaigns/Agents) — client
+  confirmed 2026-08-23 no provider credentials are available yet.
 - Re-run the full exit-gate checklist in `Milestone 2.md`'s final section
   once that file is available in this repo (it wasn't found anywhere in
   this working tree as of this writing) — "exit gate passed" can't be
