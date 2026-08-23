@@ -66,6 +66,29 @@ Developer Management "Grant access", AI Scans "Trigger scan") or third-party int
 (Campaigns, Agents/IVR, Security "Run scan") — see that section below for current status. The exit
 gate re-run still needs `Milestone 2.md` itself, not present in this repo.
 
+**Later the same day (2026-08-23)**: prepared a client-facing delivery report with real screenshots
+of the running app, and — while actually logging into the live console end-to-end to capture them
+— found and fixed **four real bugs** that would have affected any real user signing in on a
+deployment without Manus OAuth configured (the local email/password path RM-50 added specifically
+so the app doesn't *need* Manus): (1) `useAuth.ts` called `getLoginUrl()` as a destructuring
+default on every render regardless of need, crashing the whole console when
+`VITE_OAUTH_PORTAL_URL` was unset; (2) `getLoginUrl()` itself now falls back to `/login` instead of
+throwing in that case; (3) the session cookie's `sameSite: "none"` + `secure: false` combination
+(true on any plain-HTTP request) is invalid per spec — browsers silently discarded the cookie right
+after a successful login, now falls back to `Lax` when the request isn't secure, no change to
+production HTTPS behavior; (4) `sdk.ts`'s `verifySession()` required a non-empty `appId`
+(`VITE_APP_ID`) that is never actually used for anything, silently rejecting every session —
+including local logins — whenever that var wasn't set, directly contradicting
+`ENV_TEMPLATE.txt`'s own claim that local login "works with only DATABASE_URL + JWT_SECRET". Also
+found and fixed a real correctness bug this surfaced: the Users & Permissions MFA column showed
+"disabled"/0% for an account with a genuinely verified authenticator factor, caused by an
+unqualified column reference (`${users.id}`) inside a correlated `EXISTS` subquery in `admin.ts`
+that Postgres resolved to the wrong table's `id` column. All four verified against the real running
+app (a temporary admin account could log in, stay logged in across navigations, and see correct
+MFA status — none of which worked before) and against the automated suite: `npx tsc --noEmit` → 0
+errors, `npx vitest run` → 569/584 passing, 15 correctly skipped, 0 regressions, `pnpm run build`
+succeeds.
+
 ---
 
 ## Handoff summary (as of 2026-08-21, end of latest session)
