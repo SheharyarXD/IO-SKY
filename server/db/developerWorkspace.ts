@@ -104,6 +104,20 @@ export async function getDeveloperProfileByUserId(
   return rows[0] ?? null;
 }
 
+/** Fetch a developer profile by its own id (not the linked user id). */
+export async function getDeveloperProfileById(
+  developerId: number,
+): Promise<DeveloperProfile | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(developerProfiles)
+    .where(eq(developerProfiles.id, developerId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 /**
  * Update the developer's own profile fields. The admin-owned columns
  * (`status`, `mfaRequired`, `approvedMs`, `approvedByUserId`,
@@ -155,6 +169,41 @@ export async function getLatestAccessScopeForDeveloper(
     .orderBy(desc(developerAccessScopes.createdAt))
     .limit(1);
   return rows[0] ?? null;
+}
+
+/**
+ * Milestone 2 — admin-initiated access grant. Previously there was no way
+ * anywhere in the app to grant a developer access; only a self-service
+ * *request* path existed (createDeveloperAccessRequest below), with no
+ * corresponding admin-side grant/approval mutation. Inserts a fresh scope
+ * row rather than updating an existing one — matches this table's own
+ * "one row per grant, most-recent wins" shape (getLatestAccessScopeForDeveloper
+ * above already reads it that way).
+ */
+export async function createDeveloperAccessScope(args: {
+  developerId: number;
+  level: "baseline" | "extended" | "elevated";
+  expiresMs: number | null;
+  allowedActions?: string | null;
+  allowedRoutes?: string | null;
+  createdByUserId: number;
+}): Promise<DeveloperAccessScope | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db
+    .insert(developerAccessScopes)
+    .values({
+      developerId: args.developerId,
+      level: args.level,
+      allowedActions: args.allowedActions ?? null,
+      allowedRoutes: args.allowedRoutes ?? null,
+      startMs: Date.now(),
+      expiresMs: args.expiresMs,
+      status: "active",
+      createdByUserId: args.createdByUserId,
+    })
+    .returning();
+  return row ?? null;
 }
 
 // ---------------------------------------------------------------------------

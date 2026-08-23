@@ -10,7 +10,7 @@ import OperationalPage, {
   type KpiTile,
   type DataColumn,
 } from "./_shared/OperationalPage";
-import { ModuleStateBoundary, useAuditedAction } from "./_shared/ModuleState";
+import { ModuleStateBoundary } from "./_shared/ModuleState";
 import { ScanSearch, Cpu, Activity, Clock } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -39,8 +39,42 @@ function relTime(ms: number) {
 
 export default function AiScans() {
   const query = trpc.admin.aiScans.useQuery(undefined, { staleTime: 30_000 });
-  const audited = useAuditedAction();
+  const retrigger = trpc.admin.retriggerAiScan.useMutation({
+    onSuccess: () => query.refetch(),
+  });
   const data = query.data;
+
+  const handleTriggerScan = async () => {
+    const rows = (data?.rows ?? []) as ScanRow[];
+    // The admin table's display status collapses the real "pending" and
+    // "scoring" DB states into one "in_progress" label (see
+    // synthesisedAiScans' statusMap) — only "review" (the display label
+    // for the real "failed" status) is unambiguously safe to offer here,
+    // since attempting to retry an actively-scoring scan would just be
+    // rejected server-side with PRECONDITION_FAILED.
+    const retryable = rows.filter((r) => r.status === "review");
+    if (retryable.length === 0) {
+      window.alert(
+        "No failed scans to retry right now. AI Scans can only be re-run from a client's own stored questionnaire answers — a brand-new scan needs the client to actually complete the questionnaire.",
+      );
+      return;
+    }
+    const list = retryable.map((r) => `${r.id}: ${r.target} (${r.status})`).join("\n");
+    const idRaw = window.prompt(`Retry which scan? Enter its ref (e.g. AS-12).\n\n${list}`);
+    if (!idRaw) return;
+    const match = rows.find((r) => r.id === idRaw.trim() || r.id === `AS-${idRaw.trim()}`);
+    if (!match) {
+      window.alert("Scan ref not found among the pending/failed scans listed.");
+      return;
+    }
+    const numericId = Number(match.id.replace(/^AS-/, ""));
+    try {
+      await retrigger.mutateAsync({ aiScanId: numericId });
+      window.alert("Scan retry started — it will show as \"in_progress\" shortly.");
+    } catch (e: any) {
+      window.alert(e?.message ?? "Could not retry this scan.");
+    }
+  };
 
   const kpis: KpiTile[] = useMemo(() => {
     const rows = (data?.rows ?? []) as ScanRow[];
@@ -85,7 +119,7 @@ export default function AiScans() {
             <DefaultToolbar
               searchPlaceholder="Search scans, organisations…"
               filters={["Type", "Status", "Score"]}
-              primaryAction={{ label: "Trigger scan", onClick: () => audited.fire("ai-scans", "trigger-scan") }}
+              primaryAction={{ label: "Retry scan", onClick: handleTriggerScan }}
             />
           }
           primary={

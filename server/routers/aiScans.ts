@@ -95,6 +95,78 @@ function newReportToken(): string {
   return randomBytes(24).toString("hex");
 }
 
+/**
+ * Runs the real scoring engine against an already-persisted scan and
+ * writes the result back (status=ready + report, or status=failed +
+ * error). Extracted out of submitQuestionnaire so the exact same pipeline
+ * can be re-invoked for a retry (Milestone 2 — the AI Scans admin page's
+ * "Trigger scan" action, scoped to re-running scoring on an existing
+ * pending/failed scan rather than fabricating a brand-new one without
+ * real questionnaire answers).
+ */
+export async function runAiScanEngine(params: {
+  scanId: number;
+  reportToken: string;
+  tier: AiScanTier;
+  locale: string;
+  fullName: string;
+  email: string;
+  company: string;
+  answers: Record<string, string>;
+  contextNote?: string;
+}): Promise<void> {
+  await updateAiScanStatus(params.scanId, { status: "scoring" });
+  const result = await scoreAiScan({
+    tier: params.tier,
+    locale: params.locale,
+    fullName: params.fullName,
+    company: params.company,
+    answers: params.answers,
+    contextNote: params.contextNote,
+  });
+  if (result.ok) {
+    await updateAiScanStatus(params.scanId, {
+      status: "ready",
+      reportPayload: JSON.stringify(result.report),
+      overallScore: result.report.overallScore,
+      scoredAt: new Date(),
+    });
+    try {
+      await notifyOwner({
+        title: `IO SKY · AI Scan ready (${params.tier.toUpperCase()})`,
+        content: [
+          `Tier: ${params.tier}`,
+          `Company: ${params.company}`,
+          `Email: ${params.email}`,
+          `Overall score: ${result.report.overallScore}/100`,
+          `Token: ${params.reportToken}`,
+        ].join("\n"),
+      });
+    } catch (e) {
+      console.warn("[aiScans.runAiScanEngine] notifyOwner threw:", e);
+    }
+  } else {
+    await updateAiScanStatus(params.scanId, {
+      status: "failed",
+      errorMessage: result.error.slice(0, 1000),
+    });
+    try {
+      await notifyOwner({
+        title: `IO SKY · AI Scan FAILED (${params.tier.toUpperCase()})`,
+        content: [
+          `Tier: ${params.tier}`,
+          `Company: ${params.company}`,
+          `Email: ${params.email}`,
+          `Token: ${params.reportToken}`,
+          `Error: ${result.error}`,
+        ].join("\n"),
+      });
+    } catch (e) {
+      console.warn("[aiScans.runAiScanEngine] notifyOwner threw:", e);
+    }
+  }
+}
+
 // ── Router ──────────────────────────────────────────────────────────────────
 export const aiScansRouter = router({
   /**
@@ -275,65 +347,24 @@ export const aiScansRouter = router({
       // 3) Run scoring. Free tier blocks (small ~7q payload); paid tiers run
       // detached and the result page polls. Fire-and-forget Promise must not
       // surface unhandled rejections to the event loop.
-      const runEngine = async () => {
-        await updateAiScanStatus(scan.id, { status: "scoring" });
-        const result = await scoreAiScan({
-          tier: input.tier,
-          locale: input.locale,
-          fullName: input.fullName,
-          company: input.company,
-          answers: input.answers,
-          contextNote: input.contextNote,
-        });
-        if (result.ok) {
-          await updateAiScanStatus(scan.id, {
-            status: "ready",
-            reportPayload: JSON.stringify(result.report),
-            overallScore: result.report.overallScore,
-            scoredAt: new Date(),
-          });
-          try {
-            await notifyOwner({
-              title: `IO SKY · AI Scan ready (${input.tier.toUpperCase()})`,
-              content: [
-                `Tier: ${input.tier}`,
-                `Company: ${input.company}`,
-                `Email: ${input.email}`,
-                `Overall score: ${result.report.overallScore}/100`,
-                `Token: ${reportToken}`,
-              ].join("\n"),
-            });
-          } catch (e) {
-            console.warn("[aiScans.submitQuestionnaire] notifyOwner threw:", e);
-          }
-        } else {
-          await updateAiScanStatus(scan.id, {
-            status: "failed",
-            errorMessage: result.error.slice(0, 1000),
-          });
-          try {
-            await notifyOwner({
-              title: `IO SKY · AI Scan FAILED (${input.tier.toUpperCase()})`,
-              content: [
-                `Tier: ${input.tier}`,
-                `Company: ${input.company}`,
-                `Email: ${input.email}`,
-                `Token: ${reportToken}`,
-                `Error: ${result.error}`,
-              ].join("\n"),
-            });
-          } catch (e) {
-            console.warn("[aiScans.submitQuestionnaire] notifyOwner threw:", e);
-          }
-        }
+      const engineParams = {
+        scanId: scan.id,
+        reportToken,
+        tier: input.tier,
+        locale: input.locale,
+        fullName: input.fullName,
+        email: input.email,
+        company: input.company,
+        answers: input.answers,
+        contextNote: input.contextNote,
       };
 
       if (input.tier === "free") {
-        await runEngine();
+        await runAiScanEngine(engineParams);
       } else {
         // Detached. Always swallow errors — the failure path already updates
         // the scan record and notifies the owner.
-        runEngine().catch((e) => {
+        runAiScanEngine(engineParams).catch((e) => {
           console.warn("[aiScans.submitQuestionnaire] engine threw:", e);
         });
       }

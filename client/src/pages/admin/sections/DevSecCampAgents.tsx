@@ -69,7 +69,51 @@ function relativeFromNow(ms: number | null): string {
 
 export function Developers() {
   const q = trpc.admin.developers.useQuery(undefined, { staleTime: 30_000 });
-  const audited = useAuditedAction();
+  const utils = trpc.useUtils();
+  const grantAccess = trpc.admin.grantDeveloperAccess.useMutation({
+    onSuccess: () => utils.admin.developers.invalidate(),
+  });
+
+  const handleGrantAccess = async () => {
+    const rows = q.data && "rows" in q.data ? (q.data as DevelopersPayload).rows : [];
+    if (rows.length === 0) {
+      window.alert("No developers on file yet — nothing to grant access to.");
+      return;
+    }
+    const list = rows.map((r) => `${r.id}: ${r.fullName}`).join("\n");
+    const idRaw = window.prompt(`Grant access to which developer? Enter their ref number.\n\n${list}`);
+    if (!idRaw) return;
+    const developerId = Number(idRaw.trim());
+    if (!Number.isInteger(developerId) || developerId <= 0) {
+      window.alert("Enter a valid developer ref number.");
+      return;
+    }
+    const level = window.prompt(
+      "Access level? baseline / extended / elevated",
+      "baseline",
+    );
+    if (!level || !["baseline", "extended", "elevated"].includes(level.trim())) {
+      window.alert("Access level must be baseline, extended, or elevated.");
+      return;
+    }
+    const daysRaw = window.prompt("Expires in how many days? (blank = no expiry)", "30");
+    const expiresInDays = daysRaw && daysRaw.trim() ? Number(daysRaw.trim()) : undefined;
+    if (expiresInDays !== undefined && (!Number.isInteger(expiresInDays) || expiresInDays <= 0)) {
+      window.alert("Expiry must be a positive whole number of days, or left blank.");
+      return;
+    }
+    try {
+      await grantAccess.mutateAsync({
+        developerId,
+        level: level.trim() as "baseline" | "extended" | "elevated",
+        expiresInDays,
+      });
+      window.alert("Access granted.");
+    } catch (e: any) {
+      window.alert(e?.message ?? "Could not grant access.");
+    }
+  };
+
   return (
     <ModuleStateBoundary<DevelopersPayload>
       isLoading={q.isLoading}
@@ -79,7 +123,15 @@ export function Developers() {
       onRetry={() => q.refetch()}
     >
       {(data) => {
-        const scopeByDeveloper = new Map(data.scopes.map((s) => [s.developerId, s]));
+        // data.scopes is ordered desc(createdAt) (newest first) — build the
+        // map by "first write wins" so each developer maps to their MOST
+        // RECENT scope, not their oldest (Map(arr.map(...)) would silently
+        // keep the last, i.e. oldest, entry for any developer with more
+        // than one scope row, which grantDeveloperAccess now makes real).
+        const scopeByDeveloper = new Map<number, (typeof data.scopes)[number]>();
+        for (const s of data.scopes) {
+          if (!scopeByDeveloper.has(s.developerId)) scopeByDeveloper.set(s.developerId, s);
+        }
         const rows = data.rows.map((r) => {
           const scope = scopeByDeveloper.get(r.id);
           return {
@@ -101,7 +153,7 @@ export function Developers() {
         { id: "pending", label: "Pending requests", value: String(data.pendingRequests), icon: Clock, accent: data.pendingRequests > 0 ? "red" : "green" },
         { id: "total", label: "Total developers", value: String(data.total), icon: AlertTriangle, accent: "blue" },
       ]}
-      toolbar={<DefaultToolbar searchPlaceholder="Search developers, projects…" filters={["Access", "Status"]} primaryAction={{ label: "Grant access", onClick: () => audited.fire("developers", "grant-access") }} />}
+      toolbar={<DefaultToolbar searchPlaceholder="Search developers, projects…" filters={["Access", "Status"]} primaryAction={{ label: "Grant access", onClick: handleGrantAccess }} />}
       primary={<DataTable columns={DEV_COLS} rows={rows} />}
       aside={
         <SideCard title="Access policies">

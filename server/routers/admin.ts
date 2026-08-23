@@ -75,6 +75,8 @@ import {
   createWebhookRegistration,
   setWebhookRegistrationEnabled,
   listWebhookDeliveries,
+  createDeveloperAccessScope,
+  getDeveloperProfileById,
 } from "../db";
 import { runWorkflowsForTrigger } from "../workflowEngine";
 import { dispatchWebhooksForTrigger } from "../webhookDispatcher";
@@ -1242,6 +1244,67 @@ export const adminRouter = router({
     await recordAdminEvent({ ctx, reason: "admin.read.ai_scans" });
     return await synthesisedAiScans();
   }),
+  /**
+   * "Trigger scan" — scoped as a real retry, not a fabricated fresh scan.
+   * There's no honest way to run the AI Scan engine for an arbitrary
+   * lead/org without their actual questionnaire answers (the engine
+   * scores those specific answers, it doesn't invent them), so this
+   * re-invokes the same real pipeline (server/routers/aiScans.ts's
+   * runAiScanEngine) against a scan's own already-stored answers — the
+   * genuinely useful admin action here: retry a scan stuck in
+   * pending/failed (e.g. a transient LLM timeout) without asking the
+   * client to resubmit the whole questionnaire.
+   */
+  retriggerAiScan: adminProcedure
+    .input(z.object({ aiScanId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const scan = await getAiScanById(input.aiScanId);
+      if (!scan) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "AI Scan not found." });
+      }
+      if (scan.status !== "pending" && scan.status !== "failed") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Only a pending or failed scan can be retried (current status: ${scan.status}).`,
+        });
+      }
+      let answers: Record<string, string>;
+      let contextNote: string | undefined;
+      try {
+        const parsed = JSON.parse(scan.responses ?? "{}") as {
+          answers?: Record<string, string>;
+          contextNote?: string;
+        };
+        if (!parsed.answers || Object.keys(parsed.answers).length === 0) {
+          throw new Error("no stored answers");
+        }
+        answers = parsed.answers;
+        contextNote = parsed.contextNote ?? undefined;
+      } catch {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This scan has no valid stored questionnaire answers to retry with.",
+        });
+      }
+
+      const { runAiScanEngine } = await import("./aiScans");
+      runAiScanEngine({
+        scanId: scan.id,
+        reportToken: scan.reportToken,
+        tier: scan.tier as "free" | "growth" | "elite",
+        locale: scan.locale ?? "en",
+        fullName: scan.fullName ?? "",
+        email: scan.email ?? "",
+        company: scan.company ?? "",
+        answers,
+        contextNote,
+      }).catch((e) => {
+        console.warn("[admin.retriggerAiScan] engine threw:", e);
+      });
+
+      await recordAdminEvent({ ctx, reason: `admin.ai_scan.retrigger(${scan.id})` });
+      return { ok: true as const, aiScanId: scan.id, status: "scoring" as const };
+    }),
   reports: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.reports" });
     return readReports();
@@ -1505,6 +1568,44 @@ export const adminRouter = router({
     await recordAdminEvent({ ctx, reason: "admin.read.developers" });
     return readDevelopers();
   }),
+  /**
+   * Admin-initiated access grant — previously there was no way anywhere in
+   * the app to grant a developer access; only a self-service *request*
+   * path existed (developer.createDeveloperAccessRequest), with no
+   * corresponding admin-side grant. Inserts a fresh
+   * `developer_access_scopes` row (existing table, no new schema needed).
+   */
+  grantDeveloperAccess: adminProcedure
+    .input(
+      z.object({
+        developerId: z.number().int().positive(),
+        level: z.enum(["baseline", "extended", "elevated"]),
+        expiresInDays: z.number().int().positive().max(365).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const developer = await getDeveloperProfileById(input.developerId);
+      if (!developer) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Developer not found." });
+      }
+      const expiresMs = input.expiresInDays
+        ? Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000
+        : null;
+      const scope = await createDeveloperAccessScope({
+        developerId: input.developerId,
+        level: input.level,
+        expiresMs,
+        createdByUserId: ctx.user.id,
+      });
+      if (!scope) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not grant access." });
+      }
+      await recordAdminEvent({
+        ctx,
+        reason: `admin.developer.grant_access(${input.developerId}:${input.level})`,
+      });
+      return scope;
+    }),
   security: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.security" });
     return readSecurity();
