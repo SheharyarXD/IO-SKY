@@ -233,18 +233,25 @@ class SDKServer {
       });
       const { openId, appId, name } = payload as Record<string, unknown>;
 
-      if (
-        !isNonEmptyString(openId) ||
-        !isNonEmptyString(appId) ||
-        !isNonEmptyString(name)
-      ) {
+      // `appId` (VITE_APP_ID) is a legacy Manus-SDK field — it is signed
+      // into every session token but never actually read back out for
+      // anything beyond this presence check (authenticateRequest below
+      // looks the user up by `openId` alone). Requiring it to be a
+      // non-empty string meant EVERY session — local email/password login
+      // included, despite ENV_TEMPLATE.txt's explicit claim that local
+      // login "works with only DATABASE_URL + JWT_SECRET" — was silently
+      // rejected whenever VITE_APP_ID wasn't configured: the login POST
+      // would succeed and set a cookie, but the very next request would
+      // fail this check and bounce the user back to logged-out with no
+      // visible error. `openId` is what actually identifies the session.
+      if (!isNonEmptyString(openId) || !isNonEmptyString(name)) {
         console.warn("[Auth] Session payload missing required fields");
         return null;
       }
 
       return {
         openId,
-        appId,
+        appId: isNonEmptyString(appId) ? appId : "",
         name,
       };
     } catch (error) {

@@ -12,6 +12,18 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 export const getLoginUrl = (returnPath?: string) => {
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL as string;
   const appId = import.meta.env.VITE_APP_ID as string;
+
+  // Manus OAuth is optional convenience SSO (see ENV_TEMPLATE.txt) — local
+  // email/password + Supabase Auth is the actually-required login path
+  // since RM-50. Without a configured portal URL, `new URL(...)` below
+  // throws, which used to crash every redirect-to-login call site in the
+  // app (AdminLayout, OpsConsole, ClientPortal, DeveloperWorkspace, every
+  // logout handler) instead of just sending the user to the app's own
+  // /login page, which handles local sign-in fine on its own.
+  if (!oauthPortalUrl) {
+    return "/login";
+  }
+
   const origin = window.location.origin;
   const redirectUri = `${origin}/api/oauth/callback`;
 

@@ -39,10 +39,22 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  // `SameSite=None` cookies MUST also carry `Secure`, or browsers silently
+  // refuse to set them at all (not a server-side error — the Set-Cookie
+  // header goes out fine, the browser just drops it). That's exactly what
+  // was happening on any plain-HTTP request (local dev, or any deployment
+  // without TLS/a proxy setting X-Forwarded-Proto) — isSecureRequest(req)
+  // returns false there, so every login "succeeded" server-side while the
+  // browser silently discarded the session cookie, leaving the user stuck
+  // bouncing back to logged-out on the very next request. `None` is only
+  // actually needed for the cross-site leg of the Manus OAuth redirect
+  // dance; the local email/password POST and every same-origin request
+  // this app makes work fine under `Lax`, which doesn't require Secure.
+  const secure = isSecureRequest(req);
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    sameSite: secure ? "none" : "lax",
+    secure,
   };
 }

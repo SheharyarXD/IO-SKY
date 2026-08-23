@@ -350,6 +350,7 @@ interface UserRow {
   email: string | null;
   role: string;
   mfaMethod: string;
+  mfaVerified: boolean;
   organizationId: number | null;
   lastSignedIn: string | Date;
 }
@@ -397,7 +398,7 @@ function buildUserCols(opts: {
           <span className="text-white/35">—</span>
         ),
     },
-    { key: "mfaMethod", header: "MFA", render: (r) => <StatusPill tone={r.mfaMethod !== "none" ? "ok" : "warn"} label={r.mfaMethod !== "none" ? r.mfaMethod : "disabled"} /> },
+    { key: "mfaMethod", header: "MFA", render: (r) => <StatusPill tone={r.mfaVerified ? "ok" : "warn"} label={r.mfaVerified ? "enabled" : "disabled"} /> },
     { key: "lastSignedIn", header: "Last seen", align: "right", render: (r) => <span className="font-mono text-white/55">{new Date(r.lastSignedIn).toLocaleDateString()}</span> },
   ];
   if (opts.isSuperAdmin) {
@@ -496,7 +497,7 @@ export function UsersPermissions() {
       {(data) => {
         const byRole = new Map<string, number>();
         for (const r of data.rows) byRole.set(r.role, (byRole.get(r.role) ?? 0) + 1);
-        const mfaEnabled = data.rows.filter((r) => r.mfaMethod !== "none").length;
+        const mfaEnabled = data.rows.filter((r) => r.mfaVerified).length;
         const mfaPct = data.rows.length > 0 ? ((mfaEnabled / data.rows.length) * 100).toFixed(1) : "0.0";
         const orgs = (orgsQuery.data ?? []) as OrgRow[];
         const orgsById = new Map(orgs.map((o) => [o.id, o]));

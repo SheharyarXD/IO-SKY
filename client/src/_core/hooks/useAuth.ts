@@ -10,8 +10,7 @@ type UseAuthOptions = {
 };
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
-    options ?? {};
+  const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
   const utils = trpc.useUtils();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
@@ -80,13 +79,26 @@ export function useAuth(options?: UseAuthOptions) {
     if (meQuery.isLoading || logoutMutation.isPending) return;
     if (state.user) return;
     if (typeof window === "undefined") return;
-    if (window.location.pathname === redirectPath) return;
+
+    // Only resolve the (potentially network/env-dependent) login URL when a
+    // redirect is actually about to happen — this used to be a destructuring
+    // default (`redirectPath = getLoginUrl()`) that ran on EVERY render of
+    // every component using useAuth()/useRouteGuard(), regardless of
+    // whether redirectOnUnauthenticated was even true. getLoginUrl() throws
+    // when VITE_OAUTH_PORTAL_URL isn't configured — a valid deployment state
+    // since RM-50 added local email/password + Supabase Auth login — which
+    // crashed the entire admin/client/developer console on every render, not
+    // just unauthenticated ones. No caller in this codebase actually passes
+    // redirectOnUnauthenticated: true, so this path was pure dead weight
+    // paying a real crash cost for zero benefit.
+    const target = redirectPath ?? getLoginUrl();
+    if (window.location.pathname === target) return;
 
     // Double rAF: let React flush portal unmounts before hard navigation
     // to prevent the removeChild crash on Radix/Sonner portal nodes.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        window.location.href = redirectPath;
+        window.location.href = target;
       });
     });
   }, [

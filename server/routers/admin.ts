@@ -755,6 +755,24 @@ async function readUsers() {
           email: users.email,
           role: users.role,
           mfaMethod: users.mfaMethod,
+          // Milestone 2 §2.5 — the hard MFA gate (adminProcedure/
+          // superAdminProcedure/opsProcedure) and admin.mfaPosture's own
+          // compliance dashboard both key off a verified mfa_factors row,
+          // not users.mfaMethod (a separate, self-toggleable field clients/
+          // developers can set via a "lite" flow with no proof of
+          // possession). Surfacing mfaMethod alone here meant this table
+          // could show "disabled" for an account the gate actually treats
+          // as MFA-enrolled — found by live-testing the gate end-to-end.
+          // NOTE: must table-qualify "users"."id" explicitly here rather
+          // than interpolating ${users.id} — drizzle renders that as a bare
+          // unqualified "id" inside this subquery, which Postgres then
+          // resolves to mfa_factors' OWN id column (shadowing the outer
+          // users.id) instead of the intended correlated reference, making
+          // the EXISTS check silently always-false. Found by live-testing.
+          mfaVerified: sql<boolean>`EXISTS (
+            SELECT 1 FROM mfa_factors mf
+            WHERE mf."userId" = "users"."id" AND mf."verifiedAt" IS NOT NULL
+          )`,
           organizationId: users.organizationId,
           lastSignedIn: users.lastSignedIn,
           createdAt: users.createdAt,
