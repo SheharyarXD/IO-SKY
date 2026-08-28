@@ -1,62 +1,64 @@
 /*
- * IO SKY — Infrastructure page (enterprise rebuild).
+ * IO SKY — Foundation page (per IO_SKY_Master_Design_Spec.md §3).
  *
  * Sections (top → bottom):
- *   1. Hero — eyebrow · headline (orange accent) · body · Start AI Scan / Book
- *      a discovery call CTAs · premium operational command center visual
- *   2. Six capability pillars (CRM, Automation, Data & Insight, Integrations,
- *      Security & Governance, Scalability) — each with a dedicated CTA
- *   3. Benefits bar — 5 qualitative pillars (Control, Automation, Integration,
- *      Scalability, Governance)
- *   4. Mid-page CTA
- *   5. Qualitative AI Scan indicators (no fake KPIs)
- *   6. Ecosystem diagram — IO SKY Operational Layer connecting sources/outcomes
+ *   1. Hero — eyebrow · headline · body · Book a Discovery Call CTA ·
+ *      operational command center visual (kept — not contradicted by spec,
+ *      no visual is specified either way for this hero)
+ *   2. What Is Connected
+ *   3. Not Every Problem Stands on Its Own
+ *   4. First Understand, Then Decide
+ *   5. What Needs to Work Together (4 pillars)
+ *   6. New Is Not Automatically Better
+ *   7. Room to Evolve
+ *   8. Intelligence Does Not Begin with AI
+ *   9. Final CTA
  *
  * Locked design language: deep navy-black, restrained orange accents, premium
  * glass surfaces, executive typography. All copy localized via useT().
  */
 import { Link } from "wouter";
 import {
-  ArrowRight, ArrowUpRight,
-  UserSquare2, Workflow, Boxes, BarChart3, ShieldCheck, Infinity as InfinityIcon,
-  Gauge, Plug, Layers, Building2, MessagesSquare, LifeBuoy, Cpu, Sparkles,
-  Eye, Activity, TrendingUp, CheckCircle2,
+  ArrowRight,
+  UserSquare2, Building2, MessagesSquare, LifeBuoy, Cpu, Eye, Activity,
+  CheckCircle2, Workflow, KeyRound, Database, ServerCog,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import RevealOnScroll from "@/components/RevealOnScroll";
 import { useT } from "@/contexts/LanguageContext";
 
-type Cap = {
-  id: string;
-  titleKey: string;
-  bodyKey: string;
-  ctaKey: string;
-  icon: React.ReactNode;
-};
-const CAPS: Cap[] = [
-  { id: "crm", titleKey: "infra.cap.crm.title", bodyKey: "infra.cap.crm.body", ctaKey: "infra.cap.crm.cta", icon: <UserSquare2 className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-  { id: "automation", titleKey: "infra.cap.automation.title", bodyKey: "infra.cap.automation.body", ctaKey: "infra.cap.automation.cta", icon: <Workflow className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-  { id: "data", titleKey: "infra.cap.data.title", bodyKey: "infra.cap.data.body", ctaKey: "infra.cap.data.cta", icon: <BarChart3 className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-  { id: "integrations", titleKey: "infra.cap.integrations.title", bodyKey: "infra.cap.integrations.body", ctaKey: "infra.cap.integrations.cta", icon: <Boxes className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-  { id: "security", titleKey: "infra.cap.security.title", bodyKey: "infra.cap.security.body", ctaKey: "infra.cap.security.cta", icon: <ShieldCheck className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-  { id: "scalability", titleKey: "infra.cap.scalability.title", bodyKey: "infra.cap.scalability.body", ctaKey: "infra.cap.scalability.cta", icon: <InfinityIcon className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-];
-
-type Benefit = { id: string; titleKey: string; subKey: string; icon: React.ReactNode };
-const BENEFITS: Benefit[] = [
-  { id: "control", titleKey: "infra.benefit.control.title", subKey: "infra.benefit.control.sub", icon: <Eye className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { id: "automation", titleKey: "infra.benefit.automation.title", subKey: "infra.benefit.automation.sub", icon: <Workflow className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { id: "integration", titleKey: "infra.benefit.integration.title", subKey: "infra.benefit.integration.sub", icon: <Plug className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { id: "scalability", titleKey: "infra.benefit.scalability.title", subKey: "infra.benefit.scalability.sub", icon: <Layers className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { id: "governance", titleKey: "infra.benefit.governance.title", subKey: "infra.benefit.governance.sub", icon: <ShieldCheck className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-];
-
-const RESULTS = [
-  { key: "infra.results.i1", icon: <Workflow className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { key: "infra.results.i2", icon: <Activity className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { key: "infra.results.i3", icon: <Gauge className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { key: "infra.results.i4", icon: <Eye className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-];
+function TextSection({
+  eyebrow,
+  title,
+  paragraphs,
+  emphasizeLast,
+}: {
+  eyebrow?: string;
+  title: React.ReactNode;
+  paragraphs: string[];
+  emphasizeLast?: boolean;
+}) {
+  return (
+    <section className="py-20 md:py-28">
+      <div className="container">
+        <div className="max-w-[680px] mx-auto text-center">
+          {eyebrow && <div className="eyebrow justify-center">{eyebrow}</div>}
+          <h2 className={`${eyebrow ? "mt-5" : ""} font-display font-semibold text-[28px] md:text-[36px] leading-[1.16] tracking-[-0.02em] text-[var(--color-ivory)] text-balance`}>
+            {title}
+          </h2>
+          <div className="mt-8 space-y-5 text-[15px] md:text-[16px] leading-[1.75] text-[oklch(0.78_0.014_250)] text-left">
+            {paragraphs.map((p, i) => (
+              <p key={i} className={emphasizeLast && i === paragraphs.length - 1 ? "text-[var(--color-ivory)]" : undefined}>
+                {p}
+              </p>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function Infrastructure() {
   const { t } = useT();
@@ -68,10 +70,17 @@ export default function Infrastructure() {
     { key: "infra.diagram.left.support", icon: <LifeBuoy className="w-4 h-4" strokeWidth={1.7} /> },
   ];
   const outcomes = [
-    { key: "infra.diagram.right.dashboards", icon: <BarChart3 className="w-4 h-4" strokeWidth={1.7} /> },
-    { key: "infra.diagram.right.analytics", icon: <TrendingUp className="w-4 h-4" strokeWidth={1.7} /> },
+    { key: "infra.diagram.right.dashboards", icon: <Activity className="w-4 h-4" strokeWidth={1.7} /> },
+    { key: "infra.diagram.right.analytics", icon: <Eye className="w-4 h-4" strokeWidth={1.7} /> },
     { key: "infra.diagram.right.ai", icon: <Cpu className="w-4 h-4" strokeWidth={1.7} /> },
     { key: "infra.diagram.right.automation", icon: <Workflow className="w-4 h-4" strokeWidth={1.7} /> },
+  ];
+
+  const PILLARS = [
+    { titleKey: "foundation.pillars.systems.title", bodyKey: "foundation.pillars.systems.body", icon: Workflow },
+    { titleKey: "foundation.pillars.identity.title", bodyKey: "foundation.pillars.identity.body", icon: KeyRound },
+    { titleKey: "foundation.pillars.data.title", bodyKey: "foundation.pillars.data.body", icon: Database },
+    { titleKey: "foundation.pillars.infra.title", bodyKey: "foundation.pillars.infra.body", icon: ServerCog },
   ];
 
   return (
@@ -89,30 +98,26 @@ export default function Infrastructure() {
           />
           <div className="container">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-              {/* Left — copy */}
               <div className="lg:col-span-6">
                 <div className="eyebrow">{t("infra.hero.eyebrow")}</div>
-                <h1 className="mt-5 font-display font-medium tracking-[-0.02em] text-[36px] sm:text-[46px] md:text-[54px] lg:text-[58px] leading-[1.06] text-[var(--color-ivory)]">
-                  {t("infra.hero.title.part1")}{" "}
+                <h1 className="mt-5 font-display font-medium tracking-[-0.02em] text-[34px] sm:text-[42px] md:text-[48px] leading-[1.12] text-[var(--color-ivory)]">
+                  {t("infra.hero.title.part1")}
+                  <br />
                   <span className="text-[var(--color-orange)]">{t("infra.hero.title.accent")}</span>
-                  {t("infra.hero.title.dot")}
                 </h1>
-                <p className="mt-6 max-w-[560px] text-[15.5px] leading-[1.65] text-[oklch(0.78_0.014_250)]">
-                  {t("infra.hero.body")}
-                </p>
+                <div className="mt-6 max-w-[560px] space-y-3 text-[15.5px] leading-[1.65] text-[oklch(0.78_0.014_250)]">
+                  <p>{t("infra.hero.body.1")}</p>
+                  <p>{t("infra.hero.body.2")}</p>
+                  <p>{t("infra.hero.body.3")}</p>
+                </div>
                 <div className="mt-8 flex flex-wrap items-center gap-3">
-                  <Link href="/ai-scan" className="btn-primary">
+                  <Link href="/book-strategy" className="btn-primary">
                     {t("infra.hero.cta.book")}
-                    <ArrowUpRight className="w-4 h-4" strokeWidth={2.25} />
-                  </Link>
-                  <Link href="/book-strategy" className="btn-secondary">
-                    {t("infra.hero.cta.explore")}
-                    <ArrowRight className="w-4 h-4 opacity-80" strokeWidth={2} />
+                    <ArrowRight className="w-4 h-4" strokeWidth={2} />
                   </Link>
                 </div>
               </div>
 
-              {/* Right — operational command center */}
               <div className="lg:col-span-6 relative">
                 <CommandCenter t={t} sources={sources} outcomes={outcomes} />
               </div>
@@ -120,190 +125,154 @@ export default function Infrastructure() {
           </div>
         </section>
 
-        {/* ====================== CAPABILITY PILLARS ====================== */}
-        <section className="relative pb-16 md:pb-20">
-          <div className="container">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-              {CAPS.map((cap) => (
-                <article
-                  key={cap.id}
-                  id={cap.id}
-                  className="feature-card glass-soft p-6 flex flex-col gap-4 min-h-[230px]"
-                  style={{ scrollMarginTop: "120px" }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span aria-hidden className="icon-chip glow-orange w-10 h-10 rounded-lg">
-                      {cap.icon}
-                    </span>
-                    <h3 className="font-display font-medium tracking-[-0.005em] text-[18px] leading-tight text-[var(--color-ivory)]">
-                      {t(cap.titleKey)}
-                    </h3>
-                  </div>
-                  <p className="text-[14px] leading-[1.6] text-[oklch(0.78_0.014_250)]">
-                    {t(cap.bodyKey)}
-                  </p>
-                  <Link
-                    href={`/infrastructure#${cap.id}`}
-                    className="mt-auto text-[13px] font-medium text-[var(--color-orange)] inline-flex items-center gap-1.5 hover:gap-2.5 transition-[gap] duration-200"
-                  >
-                    {t(cap.ctaKey)}
-                    <ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
-                  </Link>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+        <RevealOnScroll>
+          <TextSection
+            title={t("foundation.connected.title")}
+            paragraphs={[
+              t("foundation.connected.body1"),
+              t("foundation.connected.body2"),
+              t("foundation.connected.body3"),
+              t("foundation.connected.body4"),
+            ]}
+            emphasizeLast
+          />
+        </RevealOnScroll>
 
-        {/* ============================ BENEFITS BAR ============================ */}
-        <section className="relative pb-16 md:pb-20">
-          <div className="container">
-            <div className="glass p-5 md:p-7 relative overflow-hidden">
-              <span
-                className="pointer-events-none absolute inset-x-6 bottom-0 h-px"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.45) 50%, transparent 100%)",
-                  filter: "blur(0.5px)",
-                }}
-              />
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-6">
-                {BENEFITS.map((b) => (
-                  <div key={b.id} className="flex items-start gap-3 min-w-0">
-                    <span aria-hidden className="icon-chip w-10 h-10 rounded-lg shrink-0">
-                      {b.icon}
+        <RevealOnScroll>
+          <section className="py-20 md:py-28">
+            <div className="container">
+              <div className="max-w-[680px] mx-auto text-center">
+                <h2 className="font-display font-semibold text-[28px] md:text-[36px] leading-[1.16] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+                  {t("foundation.notAlone.title")}
+                </h2>
+                <div className="mt-8 space-y-5 text-[15px] md:text-[16px] leading-[1.75] text-[oklch(0.78_0.014_250)] text-left">
+                  <p>{t("foundation.notAlone.body1")}</p>
+                  <p>{t("foundation.notAlone.body2")}</p>
+                </div>
+                <div className="mt-8 glass-soft p-6 text-left space-y-2">
+                  <p className="text-[14px] text-[oklch(0.62_0.014_250)]">{t("foundation.notAlone.q1")}</p>
+                  <p className="text-[15px] font-medium text-[var(--color-ivory)]">{t("foundation.notAlone.q2")}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </RevealOnScroll>
+
+        <RevealOnScroll>
+          <TextSection
+            title={
+              <>
+                {t("foundation.firstUnderstand.title1")}
+                <br />
+                {t("foundation.firstUnderstand.title2")}
+              </>
+            }
+            paragraphs={[
+              t("foundation.firstUnderstand.body1"),
+              t("foundation.firstUnderstand.body2"),
+              t("foundation.firstUnderstand.body3"),
+              t("foundation.firstUnderstand.body4"),
+              t("foundation.firstUnderstand.body5"),
+              t("foundation.firstUnderstand.body6"),
+            ]}
+          />
+        </RevealOnScroll>
+
+        {/* What Needs to Work Together — 4 pillars */}
+        <RevealOnScroll>
+          <section className="py-20 md:py-28">
+            <div className="container">
+              <div className="max-w-[680px] mx-auto text-center">
+                <h2 className="font-display font-semibold text-[28px] md:text-[36px] leading-[1.16] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+                  {t("foundation.pillars.title")}
+                </h2>
+                <p className="mt-5 text-[15px] md:text-[16px] leading-[1.75] text-[oklch(0.78_0.014_250)]">
+                  {t("foundation.pillars.body")}
+                </p>
+              </div>
+              <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {PILLARS.map((p) => (
+                  <div key={p.titleKey} className="feature-card glass-soft p-6 flex flex-col gap-4">
+                    <span className="icon-chip">
+                      <p.icon className="w-[18px] h-[18px]" strokeWidth={1.7} />
                     </span>
-                    <div className="min-w-0">
-                      <div className="text-[14px] font-medium text-[var(--color-ivory)] leading-tight">
-                        {t(b.titleKey)}
-                      </div>
-                      <div className="text-[12px] text-[oklch(0.72_0.014_250)] leading-snug mt-1">
-                        {t(b.subKey)}
-                      </div>
+                    <div>
+                      <h3 className="text-[15.5px] font-display font-semibold text-[var(--color-ivory)] leading-snug">
+                        {t(p.titleKey)}
+                      </h3>
+                      <p className="mt-2 text-[13px] text-[oklch(0.74_0.014_250)] leading-[1.6]">{t(p.bodyKey)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </RevealOnScroll>
 
-        {/* ============================ MID-PAGE CTA ============================ */}
-        <section className="relative pb-16 md:pb-20">
-          <div className="container">
-            <div className="glass p-8 md:p-12 relative overflow-hidden text-center">
-              <div
-                className="pointer-events-none absolute inset-0 -z-[1]"
-                style={{
-                  background:
-                    "radial-gradient(50% 80% at 50% 0%, rgba(255, 122, 0,0.12), transparent 70%)",
-                }}
-              />
-              <h2 className="font-display font-medium tracking-[-0.015em] text-[26px] md:text-[34px] leading-[1.15] text-[var(--color-ivory)] max-w-[680px] mx-auto">
-                {t("infra.midcta.title")}
-              </h2>
-              <p className="mt-4 text-[15px] leading-[1.6] text-[oklch(0.78_0.014_250)] max-w-[520px] mx-auto">
-                {t("infra.midcta.body")}
-              </p>
-              <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-                <Link href="/ai-scan" className="btn-primary">
-                  {t("infra.midcta.scan")}
-                  <ArrowUpRight className="w-4 h-4" strokeWidth={2.25} />
-                </Link>
-                <Link href="/book-strategy" className="btn-secondary">
-                  {t("infra.midcta.book")}
-                  <ArrowRight className="w-4 h-4 opacity-80" strokeWidth={2} />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ====================== QUALITATIVE RESULTS ====================== */}
-        <section className="relative pb-16 md:pb-20">
-          <div className="container">
-            <div className="eyebrow">{t("infra.results.eyebrow")}</div>
-            <h2 className="mt-4 font-display font-medium tracking-[-0.015em] text-[26px] md:text-[34px] leading-[1.15] text-[var(--color-ivory)] max-w-[640px]">
-              {t("infra.results.title")}
-            </h2>
-            <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {RESULTS.map((r) => (
-                <div key={r.key} className="glass-soft p-5 flex items-center gap-3 min-h-[88px]">
-                  <span aria-hidden className="icon-chip w-10 h-10 rounded-lg shrink-0">
-                    {r.icon}
-                  </span>
-                  <div className="text-[14px] font-medium text-[var(--color-ivory)] leading-snug">
-                    {t(r.key)}
-                  </div>
+        <RevealOnScroll>
+          <section className="py-20 md:py-28">
+            <div className="container">
+              <div className="max-w-[680px] mx-auto text-center">
+                <h2 className="font-display font-semibold text-[28px] md:text-[36px] leading-[1.16] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+                  {t("foundation.notBetter.title")}
+                </h2>
+                <div className="mt-8 space-y-5 text-[15px] md:text-[16px] leading-[1.75] text-[oklch(0.78_0.014_250)] text-left">
+                  <p>{t("foundation.notBetter.body1")}</p>
+                  <p>{t("foundation.notBetter.body2")}</p>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ====================== ECOSYSTEM DIAGRAM ====================== */}
-        <section id="hub" className="relative pb-20 md:pb-28" style={{ scrollMarginTop: "120px" }}>
-          <div className="container">
-            <div className="eyebrow">{t("infra.diagram.eyebrow")}</div>
-            <h2 className="mt-4 font-display font-medium tracking-[-0.015em] text-[26px] md:text-[34px] leading-[1.15] text-[var(--color-ivory)] max-w-[680px]">
-              {t("infra.diagram.title")}
-            </h2>
-
-            <div className="mt-10 glass p-6 md:p-10 relative overflow-hidden">
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-8 lg:gap-6 items-center">
-                {/* Sources */}
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.16em] text-[oklch(0.7_0.014_250)] font-medium mb-4">
-                    {t("infra.diagram.left.title")}
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {sources.map((s) => (
-                      <div key={s.key} className="glass-soft px-4 py-3 rounded-lg flex items-center gap-3">
-                        <span aria-hidden className="text-[var(--color-orange)]">{s.icon}</span>
-                        <span className="text-[14px] text-[var(--color-ivory)]">{t(s.key)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Core */}
-                <div className="flex flex-col items-center justify-center px-2">
-                  <ArrowRight className="hidden lg:block w-6 h-6 text-[var(--color-orange)]/50 mb-4" strokeWidth={1.5} />
-                  <div
-                    className="relative rounded-2xl px-6 py-7 text-center min-w-[210px]"
-                    style={{
-                      background:
-                        "linear-gradient(180deg, rgba(255, 122, 0,0.16), rgba(255, 122, 0,0.04))",
-                      border: "1px solid rgba(255, 122, 0,0.35)",
-                      boxShadow: "0 0 40px rgba(255, 122, 0,0.18)",
-                    }}
-                  >
-                    <Sparkles className="w-6 h-6 text-[var(--color-orange)] mx-auto" strokeWidth={1.6} />
-                    <div className="mt-3 font-display font-medium text-[16px] leading-tight text-[var(--color-ivory)]">
-                      {t("infra.diagram.core")}
-                    </div>
-                  </div>
-                  <ArrowRight className="hidden lg:block w-6 h-6 text-[var(--color-orange)]/50 mt-4" strokeWidth={1.5} />
-                </div>
-
-                {/* Outcomes */}
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.16em] text-[oklch(0.7_0.014_250)] font-medium mb-4 lg:text-right">
-                    {t("infra.diagram.right.title")}
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {outcomes.map((o) => (
-                      <div key={o.key} className="glass-soft px-4 py-3 rounded-lg flex items-center gap-3 lg:flex-row-reverse lg:text-right">
-                        <span aria-hidden className="text-[var(--color-orange)]">{o.icon}</span>
-                        <span className="flex-1 text-[14px] text-[var(--color-ivory)]">{t(o.key)}</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="mt-8 flex flex-col items-center gap-1.5 text-[15px] font-medium text-[var(--color-ivory)]">
+                  <p>{t("foundation.notBetter.triad1")}</p>
+                  <p>{t("foundation.notBetter.triad2")}</p>
+                  <p>{t("foundation.notBetter.triad3")}</p>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </RevealOnScroll>
+
+        <RevealOnScroll>
+          <TextSection
+            title={t("foundation.roomToEvolve.title")}
+            paragraphs={[
+              t("foundation.roomToEvolve.body1"),
+              t("foundation.roomToEvolve.body2"),
+              t("foundation.roomToEvolve.body3"),
+            ]}
+          />
+        </RevealOnScroll>
+
+        <RevealOnScroll>
+          <TextSection
+            title={t("foundation.intelligenceStart.title")}
+            paragraphs={[
+              t("foundation.intelligenceStart.body1"),
+              t("foundation.intelligenceStart.body2"),
+              t("foundation.intelligenceStart.body3"),
+              t("foundation.intelligenceStart.body4"),
+              t("foundation.intelligenceStart.body5"),
+            ]}
+            emphasizeLast
+          />
+        </RevealOnScroll>
+
+        {/* Final CTA */}
+        <RevealOnScroll>
+          <section className="py-20 md:py-28">
+            <div className="container">
+              <div className="max-w-[680px] mx-auto text-center">
+                <h2 className="font-display font-semibold text-[26px] md:text-[32px] leading-[1.2] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+                  {t("foundation.finalCta.title")}
+                </h2>
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                  <Link href="/book-strategy" className="btn-primary">
+                    {t("infra.hero.cta.book")}
+                    <ArrowRight className="w-4 h-4" strokeWidth={2} />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        </RevealOnScroll>
       </main>
       <Footer />
     </div>
@@ -333,7 +302,6 @@ function CommandCenter({
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-stretch">
-        {/* Systems */}
         <div>
           <div className="text-[10px] uppercase tracking-[0.14em] text-[oklch(0.66_0.014_250)] mb-2">
             {t("infra.viz.left.title")}
@@ -348,7 +316,6 @@ function CommandCenter({
           </div>
         </div>
 
-        {/* Core */}
         <div className="flex items-center">
           <div
             className="rounded-xl px-3 py-4 text-center w-[112px]"
@@ -368,7 +335,6 @@ function CommandCenter({
           </div>
         </div>
 
-        {/* Results */}
         <div>
           <div className="text-[10px] uppercase tracking-[0.14em] text-[oklch(0.66_0.014_250)] mb-2 text-right">
             {t("infra.viz.right.title")}

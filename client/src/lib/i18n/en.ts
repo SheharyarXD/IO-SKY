@@ -33,13 +33,12 @@ export const en: Record<string, string> = {
   "nav.langLabel": "Language",
 
   // Hero
-  "hero.eyebrow": "INTELLIGENT OPERATIONAL INFRASTRUCTURE",
-  "hero.title.part1": "Intelligent infrastructure that makes growth",
-  "hero.title.accent": "predictable",
-  "hero.title.part2": "— without depending on hiring more people.",
+  "hero.title.part1": "Technology should not define how your business works.",
+  "hero.title.accent": "",
+  "hero.title.part2": "It should be designed around it.",
   "hero.body":
-    "IO SKY builds systems that automate processes, accelerate decisions and make operational growth scalable.",
-  "hero.cta.book": "Book a discovery call",
+    "IO SKY designs and builds the operational infrastructure behind growing businesses — shaped around how the organisation actually needs to function.",
+  "hero.cta.book": "Book a Discovery Call",
   "hero.cta.scan": "Start AI Scan",
   "hero.trust.security": "Built-in Security",
   "hero.trust.security.note": "Security-First Architecture",
@@ -94,6 +93,77 @@ export const en: Record<string, string> = {
   "hov.scan.title": "Discover your opportunities",
   "hov.scan.desc": "A free AI Scan maps your operational potential",
   "hov.scan.cta": "Start AI Scan",
+
+  // Homepage — Growth & Dependency
+  "home.growth.title": "What makes sense on its own does not always work as one.",
+  "home.growth.body1": "A growing team introduces another tool. A spreadsheet solves something that could not wait. A system is added because one part of the business needs it.",
+  "home.growth.body2": "Individually, these can all be sensible decisions.",
+  "home.growth.body3": "But businesses rarely grow through one perfectly coordinated plan. They grow through hundreds of decisions made at different moments, for different reasons, by different people.",
+  "home.growth.body4": "Over time, those decisions begin to depend on one another.",
+  "home.growth.body5": "What was built to solve individual problems starts becoming the infrastructure the whole business relies on.",
+
+  // Homepage — Look Beyond the Visible Problem
+  "home.lookBeyond.title": "The problem you see is not always where the problem begins.",
+  "home.lookBeyond.body1": "A process takes too long, so automation seems like the answer. A team lacks visibility, so a dashboard seems necessary. A system no longer fits, so replacing it appears to be the logical next step.",
+  "home.lookBeyond.body2": "Sometimes that is exactly right.",
+  "home.lookBeyond.body3": "But when systems, information and processes depend on one another, the place where friction becomes visible is not necessarily the place where it originates.",
+  "home.lookBeyond.body4": "Solve only what is visible, and one problem can disappear while the dependency behind it remains.",
+  "home.lookBeyond.body5": "The better question is not always: what should we add or change? Sometimes it is: why is this problem here in the first place?",
+
+  // Homepage — Our Starting Point
+  "home.startingPoint.title1": "First understand how the business needs to work.",
+  "home.startingPoint.title2": "Then decide what technology needs to do.",
+  "home.startingPoint.body1": "Before IO SKY decides what should be connected, automated, changed or built, we first look at the organisation itself.",
+  "home.startingPoint.body2": "What needs to happen? What depends on what? Where are decisions made? And what needs to become possible next?",
+  "home.startingPoint.body3": "Only then can we determine where technology adds value — and what role it should play.",
+  "home.startingPoint.body4": "The solution follows from that understanding.",
+
+  // Homepage — Designing the Relationships
+  "home.relationships.title1": "The parts matter.",
+  "home.relationships.title2": "So does what happens between them.",
+  "home.relationships.body1": "A process can depend on information created somewhere else. A decision can determine what another team needs to do next. A system can affect work far beyond the people who use it directly.",
+  "home.relationships.body2": "A change in one place can therefore create consequences somewhere entirely different.",
+  "home.relationships.body3": "IO SKY treats those relationships as part of the design — not as something to solve afterwards.",
+  "home.relationships.body4": "Because what connects the parts can be just as important as the parts themselves.",
+
+  // Homepage — What That Can Become
+  "home.become.title": "What the business needs determines what comes next.",
+  "home.become.body": "Once the problem and the relationships around it are understood, the answer can take different forms.",
+  "home.become.card1.title": "Foundation",
+  "home.become.card1.body": "The structural basis that allows systems, information, access and change to function reliably together.",
+  "home.become.card1.link": "Explore Foundation",
+  "home.become.card2.title": "Intelligence",
+  "home.become.card2.body": "Capabilities that turn reliable information and connected operations into visibility, automation, better decisions and intelligent action.",
+  "home.become.card2.link": "Explore Intelligence",
+  "home.become.card3.title": "Solutions",
+  "home.become.card3.body": "Systems, software and operational solutions designed around what the organisation actually needs to accomplish.",
+  "home.become.card3.link": "Explore Solutions",
+
+  // Homepage — Why IO SKY
+  "home.why.title1": "The business does not separate software, data, automation and infrastructure when the work depends on all of them.",
+  "home.why.title2": "Neither do we.",
+  "home.why.body1": "A process can cross systems. A decision can depend on information created elsewhere. Automation can depend on infrastructure, access and human judgement at the same time.",
+  "home.why.body2": "Treat those as separate technical problems, and each solution can work while the organisation around them becomes more complicated.",
+  "home.why.body3": "IO SKY looks across those boundaries.",
+  "home.why.body4": "We use software, automation, data, infrastructure and intelligence as parts of one operational design — choosing what is needed based on the problem, rather than fitting the problem to a predefined service.",
+  "home.why.body5": "That also means knowing when not to add more.",
+  "home.why.body6": "Keep what works. Change what gets in the way. Build what genuinely adds value.",
+
+  // Homepage — Built for Change
+  "home.builtForChange.title1": "You cannot predict what the business will need next.",
+  "home.builtForChange.title2": "You can make it easier to change when it does.",
+  "home.builtForChange.body1": "New customers arrive. Teams evolve. Processes change. New systems become relevant. New information becomes valuable.",
+  "home.builtForChange.body2": "And capabilities that matter tomorrow may not even exist today.",
+  "home.builtForChange.body3": "The answer is not to predict every future requirement.",
+  "home.builtForChange.body4": "It is to make sure that what is built today does not make tomorrow unnecessarily difficult.",
+  "home.builtForChange.body5": "That means designing systems, information and relationships so that change can be absorbed without forcing the organisation to start again every time something new becomes important.",
+  "home.builtForChange.body6": "Good infrastructure does not predict what comes next. It makes what comes next easier to accommodate.",
+
+  // Homepage — Final CTA
+  "home.finalCta.title": "What does your business need to be able to do next?",
+  "home.finalCta.body1": "Maybe the next step is automation. Maybe systems need to work together differently. Maybe information needs to become more reliable or more useful. Maybe a new platform needs to be built. Or maybe the real problem has not yet been identified.",
+  "home.finalCta.body2": "You do not need to arrive with the technical answer.",
+  "home.finalCta.body3": "Start with what the business needs to accomplish. We can determine what needs to exist behind it.",
 
   // Dashboard mockup labels
   "dash.overview": "Overview",
@@ -342,13 +412,14 @@ export const en: Record<string, string> = {
   "ov.automation": "Automation",
 
   // Infrastructure page (master spec)
-  "infra.hero.eyebrow": "INFRASTRUCTURE",
-  "infra.hero.title.part1": "Operational infrastructure that supports your organization as you",
-  "infra.hero.title.accent": "grow",
-  "infra.hero.title.dot": ".",
-  "infra.hero.body": "We design systems that connect processes, increase visibility and reduce operational complexity.",
-  "infra.hero.cta.book": "Start AI Scan",
-  "infra.hero.cta.explore": "Book a discovery call",
+  "infra.hero.eyebrow": "FOUNDATION",
+  "infra.hero.title.part1": "Some decisions are made for today.",
+  "infra.hero.title.accent": "Others determine what becomes possible next.",
+  "infra.hero.title.dot": "",
+  "infra.hero.body.1": "A system. A process. Where information lives. What is connected. Who has access to what.",
+  "infra.hero.body.2": "They may seem like separate decisions. Until other parts of the business begin to depend on them.",
+  "infra.hero.body.3": "IO SKY designs the foundation that brings those dependencies together reliably — without every new change creating more complexity.",
+  "infra.hero.cta.book": "Book a Discovery Call",
 
   // Mega-menu shared
   "nav.infra.exploreAll": "Explore all Infrastructure capabilities",
@@ -434,12 +505,11 @@ export const en: Record<string, string> = {
 
   // Intelligence page (master spec)
   "intel.hero.eyebrow": "INTELLIGENCE",
-  "intel.hero.title.line1": "Intelligence that sees everything.",
-  "intel.hero.title.line2": "AI that executes.",
+  "intel.hero.title.line1": "What requires attention. What requires judgement.",
+  "intel.hero.title.line2": "What requires action.",
   "intel.hero.body":
-    "IO SKY transforms your data, systems and processes into real-time operational intelligence that drives execution, automation and growth.",
+    "Every situation places its own demands on the business. Some require awareness. Some require a decision. Some can be handled without intervention. Others require human judgement. Intelligence is the ability to make those distinctions part of how the business operates.",
   "intel.hero.cta.book": "Book Discovery Call",
-  "intel.hero.cta.explore": "Explore Capabilities",
 
   "intel.tag.score.title": "Operational Score",
   "intel.tag.score.value": "92%",
@@ -1501,4 +1571,226 @@ export const en: Record<string, string> = {
   "infra.diagram.right.analytics": "Analytics",
   "infra.diagram.right.ai": "AI",
   "infra.diagram.right.automation": "Automation",
+
+  // Foundation page — What Is Connected
+  "foundation.connected.title": "You change one thing. And suddenly you see what is connected to it.",
+  "foundation.connected.body1": "A new team. A different process. A new service. A system being replaced.",
+  "foundation.connected.body2": "On its own, each change can seem straightforward.",
+  "foundation.connected.body3": "Until information is needed somewhere else. A workflow needs to change. Access changes. Or another system turns out to rely on the same data.",
+  "foundation.connected.body4": "What looked like one change becomes part of something larger.",
+
+  // Foundation page — Not Every Problem Stands on Its Own
+  "foundation.notAlone.title": "Not every problem stands on its own.",
+  "foundation.notAlone.body1": "When friction appears somewhere, the logical response is often to improve that specific part. A process takes too long, so it gets automated. A team lacks visibility, so a dashboard is added. Information is in the wrong place, so an integration is built. A system no longer meets the need, so a new one is introduced.",
+  "foundation.notAlone.body2": "Sometimes, that is exactly what is needed. But not when different problems trace back to the same cause.",
+  "foundation.notAlone.q1": "What technology do we need?",
+  "foundation.notAlone.q2": "Why does this problem exist in the first place — and where in the business does it originate?",
+
+  // Foundation page — First Understand, Then Decide
+  "foundation.firstUnderstand.title1": "First understand how the business needs to work.",
+  "foundation.firstUnderstand.title2": "Then determine what technology needs to do.",
+  "foundation.firstUnderstand.body1": "Technology sits within the way a business operates.",
+  "foundation.firstUnderstand.body2": "So before deciding what should be connected, automated, replaced or built, IO SKY first looks at what the organisation needs to make possible.",
+  "foundation.firstUnderstand.body3": "Where does work need to move? Where is information needed? Where are decisions made? What needs to remain reliable as the business changes?",
+  "foundation.firstUnderstand.body4": "Only then does the role of technology become clear.",
+  "foundation.firstUnderstand.body5": "A system may need to stay exactly as it is. Something may need to connect differently. A process may need to change before anything is automated. Or something new may genuinely need to be built.",
+  "foundation.firstUnderstand.body6": "The technology follows from the way the business needs to work — not the other way around.",
+
+  // Foundation page — What Needs to Work Together (4 pillars)
+  "foundation.pillars.title": "A strong foundation is designed around what needs to work together.",
+  "foundation.pillars.body": "Security and control are designed through the foundation — not added after it.",
+  "foundation.pillars.systems.title": "Systems & Connections",
+  "foundation.pillars.systems.body": "How systems exchange information and enable work to move between them.",
+  "foundation.pillars.identity.title": "Identity & Access",
+  "foundation.pillars.identity.body": "Who or what can access systems and information, and what they are authorised to do.",
+  "foundation.pillars.data.title": "Information & Data",
+  "foundation.pillars.data.body": "Where information originates, how it is organised and where it needs to be available.",
+  "foundation.pillars.infra.title": "Infrastructure & Reliability",
+  "foundation.pillars.infra.body": "The environment that keeps systems and information available, reliable and manageable as the business changes.",
+
+  // Foundation page — New Is Not Automatically Better
+  "foundation.notBetter.title": "New is not automatically better.",
+  "foundation.notBetter.body1": "Every change introduces something the business will need to live with afterwards.",
+  "foundation.notBetter.body2": "A new system needs to fit into the environment around it. A new connection needs to keep working as the systems around it change. Automation changes how work moves and where decisions are made. Replacing a system can remove one limitation while introducing another.",
+  "foundation.notBetter.triad1": "Keep what works.",
+  "foundation.notBetter.triad2": "Change what gets in the way.",
+  "foundation.notBetter.triad3": "Build only what adds value.",
+
+  // Foundation page — Room to Evolve
+  "foundation.roomToEvolve.title": "The foundation should leave room for the business to evolve.",
+  "foundation.roomToEvolve.body1": "That does not require predicting exactly what the business will need years from now.",
+  "foundation.roomToEvolve.body2": "It means designing today without unnecessarily narrowing what the business can do later.",
+  "foundation.roomToEvolve.body3": "A well-designed environment can absorb change without turning every adjustment into a rebuild.",
+
+  // Foundation page — Intelligence Does Not Begin with AI
+  "foundation.intelligenceStart.title": "Intelligence does not begin with AI.",
+  "foundation.intelligenceStart.body1": "An AI model can use information. It cannot make unreliable information trustworthy after the fact.",
+  "foundation.intelligenceStart.body2": "Automation can make work faster. But speed means little when the wrong process is being accelerated.",
+  "foundation.intelligenceStart.body3": "An AI agent can act. But its actions are shaped by the access, context and boundaries around it.",
+  "foundation.intelligenceStart.body4": "It begins with an environment intelligence can rely on.",
+  "foundation.intelligenceStart.body5": "With that foundation in place, intelligence can become part of how the business operates — how it observes, decides and acts.",
+
+  // Foundation page — Final CTA
+  "foundation.finalCta.title": "Make the next decision from a clear understanding of the business.",
+
+  // Intelligence page — What Happens Together Is Often Seen Separately
+  "intelligence2.together.title": "What happens together is often seen separately.",
+  "intelligence2.together.body1": "A customer interaction, an operational change and a financial consequence can all belong to the same situation.",
+  "intelligence2.together.body2": "Yet they may become visible at different moments and to different people.",
+  "intelligence2.together.body3": "Nothing has to be missing or incorrect. The events can all be visible and still look unrelated.",
+  "intelligence2.together.body4": "The information may already exist. That does not mean the situation is visible.",
+
+  // Intelligence page — Routine in One Situation, Critical in Another
+  "intelligence2.routine.title": "The same event can be routine in one situation and critical in another.",
+  "intelligence2.routine.body1": "A delay can have little consequence in one process and put a customer commitment at risk in another. A small exception can affect planning, capacity or a decision elsewhere in the operation.",
+  "intelligence2.routine.body2": "The event does not change. The operational consequence can.",
+
+  // Intelligence page — Not All of Them Can Wait
+  "intelligence2.wait.title": "Several things can matter. Not all of them can wait.",
+  "intelligence2.wait.body1": "A serious issue is not always the most urgent one. A small exception can become the priority when a larger commitment depends on it.",
+  "intelligence2.wait.body2": "What gets seen first is not necessarily what needs to come first.",
+
+  // Intelligence page — The Ability to Act Is Not a Reason to Act
+  "intelligence2.ability.title": "The ability to act is not a reason to act.",
+  "intelligence2.ability.body1": "A situation may only need to be made visible. Another may require a decision, an escalation or direct action within the operation.",
+  "intelligence2.ability.body2": "The difference is not what technology can do. It is what the situation calls for.",
+
+  // Intelligence page — Not Everything Needs Intervention
+  "intelligence2.intervention.title": "Not everything needs intervention to remain under control.",
+  "intelligence2.intervention.body1": "Some things can happen without approval, while others require a decision from the person responsible.",
+  "intelligence2.intervention.body2": "The business decides where that line sits.",
+
+  // Intelligence page — Work Doesn't Need to Wait (3-state row)
+  "intelligence2.wontWait.title": "Work does not need to wait for a person when no decision is required.",
+  "intelligence2.wontWait.body": "Routine work can continue, while exceptions reach the people responsible for them.",
+  "intelligence2.wontWait.state1.title": "Routine work",
+  "intelligence2.wontWait.state1.body": "Continues within defined rules.",
+  "intelligence2.wontWait.state2.title": "Exception",
+  "intelligence2.wontWait.state2.body": "Reaches the responsible person.",
+  "intelligence2.wontWait.state3.title": "Decision",
+  "intelligence2.wontWait.state3.body": "Remains human where required.",
+
+  // Intelligence page — Intelligence Earns Its Place (4 cards)
+  "intelligence2.earns.title": "Intelligence earns its place by doing something specific in the operation.",
+  "intelligence2.earns.card1.title": "Operational Visibility",
+  "intelligence2.earns.card1.body": "Related activity, changes and dependencies brought together.",
+  "intelligence2.earns.card2.title": "Decision Support",
+  "intelligence2.earns.card2.body": "What the responsible person needs to assess before deciding.",
+  "intelligence2.earns.card3.title": "Operational Response",
+  "intelligence2.earns.card3.body": "Work routed, exceptions escalated, action initiated within rules.",
+  "intelligence2.earns.card4.title": "AI Agents",
+  "intelligence2.earns.card4.body": "Defined roles for communication, coordination and action.",
+
+  // Intelligence page — Final CTA
+  "intelligence2.finalCta.title1": "Intelligence starts with the business it has to serve.",
+  "intelligence2.finalCta.title2": "IO SKY builds it from there.",
+  "intelligence2.finalCta.cta": "Book Discovery Call",
+
+  // Solutions page (per master spec §5 + §6) — Hero + intro
+  "sol2.hero.title": "Start with the business. Build what it requires.",
+  "sol2.hero.body1": "What the business needs to achieve rarely depends on one system or process alone.",
+  "sol2.hero.body2": "IO SKY brings together what the business needs into one coherent solution.",
+  "sol2.intro.title": "Every solution has a different starting point.",
+  "sol2.intro.body": "A solution can begin with growth, with the way the business operates, or with a requirement unique to the business.",
+
+  // Solutions page — Growth Ecosystem
+  "sol2.growth.title": "Growth Ecosystem",
+  "sol2.growth.tagline": "Create, structure or strengthen how commercial growth happens.",
+  "sol2.growth.body": "For businesses building their first repeatable commercial process, scaling what already works or bringing greater control to a complex revenue operation.",
+  "sol2.growth.disclosure": "Capabilities are composed around the business objective. The examples below illustrate what a Growth Ecosystem can include.",
+  "sol2.growth.f1.title": "Market & Acquisition",
+  "sol2.growth.f1.body": "Identify the right markets, accounts and potential customers — and create effective ways to reach and acquire them.",
+  "sol2.growth.f1.examples": "Market targeting · Account identification · Buying signals · Demand generation · Acquisition flows",
+  "sol2.growth.f2.title": "Revenue, Sales & Intelligence",
+  "sol2.growth.f2.body": "Turn commercial potential into focused sales activity by identifying, qualifying, engaging and developing the opportunities that matter.",
+  "sol2.growth.f2.examples": "Lead qualification · Personalised outreach · Sales sequencing · Opportunity intelligence · Sales assistance",
+  "sol2.growth.f3.title": "Pipeline & Commercial Processes",
+  "sol2.growth.f3.body": "Create structure around how commercial opportunities move from initial interest to agreement, with clear stages, ownership and progression.",
+  "sol2.growth.f3.examples": "CRM workflows · Opportunity management · Pipeline orchestration · Proposal & approval flows · Commercial handover",
+  "sol2.growth.f4.title": "Customer Growth",
+  "sol2.growth.f4.body": "Recognise and act on opportunities to retain, renew and expand existing customer relationships.",
+  "sol2.growth.f4.examples": "Retention signals · Renewal management · Churn-risk detection · Upsell & cross-sell · Account expansion",
+  "sol2.growth.f5.title": "Growth Intelligence & Optimisation",
+  "sol2.growth.f5.body": "Make commercial performance visible across the growth operation — so the business can see what is working, where momentum is being lost and where improvement matters.",
+  "sol2.growth.f5.examples": "Funnel performance · Attribution · Pipeline forecasting · Bottleneck detection · Growth opportunities",
+
+  // Solutions page — Operational Ecosystem
+  "sol2.operational.title": "Operational Ecosystem",
+  "sol2.operational.tagline": "Structure, improve or scale how work gets done across the operation.",
+  "sol2.operational.body": "For businesses establishing more reliable processes, reducing operational friction or bringing greater control to a complex operation.",
+  "sol2.operational.disclosure": "Capabilities are composed around the processes, responsibilities and operational requirements that matter to the business — not around a fixed package.",
+  "sol2.operational.f1.title": "Processes & Workflow",
+  "sol2.operational.f1.body": "Structure how work moves through the business — connecting steps, responsibilities and systems into controlled operational workflows.",
+  "sol2.operational.f1.examples": "Process orchestration · Task routing · Workflow automation · Cross-team handovers · Recurring workflows",
+  "sol2.operational.f2.title": "Service, Fulfilment & Customer Operations",
+  "sol2.operational.f2.body": "Coordinate what needs to happen after a customer, order or service request enters the operation — from initial handling through delivery and completion.",
+  "sol2.operational.f2.examples": "Customer onboarding · Order processing · Service delivery · Case management · Fulfilment workflows",
+  "sol2.operational.f3.title": "Workforce, Resources & Field Operations",
+  "sol2.operational.f3.body": "Coordinate people, capacity and operational resources around the work that needs to be done — across teams, locations and the field.",
+  "sol2.operational.f3.examples": "Work scheduling · Capacity planning · Resource allocation · Field dispatch · Work orders",
+  "sol2.operational.f4.title": "Finance, Procurement & Transactions",
+  "sol2.operational.f4.body": "Structure the financial, purchasing and transactional processes that keep the operation moving with greater consistency and control.",
+  "sol2.operational.f4.examples": "Invoice processing · Reconciliation · Financial approvals · Procurement workflows · Supplier processes",
+  "sol2.operational.f5.title": "AI, Control & Exceptions",
+  "sol2.operational.f5.body": "Use AI and automation where work can be handled without intervention, while keeping decisions, exceptions and higher-impact actions within defined controls.",
+  "sol2.operational.f5.examples": "Operational AI agents · Intelligent routing · Exception handling · Approval workflows · Human-in-the-loop controls",
+  "sol2.operational.f6.title": "Operational Intelligence & Optimisation",
+  "sol2.operational.f6.body": "Make operational performance visible across processes, workloads and exceptions — so the business can identify where attention, intervention or improvement is needed.",
+  "sol2.operational.f6.examples": "Process performance · SLA monitoring · Bottleneck detection · Capacity visibility · Optimisation signals",
+
+  // Solutions page — Custom Ecosystem
+  "sol2.custom.title": "Custom Ecosystem",
+  "sol2.custom.tagline": "Build around a requirement specific to the business.",
+  "sol2.custom.body1": "For businesses with a requirement that does not fit a predefined solution — because the process, product, operation or technical environment calls for something built specifically around it.",
+  "sol2.custom.body2": "A Custom Ecosystem is designed around that requirement from the ground up, bringing together the capabilities needed to make it work as one coherent solution.",
+
+  // Solutions page — Built Around the Business
+  "sol2.built.title": "Different requirements call for different combinations.",
+  "sol2.built.body1": "The right solution may bring together systems, workflows, intelligence, AI, integrations and custom software.",
+  "sol2.built.body2": "What belongs in it depends on what needs to happen, how the business operates and how those parts need to work together.",
+
+  // Solutions page — Delivery
+  "sol2.delivery.title": "Built to perform in operation. Not just to go live.",
+  "sol2.delivery.body1": "Each solution is designed, built and integrated around the environment in which it needs to operate.",
+  "sol2.delivery.body2": "But delivery does not end at launch.",
+  "sol2.delivery.body3": "The first 30 days in operation include monitoring and optimisation — so we can see how the solution performs in practice and optimise where needed.",
+  "sol2.delivery.body4": "After the first 30 days, monitoring and optimisation can continue based on what the solution requires.",
+
+  // Solutions page — Final CTA
+  "sol2.finalCta.title": "What does your business need to achieve?",
+  "sol2.finalCta.body": "Tell us what you need to achieve. We'll determine what needs to be built around it.",
+  "sol2.finalCta.cta": "Book a Discovery Call",
+
+  // Solutions page — shared UI strings
+  "sol2.examplesLabel": "Examples include",
+
+  // Contact page (rebuilt per master spec §7)
+  "contact2.eyebrow": "CONTACT",
+  "contact2.title": "A good conversation begins with understanding what it is about.",
+  "contact2.body1": "Do you have a question, would you like to discuss something with us, or are you contacting us about an existing collaboration? Tell us briefly what it is about. We make sure your message reaches the people who can help you further.",
+  "contact2.body2": "Would you like to explore what could be improved within your organization and what is truly needed for that? Then we prefer to begin with understanding rather than with a solution. For that, a Discovery Call is the right first step.",
+  "contact2.discoveryLink": "Book a Discovery Call",
+  "contact2.field.name": "Name",
+  "contact2.field.name.ph": "Your name",
+  "contact2.field.email": "Email address",
+  "contact2.field.email.ph": "name@example.com",
+  "contact2.field.company": "Company",
+  "contact2.field.company.ph": "Company name",
+  "contact2.field.subject": "What is your message about?",
+  "contact2.field.subject.ph": "Select a subject",
+  "contact2.field.message": "Message",
+  "contact2.field.message.ph": "Tell us briefly what your question is about.",
+  "contact2.subject.general": "General question",
+  "contact2.subject.partnership": "Partnership",
+  "contact2.subject.media": "Media",
+  "contact2.subject.careers": "Careers",
+  "contact2.subject.existing": "Existing client",
+  "contact2.privacy": "By sending your message, IO SKY uses the information you provide to handle your enquiry and, where necessary, contact you. More information can be found in our Privacy Policy.",
+  "contact2.submit": "Send message",
+  "contact2.success.title": "Message received",
+  "contact2.success.body": "Thank you. We will take it from here. Your message has been received. We will make sure it reaches the right people within IO SKY and will contact you via the email address provided when a response is needed.",
+  "contact2.success.cta": "Back to IO SKY",
+  "contact2.failure.title": "Your message has not been sent yet.",
+  "contact2.failure.body": "Something went wrong while sending. Your information has been retained. Please try again.",
+  "contact2.failure.cta": "Try again",
 };

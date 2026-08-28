@@ -1,11 +1,9 @@
 /**
  * i18n homepage key-completeness regression test.
  *
- * Background: the homepage sections (`Hero`, `OperationalFriction`,
- * `EcosystemOverview`, `FourPillars`, `Intelligence`, `Infrastructure`,
- * `ResultsThatMatter`, `AIScanSection`, `LiveOpsTicker`) used a handful of
- * translation keys (e.g. `problem.card1.title`) that were never declared in
- * `en.ts` — so visitors were seeing literal keys instead of copy.
+ * Background: the homepage sections used a handful of translation keys
+ * (e.g. `problem.card1.title`) that were never declared in `en.ts` — so
+ * visitors were seeing literal keys instead of copy.
  *
  * This test re-scans every section file for `t("...")` calls and asserts the
  * referenced key exists in the canonical English dictionary. Any future key
@@ -20,14 +18,14 @@ import path from "node:path";
 const projectRoot = path.resolve(__dirname, "..");
 const SECTION_FILES = [
   "client/src/components/sections/Hero.tsx",
-  "client/src/components/sections/LiveOpsTicker.tsx",
-  "client/src/components/sections/OperationalFriction.tsx",
-  "client/src/components/sections/EcosystemOverview.tsx",
-  "client/src/components/sections/FourPillars.tsx",
-  "client/src/components/sections/Intelligence.tsx",
-  "client/src/components/sections/Infrastructure.tsx",
-  "client/src/components/sections/ResultsThatMatter.tsx",
-  "client/src/components/sections/AIScanSection.tsx",
+  "client/src/components/sections/GrowthDependency.tsx",
+  "client/src/components/sections/LookBeyond.tsx",
+  "client/src/components/sections/OurStartingPoint.tsx",
+  "client/src/components/sections/DesigningRelationships.tsx",
+  "client/src/components/sections/WhatThatCanBecome.tsx",
+  "client/src/components/sections/WhyIOSKY.tsx",
+  "client/src/components/sections/BuiltForChange.tsx",
+  "client/src/components/sections/HomeFinalCta.tsx",
 ];
 
 const T_CALL_RE = /\bt\(\s*"([^"]+)"/g;

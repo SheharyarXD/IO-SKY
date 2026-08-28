@@ -32,20 +32,8 @@ export default function Hero() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
           {/* LEFT */}
           <div className="lg:col-span-5">
-            <div className="pill">
-              <span className="status-dot" />
-              {t("hero.eyebrow")}
-            </div>
-
-            <h1 className="mt-7 font-display font-semibold text-[34px] sm:text-[40px] md:text-[44px] lg:text-[52px] xl:text-[60px] leading-[1.06] tracking-[-0.025em] text-[var(--color-ivory)] text-balance">
-              {t("hero.title.part1")}{" "}
-              <span
-                className="text-[var(--color-orange)]"
-                style={{ textShadow: "0 0 28px oklch(0.72 0.205 45 / 0.45)" }}
-              >
-                {t("hero.title.accent")}
-              </span>{" "}
-              {t("hero.title.part2")}
+            <h1 className="font-display font-semibold text-[34px] sm:text-[40px] md:text-[44px] lg:text-[52px] xl:text-[60px] leading-[1.06] tracking-[-0.025em] text-[var(--color-ivory)] text-balance">
+              {t("hero.title.part1")} {t("hero.title.part2")}
             </h1>
 
             <p className="mt-6 max-w-[560px] text-[15.5px] md:text-[16px] leading-[1.75] text-[oklch(0.78_0.014_250)]">

@@ -1,16 +1,16 @@
 /*
- * IO SKY — Homepage (premium master design).
+ * IO SKY — Homepage.
  *
- * Section order (top → bottom):
- *   1. Hero (with embedded Overview dashboard + trust strip)
- *   2. Live Ops Ticker (operational telemetry strip)
- *   3. The Real Problem (4 friction cards)
- *   4. The Solution (hub diagram + 6 connector pills)
- *   5. Four Pillars (Infrastructure · Intelligence · Growth · Enterprise)
- *   6. AI Intelligence Layer (4 capability cards)
- *   7. Everything Connected (3 dashboard portals)
- *   8. Results that Matter (4 stat tiles)
- *   9. Discover Opportunities — AI Scan Preview
+ * Section order (top → bottom), per IO_SKY_Master_Design_Spec.md §2:
+ *   1. Hero
+ *   2. Growth & Dependency
+ *   3. Look Beyond the Visible Problem
+ *   4. Our Starting Point
+ *   5. Designing the Relationships
+ *   6. What That Can Become (Foundation · Intelligence · Solutions)
+ *   7. Why IO SKY
+ *   8. Built for Change
+ *   9. Final CTA
  *
  * Every non-hero section is wrapped in <RevealOnScroll> for cinematic, taste-
  * forward reveals as the visitor scrolls.
@@ -18,14 +18,14 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Hero from "@/components/sections/Hero";
-import LiveOpsTicker from "@/components/sections/LiveOpsTicker";
-import OperationalFriction from "@/components/sections/OperationalFriction";
-import EcosystemOverview from "@/components/sections/EcosystemOverview";
-import FourPillars from "@/components/sections/FourPillars";
-import IntelligenceSection from "@/components/sections/Intelligence";
-import InfrastructureSection from "@/components/sections/Infrastructure";
-import ResultsThatMatter from "@/components/sections/ResultsThatMatter";
-import AIScanSection from "@/components/sections/AIScanSection";
+import GrowthDependency from "@/components/sections/GrowthDependency";
+import LookBeyond from "@/components/sections/LookBeyond";
+import OurStartingPoint from "@/components/sections/OurStartingPoint";
+import DesigningRelationships from "@/components/sections/DesigningRelationships";
+import WhatThatCanBecome from "@/components/sections/WhatThatCanBecome";
+import WhyIOSKY from "@/components/sections/WhyIOSKY";
+import BuiltForChange from "@/components/sections/BuiltForChange";
+import HomeFinalCta from "@/components/sections/HomeFinalCta";
 import RevealOnScroll from "@/components/RevealOnScroll";
 
 export default function Home() {
@@ -34,14 +34,14 @@ export default function Home() {
       <Navbar />
       <main className="relative z-[1] page-enter">
         <Hero />
-        <LiveOpsTicker />
-        <RevealOnScroll><OperationalFriction /></RevealOnScroll>
-        <RevealOnScroll><EcosystemOverview /></RevealOnScroll>
-        <RevealOnScroll><FourPillars /></RevealOnScroll>
-        <RevealOnScroll><IntelligenceSection /></RevealOnScroll>
-        <RevealOnScroll><InfrastructureSection /></RevealOnScroll>
-        <RevealOnScroll><ResultsThatMatter /></RevealOnScroll>
-        <RevealOnScroll><AIScanSection /></RevealOnScroll>
+        <RevealOnScroll><GrowthDependency /></RevealOnScroll>
+        <RevealOnScroll><LookBeyond /></RevealOnScroll>
+        <RevealOnScroll><OurStartingPoint /></RevealOnScroll>
+        <RevealOnScroll><DesigningRelationships /></RevealOnScroll>
+        <RevealOnScroll><WhatThatCanBecome /></RevealOnScroll>
+        <RevealOnScroll><WhyIOSKY /></RevealOnScroll>
+        <RevealOnScroll><BuiltForChange /></RevealOnScroll>
+        <RevealOnScroll><HomeFinalCta /></RevealOnScroll>
       </main>
       <Footer />
     </div>

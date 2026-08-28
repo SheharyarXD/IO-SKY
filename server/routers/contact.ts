@@ -31,11 +31,15 @@ const contactInputSchema = z.object({
   fullName: z.string().min(2).max(200),
   email: z.string().email().max(320),
   phone: z.string().max(64).optional().nullable(),
-  company: z.string().min(1).max(200),
+  // Milestone: Contact page rebuilt to match the master design spec, which
+  // marks Company as optional ("Do not add ... company size" — the spec's
+  // own field contract only requires Name/Email/Subject/Message). The DB
+  // column was already nullable; only this schema was over-restricting it.
+  company: z.string().max(200).optional().nullable(),
   industry: z.string().max(64).optional().nullable(),
   size: z.string().max(64).optional().nullable(),
   subject: z.string().min(1).max(64),
-  message: z.string().min(10).max(2000),
+  message: z.string().min(1).max(2000),
 
   utmSource: z.string().max(120).optional().nullable(),
   utmCampaign: z.string().max(120).optional().nullable(),
@@ -74,7 +78,7 @@ export const contactRouter = router({
         fullName: input.fullName.trim(),
         email: input.email.trim().toLowerCase(),
         phone: input.phone?.trim() || null,
-        company: input.company.trim(),
+        company: input.company?.trim() || null,
         industry: input.industry?.trim() || null,
         size: input.size?.trim() || null,
         subject: input.subject.trim(),
@@ -133,7 +137,7 @@ export const contactRouter = router({
             `Name: ${submission.fullName}`,
             `Email: ${submission.email}`,
             submission.phone ? `Phone: ${submission.phone}` : null,
-            `Company: ${submission.company}`,
+            submission.company ? `Company: ${submission.company}` : null,
             submission.industry ? `Industry: ${submission.industry}` : null,
             submission.size ? `Size: ${submission.size}` : null,
             ``,

@@ -1,119 +1,75 @@
 /*
- * IO SKY — Intelligence page (master spec).
- *
- * Refined master implementation per:
- *   /home/ubuntu/upload/IO_SKY_INTELLIGENCE_PAGE_MASTER_SPECIFICATION(1).pdf
- *   + uploaded mockup (intelligencepage.png).
+ * IO SKY — Intelligence page (per IO_SKY_Master_Design_Spec.md §4).
  *
  * Sections (top → bottom):
- *   1. Hero — eyebrow · two-line headline ("Intelligence that sees everything." +
- *      orange "AI that executes.") · body · Book Strategy / Explore Capabilities
- *      CTAs · isometric particle dome visual with floating telemetry tags
- *   2. From data to decisive action — 5-step flow (Connect → Intelligence →
- *      Insights → Execution → Impact)
- *   3. Six capability cards (AI Agents, Operational Intelligence, Predictive
- *      Systems, Executive Analytics, Data Intelligence, Intelligence Hub)
- *   4. Trust strip — 5 enterprise pillars
+ *   1. Hero — eyebrow · headline · body · Book Discovery Call CTA ·
+ *      isometric particle dome visual with floating telemetry tags (kept —
+ *      not contradicted by spec, no visual specified either way)
+ *   2. What Happens Together Is Often Seen Separately
+ *   3. Routine in One Situation, Critical in Another
+ *   4. Not All of Them Can Wait
+ *   5. The Ability to Act Is Not a Reason to Act
+ *   6. Not Everything Needs Intervention
+ *   7. Work Doesn't Need to Wait (3-state row)
+ *   8. Intelligence Earns Its Place (4 cards)
+ *   9. Final CTA
  *
- * Locked design language identical to Homepage and Infrastructure: deep
+ * Locked design language identical to Homepage and Foundation: deep
  * navy-black, restrained orange accents, premium glass surfaces, executive
  * typography. All copy localized via useT().
  */
 import type { ReactNode } from "react";
 import { Link } from "wouter";
 import {
-  ArrowRight, ArrowUpRight,
-  Bot, Activity, TrendingUp, BarChart3, Database, Network,
-  Cpu, Sparkles, Eye, Zap, Repeat,
-  ShieldCheck, Globe2, Infinity as InfinityIcon, Clock,
+  ArrowRight,
+  Bot, Eye, LayoutList, Workflow,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import RevealOnScroll from "@/components/RevealOnScroll";
 import { useT } from "@/contexts/LanguageContext";
 
 const HERO_VISUAL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-intelligence-dome-au5JWDJ3Shwz3Yt4dWsF7j.webp";
 
-type Step = { id: string; titleKey: string; bodyKey: string; icon: React.ReactNode };
-const FLOW: Step[] = [
-  { id: "connect",      titleKey: "intel.flow.connect.title",      bodyKey: "intel.flow.connect.body",      icon: <Network    className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-  { id: "intelligence", titleKey: "intel.flow.intelligence.title", bodyKey: "intel.flow.intelligence.body", icon: <Zap        className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-  { id: "insights",     titleKey: "intel.flow.insights.title",     bodyKey: "intel.flow.insights.body",     icon: <Eye        className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-  { id: "execution",    titleKey: "intel.flow.execution.title",    bodyKey: "intel.flow.execution.body",    icon: <Cpu        className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-  { id: "impact",       titleKey: "intel.flow.impact.title",       bodyKey: "intel.flow.impact.body",       icon: <Repeat     className="w-[18px] h-[18px]" strokeWidth={1.6} /> },
-];
-
-type Cap = { id: string; titleKey: string; bodyKey: string; icon: React.ReactNode; bullets: string[] };
-const CAPS: Cap[] = [
-  {
-    id: "agents",
-    titleKey: "intel.cap.agents.title",
-    bodyKey: "intel.cap.agents.body",
-    icon: <Bot className="w-[18px] h-[18px]" strokeWidth={1.6} />,
-    bullets: ["intel.cap.agents.b1", "intel.cap.agents.b2", "intel.cap.agents.b3", "intel.cap.agents.b4"],
-  },
-  {
-    id: "operational",
-    titleKey: "intel.cap.operational.title",
-    bodyKey: "intel.cap.operational.body",
-    icon: <Activity className="w-[18px] h-[18px]" strokeWidth={1.6} />,
-    bullets: ["intel.cap.operational.b1", "intel.cap.operational.b2", "intel.cap.operational.b3", "intel.cap.operational.b4"],
-  },
-  {
-    id: "predictive",
-    titleKey: "intel.cap.predictive.title",
-    bodyKey: "intel.cap.predictive.body",
-    icon: <TrendingUp className="w-[18px] h-[18px]" strokeWidth={1.6} />,
-    bullets: ["intel.cap.predictive.b1", "intel.cap.predictive.b2", "intel.cap.predictive.b3", "intel.cap.predictive.b4"],
-  },
-  {
-    id: "executive",
-    titleKey: "intel.cap.executive.title",
-    bodyKey: "intel.cap.executive.body",
-    icon: <BarChart3 className="w-[18px] h-[18px]" strokeWidth={1.6} />,
-    bullets: ["intel.cap.executive.b1", "intel.cap.executive.b2", "intel.cap.executive.b3", "intel.cap.executive.b4"],
-  },
-  {
-    id: "data",
-    titleKey: "intel.cap.data.title",
-    bodyKey: "intel.cap.data.body",
-    icon: <Database className="w-[18px] h-[18px]" strokeWidth={1.6} />,
-    bullets: ["intel.cap.data.b1", "intel.cap.data.b2", "intel.cap.data.b3", "intel.cap.data.b4"],
-  },
-  {
-    id: "hub",
-    titleKey: "intel.cap.hub.title",
-    bodyKey: "intel.cap.hub.body",
-    icon: <Sparkles className="w-[18px] h-[18px]" strokeWidth={1.6} />,
-    bullets: ["intel.cap.hub.b1", "intel.cap.hub.b2", "intel.cap.hub.b3", "intel.cap.hub.b4"],
-  },
-];
-
-/*
- * Spec-mandated footer anchor names differ from the historical capability ids
- * (which the navbar mega-menu already uses). To keep BOTH working we render an
- * invisible alias anchor with the spec hash inside the matching card, so e.g.
- * /intelligence#operational-intelligence and /intelligence#operational both
- * land on the same section. Cards without a spec alias simply omit it.
- */
-const SPEC_ANCHOR_ALIAS: Record<string, string> = {
-  agents: "ai-agents",
-  operational: "operational-intelligence",
-  predictive: "predictive-systems",
-  executive: "executive-analytics",
-};
-
-type Trust = { id: string; titleKey: string; subKey: string; icon: React.ReactNode };
-const TRUST: Trust[] = [
-  { id: "ai",      titleKey: "intel.trust.ai.title",      subKey: "intel.trust.ai.sub",      icon: <Sparkles    className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { id: "live",    titleKey: "intel.trust.live.title",    subKey: "intel.trust.live.sub",    icon: <Activity    className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { id: "secure",  titleKey: "intel.trust.secure.title",  subKey: "intel.trust.secure.sub",  icon: <ShieldCheck className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { id: "scale",   titleKey: "intel.trust.scale.title",   subKey: "intel.trust.scale.sub",   icon: <InfinityIcon className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-  { id: "always",  titleKey: "intel.trust.always.title",  subKey: "intel.trust.always.sub",  icon: <Clock       className="w-[18px] h-[18px]" strokeWidth={1.7} /> },
-];
+function TextSection({
+  title,
+  paragraphs,
+  emphasizeLast,
+}: {
+  title: React.ReactNode;
+  paragraphs: string[];
+  emphasizeLast?: boolean;
+}) {
+  return (
+    <section className="py-20 md:py-28">
+      <div className="container">
+        <div className="max-w-[680px] mx-auto text-center">
+          <h2 className="font-display font-semibold text-[28px] md:text-[36px] leading-[1.16] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+            {title}
+          </h2>
+          <div className="mt-8 space-y-5 text-[15px] md:text-[16px] leading-[1.75] text-[oklch(0.78_0.014_250)] text-left">
+            {paragraphs.map((p, i) => (
+              <p key={i} className={emphasizeLast && i === paragraphs.length - 1 ? "text-[var(--color-ivory)]" : undefined}>
+                {p}
+              </p>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function Intelligence() {
   const { t } = useT();
+
+  const EARNS = [
+    { titleKey: "intelligence2.earns.card1.title", bodyKey: "intelligence2.earns.card1.body", icon: Eye },
+    { titleKey: "intelligence2.earns.card2.title", bodyKey: "intelligence2.earns.card2.body", icon: LayoutList },
+    { titleKey: "intelligence2.earns.card3.title", bodyKey: "intelligence2.earns.card3.body", icon: Workflow },
+    { titleKey: "intelligence2.earns.card4.title", bodyKey: "intelligence2.earns.card4.body", icon: Bot },
+  ];
 
   return (
     <div className="relative min-h-screen flex flex-col">
@@ -130,10 +86,9 @@ export default function Intelligence() {
           />
           <div className="container">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-              {/* Left — copy */}
               <div className="lg:col-span-6">
                 <div className="eyebrow">{t("intel.hero.eyebrow")}</div>
-                <h1 className="mt-5 font-display font-medium tracking-[-0.02em] text-[44px] sm:text-[52px] md:text-[60px] lg:text-[64px] leading-[1.04] text-[var(--color-ivory)]">
+                <h1 className="mt-5 font-display font-medium tracking-[-0.02em] text-[38px] sm:text-[46px] md:text-[52px] leading-[1.1] text-[var(--color-ivory)]">
                   {t("intel.hero.title.line1")}
                   <br />
                   <span className="text-[var(--color-orange)]">{t("intel.hero.title.line2")}</span>
@@ -144,11 +99,7 @@ export default function Intelligence() {
                 <div className="mt-8 flex flex-wrap items-center gap-3">
                   <Link href="/book-strategy" className="btn-primary">
                     {t("intel.hero.cta.book")}
-                    <ArrowUpRight className="w-4 h-4" strokeWidth={2.25} />
-                  </Link>
-                  <Link href="/intelligence#capabilities" className="btn-secondary">
-                    {t("intel.hero.cta.explore")}
-                    <ArrowRight className="w-4 h-4 opacity-80" strokeWidth={2} />
+                    <ArrowRight className="w-4 h-4" strokeWidth={2} />
                   </Link>
                 </div>
               </div>
@@ -179,140 +130,140 @@ export default function Intelligence() {
           </div>
         </section>
 
-        {/* ====================== FROM DATA TO DECISIVE ACTION (5-step flow) ====================== */}
-        <section className="relative pb-16 md:pb-20">
-          <div className="container">
-            <div className="text-center mb-10 md:mb-12">
-              <h2 className="font-display font-medium tracking-[-0.015em] text-[28px] md:text-[34px] leading-tight text-[var(--color-ivory)]">
-                {t("intel.flow.title.part1")}{" "}
-                <span className="text-[var(--color-orange)]">{t("intel.flow.title.accent")}</span>
-                {t("intel.flow.title.dot")}
-              </h2>
-              <p className="mt-3 max-w-[640px] mx-auto text-[14.5px] leading-[1.6] text-[oklch(0.76_0.014_250)]">
-                {t("intel.flow.body")}
-              </p>
-            </div>
-
-            <div className="glass p-5 md:p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-2 items-stretch">
-                {FLOW.map((s, i) => (
-                  <div key={s.id} className="relative flex">
-                    <div className="feature-card glass-soft p-4 flex-1 flex flex-col gap-2.5 min-h-[160px]">
-                      <span aria-hidden className="icon-chip glow-orange w-9 h-9 rounded-lg">
-                        {s.icon}
-                      </span>
-                      <h3 className="font-display font-medium tracking-[-0.005em] text-[14.5px] leading-tight text-[var(--color-ivory)]">
-                        {t(s.titleKey)}
-                      </h3>
-                      <p className="text-[12.5px] leading-[1.55] text-[oklch(0.76_0.014_250)]">
-                        {t(s.bodyKey)}
-                      </p>
-                    </div>
-                    {i < FLOW.length - 1 && (
-                      <div className="hidden lg:flex items-center justify-center w-6 shrink-0 text-[var(--color-orange)]/70">
-                        <ArrowRight className="w-4 h-4" strokeWidth={2} />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+        <RevealOnScroll>
+          <TextSection
+            title={t("intelligence2.together.title")}
+            paragraphs={[
+              t("intelligence2.together.body1"),
+              t("intelligence2.together.body2"),
+              t("intelligence2.together.body3"),
+            ]}
+            emphasizeLast={false}
+          />
+        </RevealOnScroll>
+        <RevealOnScroll>
+          <div className="container -mt-16 mb-8">
+            <p className="max-w-[680px] mx-auto text-center text-[15px] md:text-[16px] font-medium text-[var(--color-ivory)]">
+              {t("intelligence2.together.body4")}
+            </p>
           </div>
-        </section>
+        </RevealOnScroll>
 
-        {/* ====================== CAPABILITY GRID ====================== */}
-        <section id="capabilities" className="relative pb-16 md:pb-20">
-          <div className="container">
-            <div className="text-center mb-10 md:mb-12">
-              <h2 className="font-display font-medium tracking-[-0.015em] text-[28px] md:text-[34px] leading-tight text-[var(--color-ivory)]">
-                {t("intel.caps.title.part1")}{" "}
-                <span className="text-[var(--color-orange)]">{t("intel.caps.title.accent")}</span>{" "}
-                {t("intel.caps.title.part2")}
-              </h2>
-            </div>
+        <RevealOnScroll>
+          <TextSection
+            title={t("intelligence2.routine.title")}
+            paragraphs={[t("intelligence2.routine.body1"), t("intelligence2.routine.body2")]}
+            emphasizeLast
+          />
+        </RevealOnScroll>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
-              {CAPS.map((cap) => (
-                <article
-                  key={cap.id}
-                  id={cap.id}
-                  className="relative feature-card glass-soft p-5 flex flex-col gap-4 min-h-[300px]"
-                >
-                  {SPEC_ANCHOR_ALIAS[cap.id] && (
-                    <span
-                      id={SPEC_ANCHOR_ALIAS[cap.id]}
-                      aria-hidden
-                      className="absolute -top-24 left-0"
-                    />
-                  )}
-                  <div className="flex items-center gap-3">
-                    <span aria-hidden className="icon-chip glow-orange w-10 h-10 rounded-lg">
-                      {cap.icon}
-                    </span>
-                    <h3 className="font-display font-medium tracking-[-0.005em] text-[16px] leading-tight text-[var(--color-ivory)]">
-                      {t(cap.titleKey)}
+        <RevealOnScroll>
+          <TextSection
+            title={t("intelligence2.wait.title")}
+            paragraphs={[t("intelligence2.wait.body1"), t("intelligence2.wait.body2")]}
+            emphasizeLast
+          />
+        </RevealOnScroll>
+
+        <RevealOnScroll>
+          <TextSection
+            title={t("intelligence2.ability.title")}
+            paragraphs={[t("intelligence2.ability.body1"), t("intelligence2.ability.body2")]}
+            emphasizeLast
+          />
+        </RevealOnScroll>
+
+        <RevealOnScroll>
+          <TextSection
+            title={t("intelligence2.intervention.title")}
+            paragraphs={[t("intelligence2.intervention.body1"), t("intelligence2.intervention.body2")]}
+            emphasizeLast
+          />
+        </RevealOnScroll>
+
+        {/* Work Doesn't Need to Wait — 3-state row */}
+        <RevealOnScroll>
+          <section className="py-20 md:py-28">
+            <div className="container">
+              <div className="max-w-[680px] mx-auto text-center">
+                <h2 className="font-display font-semibold text-[28px] md:text-[36px] leading-[1.16] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+                  {t("intelligence2.wontWait.title")}
+                </h2>
+                <p className="mt-5 text-[15px] md:text-[16px] leading-[1.75] text-[oklch(0.78_0.014_250)]">
+                  {t("intelligence2.wontWait.body")}
+                </p>
+              </div>
+              <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-[820px] mx-auto">
+                {[
+                  { titleKey: "intelligence2.wontWait.state1.title", bodyKey: "intelligence2.wontWait.state1.body" },
+                  { titleKey: "intelligence2.wontWait.state2.title", bodyKey: "intelligence2.wontWait.state2.body" },
+                  { titleKey: "intelligence2.wontWait.state3.title", bodyKey: "intelligence2.wontWait.state3.body" },
+                ].map((s, i) => (
+                  <div key={s.titleKey} className="glass-soft p-6 text-center relative">
+                    <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--color-orange)] font-medium">
+                      {String(i + 1).padStart(2, "0")}
+                    </div>
+                    <h3 className="mt-2 text-[16px] font-display font-semibold text-[var(--color-ivory)]">
+                      {t(s.titleKey)}
                     </h3>
+                    <p className="mt-2 text-[13px] text-[oklch(0.74_0.014_250)] leading-[1.6]">
+                      {t(s.bodyKey)}
+                    </p>
                   </div>
-                  <p className="text-[13px] leading-[1.55] text-[oklch(0.76_0.014_250)]">
-                    {t(cap.bodyKey)}
-                  </p>
-                  <ul className="mt-auto flex flex-col gap-1.5 pt-1 border-t border-white/[0.05]">
-                    {cap.bullets.map((bk) => (
-                      <li key={bk} className="flex items-start gap-2 text-[12.5px] text-[oklch(0.82_0.012_250)] pt-1.5">
-                        <span
-                          aria-hidden
-                          className="mt-[7px] shrink-0 w-1 h-1 rounded-full bg-[var(--color-orange)]"
-                          style={{ boxShadow: "0 0 6px rgba(255, 122, 0,0.6)" }}
-                        />
-                        <span className="leading-snug">{t(bk)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href={`/intelligence#${cap.id}`}
-                    className="text-[12.5px] font-medium text-[var(--color-orange)] inline-flex items-center gap-1.5 hover:gap-2 transition-[gap]"
-                  >
-                    {t("intel.cap.learnMore")}
-                    <ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
-                  </Link>
-                </article>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </RevealOnScroll>
 
-        {/* ============================ TRUST STRIP ============================ */}
-        <section className="relative pb-20 md:pb-28">
-          <div className="container">
-            <div className="glass p-4 md:p-6 relative overflow-hidden">
-              <span
-                className="pointer-events-none absolute inset-x-6 bottom-0 h-px"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.45) 50%, transparent 100%)",
-                  filter: "blur(0.5px)",
-                }}
-              />
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-5">
-                {TRUST.map((tt) => (
-                  <div key={tt.id} className="flex items-center gap-3 min-w-0">
-                    <span aria-hidden className="icon-chip w-10 h-10 rounded-lg shrink-0">
-                      {tt.icon}
+        {/* Intelligence Earns Its Place — 4 cards */}
+        <RevealOnScroll>
+          <section className="py-20 md:py-28">
+            <div className="container">
+              <div className="max-w-[680px] mx-auto text-center">
+                <h2 className="font-display font-semibold text-[28px] md:text-[36px] leading-[1.16] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+                  {t("intelligence2.earns.title")}
+                </h2>
+              </div>
+              <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {EARNS.map((c) => (
+                  <div key={c.titleKey} className="feature-card glass-soft p-6 flex flex-col gap-4">
+                    <span className="icon-chip">
+                      <c.icon className="w-[18px] h-[18px]" strokeWidth={1.7} />
                     </span>
-                    <div className="min-w-0">
-                      <div className="text-[14px] font-medium text-[var(--color-ivory)] leading-tight truncate">
-                        {t(tt.titleKey)}
-                      </div>
-                      <div className="text-[12px] text-[oklch(0.7_0.014_250)] leading-tight mt-0.5 truncate">
-                        {t(tt.subKey)}
-                      </div>
+                    <div>
+                      <h3 className="text-[15.5px] font-display font-semibold text-[var(--color-ivory)] leading-snug">
+                        {t(c.titleKey)}
+                      </h3>
+                      <p className="mt-2 text-[13px] text-[oklch(0.74_0.014_250)] leading-[1.6]">{t(c.bodyKey)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </RevealOnScroll>
+
+        {/* Final CTA */}
+        <RevealOnScroll>
+          <section className="py-20 md:py-28">
+            <div className="container">
+              <div className="max-w-[680px] mx-auto text-center">
+                <h2 className="font-display font-semibold text-[26px] md:text-[32px] leading-[1.2] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+                  {t("intelligence2.finalCta.title1")}
+                  <br />
+                  <span className="text-[var(--color-orange)]">{t("intelligence2.finalCta.title2")}</span>
+                </h2>
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                  <Link href="/book-strategy" className="btn-primary">
+                    {t("intelligence2.finalCta.cta")}
+                    <ArrowRight className="w-4 h-4" strokeWidth={2} />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        </RevealOnScroll>
       </main>
       <Footer />
     </div>
@@ -320,8 +271,6 @@ export default function Intelligence() {
 }
 
 /* ---------- Floating telemetry tags for hero visual ---------- */
-/* Each tag has its own visual signature that matches the master mockup. */
-
 function TagShell({
   className,
   children,
@@ -405,16 +354,12 @@ function OutlookTag({ className, t }: { className: string; t: (k: string) => str
             <stop offset="100%" stopColor="oklch(0.72 0.205 45 / 0)" />
           </linearGradient>
         </defs>
-        {/* gridlines */}
         {[15, 30, 45].map((y) => (
           <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="oklch(1 0 0 / 0.05)" strokeDasharray="2 4" />
         ))}
-        {/* growth (orange) */}
         <path d="M0,40 L25,32 L50,28 L75,22 L100,18 L125,14 L150,10 L175,8 L200,5" fill="none" stroke="var(--color-orange)" strokeWidth="1.5" strokeLinecap="round" />
         <path d="M0,40 L25,32 L50,28 L75,22 L100,18 L125,14 L150,10 L175,8 L200,5 L200,60 L0,60 Z" fill="url(#out-orange)" />
-        {/* churn (purple) */}
         <path d="M0,30 L25,32 L50,30 L75,34 L100,32 L125,36 L150,34 L175,38 L200,36" fill="none" stroke="oklch(0.65 0.18 290)" strokeWidth="1.3" strokeLinecap="round" />
-        {/* capacity (cyan) */}
         <path d="M0,46 L25,44 L50,42 L75,40 L100,42 L125,40 L150,38 L175,40 L200,38" fill="none" stroke="oklch(0.78 0.13 200)" strokeWidth="1.3" strokeLinecap="round" />
       </svg>
       <div className="flex items-center gap-2.5 text-[9.5px] text-[oklch(0.74_0.014_250)] mt-1.5">
