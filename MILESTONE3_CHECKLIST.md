@@ -119,9 +119,54 @@ section).
 - Notification specification documents (RM-64) — gates all of §3.1.
 - Audit-log integrity approach (RM-94) — genuine tamper-evidence vs. corrected UI claim.
 - Any Milestone 1/2 decisions still open at the time Milestone 3 starts (Super Admin RM-57 live-migration
-  status, payments provider, CRM/Role-Management scope, LLM provider, analytics provider, owner-alert
-  channel) should be re-confirmed closed before this milestone's exit gate is attempted, since several
-  §3.3/§3.4 items re-verify them under load/production conditions rather than introduce new decisions.
+  status, CRM/Role-Management scope) should be re-confirmed closed before this milestone's exit gate is
+  attempted, since several §3.3/§3.4 items re-verify them under load/production conditions rather than
+  introduce new decisions.
+
+---
+
+## Client decisions resolved 2026-08-28 (affects Milestone 2 §2.2/§2.3/§2.4 primarily, verified here)
+
+The client supplied three provider decisions plus new requirements. Dashboard **login** credentials
+(not yet real API keys) were saved to the local, gitignored-then-committed `.env` — see that file's
+"THIRD-PARTY PROVIDER ACCOUNTS" section for the TODO env vars a future session must populate after
+generating real API/secret keys from each dashboard.
+
+- **Payments provider: Stripe.** Resolves Milestone 2 §2.4's "Admin mockup conversion — real payments
+  (provider TBD)" item. New requirements on top of basic Stripe integration:
+  - VAT identification-number validation and VAT calculation for both EU and international customers.
+  - Customer VAT ID and IO SKY's own VAT ID both shown on every invoice.
+  - All VAT-related data stored securely and made searchable within the system.
+  - Invoice template must reflect full corporate identity (logo, brand colors/fonts, both parties' company
+    + VAT details, all legally required invoice fields), be customizable, support manual invoice creation
+    (not just system-triggered), and every generated invoice must be stored and searchable in-system.
+- **Email provider: Zoho.** Resolves/supersedes Milestone 2 §2.3's Resend-only plan — Resend may still be
+  used for transactional/auth email, but Zoho is now the primary provider decision. New requirements:
+  - Integration with both Outlook and Gmail for sending/using email through the system.
+  - Manual creation, management, and use of custom email templates within the system.
+- **AI provider: OpenAI.** Resolves Milestone 2 §2.2's "LLM proxy" item (replaces the Manus/Forge proxy).
+  New requirement: intelligent model routing — simple tasks → a cheaper/faster model, medium-complexity
+  tasks → a more capable model, complex/high-reasoning tasks → the most capable model — optimized for
+  cost and performance, not a single fixed model for every AI Scan/AI-governance call.
+- **Open question, not yet answered by the client**: how the professional translation review process
+  will work — specifically how the system verifies and records that a given translation (of the existing
+  10-locale i18n content, and now of notification content per RM-72) has been professionally reviewed and
+  approved. Needs a client answer before it can be scoped into either Milestone 2 (i18n) or Milestone 3
+  (RM-72) work.
+
+New tasks these decisions add to the backlog (not yet numbered into the RM- sequence above since they
+land primarily in Milestone 2's scope, not Milestone 3's — tracked here for visibility until
+`MILESTONE2_PROGRESS.md` is updated to reflect them):
+
+- Stripe integration: checkout/payment-intent flow, webhook handling, VAT validation (e.g. VIES lookup for
+  EU VAT numbers), VAT calculation logic, VAT data storage/search.
+- Branded, customizable invoice template (PDF generation) wired to Stripe payment data, manual invoice
+  creation path, invoice storage/search.
+- Zoho Mail integration alongside/replacing Resend; Outlook/Gmail integration; manual email-template
+  CRUD UI.
+- OpenAI integration replacing the Forge LLM proxy; model-routing logic (task-complexity classifier →
+  model tier selection).
+- Translation review/approval workflow — pending client clarification.
 
 ---
 
