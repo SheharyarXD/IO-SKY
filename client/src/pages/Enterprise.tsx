@@ -115,8 +115,8 @@ export default function Enterprise() {
   return (
     <div className="relative min-h-screen bg-[#03060d] text-[var(--color-ivory)] overflow-x-hidden">
       <div aria-hidden className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-10%,rgba(255,106,0,0.10),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_85%_15%,rgba(255,106,0,0.06),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-10%,rgba(255, 122, 0,0.10),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_85%_15%,rgba(255, 122, 0,0.06),transparent_60%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#03060d_0%,#050a16_50%,#03060d_100%)]" />
       </div>
 
@@ -128,14 +128,14 @@ export default function Enterprise() {
           <div className="container">
             <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] gap-10 lg:gap-12 items-center">
               <div className="max-w-[640px]">
-                <div className="inline-flex items-center gap-2 text-[12px] font-mono tracking-[0.22em] uppercase text-[#FF6A00]">
+                <div className="inline-flex items-center gap-2 text-[12px] font-mono tracking-[0.22em] uppercase text-[#FF7A00]">
                   <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.25} />
                   <span>{t("ent.eyebrow")}</span>
                 </div>
                 <h1 className="font-display text-[44px] sm:text-[54px] md:text-[64px] leading-[1.04] tracking-[-0.02em] font-semibold mt-6">
                   {t("ent.hero.title.line1")}
                   <br />
-                  <span className="text-[#FF6A00]">{t("ent.hero.title.line2")}</span>
+                  <span className="text-[#FF7A00]">{t("ent.hero.title.line2")}</span>
                 </h1>
                 <p className="text-[15.5px] leading-[1.7] text-[oklch(0.78_0.012_250)] mt-6 max-w-[520px]">
                   {t("ent.hero.body")}
@@ -147,7 +147,7 @@ export default function Enterprise() {
                   </Link>
                   <Link
                     href="#systems"
-                    className="inline-flex items-center gap-2 h-11 px-5 rounded-md border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-[#FF6A00]/40 hover:text-[#FF6A00] text-[13.5px] font-medium text-[var(--color-ivory)] transition-colors"
+                    className="inline-flex items-center gap-2 h-11 px-5 rounded-md border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-[#FF7A00]/40 hover:text-[#FF7A00] text-[13.5px] font-medium text-[var(--color-ivory)] transition-colors"
                   >
                     {t("ent.cta.explore")}
                     <ArrowRight className="w-4 h-4" strokeWidth={2.25} />
@@ -157,7 +157,7 @@ export default function Enterprise() {
 
               <div className="relative">
                 <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_50%,rgba(255,106,0,0.18),transparent_60%)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_50%,rgba(255, 122, 0,0.18),transparent_60%)]" />
                   <img
                     src={HERO_VISUAL}
                     alt={t("ent.hero.imageAlt")}
@@ -182,7 +182,7 @@ export default function Enterprise() {
           <div className="container">
             <div className="text-center max-w-[860px] mx-auto">
               <h2 className="font-display text-[34px] sm:text-[40px] md:text-[46px] leading-[1.08] tracking-[-0.015em] font-semibold">
-                {t("ent.systems.title.lead")} <span className="text-[#FF6A00]">{t("ent.systems.title.accent")}</span>
+                {t("ent.systems.title.lead")} <span className="text-[#FF7A00]">{t("ent.systems.title.accent")}</span>
               </h2>
               <p className="text-[15.5px] leading-[1.7] text-[oklch(0.78_0.012_250)] mt-5">
                 {t("ent.systems.subtitle")}
@@ -210,14 +210,14 @@ export default function Enterprise() {
                   <ul className="flex flex-col gap-1.5 mt-auto">
                     {c.bullets.map((b) => (
                       <li key={b} className="flex items-start gap-2.5 text-[13px] text-[var(--color-ivory)]">
-                        <span aria-hidden className="mt-[7px] w-[5px] h-[5px] rounded-full bg-[#FF6A00] shadow-[0_0_8px_rgba(255,106,0,0.6)]" />
+                        <span aria-hidden className="mt-[7px] w-[5px] h-[5px] rounded-full bg-[#FF7A00] shadow-[0_0_8px_rgba(255, 122, 0,0.6)]" />
                         <span>{t(b)}</span>
                       </li>
                     ))}
                   </ul>
                   <Link
                     href={c.id === "custom" ? "/custom-software" : `/enterprise#${c.id}`}
-                    className="inline-flex items-center gap-1.5 text-[13px] text-[#FF6A00] hover:text-[#FF8A33] mt-2 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-[13px] text-[#FF7A00] hover:text-[#FF8A33] mt-2 transition-colors"
                   >
                     {t("infra.cap.learnMore")}
                     <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.25} />
@@ -246,7 +246,7 @@ export default function Enterprise() {
               </div>
 
               <div>
-                <div className="inline-flex items-center gap-2 text-[12px] font-mono tracking-[0.22em] uppercase text-[#FF6A00]">
+                <div className="inline-flex items-center gap-2 text-[12px] font-mono tracking-[0.22em] uppercase text-[#FF7A00]">
                   <Sparkles className="w-3.5 h-3.5" strokeWidth={2.25} />
                   <span>{t("ent.cmd.eyebrow")}</span>
                 </div>
@@ -273,7 +273,7 @@ export default function Enterprise() {
 
                 <Link
                   href="/solutions"
-                  className="inline-flex items-center gap-2 h-11 px-5 rounded-md mt-8 border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-[#FF6A00]/40 hover:text-[#FF6A00] text-[13.5px] font-medium text-[var(--color-ivory)] transition-colors"
+                  className="inline-flex items-center gap-2 h-11 px-5 rounded-md mt-8 border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-[#FF7A00]/40 hover:text-[#FF7A00] text-[13.5px] font-medium text-[var(--color-ivory)] transition-colors"
                 >
                   {t("ent.cmd.cta")}
                   <ArrowRight className="w-4 h-4" strokeWidth={2.25} />
@@ -293,7 +293,7 @@ export default function Enterprise() {
               {PARTNERS.map((p) => (
                 <div
                   key={p.id}
-                  className="flex flex-col items-center justify-center text-center px-3 py-5 rounded-md border border-white/[0.05] bg-white/[0.015] hover:border-[#FF6A00]/25 hover:bg-white/[0.04] transition-colors"
+                  className="flex flex-col items-center justify-center text-center px-3 py-5 rounded-md border border-white/[0.05] bg-white/[0.015] hover:border-[#FF7A00]/25 hover:bg-white/[0.04] transition-colors"
                 >
                   <div className="font-display text-[18px] tracking-[0.22em] uppercase text-[var(--color-ivory)]">
                     {t(p.nameKey)}
@@ -337,18 +337,18 @@ function FloatingPerformanceTag({
   return (
     <TagShell className={className}>
       <div className="flex items-center gap-2 text-[10px] font-mono tracking-[0.18em] uppercase text-[oklch(0.78_0.012_250)]">
-        <BarChart3 className="w-3 h-3 text-[#FF6A00]" strokeWidth={2.25} />
+        <BarChart3 className="w-3 h-3 text-[#FF7A00]" strokeWidth={2.25} />
         <span>{t("ent.tag.performance.label")}</span>
       </div>
       <div className="font-display text-[26px] tracking-[-0.02em] text-[var(--color-ivory)] mt-1.5">
-        98.7<span className="text-[14px] text-[#FF6A00] align-top ml-0.5">%</span>
+        98.7<span className="text-[14px] text-[#FF7A00] align-top ml-0.5">%</span>
       </div>
       <div className="text-[10.5px] text-[oklch(0.7_0.012_250)] mt-0.5">{t("ent.tag.performance.sub")}</div>
       <svg className="mt-2 w-full h-7" viewBox="0 0 120 28" preserveAspectRatio="none" aria-hidden>
         <defs>
           <linearGradient id="entLine" x1="0" y1="0" x2="120" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#FF6A00" stopOpacity="0.2" />
-            <stop offset="0.5" stopColor="#FF6A00" stopOpacity="1" />
+            <stop offset="0" stopColor="#FF7A00" stopOpacity="0.2" />
+            <stop offset="0.5" stopColor="#FF7A00" stopOpacity="1" />
             <stop offset="1" stopColor="#FF8A33" stopOpacity="1" />
           </linearGradient>
         </defs>
@@ -372,13 +372,13 @@ function FloatingEfficiencyTag({
   return (
     <TagShell className={className}>
       <div className="flex items-center gap-2 text-[10px] font-mono tracking-[0.18em] uppercase text-[oklch(0.78_0.012_250)]">
-        <TrendingUp className="w-3 h-3 text-[#FF6A00]" strokeWidth={2.25} />
+        <TrendingUp className="w-3 h-3 text-[#FF7A00]" strokeWidth={2.25} />
         <span>{t("ent.tag.efficiency.label")}</span>
       </div>
       <div className="flex items-end justify-between mt-1.5 gap-2">
         <div>
           <div className="font-display text-[26px] tracking-[-0.02em] text-[var(--color-ivory)]">
-            <span className="text-[#FF6A00]">+</span>47<span className="text-[14px] text-[#FF6A00] align-top ml-0.5">%</span>
+            <span className="text-[#FF7A00]">+</span>47<span className="text-[14px] text-[#FF7A00] align-top ml-0.5">%</span>
           </div>
           <div className="text-[10.5px] text-[oklch(0.7_0.012_250)]">{t("ent.tag.efficiency.sub")}</div>
         </div>
@@ -389,8 +389,8 @@ function FloatingEfficiencyTag({
               className="w-[3.5px] rounded-[1px]"
               style={{
                 height: `${h}%`,
-                background: "linear-gradient(180deg, #FF8A33 0%, #FF6A00 100%)",
-                boxShadow: "0 0 6px rgba(255,106,0,0.45)",
+                background: "linear-gradient(180deg, #FF8A33 0%, #FF7A00 100%)",
+                boxShadow: "0 0 6px rgba(255, 122, 0,0.45)",
               }}
             />
           ))}
@@ -407,7 +407,7 @@ function FloatingComplianceTag({
   return (
     <TagShell className={className}>
       <div className="flex items-center gap-2 text-[10px] font-mono tracking-[0.18em] uppercase text-[oklch(0.78_0.012_250)]">
-        <ShieldIcon className="w-3 h-3 text-[#FF6A00]" strokeWidth={2.25} />
+        <ShieldIcon className="w-3 h-3 text-[#FF7A00]" strokeWidth={2.25} />
         <span>{t("ent.tag.compliance.label")}</span>
       </div>
       <div className="font-display text-[24px] tracking-[-0.01em] text-[var(--color-ivory)] mt-1.5">Audit-Ready</div>

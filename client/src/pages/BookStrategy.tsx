@@ -5,7 +5,7 @@
  * (Service → Date & Time → Details → Confirm). Built to feel like a strategic
  * operational onboarding flow, NOT a Calendly clone.
  *
- * Design language: deep navy-black, restrained orange (#FF6A00), cinematic
+ * Design language: deep navy-black, restrained orange (#FF7A00), cinematic
  * spacing, JetBrains Mono eyebrows, Space Grotesk display, Inter body.
  * Globe asset reused from the Login Portal to keep atmospheric consistency.
  *
@@ -296,8 +296,8 @@ function StepDot({
       <div
         className={cn(
           "h-11 w-11 rounded-full grid place-items-center border transition-colors duration-200",
-          done && "border-[#FF6A00]/60 bg-[#FF6A00]/10 text-[#FF6A00]",
-          active && !done && "border-[#FF6A00] bg-[#FF6A00] text-[#0A0B10] shadow-[0_0_24px_rgba(255,106,0,0.45)]",
+          done && "border-[#FF7A00]/60 bg-[#FF7A00]/10 text-[#FF7A00]",
+          active && !done && "border-[#FF7A00] bg-[#FF7A00] text-[#0A0B10] shadow-[0_0_24px_rgba(255, 122, 0,0.45)]",
           !active && !done && "border-white/10 bg-white/[0.02] text-white/45",
         )}
       >
@@ -306,7 +306,7 @@ function StepDot({
       <div
         className={cn(
           "mt-2 text-[11px] tracking-[0.18em] uppercase font-mono",
-          active ? "text-[#FF6A00]" : done ? "text-white/60" : "text-white/35",
+          active ? "text-[#FF7A00]" : done ? "text-white/60" : "text-white/35",
         )}
       >
         {label}
@@ -321,7 +321,7 @@ function StepConnector({ filled }: { filled: boolean }) {
       <div
         className={cn(
           "h-px w-full transition-colors",
-          filled ? "bg-[#FF6A00]/60" : "bg-white/10",
+          filled ? "bg-[#FF7A00]/60" : "bg-white/10",
         )}
       />
     </div>
@@ -672,7 +672,7 @@ export default function BookStrategy() {
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(900px 600px at 12% 92%, rgba(255,106,0,0.07), transparent 60%), radial-gradient(700px 500px at 88% 18%, rgba(0,180,255,0.04), transparent 65%), #040508",
+            "radial-gradient(900px 600px at 12% 92%, rgba(255, 122, 0,0.07), transparent 60%), radial-gradient(700px 500px at 88% 18%, rgba(0,180,255,0.04), transparent 65%), #040508",
         }}
       />
       <Navbar />
@@ -707,13 +707,13 @@ export default function BookStrategy() {
               />
 
               <div className="relative">
-                <div className="font-mono text-[11px] tracking-[0.24em] uppercase text-[#FF6A00]">
+                <div className="font-mono text-[11px] tracking-[0.24em] uppercase text-[#FF7A00]">
                   {t("book.eyebrow", "Book your discovery call")}
                 </div>
                 <h1 className="mt-3 font-display font-semibold text-[34px] md:text-[44px] xl:text-[50px] leading-[1.05] tracking-[-0.022em]">
                   {t("book.hero.line1", "Let’s build your")}{" "}
                   <span className="block">{t("book.hero.line2", "operational")}</span>
-                  <span className="text-[#FF6A00]">{t("book.hero.line3", "advantage.")}</span>
+                  <span className="text-[#FF7A00]">{t("book.hero.line3", "advantage.")}</span>
                 </h1>
                 <p className="mt-5 text-[15px] leading-[1.65] text-white/65 max-w-[460px]">
                   {t(
@@ -732,9 +732,9 @@ export default function BookStrategy() {
                   ].map(({ icon: Icon, label }) => (
                     <div
                       key={label}
-                      className="rounded-[14px] border border-white/[0.07] bg-white/[0.02] p-3 text-center hover:border-[#FF6A00]/30 transition-colors"
+                      className="rounded-[14px] border border-white/[0.07] bg-white/[0.02] p-3 text-center hover:border-[#FF7A00]/30 transition-colors"
                     >
-                      <div className="h-9 w-9 mx-auto rounded-full grid place-items-center border border-[#FF6A00]/40 bg-[#FF6A00]/10 text-[#FF6A00]">
+                      <div className="h-9 w-9 mx-auto rounded-full grid place-items-center border border-[#FF7A00]/40 bg-[#FF7A00]/10 text-[#FF7A00]">
                         <Icon className="w-4 h-4" />
                       </div>
                       <div className="mt-2 text-[11px] leading-tight text-white/75 whitespace-pre-line">
@@ -746,15 +746,15 @@ export default function BookStrategy() {
 
                 {/* Quote */}
                 <div className="mt-10 rounded-[16px] border border-white/[0.07] bg-[#0B0E16]/85 backdrop-blur-sm p-5 max-w-[460px]">
-                  <Quote className="w-4 h-4 text-[#FF6A00]" />
+                  <Quote className="w-4 h-4 text-[#FF7A00]" />
                   <p className="mt-2 font-display text-[17px] leading-snug text-white/90">
                     {t(
                       "book.quote.line1",
                       "We don’t just advise. We architect operational excellence.",
                     )}
                   </p>
-                  <div className="mt-4 flex items-center gap-2 text-[10px] tracking-[0.28em] uppercase font-mono text-[#FF6A00]">
-                    <span className="h-px w-6 bg-[#FF6A00]" /> IO SKY
+                  <div className="mt-4 flex items-center gap-2 text-[10px] tracking-[0.28em] uppercase font-mono text-[#FF7A00]">
+                    <span className="h-px w-6 bg-[#FF7A00]" /> IO SKY
                   </div>
                 </div>
               </div>
@@ -824,23 +824,23 @@ export default function BookStrategy() {
                                 "relative text-left rounded-[18px] border p-5 transition-all duration-200",
                                 "bg-[#0E121B]/85 hover:-translate-y-0.5",
                                 active
-                                  ? "border-[#FF6A00]/80 shadow-[0_24px_80px_-30px_rgba(255,106,0,0.55),0_0_0_1px_rgba(255,106,0,0.45)_inset]"
-                                  : "border-white/[0.07] hover:border-[#FF6A00]/35",
+                                  ? "border-[#FF7A00]/80 shadow-[0_24px_80px_-30px_rgba(255, 122, 0,0.55),0_0_0_1px_rgba(255, 122, 0,0.45)_inset]"
+                                  : "border-white/[0.07] hover:border-[#FF7A00]/35",
                               )}
                             >
                               {/* MOST CHOSEN ribbon for highlighted service */}
                               {svc.highlighted && (
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#FF6A00] text-[#0A0B10] text-[10px] tracking-[0.22em] uppercase font-semibold shadow-[0_8px_24px_rgba(255,106,0,0.45)]">
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#FF7A00] text-[#0A0B10] text-[10px] tracking-[0.22em] uppercase font-semibold shadow-[0_8px_24px_rgba(255, 122, 0,0.45)]">
                                   Most chosen
                                 </div>
                               )}
                               {/* Check tick */}
                               {active && (
-                                <div className="absolute top-3 right-3 h-6 w-6 rounded-full bg-[#FF6A00] grid place-items-center">
+                                <div className="absolute top-3 right-3 h-6 w-6 rounded-full bg-[#FF7A00] grid place-items-center">
                                   <CheckCircle2 className="w-4 h-4 text-[#0A0B10]" />
                                 </div>
                               )}
-                              <div className="h-12 w-12 rounded-full grid place-items-center border border-[#FF6A00]/40 bg-[#FF6A00]/10 text-[#FF6A00] mx-auto">
+                              <div className="h-12 w-12 rounded-full grid place-items-center border border-[#FF7A00]/40 bg-[#FF7A00]/10 text-[#FF7A00] mx-auto">
                                 <Icon className="w-5 h-5" />
                               </div>
                               <div className="mt-3 text-center font-display text-[17px] tracking-[-0.01em]">
@@ -860,14 +860,14 @@ export default function BookStrategy() {
                       <div className="mt-8 flex items-center justify-between">
                         <Link
                           to="/"
-                          className="text-[13px] text-white/55 hover:text-[#FF6A00] transition-colors"
+                          className="text-[13px] text-white/55 hover:text-[#FF7A00] transition-colors"
                         >
                           ← Cancel and return home
                         </Link>
                         <button
                           type="button"
                           onClick={() => setStep(2)}
-                          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#FF6A00] hover:bg-[#FF5500] text-[#0A0B10] font-semibold text-[14px] tracking-[-0.005em] transition-colors"
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#FF7A00] hover:bg-[#FF5500] text-[#0A0B10] font-semibold text-[14px] tracking-[-0.005em] transition-colors"
                         >
                           Continue
                           <ArrowRight className="w-4 h-4" />
@@ -899,7 +899,7 @@ export default function BookStrategy() {
                               <button
                                 type="button"
                                 aria-label="Previous month"
-                                className="h-8 w-8 rounded-full border border-white/10 grid place-items-center hover:border-[#FF6A00]/40 hover:text-[#FF6A00] transition-colors"
+                                className="h-8 w-8 rounded-full border border-white/10 grid place-items-center hover:border-[#FF7A00]/40 hover:text-[#FF7A00] transition-colors"
                                 onClick={() =>
                                   setCalMonth((m) => addMonths(m, -1))
                                 }
@@ -913,7 +913,7 @@ export default function BookStrategy() {
                               <button
                                 type="button"
                                 aria-label="Next month"
-                                className="h-8 w-8 rounded-full border border-white/10 grid place-items-center hover:border-[#FF6A00]/40 hover:text-[#FF6A00] transition-colors"
+                                className="h-8 w-8 rounded-full border border-white/10 grid place-items-center hover:border-[#FF7A00]/40 hover:text-[#FF7A00] transition-colors"
                                 onClick={() =>
                                   setCalMonth((m) => addMonths(m, 1))
                                 }
@@ -960,9 +960,9 @@ export default function BookStrategy() {
                                   className={cn(
                                     "h-9 rounded-full text-[13px] tabular-nums transition-colors",
                                     selected &&
-                                      "bg-[#FF6A00] text-[#0A0B10] font-semibold shadow-[0_0_24px_rgba(255,106,0,0.45)]",
+                                      "bg-[#FF7A00] text-[#0A0B10] font-semibold shadow-[0_0_24px_rgba(255, 122, 0,0.45)]",
                                     !selected && !disabled &&
-                                      "text-white/80 hover:bg-white/[0.05] hover:text-[#FF6A00]",
+                                      "text-white/80 hover:bg-white/[0.05] hover:text-[#FF7A00]",
                                     disabled && "text-white/20 cursor-not-allowed",
                                   )}
                                 >
@@ -1005,14 +1005,14 @@ export default function BookStrategy() {
                                   className={cn(
                                     "flex items-center gap-3 px-4 h-11 rounded-full border transition-all duration-200",
                                     active
-                                      ? "border-[#FF6A00] bg-[#FF6A00] text-[#0A0B10] font-semibold shadow-[0_12px_30px_-12px_rgba(255,106,0,0.6)]"
-                                      : "border-white/10 bg-white/[0.02] text-white/80 hover:border-[#FF6A00]/40 hover:text-[#FF6A00]",
+                                      ? "border-[#FF7A00] bg-[#FF7A00] text-[#0A0B10] font-semibold shadow-[0_12px_30px_-12px_rgba(255, 122, 0,0.6)]"
+                                      : "border-white/10 bg-white/[0.02] text-white/80 hover:border-[#FF7A00]/40 hover:text-[#FF7A00]",
                                   )}
                                 >
                                   <Clock
                                     className={cn(
                                       "w-4 h-4",
-                                      active ? "text-[#0A0B10]" : "text-[#FF6A00]",
+                                      active ? "text-[#0A0B10]" : "text-[#FF7A00]",
                                     )}
                                   />
                                   <span className="text-[14px] tabular-nums">
@@ -1029,7 +1029,7 @@ export default function BookStrategy() {
                         <button
                           type="button"
                           onClick={() => setStep(1)}
-                          className="inline-flex items-center gap-2 text-[13px] text-white/65 hover:text-[#FF6A00] transition-colors"
+                          className="inline-flex items-center gap-2 text-[13px] text-white/65 hover:text-[#FF7A00] transition-colors"
                         >
                           <ArrowLeft className="w-4 h-4" /> Back
                         </button>
@@ -1040,7 +1040,7 @@ export default function BookStrategy() {
                           className={cn(
                             "inline-flex items-center gap-2 px-6 py-3 rounded-full text-[14px] font-semibold transition-colors",
                             canAdvance
-                              ? "bg-[#FF6A00] hover:bg-[#FF5500] text-[#0A0B10]"
+                              ? "bg-[#FF7A00] hover:bg-[#FF5500] text-[#0A0B10]"
                               : "bg-white/[0.05] text-white/35 cursor-not-allowed",
                           )}
                         >
@@ -1110,7 +1110,7 @@ export default function BookStrategy() {
 
                       {/* Adaptive preparation questions */}
                       <div className="mt-7">
-                        <div className="text-[11px] font-mono tracking-[0.24em] uppercase text-[#FF6A00] mb-3">
+                        <div className="text-[11px] font-mono tracking-[0.24em] uppercase text-[#FF7A00] mb-3">
                           Preparation questions
                         </div>
 
@@ -1215,7 +1215,7 @@ export default function BookStrategy() {
                           className={cn(
                             "mt-0.5 h-5 w-5 rounded-md border grid place-items-center transition-colors",
                             draft.consent
-                              ? "bg-[#FF6A00] border-[#FF6A00] text-[#0A0B10]"
+                              ? "bg-[#FF7A00] border-[#FF7A00] text-[#0A0B10]"
                               : "border-white/15 bg-white/[0.03]",
                           )}
                         >
@@ -1231,12 +1231,12 @@ export default function BookStrategy() {
                         />
                         <span className="text-[13px] leading-snug text-white/65">
                           I accept the{" "}
-                          <Link to="/terms" className="text-[#FF6A00] hover:underline">
+                          <Link to="/terms" className="text-[#FF7A00] hover:underline">
                             Terms of Service
                           </Link>{" "}
                           and consent to IO SKY processing this information to prepare and
                           deliver the discovery call, in line with the{" "}
-                          <Link to="/privacy" className="text-[#FF6A00] hover:underline">
+                          <Link to="/privacy" className="text-[#FF7A00] hover:underline">
                             Privacy Notice
                           </Link>
                           .
@@ -1247,7 +1247,7 @@ export default function BookStrategy() {
                         <button
                           type="button"
                           onClick={() => setStep(2)}
-                          className="inline-flex items-center gap-2 text-[13px] text-white/65 hover:text-[#FF6A00] transition-colors"
+                          className="inline-flex items-center gap-2 text-[13px] text-white/65 hover:text-[#FF7A00] transition-colors"
                         >
                           <ArrowLeft className="w-4 h-4" /> Back
                         </button>
@@ -1258,7 +1258,7 @@ export default function BookStrategy() {
                           className={cn(
                             "inline-flex items-center gap-2 px-6 py-3 rounded-full text-[14px] font-semibold transition-colors",
                             canAdvance && !submitting
-                              ? "bg-[#FF6A00] hover:bg-[#FF5500] text-[#0A0B10]"
+                              ? "bg-[#FF7A00] hover:bg-[#FF5500] text-[#0A0B10]"
                               : "bg-white/[0.05] text-white/35 cursor-not-allowed",
                           )}
                         >
@@ -1280,10 +1280,10 @@ export default function BookStrategy() {
                           className="absolute inset-0 rounded-full blur-2xl"
                           style={{
                             background:
-                              "radial-gradient(circle, rgba(255,106,0,0.45), transparent 70%)",
+                              "radial-gradient(circle, rgba(255, 122, 0,0.45), transparent 70%)",
                           }}
                         />
-                        <div className="relative h-20 w-20 rounded-full bg-[#FF6A00] grid place-items-center shadow-[0_30px_60px_-20px_rgba(255,106,0,0.6)]">
+                        <div className="relative h-20 w-20 rounded-full bg-[#FF7A00] grid place-items-center shadow-[0_30px_60px_-20px_rgba(255, 122, 0,0.6)]">
                           <CheckCircle2 className="w-10 h-10 text-[#0A0B10]" />
                         </div>
                       </div>
@@ -1292,13 +1292,13 @@ export default function BookStrategy() {
                       </h2>
                       <p className="mt-2 text-[14px] text-white/65 max-w-[460px] mx-auto">
                         A confirmation email is on its way to{" "}
-                        <span className="text-[#FF6A00]">{draft.workEmail}</span>. The
+                        <span className="text-[#FF7A00]">{draft.workEmail}</span>. The
                         calendar invite includes a secure room link and a short prep
                         brief.
                       </p>
                       {publicRef && (
-                        <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/[0.08] text-[11.5px] font-mono uppercase tracking-[0.16em] text-[#FF6A00]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00] shadow-[0_0_8px_#FF6A00]" />
+                        <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FF7A00]/30 bg-[#FF7A00]/[0.08] text-[11.5px] font-mono uppercase tracking-[0.16em] text-[#FF7A00]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00] shadow-[0_0_8px_#FF7A00]" />
                           Confirmation · {publicRef}
                         </div>
                       )}
@@ -1340,22 +1340,22 @@ export default function BookStrategy() {
                         <button
                           type="button"
                           onClick={handleDownloadIcs}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FF6A00] hover:bg-[#FF5500] text-[#0A0B10] text-[14px] font-semibold transition-colors"
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FF7A00] hover:bg-[#FF5500] text-[#0A0B10] text-[14px] font-semibold transition-colors"
                         >
                           <Download className="w-4 h-4" />
                           Add to calendar (.ics)
                         </button>
                         <Link
                           to="/ai-scan"
-                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/12 hover:border-[#FF6A00]/45 text-white/85 hover:text-[#FF6A00] text-[14px] transition-colors"
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/12 hover:border-[#FF7A00]/45 text-white/85 hover:text-[#FF7A00] text-[14px] transition-colors"
                         >
-                          <Sparkles className="w-4 h-4 text-[#FF6A00]" />
+                          <Sparkles className="w-4 h-4 text-[#FF7A00]" />
                           Get a head start with the AI Scan
                         </Link>
                         <button
                           type="button"
                           onClick={resetBooking}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white/55 hover:text-[#FF6A00] text-[13px] transition-colors"
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white/55 hover:text-[#FF7A00] text-[13px] transition-colors"
                         >
                           Book another session
                         </button>
@@ -1366,7 +1366,7 @@ export default function BookStrategy() {
 
                 {/* Security note */}
                 <div className="mt-7 flex items-center justify-center gap-2 text-[12px] text-white/45">
-                  <Lock className="w-3.5 h-3.5 text-[#FF6A00]" />
+                  <Lock className="w-3.5 h-3.5 text-[#FF7A00]" />
                   Your information is secure and encrypted.
                 </div>
               </GlassCard>
@@ -1382,9 +1382,9 @@ export default function BookStrategy() {
                   <div className="font-display text-[17px] tracking-[-0.01em]">
                     What You’ll Gain
                   </div>
-                  <TrendingUp className="w-4 h-4 text-[#FF6A00]" />
+                  <TrendingUp className="w-4 h-4 text-[#FF7A00]" />
                 </div>
-                <div className="mt-1 h-px w-12 bg-[#FF6A00]" />
+                <div className="mt-1 h-px w-12 bg-[#FF7A00]" />
 
                 <div className="mt-5 space-y-4">
                   {[
@@ -1410,7 +1410,7 @@ export default function BookStrategy() {
                     },
                   ].map(({ icon: Icon, title, body }) => (
                     <div key={title} className="flex items-start gap-3">
-                      <div className="h-9 w-9 rounded-full border border-[#FF6A00]/40 bg-[#FF6A00]/10 text-[#FF6A00] grid place-items-center shrink-0">
+                      <div className="h-9 w-9 rounded-full border border-[#FF7A00]/40 bg-[#FF7A00]/10 text-[#FF7A00] grid place-items-center shrink-0">
                         <Icon className="w-4 h-4" />
                       </div>
                       <div>
@@ -1443,8 +1443,8 @@ export default function BookStrategy() {
                       <Pill>Encrypted End-to-End</Pill>
                     </div>
                   </div>
-                  <div className="relative h-14 w-14 shrink-0 rounded-2xl border border-[#FF6A00]/35 bg-gradient-to-br from-[#FF6A00]/20 to-[#FF6A00]/0 grid place-items-center">
-                    <ShieldCheck className="w-7 h-7 text-[#FF6A00]" />
+                  <div className="relative h-14 w-14 shrink-0 rounded-2xl border border-[#FF7A00]/35 bg-gradient-to-br from-[#FF7A00]/20 to-[#FF7A00]/0 grid place-items-center">
+                    <ShieldCheck className="w-7 h-7 text-[#FF7A00]" />
                   </div>
                 </div>
               </GlassCard>
@@ -1454,7 +1454,7 @@ export default function BookStrategy() {
                 <div className="font-display text-[17px] tracking-[-0.01em]">
                   How It Works
                 </div>
-                <div className="mt-1 h-px w-12 bg-[#FF6A00]" />
+                <div className="mt-1 h-px w-12 bg-[#FF7A00]" />
 
                 <div className="mt-5 grid grid-cols-4 gap-2 text-center">
                   {[
@@ -1467,7 +1467,7 @@ export default function BookStrategy() {
                       <div className="h-9 w-9 rounded-full border border-white/12 bg-white/[0.03] grid place-items-center text-white/75">
                         <Icon className="w-4 h-4" />
                       </div>
-                      <div className="mt-1.5 text-[10px] font-mono tracking-[0.16em] uppercase text-[#FF6A00]">
+                      <div className="mt-1.5 text-[10px] font-mono tracking-[0.16em] uppercase text-[#FF7A00]">
                         {i + 1}
                       </div>
                       <div className="text-[10.5px] text-white/60 leading-tight whitespace-pre-line">
@@ -1501,7 +1501,7 @@ export default function BookStrategy() {
                   title="Experts, Not Sales"
                   body="We solve, not sell."
                 />
-                <div className="hidden md:flex justify-center font-display text-[#FF6A00] tracking-[0.18em] text-[15px]">
+                <div className="hidden md:flex justify-center font-display text-[#FF7A00] tracking-[0.18em] text-[15px]">
                   IO SKY
                   <span className="ml-2 text-[9px] font-mono tracking-[0.28em] uppercase text-white/45 self-center">
                     Operational
@@ -1561,7 +1561,7 @@ function Field({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-11 rounded-xl border border-white/10 bg-white/[0.02] px-4 text-[14px] text-white/90 placeholder:text-white/30 focus:outline-none focus:border-[#FF6A00]/55 focus:bg-white/[0.04] transition-colors"
+        className="w-full h-11 rounded-xl border border-white/10 bg-white/[0.02] px-4 text-[14px] text-white/90 placeholder:text-white/30 focus:outline-none focus:border-[#FF7A00]/55 focus:bg-white/[0.04] transition-colors"
       />
     </label>
   );
@@ -1588,7 +1588,7 @@ function Textarea({
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         rows={3}
-        className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[14px] text-white/90 placeholder:text-white/30 focus:outline-none focus:border-[#FF6A00]/55 focus:bg-white/[0.04] transition-colors resize-none"
+        className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[14px] text-white/90 placeholder:text-white/30 focus:outline-none focus:border-[#FF7A00]/55 focus:bg-white/[0.04] transition-colors resize-none"
       />
     </label>
   );
@@ -1613,7 +1613,7 @@ function Select({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-11 rounded-xl border border-white/10 bg-white/[0.02] px-4 text-[14px] text-white/90 focus:outline-none focus:border-[#FF6A00]/55 focus:bg-white/[0.04] transition-colors"
+        className="w-full h-11 rounded-xl border border-white/10 bg-white/[0.02] px-4 text-[14px] text-white/90 focus:outline-none focus:border-[#FF7A00]/55 focus:bg-white/[0.04] transition-colors"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value} className="bg-[#0B0E16] text-white">
@@ -1627,7 +1627,7 @@ function Select({
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 text-[10.5px] font-mono tracking-[0.14em] uppercase text-[#FF6A00]">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#FF7A00]/30 bg-[#FF7A00]/10 text-[10.5px] font-mono tracking-[0.14em] uppercase text-[#FF7A00]">
       <CheckCircle2 className="w-3 h-3" />
       {children}
     </span>
@@ -1645,7 +1645,7 @@ function SummaryRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="h-8 w-8 rounded-full border border-[#FF6A00]/35 bg-[#FF6A00]/10 text-[#FF6A00] grid place-items-center shrink-0">
+      <div className="h-8 w-8 rounded-full border border-[#FF7A00]/35 bg-[#FF7A00]/10 text-[#FF7A00] grid place-items-center shrink-0">
         <Icon className="w-4 h-4" />
       </div>
       <div>
@@ -1669,7 +1669,7 @@ function TrustItem({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="h-9 w-9 rounded-full border border-[#FF6A00]/35 bg-[#FF6A00]/10 text-[#FF6A00] grid place-items-center shrink-0">
+      <div className="h-9 w-9 rounded-full border border-[#FF7A00]/35 bg-[#FF7A00]/10 text-[#FF7A00] grid place-items-center shrink-0">
         <Icon className="w-4 h-4" />
       </div>
       <div>

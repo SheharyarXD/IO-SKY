@@ -51,8 +51,13 @@ describe("Pakket 2 — design-language tokens", () => {
     expect(css.includes(token)).toBe(true);
   });
 
-  it("brand orange variable is the exact #FF6A00 from the brand sheet", () => {
-    expect(css).toMatch(/--orange:\s*#FF6A00/);
+  it("brand orange variable is the exact #FF7A00 sampled from the official logo file", () => {
+    // Was #FF6A00 (an earlier session's best guess at "the brand sheet"
+    // value) until the client provided the actual official logo PNG,
+    // whose swoosh/wordmark colour was directly pixel-sampled and averaged
+    // (avg rgb(251,121,2) over a solid interior region) — #FF7A00 is the
+    // closest clean hex to that real, ground-truth value.
+    expect(css).toMatch(/--orange:\s*#FF7A00/);
   });
 
   it("respects prefers-reduced-motion globally", () => {

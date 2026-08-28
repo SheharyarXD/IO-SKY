@@ -190,8 +190,8 @@ export default function Navbar() {
                         active || isHovered ? "opacity-100 scale-x-100" : "opacity-0 scale-x-50",
                       )}
                       style={{
-                        background: "linear-gradient(90deg, transparent 0%, #FF6A00 50%, transparent 100%)",
-                        boxShadow: "0 0 12px rgba(255,106,0,0.55)",
+                        background: "linear-gradient(90deg, transparent 0%, #FF7A00 50%, transparent 100%)",
+                        boxShadow: "0 0 12px rgba(255, 122, 0,0.55)",
                         transformOrigin: "center",
                       }}
                     />
@@ -226,7 +226,7 @@ export default function Navbar() {
                 type="button"
                 onClick={() => setOpenLang((v) => !v)}
                 onMouseEnter={() => setOpenLang(true)}
-                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-[#FF6A00]/30 text-[12.5px] text-[var(--color-ivory)] font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-[#FF7A00]/30 text-[12.5px] text-[var(--color-ivory)] font-medium transition-colors"
                 aria-haspopup="menu"
                 aria-expanded={openLang}
                 aria-label={t("nav.langLabel")}
@@ -250,8 +250,8 @@ export default function Navbar() {
                       className={cn(
                         "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-[13px] transition-colors",
                         l.code === lang
-                          ? "text-[#FF6A00] bg-[rgba(255,106,0,0.08)]"
-                          : "text-[#E6EAF0] hover:bg-white/[0.04] hover:text-[#FF6A00]",
+                          ? "text-[#FF7A00] bg-[rgba(255, 122, 0,0.08)]"
+                          : "text-[#E6EAF0] hover:bg-white/[0.04] hover:text-[#FF7A00]",
                       )}
                     >
                       <span className="font-mono text-[10.5px] tracking-[0.18em] uppercase opacity-80">{l.code}</span>
@@ -265,7 +265,7 @@ export default function Navbar() {
             {/* Login */}
             <Link
               href="/login"
-              className="hidden lg:inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-[#FF6A00]/30 text-[12.5px] text-[var(--color-ivory)] font-medium transition-colors whitespace-nowrap"
+              className="hidden lg:inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-[#FF7A00]/30 text-[12.5px] text-[var(--color-ivory)] font-medium transition-colors whitespace-nowrap"
             >
               {t("nav.login")}
               <Lock className="w-3.5 h-3.5 opacity-70" strokeWidth={2} />
@@ -315,7 +315,7 @@ export default function Navbar() {
                   className={cn(
                     "px-3 py-1.5 rounded-md text-[12.5px] border transition-colors flex items-center gap-2 whitespace-nowrap",
                     l.code === lang
-                      ? "border-[#FF6A00]/40 text-[#FF6A00] bg-[rgba(255,106,0,0.08)]"
+                      ? "border-[#FF7A00]/40 text-[#FF7A00] bg-[rgba(255, 122, 0,0.08)]"
                       : "border-white/10 text-[#E6EAF0] bg-white/[0.03]",
                   )}
                 >
@@ -350,7 +350,7 @@ function MegaMenu({ item, t }: { item: NavItem; t: (k: string) => string }) {
       {/* top accent line */}
       <span
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.5) 50%, transparent 100%)" }}
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.5) 50%, transparent 100%)" }}
       />
       <div className={cn("grid gap-1.5", cols)}>
         {item.children!.map((c) => (
@@ -360,7 +360,7 @@ function MegaMenu({ item, t }: { item: NavItem; t: (k: string) => string }) {
             className="group flex items-start gap-3 px-3 py-2.5 rounded-md hover:bg-white/[0.04] transition-colors"
           >
             <div
-              className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border border-white/[0.07] bg-white/[0.02] text-[oklch(0.8_0.012_250)] group-hover:text-[var(--color-orange)] group-hover:border-[#FF6A00]/30 group-hover:bg-[rgba(255,106,0,0.06)] transition-colors"
+              className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border border-white/[0.07] bg-white/[0.02] text-[oklch(0.8_0.012_250)] group-hover:text-[var(--color-orange)] group-hover:border-[#FF7A00]/30 group-hover:bg-[rgba(255, 122, 0,0.06)] transition-colors"
               aria-hidden
             >
               {c.icon}
@@ -454,7 +454,7 @@ function MobileNavItem({
                 <Link
                   key={c.href}
                   href={c.href}
-                  className="flex items-start gap-3 px-3 py-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-[#FF6A00]/30 hover:bg-[rgba(255,106,0,0.05)] transition-colors"
+                  className="flex items-start gap-3 px-3 py-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-[#FF7A00]/30 hover:bg-[rgba(255, 122, 0,0.05)] transition-colors"
                 >
                   <div
                     className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border border-white/[0.07] bg-white/[0.02] text-[oklch(0.8_0.012_250)] [a:hover_&]:text-[var(--color-orange)]"

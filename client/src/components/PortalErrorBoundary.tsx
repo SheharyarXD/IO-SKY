@@ -112,7 +112,7 @@ class PortalErrorBoundary extends Component<Props, State> {
         return (
           <div className="min-h-screen flex items-center justify-center bg-[#0B1020]">
             <div className="flex flex-col items-center gap-4 text-white/60">
-              <div className="w-5 h-5 border-2 border-white/20 border-t-[#FF6A00] rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-white/20 border-t-[#FF7A00] rounded-full animate-spin" />
               <span className="text-sm font-mono">Loading portal…</span>
             </div>
           </div>

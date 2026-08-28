@@ -54,7 +54,7 @@ export default function ImpersonationBanner() {
   };
 
   return (
-    <div className="sticky top-0 z-50 w-full bg-gradient-to-r from-[#FF6A00] via-[#FF7A1A] to-[#FF6A00] text-white border-b border-amber-300/30">
+    <div className="sticky top-0 z-50 w-full bg-gradient-to-r from-[#FF7A00] via-[#FF7A1A] to-[#FF7A00] text-white border-b border-amber-300/30">
       <div className="px-4 py-2 flex items-center gap-3 text-[12.5px] sm:text-[13px]">
         <span className="inline-flex items-center gap-2 font-medium">
           <Eye className="w-4 h-4" />

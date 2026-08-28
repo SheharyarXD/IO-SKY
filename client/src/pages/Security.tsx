@@ -26,7 +26,7 @@ export default function Security() {
           <div key={p.title} className="glass p-6">
             <div className="flex items-start gap-4">
               <div className="shrink-0 w-10 h-10 rounded-md border border-white/10 bg-white/[0.02] flex items-center justify-center">
-                <p.icon className="w-4.5 h-4.5 text-[#FF6A00]" strokeWidth={1.5} />
+                <p.icon className="w-4.5 h-4.5 text-[#FF7A00]" strokeWidth={1.5} />
               </div>
               <div>
                 <h3 className="text-[18px] font-display font-medium text-[#E6EAF0]">{p.title}</h3>
@@ -41,7 +41,7 @@ export default function Security() {
         <h2 className="text-[22px] font-display font-medium text-[#E6EAF0]">Coordinated vulnerability disclosure</h2>
         <p className="mt-3 text-[14.5px] text-[#E6EAF0B3] leading-[1.7]">
           We welcome reports from the security community. Please disclose
-          responsibly to <a href="mailto:security@io-sky.io" className="text-[#FF6A00] hover:underline">security@io-sky.io</a>.
+          responsibly to <a href="mailto:security@io-sky.io" className="text-[#FF7A00] hover:underline">security@io-sky.io</a>.
           PGP fingerprint and rules of engagement are published in the trust portal.
         </p>
         <div className="mt-5 inline-block px-3 py-2 rounded-md border border-white/10 bg-white/[0.02] font-mono text-[12px] text-[#E6EAF0] tracking-wide">

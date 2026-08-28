@@ -96,7 +96,7 @@ export default function AiScans() {
     { key: "target", header: "Organisation" },
     { key: "operator", header: "Operator" },
     { key: "score", header: "Score", align: "right", render: (r) => (
-      <span className={r.score >= 85 ? "text-emerald-400" : r.score >= 70 ? "text-[#FF6A00]" : "text-red-400"}>{r.score}</span>
+      <span className={r.score >= 85 ? "text-emerald-400" : r.score >= 70 ? "text-[#FF7A00]" : "text-red-400"}>{r.score}</span>
     )},
     { key: "status", header: "Status", render: (r) => <StatusPill tone={tone(r.status) as any} label={r.status.replace("_", " ")} /> },
     { key: "createdAtMs", header: "Started", align: "right", render: (r) => <span className="font-mono text-white/55">{relTime(r.createdAtMs)}</span> },

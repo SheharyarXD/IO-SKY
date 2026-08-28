@@ -50,7 +50,7 @@ const ROLE_CONFIG: Record<
   client: {
     title: "Client Portal",
     sub: "Reports, projects, invoices and performance insights.",
-    icon: <User size={18} strokeWidth={1.9} className="text-[#FF6A00]" />,
+    icon: <User size={18} strokeWidth={1.9} className="text-[#FF7A00]" />,
     chip: "CLIENT",
     nav: [
       { label: "Overview", icon: <Activity size={15} strokeWidth={1.9} /> },
@@ -64,7 +64,7 @@ const ROLE_CONFIG: Record<
   admin: {
     title: "Admin Portal",
     sub: "Manage users, clients, scans, reports and system settings with full control.",
-    icon: <ShieldAlert size={18} strokeWidth={1.9} className="text-[#FF6A00]" />,
+    icon: <ShieldAlert size={18} strokeWidth={1.9} className="text-[#FF7A00]" />,
     chip: "ADMIN",
     nav: [
       { label: "Overview", icon: <Activity size={15} strokeWidth={1.9} /> },
@@ -78,7 +78,7 @@ const ROLE_CONFIG: Record<
   developer: {
     title: "Developer Workspace",
     sub: "Build, deploy and manage integrations within the IO SKY ecosystem.",
-    icon: <Code2 size={18} strokeWidth={1.9} className="text-[#FF6A00]" />,
+    icon: <Code2 size={18} strokeWidth={1.9} className="text-[#FF7A00]" />,
     chip: "DEVELOPER",
     nav: [
       { label: "Overview", icon: <Activity size={15} strokeWidth={1.9} /> },
@@ -114,21 +114,21 @@ export default function Portal({ role }: { role: Role }) {
             <Link href="/" className="flex items-center">
               <IOSkyLogo variant="primary" className="h-6 w-auto" />
             </Link>
-            <span className="hidden sm:inline-block font-mono text-[10.5px] tracking-[0.22em] uppercase text-[#FF6A00] border border-[#FF6A00]/30 bg-[#FF6A00]/08 rounded-md px-2 py-1">
+            <span className="hidden sm:inline-block font-mono text-[10.5px] tracking-[0.22em] uppercase text-[#FF7A00] border border-[#FF7A00]/30 bg-[#FF7A00]/08 rounded-md px-2 py-1">
               {cfg.chip}
             </span>
           </div>
           <div className="flex items-center gap-2.5">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 text-[12.5px] text-[#E6EAF0]/70 hover:text-[#FF6A00] transition px-3 py-1.5"
+              className="inline-flex items-center gap-2 text-[12.5px] text-[#E6EAF0]/70 hover:text-[#FF7A00] transition px-3 py-1.5"
             >
               <ArrowLeft size={14} strokeWidth={1.9} />
               {t("portal.back", "Back to login")}
             </Link>
             <button
               onClick={signOut}
-              className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.025] hover:border-[rgba(255,106,0,0.35)] px-3 py-1.5 text-[12.5px] text-[#E6EAF0]/80 transition"
+              className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.025] hover:border-[rgba(255, 122, 0,0.35)] px-3 py-1.5 text-[12.5px] text-[#E6EAF0]/80 transition"
             >
               <LogOut size={13} strokeWidth={1.9} />
               {t("portal.signout", "Sign out")}
@@ -142,7 +142,7 @@ export default function Portal({ role }: { role: Role }) {
           {/* Sidebar */}
           <aside className="glass-soft border border-white/[0.07] rounded-xl p-3.5 h-fit">
             <div className="flex items-center gap-2.5 mb-3 px-2 py-1.5">
-              <div className="w-8 h-8 rounded-md bg-[#FF6A00]/10 border border-[#FF6A00]/30 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-md bg-[#FF7A00]/10 border border-[#FF7A00]/30 flex items-center justify-center">
                 {cfg.icon}
               </div>
               <div>
@@ -160,11 +160,11 @@ export default function Portal({ role }: { role: Role }) {
                   className={[
                     "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[12.5px] transition",
                     i === 0
-                      ? "bg-[#FF6A00]/10 text-[#E6EAF0] border border-[#FF6A00]/30"
+                      ? "bg-[#FF7A00]/10 text-[#E6EAF0] border border-[#FF7A00]/30"
                       : "text-[#E6EAF0]/70 hover:text-[#E6EAF0] hover:bg-white/[0.04]",
                   ].join(" ")}
                 >
-                  <span className={i === 0 ? "text-[#FF6A00]" : "text-[#E6EAF0]/55"}>
+                  <span className={i === 0 ? "text-[#FF7A00]" : "text-[#E6EAF0]/55"}>
                     {item.icon}
                   </span>
                   {item.label}
@@ -176,7 +176,7 @@ export default function Portal({ role }: { role: Role }) {
           {/* Body */}
           <section>
             <div className="glass border border-white/[0.08] rounded-2xl p-7 md:p-9">
-              <div className="font-mono text-[10.5px] tracking-[0.22em] uppercase text-[#FF6A00]">
+              <div className="font-mono text-[10.5px] tracking-[0.22em] uppercase text-[#FF7A00]">
                 {t("portal.eyebrow", "Sandbox preview")}
               </div>
               <h1 className="mt-3 font-display font-semibold text-[28px] md:text-[34px] leading-[1.1] tracking-[-0.018em] text-[#E6EAF0]">
@@ -196,7 +196,7 @@ export default function Portal({ role }: { role: Role }) {
                     key={item.label}
                     className="glass-soft border border-white/[0.07] rounded-xl p-4 lift-on-hover"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-[#FF6A00]/10 border border-[#FF6A00]/30 flex items-center justify-center mb-3 text-[#FF6A00]">
+                    <div className="w-9 h-9 rounded-lg bg-[#FF7A00]/10 border border-[#FF7A00]/30 flex items-center justify-center mb-3 text-[#FF7A00]">
                       {item.icon}
                     </div>
                     <p className="font-display font-semibold text-[13.5px] text-[#E6EAF0]">

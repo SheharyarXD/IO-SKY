@@ -77,9 +77,9 @@ function renderOwnerAlertHtml(title: string, content: string): string {
 <html><body style="margin:0;padding:0;background:#0A0E14;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:#E6EAF0">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0E14;padding:32px 0">
     <tr><td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#0F141B;border:1px solid rgba(255,106,0,0.18);border-radius:16px;padding:32px">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#0F141B;border:1px solid rgba(255, 122, 0,0.18);border-radius:16px;padding:32px">
         <tr><td>
-          <div style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#FF6A00">IO SKY · Owner Alert</div>
+          <div style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#FF7A00">IO SKY · Owner Alert</div>
           <h1 style="margin:18px 0 16px;font-size:22px;line-height:1.3;color:#E6EAF0;font-weight:600">${escapeHtml(title)}</h1>
           <pre style="margin:0;white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.65;color:rgba(230,234,240,0.85)">${escapeHtml(content)}</pre>
         </td></tr>

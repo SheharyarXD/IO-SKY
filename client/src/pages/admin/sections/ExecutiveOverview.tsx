@@ -54,8 +54,8 @@ import {
 
 function Sparkline({
   values,
-  stroke = "#FF6A00",
-  fill = "rgba(255,106,0,0.18)",
+  stroke = "#FF7A00",
+  fill = "rgba(255, 122, 0,0.18)",
   height = 32,
 }: {
   values: number[];
@@ -116,14 +116,14 @@ function RevenueTrendChart({ points }: { points: Array<{ day: string; amountCent
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full" preserveAspectRatio="none">
       <defs>
         <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FF6A00" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="#FF6A00" stopOpacity="0" />
+          <stop offset="0%" stopColor="#FF7A00" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#FF7A00" stopOpacity="0" />
         </linearGradient>
       </defs>
       <polygon fill="url(#rev)" points={area} />
-      <polyline fill="none" stroke="#FF6A00" strokeWidth={1.8} strokeLinejoin="round" points={line} />
+      <polyline fill="none" stroke="#FF7A00" strokeWidth={1.8} strokeLinejoin="round" points={line} />
       {coords.length > 0 && (
-        <circle cx={coords[coords.length - 1][0]} cy={coords[coords.length - 1][1]} r={3} fill="#FF6A00" />
+        <circle cx={coords[coords.length - 1][0]} cy={coords[coords.length - 1][1]} r={3} fill="#FF7A00" />
       )}
       <text x={w / 2} y={12} textAnchor="middle" fill="#E6EAF0" fontSize="9" fontFamily="monospace">
         {last.day} · €{Math.round(lastTotal).toLocaleString()} cumulative
@@ -211,10 +211,10 @@ interface KpiProps {
 function KpiTile({ label, value, delta, caption, Icon, trend, trendColor, trendFill, status }: KpiProps) {
   const positive = delta >= 0;
   return (
-    <div className="relative overflow-hidden rounded-[14px] border border-white/[0.07] bg-[#0E1320]/80 backdrop-blur-md p-4 hover:border-[#FF6A00]/25 transition-colors">
+    <div className="relative overflow-hidden rounded-[14px] border border-white/[0.07] bg-[#0E1320]/80 backdrop-blur-md p-4 hover:border-[#FF7A00]/25 transition-colors">
       <div className="flex items-start justify-between">
         <div className="text-[10.5px] font-mono uppercase tracking-[0.2em] text-white/55">{label}</div>
-        <div className="w-7 h-7 rounded-[8px] bg-[#FF6A00]/10 border border-[#FF6A00]/20 flex items-center justify-center text-[#FF6A00]">
+        <div className="w-7 h-7 rounded-[8px] bg-[#FF7A00]/10 border border-[#FF7A00]/20 flex items-center justify-center text-[#FF7A00]">
           <Icon className="w-3.5 h-3.5" />
         </div>
       </div>
@@ -386,11 +386,11 @@ export default function ExecutiveOverview() {
           {/* IO SYMBOL replaces robot — neural pulse halo */}
           <div className="mt-4 flex items-start gap-3">
             <div className="relative shrink-0">
-              <div className="absolute inset-0 -m-2 rounded-full bg-[radial-gradient(circle,rgba(255,106,0,0.45)_0%,rgba(255,106,0,0)_70%)] blur-md animate-pulse" />
-              <div className="relative w-[88px] h-[88px] rounded-[18px] border border-[#FF6A00]/25 bg-gradient-to-b from-[#0B1020] to-[#070A14] flex items-center justify-center shadow-[inset_0_0_20px_rgba(255,106,0,0.18)]">
+              <div className="absolute inset-0 -m-2 rounded-full bg-[radial-gradient(circle,rgba(255, 122, 0,0.45)_0%,rgba(255, 122, 0,0)_70%)] blur-md animate-pulse" />
+              <div className="relative w-[88px] h-[88px] rounded-[18px] border border-[#FF7A00]/25 bg-gradient-to-b from-[#0B1020] to-[#070A14] flex items-center justify-center shadow-[inset_0_0_20px_rgba(255, 122, 0,0.18)]">
                 <IOSkyLogo variant="mark" height={56} />
               </div>
-              <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-[#FF6A00] border-2 border-[#0E1320] shadow-[0_0_8px_#FF6A00]" />
+              <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-[#FF7A00] border-2 border-[#0E1320] shadow-[0_0_8px_#FF7A00]" />
             </div>
             <div className="min-w-0">
               <div className="font-display font-semibold text-[18px] tracking-tight leading-tight text-[#E6EAF0]">
@@ -431,13 +431,13 @@ export default function ExecutiveOverview() {
           </ul>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF6A00] text-[#0B1020] text-[11.5px] font-semibold shadow-[0_6px_18px_-6px_rgba(255,106,0,0.55)]">
+            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF7A00] text-[#0B1020] text-[11.5px] font-semibold shadow-[0_6px_18px_-6px_rgba(255, 122, 0,0.55)]">
               <Plus className="w-3.5 h-3.5" /> Ask Agent
             </button>
-            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] border border-white/[0.08] text-[11.5px] text-white/80 hover:border-[#FF6A00]/35 transition-colors">
+            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] border border-white/[0.08] text-[11.5px] text-white/80 hover:border-[#FF7A00]/35 transition-colors">
               <Activity className="w-3.5 h-3.5" /> Operational Brief
             </button>
-            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] border border-white/[0.08] text-[11.5px] text-white/80 hover:border-[#FF6A00]/35 transition-colors">
+            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] border border-white/[0.08] text-[11.5px] text-white/80 hover:border-[#FF7A00]/35 transition-colors">
               <Stethoscope className="w-3.5 h-3.5" /> Run Diagnostics
             </button>
           </div>
@@ -452,8 +452,8 @@ export default function ExecutiveOverview() {
             <SampleBadge />
           </div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="relative h-[220px] rounded-[14px] border border-white/[0.05] bg-[radial-gradient(circle_at_50%_50%,rgba(255,106,0,0.08)_0%,rgba(11,16,32,0.6)_60%)] flex items-center justify-center overflow-hidden">
-              <Globe2 className="w-[160px] h-[160px] text-[#FF6A00]/55" strokeWidth={0.7} />
+            <div className="relative h-[220px] rounded-[14px] border border-white/[0.05] bg-[radial-gradient(circle_at_50%_50%,rgba(255, 122, 0,0.08)_0%,rgba(11,16,32,0.6)_60%)] flex items-center justify-center overflow-hidden">
+              <Globe2 className="w-[160px] h-[160px] text-[#FF7A00]/55" strokeWidth={0.7} />
               <div className="absolute inset-0 pointer-events-none">
                 {[
                   { top: "18%", left: "32%" },
@@ -464,7 +464,7 @@ export default function ExecutiveOverview() {
                 ].map((p, i) => (
                   <span
                     key={i}
-                    className="absolute w-1.5 h-1.5 rounded-full bg-[#FF6A00] shadow-[0_0_8px_#FF6A00] animate-pulse"
+                    className="absolute w-1.5 h-1.5 rounded-full bg-[#FF7A00] shadow-[0_0_8px_#FF7A00] animate-pulse"
                     style={{ top: p.top, left: p.left, animationDelay: `${i * 0.4}s` }}
                   />
                 ))}
@@ -510,7 +510,7 @@ export default function ExecutiveOverview() {
               ))}
             </ul>
           </div>
-          <button className="mt-3 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-[10px] border border-white/[0.08] text-[12px] text-white/80 hover:text-white hover:border-[#FF6A00]/35 self-start transition-colors">
+          <button className="mt-3 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-[10px] border border-white/[0.08] text-[12px] text-white/80 hover:text-white hover:border-[#FF7A00]/35 self-start transition-colors">
             <Server className="w-3.5 h-3.5" /> Open Infrastructure Monitor
           </button>
         </div>
@@ -524,7 +524,7 @@ export default function ExecutiveOverview() {
               </div>
               <SampleBadge />
             </div>
-            <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
+            <button className="text-[11px] text-[#FF7A00] hover:underline">View all</button>
           </div>
           <ul className="mt-3 space-y-2">
             {[
@@ -549,8 +549,8 @@ export default function ExecutiveOverview() {
             ))}
           </ul>
           <div className="mt-3 flex items-center gap-2">
-            <span className="text-[11px] text-[#FF6A00]">3 Unread Alerts</span>
-            <button className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] border border-white/[0.08] text-[11px] text-white/80 hover:border-[#FF6A00]/35">
+            <span className="text-[11px] text-[#FF7A00]">3 Unread Alerts</span>
+            <button className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] border border-white/[0.08] text-[11px] text-white/80 hover:border-[#FF7A00]/35">
               <ShieldAlert className="w-3.5 h-3.5" /> Open Security Center
             </button>
           </div>
@@ -586,11 +586,11 @@ export default function ExecutiveOverview() {
             )}
           </div>
           <div className="text-[11px] text-white/45">{kpis ? `vs ${kpis.compareLabel}` : "awaiting first billing cycle"}</div>
-          <div className="mt-3 relative h-[150px] rounded-[12px] bg-[radial-gradient(circle_at_70%_30%,rgba(255,106,0,0.08)_0%,rgba(11,16,32,0)_70%)] border border-white/[0.04] overflow-hidden">
+          <div className="mt-3 relative h-[150px] rounded-[12px] bg-[radial-gradient(circle_at_70%_30%,rgba(255, 122, 0,0.08)_0%,rgba(11,16,32,0)_70%)] border border-white/[0.04] overflow-hidden">
             <RevenueTrendChart points={data?.revenueByDay ?? []} />
           </div>
           <div className="mt-2 flex items-center gap-3 text-[10.5px] font-mono text-white/55">
-            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FF6A00]" /> MTD Revenue (cumulative, real)</span>
+            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FF7A00]" /> MTD Revenue (cumulative, real)</span>
           </div>
         </div>
 
@@ -601,7 +601,7 @@ export default function ExecutiveOverview() {
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Automation Center</div>
               <SampleBadge />
             </div>
-            <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
+            <button className="text-[11px] text-[#FF7A00] hover:underline">View all</button>
           </div>
           <div className="mt-3 flex items-center justify-center relative">
             <Donut
@@ -652,11 +652,11 @@ export default function ExecutiveOverview() {
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">AI Agents & IVR</div>
               <SampleBadge />
             </div>
-            <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
+            <button className="text-[11px] text-[#FF7A00] hover:underline">View all</button>
           </div>
           <ul className="mt-3 space-y-2 text-[12px]">
             {[
-              { lab: "Outbound AI Calls", v: "24", d: "+18.5%", trend: trendOrange, c: "#FF6A00" },
+              { lab: "Outbound AI Calls", v: "24", d: "+18.5%", trend: trendOrange, c: "#FF7A00" },
               { lab: "Inbound AI (IVR)", v: "37", d: "+11.3%", trend: trendBlue, c: "#60A5FA" },
               { lab: "Calls Booked", v: "16", d: "+23.1%", trend: trendGreen, c: "#34D399" },
               { lab: "Avg. Call Duration", v: "04:32", d: "-8.2%", trend: trendRed, c: "#F87171" },
@@ -680,7 +680,7 @@ export default function ExecutiveOverview() {
         <div className="lg:col-span-2 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
           <div className="flex items-center justify-between">
             <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Recent Activity</div>
-            <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
+            <button className="text-[11px] text-[#FF7A00] hover:underline">View all</button>
           </div>
           {data && data.recentActivity.length === 0 ? (
             <div className="mt-3 text-[11.5px] text-white/40">No activity yet</div>
@@ -715,7 +715,7 @@ export default function ExecutiveOverview() {
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Temporary Access Control</div>
               <SampleBadge />
             </div>
-            <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
+            <button className="text-[11px] text-[#FF7A00] hover:underline">View all</button>
           </div>
           <div className="mt-3 overflow-x-auto -mx-2">
             <table className="min-w-full text-[12px]">
@@ -743,7 +743,7 @@ export default function ExecutiveOverview() {
                       <span
                         className={cn(
                           "inline-flex px-1.5 py-0.5 rounded-md text-[10.5px] font-mono",
-                          lvl === "Elevated" ? "bg-[#FF6A00]/12 text-[#FF6A00] border border-[#FF6A00]/30" : "bg-white/[0.05] text-white/65 border border-white/10",
+                          lvl === "Elevated" ? "bg-[#FF7A00]/12 text-[#FF7A00] border border-[#FF7A00]/30" : "bg-white/[0.05] text-white/65 border border-white/10",
                         )}
                       >
                         {lvl}
@@ -757,7 +757,7 @@ export default function ExecutiveOverview() {
                       </span>
                     </td>
                     <td className="px-2 py-2 text-white/55">
-                      <button className="hover:text-[#FF6A00] mr-1.5"><CheckCircle2 className="w-3.5 h-3.5 inline" /></button>
+                      <button className="hover:text-[#FF7A00] mr-1.5"><CheckCircle2 className="w-3.5 h-3.5 inline" /></button>
                       <button className="hover:text-red-400"><AlertTriangle className="w-3.5 h-3.5 inline" /></button>
                     </td>
                   </tr>
@@ -767,7 +767,7 @@ export default function ExecutiveOverview() {
           </div>
           <button
             onClick={() => audited.fire("executive-overview", "grant-temp-access")}
-            className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF6A00] text-[#0B1020] text-[12px] font-semibold"
+            className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF7A00] text-[#0B1020] text-[12px] font-semibold"
           >
             <Plus className="w-3.5 h-3.5" /> Grant New Access
           </button>
@@ -780,11 +780,11 @@ export default function ExecutiveOverview() {
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Email & SMS Campaigns</div>
               <SampleBadge />
             </div>
-            <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
+            <button className="text-[11px] text-[#FF7A00] hover:underline">View all</button>
           </div>
           <ul className="mt-3 space-y-2.5">
             {[
-              { Icon: Mail, lab: "Email Campaigns", n: 12, sub: "Active Campaigns", metric: "42.6%", metricLabel: "Open Rate", trend: trendOrange, c: "#FF6A00" },
+              { Icon: Mail, lab: "Email Campaigns", n: 12, sub: "Active Campaigns", metric: "42.6%", metricLabel: "Open Rate", trend: trendOrange, c: "#FF7A00" },
               { Icon: PhoneCall, lab: "SMS Campaigns", n: 5, sub: "Active Campaigns", metric: "98.4%", metricLabel: "Delivery Rate", trend: trendBlue, c: "#60A5FA" },
               { Icon: Workflow, lab: "Automations", n: 28, sub: "Active Automations", metric: "99.1%", metricLabel: "Success Rate", trend: trendGreen, c: "#34D399" },
             ].map(row => (
@@ -850,7 +850,7 @@ export default function ExecutiveOverview() {
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Upcoming & Pending</div>
               <SampleBadge />
             </div>
-            <button className="text-[11px] text-[#FF6A00] hover:underline">View all</button>
+            <button className="text-[11px] text-[#FF7A00] hover:underline">View all</button>
           </div>
           <ul className="mt-3 space-y-1.5 text-[12px]">
             {[
@@ -866,7 +866,7 @@ export default function ExecutiveOverview() {
                   <Sparkles className="w-3 h-3 text-white/40" />
                   {r.lab}
                 </span>
-                <span className="font-mono text-[#FF6A00] bg-[#FF6A00]/10 border border-[#FF6A00]/25 px-1.5 rounded">
+                <span className="font-mono text-[#FF7A00] bg-[#FF7A00]/10 border border-[#FF7A00]/25 px-1.5 rounded">
                   {r.v}
                 </span>
               </li>
@@ -884,7 +884,7 @@ export default function ExecutiveOverview() {
         {summaryQuery.isSuccess && <span>Data synced · {new Date().toLocaleTimeString()}</span>}
         <button
           onClick={() => summaryQuery.refetch()}
-          className="ml-auto inline-flex items-center gap-1 text-white/55 hover:text-[#FF6A00]"
+          className="ml-auto inline-flex items-center gap-1 text-white/55 hover:text-[#FF7A00]"
         >
           <Play className="w-3 h-3" /> Refresh
         </button>

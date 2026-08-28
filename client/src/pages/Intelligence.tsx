@@ -125,7 +125,7 @@ export default function Intelligence() {
             className="pointer-events-none absolute inset-0 -z-[1]"
             style={{
               background:
-                "radial-gradient(40% 50% at 18% 28%, rgba(255,106,0,0.10), transparent 70%), radial-gradient(35% 45% at 82% 22%, rgba(255,106,0,0.08), transparent 70%)",
+                "radial-gradient(40% 50% at 18% 28%, rgba(255, 122, 0,0.10), transparent 70%), radial-gradient(35% 45% at 82% 22%, rgba(255, 122, 0,0.08), transparent 70%)",
             }}
           />
           <div className="container">
@@ -262,7 +262,7 @@ export default function Intelligence() {
                         <span
                           aria-hidden
                           className="mt-[7px] shrink-0 w-1 h-1 rounded-full bg-[var(--color-orange)]"
-                          style={{ boxShadow: "0 0 6px rgba(255,106,0,0.6)" }}
+                          style={{ boxShadow: "0 0 6px rgba(255, 122, 0,0.6)" }}
                         />
                         <span className="leading-snug">{t(bk)}</span>
                       </li>
@@ -289,7 +289,7 @@ export default function Intelligence() {
                 className="pointer-events-none absolute inset-x-6 bottom-0 h-px"
                 style={{
                   background:
-                    "linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.45) 50%, transparent 100%)",
+                    "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.45) 50%, transparent 100%)",
                   filter: "blur(0.5px)",
                 }}
               />

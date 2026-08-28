@@ -9,6 +9,7 @@
 import { Link } from "wouter";
 import { ArrowRight, Workflow, MessagesSquare, LayoutDashboard, BarChart3, Plug, GitBranch } from "lucide-react";
 import { useT } from "@/contexts/LanguageContext";
+import { MARK_SRC } from "@/components/IOSkyLogo";
 
 export default function EcosystemOverview() {
   const { t } = useT();
@@ -130,12 +131,12 @@ function Hub() {
       <div className="relative z-10">
         {/* Official IO symbol mark at the center of the ecosystem hub */}
         <img
-          src="/manus-storage/iosky-mark-transparent_9aba89cd.png"
+          src={MARK_SRC}
           alt="IO SKY"
           width={72}
           height={70}
           draggable={false}
-          className="select-none pointer-events-none drop-shadow-[0_0_18px_rgba(255,106,0,0.45)]"
+          className="select-none pointer-events-none drop-shadow-[0_0_18px_rgba(255, 122, 0,0.45)]"
           style={{ width: 72, height: 70 }}
         />
       </div>

@@ -20,8 +20,8 @@
  * stable class names (iosky-loader-*), eliminating the crash entirely.
  */
 
-const PRIMARY_SRC = "/manus-storage/iosky-logo-transparent_6a55c203.png";
-const RATIO = 1386 / 388; // ≈ 3.57 transparent trimmed lockup width:height
+import { PRIMARY_SRC } from "./IOSkyLogo";
+const RATIO = 1473 / 414; // ≈ 3.558 transparent trimmed lockup width:height
 
 type Props = {
   /** Render mode. Default `inline`. */

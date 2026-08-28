@@ -1,6 +1,16 @@
 /*
  * IO SKY — Official logo component.
- * Sources the assets cropped from the official Brand Sheet:
+ *
+ * Milestone 2 §2.1 update: the original brand assets only ever existed as
+ * remote objects in the old Forge storage (no copy anywhere in this repo),
+ * which blocked migrating off the `/manus-storage/*` proxy — see
+ * MILESTONE2_PROGRESS.md's §2.1 section for the full history. The client
+ * has now supplied the real official logo file directly; it was
+ * transparency-keyed (solid dark-navy/black background removed, content
+ * tightly trimmed) and uploaded to the Supabase `branding` bucket this
+ * migration already provisioned (drizzle/0007_storage_buckets.sql), so
+ * branding assets are finally served from real project storage instead of
+ * the legacy Forge proxy.
  *
  *   • PRIMARY  — mark + "IO SKY" wordmark (no tagline). Use across navbar,
  *                footer, hero and any horizontal lockup. Min wordmark width: 120px.
@@ -8,24 +18,37 @@
  *   • FAVICON  — square mark, padded for browser tab and app icons.
  *
  * Trimmed transparent dimensions:
- *   primary 1386×388 px (≈ 3.57:1)  ·  mark 399×388 px (≈ 1.03:1)
+ *   primary 1473×414 px (≈ 3.558:1)  ·  mark 840×781 px (≈ 1.076:1)
  *
- * Assets are fully transparent PNGs (black background removed 2026-06-02) and
- * render correctly on BOTH light and dark surfaces. They contain the orange
- * #FF6A00 swoosh + ivory #E6EAF0 ink.
+ * Assets are fully transparent PNGs and render correctly on BOTH light and
+ * dark surfaces. They contain the orange #FF7A00 swoosh + white ink —
+ * #FF7A00 is the real brand orange sampled directly from this logo file
+ * (see client/src/index.css's `--orange` token and
+ * server/designLanguage.test.ts for where that value is pinned).
  */
 import { cn } from "@/lib/utils";
 
-// 2026-06-02: transparent-background master logo (black background removed at
-// the founder's request). Tightly trimmed transparent PNGs derived from the
-// uploaded master mark — safe to render on light OR dark surfaces.
-const PRIMARY_SRC = "/manus-storage/iosky-logo-transparent_6a55c203.png";
-// Official IO symbol mark (transparent) — used across operational surfaces.
-const MARK_SRC    = "/manus-storage/iosky-mark-transparent_9aba89cd.png";
-const FAVICON_SRC = "/manus-storage/iosky-favicon-transparent_403fabca.png";
+// Public Supabase Storage URLs for the real official assets (uploaded via
+// server/storage.ts's storagePut, same `branding` bucket / hashed-key
+// convention every other upload in this app already uses). Built from
+// VITE_SUPABASE_URL (already required client-side for Supabase Auth) with a
+// hardcoded fallback to the current project so a missing env var degrades
+// to "logo doesn't load" rather than crashing the app.
+const SUPABASE_URL =
+  (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
+  "https://rhgzcgcqlypuvislwjlf.supabase.co";
+const BRANDING_BASE = `${SUPABASE_URL}/storage/v1/object/public/branding`;
 
-const PRIMARY_RATIO = 1386 / 388; // ≈ 3.57 (transparent trimmed lockup)
-const MARK_RATIO    = 399 / 388;  // ≈ 1.03 (transparent trimmed mark)
+// Exported so LogoLoader.tsx and EcosystemOverview.tsx (the two other
+// direct-<img>-src consumers of the master lockup/mark) share the exact
+// same URLs rather than re-deriving them — one source of truth for the
+// hashed storage keys.
+export const PRIMARY_SRC = `${BRANDING_BASE}/iosky-logo-transparent_80bb9d7a.png`;
+export const MARK_SRC    = `${BRANDING_BASE}/iosky-mark-transparent_7be4140c.png`;
+export const FAVICON_SRC = `${BRANDING_BASE}/iosky-favicon-transparent_195f8316.png`;
+
+const PRIMARY_RATIO = 1473 / 414; // ≈ 3.558 (transparent trimmed lockup)
+const MARK_RATIO    = 840 / 781;  // ≈ 1.076 (transparent trimmed mark)
 
 type Variant = "primary" | "mark" | "favicon";
 

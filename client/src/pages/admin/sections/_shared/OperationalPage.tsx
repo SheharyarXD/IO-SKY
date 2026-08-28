@@ -75,7 +75,7 @@ function Sparkline({ values }: { values: number[] }) {
     <svg width={w} height={h} className="overflow-visible">
       <polyline
         fill="none"
-        stroke="rgba(255,106,0,0.85)"
+        stroke="rgba(255, 122, 0,0.85)"
         strokeWidth={1.5}
         points={points}
       />
@@ -84,7 +84,7 @@ function Sparkline({ values }: { values: number[] }) {
 }
 
 const ACCENT_BORDER: Record<NonNullable<KpiTile["accent"]>, string> = {
-  orange: "border-[#FF6A00]/25",
+  orange: "border-[#FF7A00]/25",
   green: "border-emerald-500/25",
   red: "border-red-500/25",
   violet: "border-violet-500/25",
@@ -92,7 +92,7 @@ const ACCENT_BORDER: Record<NonNullable<KpiTile["accent"]>, string> = {
 };
 
 const ACCENT_ICON_BG: Record<NonNullable<KpiTile["accent"]>, string> = {
-  orange: "bg-[#FF6A00]/12 text-[#FF6A00]",
+  orange: "bg-[#FF7A00]/12 text-[#FF7A00]",
   green: "bg-emerald-500/12 text-emerald-400",
   red: "bg-red-500/12 text-red-400",
   violet: "bg-violet-500/12 text-violet-400",
@@ -172,7 +172,7 @@ export default function OperationalPage({
     <div className="space-y-5">
       {/* Page header */}
       <header>
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/10 font-mono text-[10.5px] uppercase tracking-[0.2em] text-[#FF6A00]">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#FF7A00]/30 bg-[#FF7A00]/10 font-mono text-[10.5px] uppercase tracking-[0.2em] text-[#FF7A00]">
           <Sparkles className="w-3 h-3" />
           {eyebrow ?? "Operational module"}
         </div>
@@ -245,7 +245,7 @@ export function DefaultToolbar({
         <input
           type="search"
           placeholder={searchPlaceholder}
-          className="w-full pl-8 pr-3 py-2 rounded-[10px] bg-[#070A14] border border-white/[0.08] text-[12.5px] text-white placeholder:text-white/35 focus:outline-none focus:border-[#FF6A00]/40"
+          className="w-full pl-8 pr-3 py-2 rounded-[10px] bg-[#070A14] border border-white/[0.08] text-[12.5px] text-white placeholder:text-white/35 focus:outline-none focus:border-[#FF7A00]/40"
         />
       </div>
       {filters?.map((f) => (
@@ -262,7 +262,7 @@ export function DefaultToolbar({
         <button
           type="button"
           onClick={primaryAction.onClick}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#FF6A00] text-[12.5px] font-medium text-black hover:bg-[#FF7A1A]"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#FF7A00] text-[12.5px] font-medium text-black hover:bg-[#FF7A1A]"
         >
           <Plus className="w-3.5 h-3.5" />
           {primaryAction.label}

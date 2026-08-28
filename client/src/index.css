@@ -49,12 +49,12 @@
    *   #0B1020  navy-black background
    *   #1A2333  panel / glass surface base
    *   #E6EAF0  ivory foreground
-   *   #FF6A00  primary orange (action / accent)
+   *   #FF7A00  primary orange (action / accent)
    *   #FFB347  soft orange (highlight / hover state)
    */
-  --orange: #FF6A00;
+  --orange: #FF7A00;
   --orange-hover: #FFB347;
-  --orange-soft: rgb(255 106 0 / 0.18);
+  --orange-soft: rgb(255 122 0 / 0.18);
   --ivory: #E6EAF0;
   --mute-1: oklch(0.78 0.014 250);
   --mute-2: oklch(0.62 0.018 250);
@@ -66,7 +66,7 @@
   --card-foreground: oklch(0.96 0.005 250);
   --popover: oklch(0.13 0.022 260);
   --popover-foreground: oklch(0.96 0.005 250);
-  --primary: #FF6A00;
+  --primary: #FF7A00;
   --primary-foreground: #0B1020;
   --secondary: oklch(0.17 0.022 260);
   --secondary-foreground: oklch(0.88 0.01 250);
@@ -78,7 +78,7 @@
   --destructive-foreground: oklch(0.98 0.005 250);
   --border: oklch(1 0 0 / 0.08);
   --input: oklch(1 0 0 / 0.1);
-  --ring: rgb(255 106 0 / 0.55);
+  --ring: rgb(255 122 0 / 0.55);
 
   --radius: 0.75rem;
 }
@@ -91,7 +91,7 @@
   --card-foreground: oklch(0.96 0.005 250);
   --popover: oklch(0.13 0.022 260);
   --popover-foreground: oklch(0.96 0.005 250);
-  --primary: #FF6A00;
+  --primary: #FF7A00;
   --primary-foreground: #0B1020;
   --secondary: oklch(0.17 0.022 260);
   --secondary-foreground: oklch(0.88 0.01 250);
@@ -101,7 +101,7 @@
   --accent-foreground: oklch(0.96 0.005 250);
   --border: oklch(1 0 0 / 0.08);
   --input: oklch(1 0 0 / 0.1);
-  --ring: rgb(255 106 0 / 0.55);
+  --ring: rgb(255 122 0 / 0.55);
 }
 
 @layer base {
@@ -220,7 +220,7 @@
     font-weight: 600;
     letter-spacing: 0.005em;
     color: #0B1020;
-    background: linear-gradient(180deg, #FFB347 0%, #FF6A00 100%);
+    background: linear-gradient(180deg, #FFB347 0%, #FF7A00 100%);
     border: 1px solid rgb(255 179 71 / 0.7);
     border-radius: 10px;
     box-shadow:

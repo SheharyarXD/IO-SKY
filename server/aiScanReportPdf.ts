@@ -7,7 +7,7 @@
  * upload it to storage and hand back a signed URL.
  *
  * Design language mirrors the site: deep navy background, ivory text,
- * orange accent (#FF6A00). We keep claims neutral and attach the same
+ * orange accent (#FF7A00). We keep claims neutral and attach the same
  * disclaimers the UI shows so the document never overpromises.
  */
 
@@ -24,7 +24,7 @@ const NAVY = "#0B1020";
 const PANEL = "#1A2333";
 const IVORY = "#E6EAF0";
 const MUTED = "#8B93A7";
-const ORANGE = "#FF6A00";
+const ORANGE = "#FF7A00";
 const ORANGE_SOFT = "#FFB347";
 
 const GRADE_LABEL: Record<AiScanGrade, string> = {

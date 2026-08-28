@@ -34,9 +34,9 @@ export function PageShell({ eyebrowIndex, eyebrowLabel, title, intro, aside, chi
         className="pointer-events-none absolute inset-0 -z-0"
         style={{
           backgroundImage: `
-            radial-gradient(58% 36% at 16% 14%, rgba(255,106,0,0.10), transparent 70%),
+            radial-gradient(58% 36% at 16% 14%, rgba(255, 122, 0,0.10), transparent 70%),
             radial-gradient(46% 32% at 92% 0%, rgba(80,140,255,0.08), transparent 70%),
-            radial-gradient(80% 50% at 50% 100%, rgba(255,106,0,0.06), transparent 70%)
+            radial-gradient(80% 50% at 50% 100%, rgba(255, 122, 0,0.06), transparent 70%)
           `,
         }}
       />

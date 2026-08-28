@@ -170,7 +170,7 @@ export function Projects() {
       render: (r) => (
         <div className="flex items-center gap-2 w-[140px]">
           <div className="flex-1 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-[#FF6A00] to-[#FF8E3D]" style={{ width: `${r.progress}%` }} />
+            <div className="h-full bg-gradient-to-r from-[#FF7A00] to-[#FF8E3D]" style={{ width: `${r.progress}%` }} />
           </div>
           <span className="font-mono text-[11px] text-white/65 w-9 text-right">{r.progress}%</span>
         </div>
@@ -330,7 +330,7 @@ export function Billing() {
                         <li key={s.status}>
                           <div className="flex justify-between text-white/85"><span className="capitalize">{s.status}</span><span className="font-mono text-white/65">{s.count} · {pct}%</span></div>
                           <div className="h-1.5 mt-1 rounded-full bg-white/[0.05] overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-[#FF6A00] to-[#FF8E3D]" style={{ width: `${pct}%` }} />
+                            <div className="h-full bg-gradient-to-r from-[#FF7A00] to-[#FF8E3D]" style={{ width: `${pct}%` }} />
                           </div>
                         </li>
                       );
@@ -438,7 +438,7 @@ export function Documents() {
               <button onClick={() => onReview(r, "rejected")} className="text-[11px] text-red-400 hover:underline">Reject</button>
             </>
           )}
-          <button onClick={() => onSetRetention(r)} className="text-[11px] text-[#FF6A00] hover:underline">Retention</button>
+          <button onClick={() => onSetRetention(r)} className="text-[11px] text-[#FF7A00] hover:underline">Retention</button>
         </div>
       ),
     },

@@ -91,7 +91,7 @@ const ACCENT_RING: Record<Accent, string> = {
   green:
     "ring-1 ring-emerald-400/15 hover:ring-emerald-400/40 hover:shadow-[0_24px_72px_-26px_rgba(16,185,129,0.35)]",
   orange:
-    "ring-2 ring-[var(--orange)]/55 shadow-[0_24px_72px_-26px_rgba(255,106,0,0.55),0_0_0_1px_rgba(255,106,0,0.30)]",
+    "ring-2 ring-[var(--orange)]/55 shadow-[0_24px_72px_-26px_rgba(255, 122, 0,0.55),0_0_0_1px_rgba(255, 122, 0,0.30)]",
   violet:
     "ring-1 ring-violet-400/15 hover:ring-violet-400/40 hover:shadow-[0_24px_72px_-26px_rgba(139,92,246,0.35)]",
 };
@@ -117,7 +117,7 @@ function EcosystemCard({ eco }: { eco: Ecosystem }) {
       ].join(" ")}
     >
       {eco.badge ? (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[10.5px] uppercase tracking-[0.18em] font-semibold bg-[var(--orange)] text-[#0B1020] shadow-[0_8px_24px_-8px_rgba(255,106,0,0.7)]">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[10.5px] uppercase tracking-[0.18em] font-semibold bg-[var(--orange)] text-[#0B1020] shadow-[0_8px_24px_-8px_rgba(255, 122, 0,0.7)]">
           {eco.badge}
         </div>
       ) : null}
@@ -356,7 +356,7 @@ export default function Solutions() {
           className="absolute inset-0 -z-10 opacity-70"
           style={{
             background:
-              "radial-gradient(60% 50% at 30% 0%, rgba(255,106,0,0.10), transparent 60%), radial-gradient(50% 60% at 80% 30%, rgba(139,92,246,0.10), transparent 60%)",
+              "radial-gradient(60% 50% at 30% 0%, rgba(255, 122, 0,0.10), transparent 60%), radial-gradient(50% 60% at 80% 30%, rgba(139,92,246,0.10), transparent 60%)",
           }}
         />
         <div className="container pt-24 pb-16 lg:pt-32 lg:pb-24 grid lg:grid-cols-2 gap-12 items-center">
@@ -616,7 +616,7 @@ export default function Solutions() {
             className="absolute inset-0 -z-10 opacity-80"
             style={{
               background:
-                "radial-gradient(60% 80% at 80% 0%, rgba(255,106,0,0.18), transparent 70%)",
+                "radial-gradient(60% 80% at 80% 0%, rgba(255, 122, 0,0.18), transparent 70%)",
             }}
           />
           <div className="flex flex-wrap items-end justify-between gap-6">

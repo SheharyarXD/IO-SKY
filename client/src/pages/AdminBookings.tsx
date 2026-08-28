@@ -30,7 +30,7 @@ function formatDateTime(d: Date | string | number | null | undefined) {
 function StatusPill({ value }: { value: string }) {
   const tone =
     value === "confirmed"
-      ? "border-[#FF6A00]/40 text-[#FF6A00] bg-[#FF6A00]/[0.08]"
+      ? "border-[#FF7A00]/40 text-[#FF7A00] bg-[#FF7A00]/[0.08]"
       : value === "cancelled"
       ? "border-red-500/40 text-red-300 bg-red-500/[0.08]"
       : "border-white/15 text-white/70 bg-white/[0.04]";
@@ -65,11 +65,11 @@ export default function AdminBookings({ embedded = false }: AdminBookingsProps =
         <div className={embedded ? "" : "container max-w-6xl"}>
           <div className="flex flex-col gap-2">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-soft font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E6EAF0]/70 self-start">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00] shadow-[0_0_8px_#FF6A00]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00] shadow-[0_0_8px_#FF7A00]" />
               ADMIN · STRATEGY CALL BOOKINGS
             </div>
             <h1 className="font-display font-semibold text-[34px] md:text-[44px] leading-[1.05] tracking-[-0.02em] text-[#E6EAF0] mt-3">
-              Recent <span className="text-[#FF6A00]">bookings</span>
+              Recent <span className="text-[#FF7A00]">bookings</span>
             </h1>
             <p className="text-[14.5px] leading-[1.65] text-[#E6EAF0]/65 max-w-[640px]">
               The 100 most recent discovery call requests captured by the
@@ -89,7 +89,7 @@ export default function AdminBookings({ embedded = false }: AdminBookingsProps =
 
           {!authLoading && !isAuthenticated && (
             <div className="mt-12 p-6 rounded-[16px] border border-white/[0.07] bg-[#0E121B]/85 max-w-[520px]">
-              <div className="flex items-center gap-2 text-[#FF6A00]">
+              <div className="flex items-center gap-2 text-[#FF7A00]">
                 <ShieldAlert className="w-4 h-4" />
                 <span className="font-mono text-[11px] uppercase tracking-[0.2em]">
                   Authentication required
@@ -100,7 +100,7 @@ export default function AdminBookings({ embedded = false }: AdminBookingsProps =
               </p>
               <a
                 href={getLoginUrl()}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF6A00] hover:bg-[#FF5500] text-[#0A0B10] text-[13px] font-semibold transition-colors"
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF7A00] hover:bg-[#FF5500] text-[#0A0B10] text-[13px] font-semibold transition-colors"
               >
                 Sign in
               </a>
@@ -134,7 +134,7 @@ export default function AdminBookings({ embedded = false }: AdminBookingsProps =
                   type="button"
                   onClick={() => recent.refetch()}
                   disabled={recent.isFetching}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/12 hover:border-[#FF6A00]/40 text-white/80 hover:text-[#FF6A00] text-[12.5px] transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/12 hover:border-[#FF7A00]/40 text-white/80 hover:text-[#FF7A00] text-[12.5px] transition-colors disabled:opacity-50"
                 >
                   <RefreshCw
                     className={`w-3.5 h-3.5 ${
@@ -179,7 +179,7 @@ export default function AdminBookings({ embedded = false }: AdminBookingsProps =
                           key={b.id}
                           className="hover:bg-white/[0.02] transition-colors"
                         >
-                          <td className="px-4 py-3 font-mono text-[11.5px] text-[#FF6A00]">
+                          <td className="px-4 py-3 font-mono text-[11.5px] text-[#FF7A00]">
                             {b.publicRef}
                           </td>
                           <td className="px-4 py-3 text-white/85 capitalize">

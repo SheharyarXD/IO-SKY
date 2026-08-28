@@ -13,11 +13,11 @@ export default function NotFound() {
       <main className="relative z-[1] flex-1 flex items-center pt-32 pb-20">
         <div className="container max-w-3xl text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-soft font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E6EAF0]/70">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00] shadow-[0_0_8px_#FF6A00]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00] shadow-[0_0_8px_#FF7A00]" />
             ROUTE NOT FOUND · 404
           </div>
           <h1 className="mt-6 font-display font-semibold text-[44px] md:text-[64px] leading-[1.05] tracking-[-0.022em] text-[#E6EAF0]">
-            That coordinate is <span className="text-[#FF6A00]">off-grid.</span>
+            That coordinate is <span className="text-[#FF7A00]">off-grid.</span>
           </h1>
           <p className="mt-5 text-[15.5px] leading-[1.7] text-[#E6EAF0]/65 max-w-[560px] mx-auto">
             The page you tried to reach is not part of the current operating

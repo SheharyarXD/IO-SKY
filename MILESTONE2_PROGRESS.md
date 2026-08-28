@@ -11,6 +11,55 @@ Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external acc
 
 ---
 
+## Handoff summary (as of 2026-08-27, latest session — supersedes the 2026-08-23 entry below)
+
+**§2.1's real branding-asset blocker is resolved.** Every prior session documented the same gap:
+the original logo/mark/favicon only ever existed as remote objects in the old Forge storage, with
+no copy anywhere in this repo, blocking migration off the `/manus-storage/*` proxy (see §2.1 below
+for the original finding). The client has now supplied the real official logo file directly.
+
+- **Processed and uploaded to real Supabase Storage.** The two source files (a full wordmark
+  lockup and a mark-only icon, both on solid dark backgrounds) were transparency-keyed (background
+  colour-matched and zeroed out, content tightly trimmed — verified pixel-by-pixel, not just
+  visually) and a third square, padded favicon variant was generated from the mark. All three were
+  uploaded via `server/storage.ts`'s existing `storagePut()` to the `branding` bucket
+  (`drizzle/0007_storage_buckets.sql`, live since this session's migration-reconciliation work) —
+  the exact real infrastructure §2.1 built and left "ready for whenever the assets are actually
+  available." Confirmed all three URLs are publicly fetchable (`curl` → HTTP 200) before wiring
+  them in.
+- **`IOSkyLogo.tsx`, `LogoLoader.tsx`, `EcosystemOverview.tsx`, and `client/index.html`** (every
+  direct consumer of the old Forge-proxied paths) now reference the real Supabase-hosted assets —
+  the `/manus-storage/*` Forge proxy is no longer used for branding at all (left registered but
+  dormant for now, per this repo's own "don't remove a dependency before the replacement is fully
+  verified" convention — a full retirement audit of any other consumers is a separate, smaller
+  follow-up, not attempted this pass).
+- **Brand orange corrected to match the real logo.** The previous `#FF6A00` was an earlier
+  session's best guess at "the brand sheet" value (`server/designLanguage.test.ts` literally called
+  it that). Pixel-sampling a solid interior region of the actual official logo file gives an
+  average of `rgb(251,121,2)` — `#FF7A00` is the closest clean hex to that real, ground-truth
+  colour. Replaced across the entire codebase: the central `--orange` CSS variable
+  (`client/src/index.css`), every hardcoded `#FF6A00`/`#ff6a00` hex literal (34 files, 393
+  occurrences), and every decimal-RGB equivalent `rgb(255,106,0)`/`255 106 0` the hex-only pass
+  would have missed (21 more files, 101 occurrences) — found by explicitly checking for that
+  pattern rather than assuming a single find-replace covered every representation. The pinned
+  design-language test was updated to the new value with its reasoning recorded, not just changed.
+- **Verified live, not just compiled.** Beyond `npx tsc --noEmit` → 0 errors, `npx vitest run` →
+  569/584 passing (15 correctly skipped, one pre-existing unrelated flake in `viewAs.test.ts`
+  reproduced and confirmed clean on isolated re-run — same flake this doc already flagged in an
+  earlier session), `pnpm run build` → succeeds: the actual running app was screenshotted
+  (homepage + login) with the real logo rendering correctly in the navbar and auth surfaces and the
+  new orange visible throughout, no console errors.
+- **Deliberately not attempted this pass**: the client also shared a full marketing-site design
+  spec (`IO_SKY_Master_Design_Spec.md` — exact copy/layout/spacing/glass-material/interaction
+  behaviour for the Homepage, Foundation, Intelligence, Solutions, Contact, Discovery Call, and
+  Login Portal pages, ~50 sections). Scope for this pass was explicitly confirmed as logo + colour
+  matching only, not the full redesign — the spec document itself flags multiple internal
+  conflicts (three different background-teal values, two different orange values across its own
+  sections) it says must be confirmed with the Product Owner rather than guessed, so implementing
+  it in full needs a dedicated scoping pass, not a continuation of this one.
+
+---
+
 ## Handoff summary (as of 2026-08-23, latest session — supersedes the 2026-08-21 entry below)
 
 **The central blocker is resolved: the Supabase project is back online.** `rhgzcgcqlypuvislwjlf.supabase.co`

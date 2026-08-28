@@ -170,7 +170,7 @@ export default function CrmLeads() {
                             <span className="font-mono text-white/65">{s.pct}%</span>
                           </div>
                           <div className="h-1.5 mt-1 rounded-full bg-white/[0.05] overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-[#FF6A00] to-[#FF8E3D]" style={{ width: `${s.pct}%` }} />
+                            <div className="h-full bg-gradient-to-r from-[#FF7A00] to-[#FF8E3D]" style={{ width: `${s.pct}%` }} />
                           </div>
                         </li>
                       ))}
@@ -195,7 +195,7 @@ export default function CrmLeads() {
                       {scanLeads.slice(0, 4).map((c) => (
                         <div key={c.id} className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <Sparkles className="w-3.5 h-3.5 text-[#FF6A00]" />
+                            <Sparkles className="w-3.5 h-3.5 text-[#FF7A00]" />
                             <span className="text-[12.5px] text-white/85">{c.company || c.fullName}</span>
                           </div>
                           <span className="font-mono text-[11px] text-white/60 uppercase">

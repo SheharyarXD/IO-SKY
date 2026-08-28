@@ -84,7 +84,7 @@ export default function Clients() {
       header: "Health",
       align: "right",
       render: (r) => (
-        <span className={r.operationalScore >= 85 ? "text-emerald-400" : r.operationalScore >= 70 ? "text-[#FF6A00]" : "text-red-400"}>
+        <span className={r.operationalScore >= 85 ? "text-emerald-400" : r.operationalScore >= 70 ? "text-[#FF7A00]" : "text-red-400"}>
           {r.operationalScore}
         </span>
       ),
@@ -154,7 +154,7 @@ export default function Clients() {
                     ].map((q) => (
                       <li key={q.name} className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-white/85">
-                          <Sparkles className="w-3.5 h-3.5 text-[#FF6A00]" />
+                          <Sparkles className="w-3.5 h-3.5 text-[#FF7A00]" />
                           {q.name}
                         </div>
                         <div className="text-white/55 text-right">

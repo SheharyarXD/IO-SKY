@@ -84,7 +84,7 @@ export default function Infrastructure() {
             className="pointer-events-none absolute inset-0 -z-[1]"
             style={{
               background:
-                "radial-gradient(40% 50% at 18% 28%, rgba(255,106,0,0.10), transparent 70%), radial-gradient(35% 45% at 82% 22%, rgba(255,106,0,0.08), transparent 70%)",
+                "radial-gradient(40% 50% at 18% 28%, rgba(255, 122, 0,0.10), transparent 70%), radial-gradient(35% 45% at 82% 22%, rgba(255, 122, 0,0.08), transparent 70%)",
             }}
           />
           <div className="container">
@@ -163,7 +163,7 @@ export default function Infrastructure() {
                 className="pointer-events-none absolute inset-x-6 bottom-0 h-px"
                 style={{
                   background:
-                    "linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.45) 50%, transparent 100%)",
+                    "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.45) 50%, transparent 100%)",
                   filter: "blur(0.5px)",
                 }}
               />
@@ -196,7 +196,7 @@ export default function Infrastructure() {
                 className="pointer-events-none absolute inset-0 -z-[1]"
                 style={{
                   background:
-                    "radial-gradient(50% 80% at 50% 0%, rgba(255,106,0,0.12), transparent 70%)",
+                    "radial-gradient(50% 80% at 50% 0%, rgba(255, 122, 0,0.12), transparent 70%)",
                 }}
               />
               <h2 className="font-display font-medium tracking-[-0.015em] text-[26px] md:text-[34px] leading-[1.15] text-[var(--color-ivory)] max-w-[680px] mx-auto">
@@ -273,9 +273,9 @@ export default function Infrastructure() {
                     className="relative rounded-2xl px-6 py-7 text-center min-w-[210px]"
                     style={{
                       background:
-                        "linear-gradient(180deg, rgba(255,106,0,0.16), rgba(255,106,0,0.04))",
-                      border: "1px solid rgba(255,106,0,0.35)",
-                      boxShadow: "0 0 40px rgba(255,106,0,0.18)",
+                        "linear-gradient(180deg, rgba(255, 122, 0,0.16), rgba(255, 122, 0,0.04))",
+                      border: "1px solid rgba(255, 122, 0,0.35)",
+                      boxShadow: "0 0 40px rgba(255, 122, 0,0.18)",
                     }}
                   >
                     <Sparkles className="w-6 h-6 text-[var(--color-orange)] mx-auto" strokeWidth={1.6} />
@@ -327,7 +327,7 @@ function CommandCenter({
           {t("infra.viz.badge")}
         </span>
         <span className="flex items-center gap-1.5 text-[11px] text-[oklch(0.7_0.014_250)]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)]" style={{ boxShadow: "0 0 8px rgba(255,106,0,0.7)" }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)]" style={{ boxShadow: "0 0 8px rgba(255, 122, 0,0.7)" }} />
           live
         </span>
       </div>
@@ -353,9 +353,9 @@ function CommandCenter({
           <div
             className="rounded-xl px-3 py-4 text-center w-[112px]"
             style={{
-              background: "linear-gradient(180deg, rgba(255,106,0,0.16), rgba(255,106,0,0.04))",
-              border: "1px solid rgba(255,106,0,0.35)",
-              boxShadow: "0 0 30px rgba(255,106,0,0.16)",
+              background: "linear-gradient(180deg, rgba(255, 122, 0,0.16), rgba(255, 122, 0,0.04))",
+              border: "1px solid rgba(255, 122, 0,0.35)",
+              boxShadow: "0 0 30px rgba(255, 122, 0,0.16)",
             }}
           >
             <Cpu className="w-5 h-5 text-[var(--color-orange)] mx-auto" strokeWidth={1.6} />

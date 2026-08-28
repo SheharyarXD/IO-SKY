@@ -228,7 +228,7 @@ export function AdminLayout({
           className="absolute inset-0 opacity-[0.5]"
           style={{
             backgroundImage:
-              "radial-gradient(circle at 0% 0%, rgba(255,106,0,0.08) 0%, transparent 40%), radial-gradient(circle at 100% 100%, rgba(255,106,0,0.06) 0%, transparent 50%)",
+              "radial-gradient(circle at 0% 0%, rgba(255, 122, 0,0.08) 0%, transparent 40%), radial-gradient(circle at 100% 100%, rgba(255, 122, 0,0.06) 0%, transparent 50%)",
           }}
         />
         <div
@@ -249,7 +249,7 @@ export function AdminLayout({
             <IOSkyLogo variant="mark" height={36} />
             <div className="flex flex-col leading-none">
               <span className="font-display font-semibold text-[15.5px] tracking-tight text-[#E6EAF0]">
-                IO <span className="text-[#FF6A00]">SKY</span>
+                IO <span className="text-[#FF7A00]">SKY</span>
               </span>
               <span className="font-mono text-[9.5px] tracking-[0.22em] uppercase text-white/45 mt-1">
                 Admin Portal
@@ -268,14 +268,14 @@ export function AdminLayout({
                       className={cn(
                         "group flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] transition-colors duration-150",
                         active
-                          ? "bg-[#FF6A00]/[0.10] text-[#FF6A00] border border-[#FF6A00]/25"
+                          ? "bg-[#FF7A00]/[0.10] text-[#FF7A00] border border-[#FF7A00]/25"
                           : "text-white/70 border border-transparent hover:bg-white/[0.03] hover:text-white",
                       )}
                     >
-                      <Icon className={cn("w-[15px] h-[15px] shrink-0", active ? "text-[#FF6A00]" : "text-white/55 group-hover:text-white/80")} />
+                      <Icon className={cn("w-[15px] h-[15px] shrink-0", active ? "text-[#FF7A00]" : "text-white/55 group-hover:text-white/80")} />
                       <span className="flex-1 truncate">{item.label}</span>
                       {item.badge ? (
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-[#FF6A00]/15 text-[#FF6A00] border border-[#FF6A00]/30 leading-none">
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-[#FF7A00]/15 text-[#FF7A00] border border-[#FF7A00]/30 leading-none">
                           {item.badge}
                         </span>
                       ) : null}
@@ -287,12 +287,12 @@ export function AdminLayout({
           </nav>
           <div className="mx-3 mb-3 mt-2 p-3 rounded-[12px] border border-white/[0.06] bg-white/[0.02]">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF6A00] to-[#FFB347] flex items-center justify-center text-[12px] font-semibold text-[#0B1020]">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF7A00] to-[#FFB347] flex items-center justify-center text-[12px] font-semibold text-[#0B1020]">
                 {userInitials || "A"}
               </div>
               <div className="min-w-0">
                 <div className="text-[12.5px] font-medium text-[#E6EAF0] truncate">{displayName}</div>
-                <div className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-[#FF6A00]/85 truncate">
+                <div className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-[#FF7A00]/85 truncate">
                   Super Administrator
                 </div>
                 <div className="flex items-center gap-1 mt-0.5 text-[10px] text-white/55">
@@ -304,14 +304,14 @@ export function AdminLayout({
             <div className="mt-3 pt-3 border-t border-white/[0.06] grid grid-cols-2 gap-2">
               <button
                 onClick={() => startViewAs("client")}
-                className="text-[10.5px] font-mono uppercase tracking-[0.16em] py-1.5 rounded-md border border-white/[0.08] hover:border-[#FF6A00]/45 hover:bg-[#FF6A00]/10 text-white/75 hover:text-white transition-colors"
+                className="text-[10.5px] font-mono uppercase tracking-[0.16em] py-1.5 rounded-md border border-white/[0.08] hover:border-[#FF7A00]/45 hover:bg-[#FF7A00]/10 text-white/75 hover:text-white transition-colors"
                 title="Preview the Client Portal as an audited admin (30 minutes)"
               >
                 View as Client
               </button>
               <button
                 onClick={() => startViewAs("developer")}
-                className="text-[10.5px] font-mono uppercase tracking-[0.16em] py-1.5 rounded-md border border-white/[0.08] hover:border-[#FF6A00]/45 hover:bg-[#FF6A00]/10 text-white/75 hover:text-white transition-colors"
+                className="text-[10.5px] font-mono uppercase tracking-[0.16em] py-1.5 rounded-md border border-white/[0.08] hover:border-[#FF7A00]/45 hover:bg-[#FF7A00]/10 text-white/75 hover:text-white transition-colors"
                 title="Preview the Developer Workspace as an audited admin (30 minutes)"
               >
                 View as Developer
@@ -341,7 +341,7 @@ export function AdminLayout({
                   <div className="px-5 pt-5 pb-4 flex items-center gap-3 border-b border-white/[0.06]">
                     <IOSkyLogo variant="mark" height={32} />
                     <span className="font-display font-semibold text-[14.5px]">
-                      IO <span className="text-[#FF6A00]">SKY</span> Admin
+                      IO <span className="text-[#FF7A00]">SKY</span> Admin
                     </span>
                   </div>
                   <nav className="px-3 py-3">
@@ -356,7 +356,7 @@ export function AdminLayout({
                           className={cn(
                             "flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px]",
                             active
-                              ? "bg-[#FF6A00]/[0.10] text-[#FF6A00]"
+                              ? "bg-[#FF7A00]/[0.10] text-[#FF7A00]"
                               : "text-white/70 hover:bg-white/[0.03]",
                           )}
                         >
@@ -378,8 +378,8 @@ export function AdminLayout({
                   <h1 className="font-display font-semibold text-[20px] md:text-[22px] tracking-tight text-[#E6EAF0] truncate">
                     {displayName}
                   </h1>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-mono uppercase tracking-[0.18em] bg-[#FF6A00]/12 text-[#FF6A00] border border-[#FF6A00]/30">
-                    <span className="w-1 h-1 rounded-full bg-[#FF6A00]" /> Super Administrator
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-mono uppercase tracking-[0.18em] bg-[#FF7A00]/12 text-[#FF7A00] border border-[#FF7A00]/30">
+                    <span className="w-1 h-1 rounded-full bg-[#FF7A00]" /> Super Administrator
                   </span>
                 </div>
                 <p className="text-[12px] text-white/55 italic mt-0.5 truncate">"{tagline}"</p>
@@ -408,7 +408,7 @@ export function AdminLayout({
                   <button
                     key={idx}
                     aria-label="Notifications"
-                    className="relative w-9 h-9 rounded-[10px] border border-white/[0.07] hover:border-[#FF6A00]/40 text-white/70 hover:text-white transition-colors"
+                    className="relative w-9 h-9 rounded-[10px] border border-white/[0.07] hover:border-[#FF7A00]/40 text-white/70 hover:text-white transition-colors"
                   >
                     <Icon className="w-4 h-4 mx-auto" />
                     <span
@@ -417,7 +417,7 @@ export function AdminLayout({
                         tone === "alert"
                           ? "bg-red-500/90 text-white"
                           : tone === "warn"
-                          ? "bg-[#FF6A00]/90 text-[#0B1020]"
+                          ? "bg-[#FF7A00]/90 text-[#0B1020]"
                           : "bg-white/15 text-white",
                       )}
                     >
@@ -447,7 +447,7 @@ export function AdminLayout({
               </div>
 
               {/* Avatar pod */}
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF6A00] to-[#FFB347] hidden md:flex items-center justify-center text-[11px] font-semibold text-[#0B1020] shrink-0">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF7A00] to-[#FFB347] hidden md:flex items-center justify-center text-[11px] font-semibold text-[#0B1020] shrink-0">
                 {userInitials || "A"}
               </div>
             </div>
@@ -458,10 +458,10 @@ export function AdminLayout({
                 {sectionTitle}
               </span>
               <div className="ml-auto flex items-center gap-2">
-                <button className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-white/[0.07] text-[12px] text-white/75 hover:text-white hover:border-[#FF6A00]/40 transition-colors">
+                <button className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-white/[0.07] text-[12px] text-white/75 hover:text-white hover:border-[#FF7A00]/40 transition-colors">
                   View as <ChevronDown className="w-3 h-3 opacity-60" />
                 </button>
-                <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF6A00] text-[#0B1020] text-[12.5px] font-semibold shadow-[0_6px_18px_-6px_rgba(255,106,0,0.55)] hover:brightness-105 transition-all">
+                <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF7A00] text-[#0B1020] text-[12.5px] font-semibold shadow-[0_6px_18px_-6px_rgba(255, 122, 0,0.55)] hover:brightness-105 transition-all">
                   <Plus className="w-3.5 h-3.5" /> Quick Actions
                 </button>
               </div>

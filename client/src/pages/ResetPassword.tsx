@@ -97,7 +97,7 @@ export default function ResetPassword() {
         {status === "invalid" && (
           <p className="text-sm text-white/60">
             This reset link is invalid or has expired. Request a new one from the{" "}
-            <button className="text-[#FF6A00] underline" onClick={() => setLocation("/login")}>
+            <button className="text-[#FF7A00] underline" onClick={() => setLocation("/login")}>
               sign-in page
             </button>
             .

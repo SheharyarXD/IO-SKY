@@ -114,22 +114,22 @@ function renderPreLaunchHtml(opts: { error?: boolean }): string {
     *,*::before,*::after{box-sizing:border-box}
     html,body{margin:0;padding:0;background:#0B1020;color:#E6EAF0;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
     body{min-height:100vh;display:flex;align-items:center;justify-content:center;
-      background-image:radial-gradient(60% 38% at 18% 18%,rgba(255,106,0,.10),transparent 70%),
+      background-image:radial-gradient(60% 38% at 18% 18%,rgba(255, 122, 0,.10),transparent 70%),
                        radial-gradient(46% 32% at 92% 0%,rgba(120,150,255,.08),transparent 70%);
       background-attachment:fixed;padding:24px}
     .card{width:100%;max-width:440px;border:1px solid rgba(255,255,255,.08);background:rgba(26,35,51,.62);backdrop-filter:blur(14px);padding:28px 28px 26px;border-radius:6px}
     .brand{font-family:"Manrope",Inter,sans-serif;font-weight:800;letter-spacing:.18em;color:#E6EAF0;font-size:14px;margin-bottom:18px}
-    .brand span{color:#FF6A00;margin-left:6px;letter-spacing:.16em}
+    .brand span{color:#FF7A00;margin-left:6px;letter-spacing:.16em}
     h1{font-family:"Manrope",Inter,sans-serif;font-size:22px;line-height:1.25;margin:0 0 6px;letter-spacing:-.01em}
     p{margin:0 0 18px;font-size:14px;line-height:1.6;color:#B6BCC8}
     label{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#9AA1AE;margin-bottom:8px;font-family:"JetBrains Mono",ui-monospace,monospace}
     input{width:100%;padding:11px 13px;background:#0B1020;border:1px solid rgba(255,255,255,.10);border-radius:4px;color:#E6EAF0;font-size:15px;font-family:inherit}
-    input:focus{outline:none;border-color:#FF6A00;box-shadow:0 0 0 3px rgba(255,106,0,.18)}
-    button{margin-top:14px;width:100%;padding:11px 13px;background:#FF6A00;color:#0B1020;font-weight:600;border:0;border-radius:4px;font-size:14px;letter-spacing:.02em;cursor:pointer;font-family:inherit;transition:transform .16s cubic-bezier(.23,1,.32,1)}
+    input:focus{outline:none;border-color:#FF7A00;box-shadow:0 0 0 3px rgba(255, 122, 0,.18)}
+    button{margin-top:14px;width:100%;padding:11px 13px;background:#FF7A00;color:#0B1020;font-weight:600;border:0;border-radius:4px;font-size:14px;letter-spacing:.02em;cursor:pointer;font-family:inherit;transition:transform .16s cubic-bezier(.23,1,.32,1)}
     button:active{transform:scale(.97)}
     .err{margin:0 0 14px;padding:9px 12px;background:rgba(220,80,80,.12);border:1px solid rgba(220,80,80,.4);color:#FFB4B4;font-size:13px;border-radius:4px}
     .foot{margin-top:18px;font-size:11px;color:#7C8290;letter-spacing:.05em}
-    a{color:#FF6A00;text-decoration:none}
+    a{color:#FF7A00;text-decoration:none}
     a:hover{text-decoration:underline}
   </style>
 </head>

@@ -144,7 +144,7 @@ export default function Translations() {
                   background:
                     c.pct === 100
                       ? "linear-gradient(90deg,#34D399,#10B981)"
-                      : "linear-gradient(90deg,#FF6A00,#FFB347)",
+                      : "linear-gradient(90deg,#FF7A00,#FFB347)",
                 }}
               />
             </div>

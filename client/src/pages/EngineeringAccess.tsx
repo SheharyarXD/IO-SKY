@@ -304,7 +304,7 @@ export default function EngineeringAccess() {
         <section className="container">
           <div className="max-w-[820px]">
             <div className="inline-flex items-center gap-2 text-[10.5px] font-mono tracking-[0.24em] uppercase text-[var(--color-orange)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)] shadow-[0_0_10px_rgba(255,106,0,0.7)]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)] shadow-[0_0_10px_rgba(255, 122, 0,0.7)]" />
               {t("eng.eyebrow", "Engineering Access")}
             </div>
             <h1 className="mt-5 font-display font-medium tracking-[-0.022em] leading-[1.05] text-[40px] md:text-[52px] xl:text-[58px] text-[var(--color-ivory)]">
@@ -399,12 +399,12 @@ export default function EngineeringAccess() {
                     className="pointer-events-none absolute inset-x-0 top-0 h-px"
                     style={{
                       background:
-                        "linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.55) 50%, transparent 100%)",
+                        "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.55) 50%, transparent 100%)",
                     }}
                   />
 
                   <header className="flex items-center gap-3 mb-5">
-                    <span className="w-9 h-9 rounded-lg border border-[#FF6A00]/30 bg-[rgba(255,106,0,0.08)] text-[var(--color-orange)] flex items-center justify-center">
+                    <span className="w-9 h-9 rounded-lg border border-[#FF7A00]/30 bg-[rgba(255, 122, 0,0.08)] text-[var(--color-orange)] flex items-center justify-center">
                       <Code2 className="w-[18px] h-[18px]" strokeWidth={1.8} />
                     </span>
                     <h2 className="font-display text-[20px] md:text-[22px] font-medium tracking-[-0.012em] text-[var(--color-ivory)]">
@@ -527,7 +527,7 @@ export default function EngineeringAccess() {
                       }}
                     >
                       <SelectTrigger
-                        className={`w-full md:w-[280px] h-11 bg-white/[0.04] border ${err("years", yearsValid) ? "border-rose-400/60" : "border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60"} text-[var(--color-ivory)]`}
+                        className={`w-full md:w-[280px] h-11 bg-white/[0.04] border ${err("years", yearsValid) ? "border-rose-400/60" : "border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60"} text-[var(--color-ivory)]`}
                       >
                         <SelectValue
                           placeholder={t("eng.field.years.ph", "Select range")}
@@ -576,7 +576,7 @@ export default function EngineeringAccess() {
                         "eng.field.ai.ph",
                         "Briefly describe production work with LLMs, agents, retrieval systems or autonomous workflows.",
                       )}
-                      className={`w-full px-3 py-3 rounded-md bg-white/[0.04] border ${err("ai", aiValid) ? "border-rose-400/60" : "border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60"} focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] resize-y transition-colors`}
+                      className={`w-full px-3 py-3 rounded-md bg-white/[0.04] border ${err("ai", aiValid) ? "border-rose-400/60" : "border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60"} focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] resize-y transition-colors`}
                     />
                   </div>
 
@@ -597,12 +597,12 @@ export default function EngineeringAccess() {
                         "eng.field.ent.ph",
                         "Briefly describe production work on CRMs, ERPs, data platforms or high-trust enterprise applications.",
                       )}
-                      className={`w-full px-3 py-3 rounded-md bg-white/[0.04] border ${err("ent", entValid) ? "border-rose-400/60" : "border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60"} focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] resize-y transition-colors`}
+                      className={`w-full px-3 py-3 rounded-md bg-white/[0.04] border ${err("ent", entValid) ? "border-rose-400/60" : "border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60"} focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] resize-y transition-colors`}
                     />
                   </div>
 
                   {/* Legal block */}
-                  <div className="rounded-lg border border-[#FF6A00]/20 bg-[rgba(255,106,0,0.04)] p-4 md:p-5 mb-6">
+                  <div className="rounded-lg border border-[#FF7A00]/20 bg-[rgba(255, 122, 0,0.04)] p-4 md:p-5 mb-6">
                     <div className="flex items-center gap-2 mb-3">
                       <Lock className="w-4 h-4 text-[var(--color-orange)]" strokeWidth={2} />
                       <h3 className="font-display text-[14px] font-medium text-[var(--color-ivory)]">
@@ -751,7 +751,7 @@ function Input({
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
           placeholder={placeholder}
-          className={`w-full h-11 ${icon ? "pl-9" : "pl-3"} pr-3 rounded-md bg-white/[0.04] border ${error ? "border-rose-400/60 focus:border-rose-400" : "border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60"} focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] transition-colors`}
+          className={`w-full h-11 ${icon ? "pl-9" : "pl-3"} pr-3 rounded-md bg-white/[0.04] border ${error ? "border-rose-400/60 focus:border-rose-400" : "border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60"} focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] transition-colors`}
         />
       </div>
       {error && errorMsg && (
@@ -804,7 +804,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[12px] transition-colors ${active ? "border-[#FF6A00]/55 bg-[rgba(255,106,0,0.12)] text-[var(--color-ivory)]" : "border-white/10 bg-white/[0.03] text-[oklch(0.78_0.014_250)] hover:border-[#FF6A00]/30 hover:text-[var(--color-orange)]"}`}
+      className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[12px] transition-colors ${active ? "border-[#FF7A00]/55 bg-[rgba(255, 122, 0,0.12)] text-[var(--color-ivory)]" : "border-white/10 bg-white/[0.03] text-[oklch(0.78_0.014_250)] hover:border-[#FF7A00]/30 hover:text-[var(--color-orange)]"}`}
     >
       {children}
     </button>
@@ -824,7 +824,7 @@ function Check({
     <li>
       <label className="flex items-start gap-3 cursor-pointer group">
         <span
-          className={`shrink-0 mt-0.5 w-4 h-4 rounded border ${checked ? "bg-[var(--color-orange)] border-[var(--color-orange)]" : "border-white/25 bg-white/[0.03] group-hover:border-[#FF6A00]/40"} flex items-center justify-center transition-colors`}
+          className={`shrink-0 mt-0.5 w-4 h-4 rounded border ${checked ? "bg-[var(--color-orange)] border-[var(--color-orange)]" : "border-white/25 bg-white/[0.03] group-hover:border-[#FF7A00]/40"} flex items-center justify-center transition-colors`}
         >
           {checked && (
             <CheckCircle2 className="w-3 h-3 text-[#0B1020]" strokeWidth={3} />
@@ -858,18 +858,18 @@ function EngineeringSuccess({
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.6) 50%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.6) 50%, transparent 100%)",
         }}
       />
-      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-[#FF6A00]/40 bg-[rgba(255,106,0,0.1)] text-[var(--color-orange)] mb-5">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-[#FF7A00]/40 bg-[rgba(255, 122, 0,0.1)] text-[var(--color-orange)] mb-5">
         <CheckCircle2 className="w-8 h-8" strokeWidth={1.7} />
       </div>
       <h2 className="font-display text-[24px] md:text-[28px] font-medium tracking-[-0.012em] text-[var(--color-ivory)]">
         {t("eng.success.title", "Application received.")}
       </h2>
       {publicRef && (
-        <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/[0.08] text-[11.5px] font-mono uppercase tracking-[0.16em] text-[#FF6A00]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00] shadow-[0_0_8px_#FF6A00]" />
+        <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FF7A00]/30 bg-[#FF7A00]/[0.08] text-[11.5px] font-mono uppercase tracking-[0.16em] text-[#FF7A00]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00] shadow-[0_0_8px_#FF7A00]" />
           Reference · {publicRef}
         </div>
       )}
@@ -886,7 +886,7 @@ function EngineeringSuccess({
         </Link>
         <Link
           href="/contact"
-          className="inline-flex items-center gap-2 h-11 px-5 rounded-md border border-white/10 bg-white/[0.03] hover:border-[#FF6A00]/30 hover:bg-[rgba(255,106,0,0.06)] text-[13.5px] text-[var(--color-ivory)] transition-colors"
+          className="inline-flex items-center gap-2 h-11 px-5 rounded-md border border-white/10 bg-white/[0.03] hover:border-[#FF7A00]/30 hover:bg-[rgba(255, 122, 0,0.06)] text-[13.5px] text-[var(--color-ivory)] transition-colors"
         >
           {t("eng.success.contact", "Contact IO SKY")}
           <ArrowUpRight className="w-4 h-4 text-[var(--color-orange)]" strokeWidth={2} />

@@ -135,7 +135,7 @@ export default function OpsConsole() {
   return (
     <div className="min-h-screen bg-[#0B1020] text-[#E6EAF0]">
       <header className="border-b border-white/[0.06] bg-[#080C18]/90 backdrop-blur-xl px-5 lg:px-7 py-4 flex items-center gap-3">
-        <ServerCog className="w-5 h-5 text-[#FF6A00]" />
+        <ServerCog className="w-5 h-5 text-[#FF7A00]" />
         <div>
           <h1 className="font-display font-semibold text-[18px]">Technical Operator Console</h1>
           <p className="text-[11.5px] text-white/50">
@@ -148,7 +148,7 @@ export default function OpsConsole() {
             emailLog.refetch();
             securityEvents.refetch();
           }}
-          className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-white/[0.08] text-[12px] text-white/75 hover:text-white hover:border-[#FF6A00]/40 transition-colors"
+          className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-white/[0.08] text-[12px] text-white/75 hover:text-white hover:border-[#FF7A00]/40 transition-colors"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${health.isFetching ? "animate-spin" : ""}`} /> Refresh
         </button>
@@ -267,7 +267,7 @@ export default function OpsConsole() {
                                 setAckBusy(null);
                               }
                             }}
-                            className="text-[11.5px] px-2.5 py-1 rounded-md border border-white/[0.1] text-white/75 hover:text-white hover:border-[#FF6A00]/40 disabled:opacity-50 transition-colors"
+                            className="text-[11.5px] px-2.5 py-1 rounded-md border border-white/[0.1] text-white/75 hover:text-white hover:border-[#FF7A00]/40 disabled:opacity-50 transition-colors"
                           >
                             {ackBusy === ev.id ? "Acknowledging…" : "Acknowledge"}
                           </button>

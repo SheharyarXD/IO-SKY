@@ -521,9 +521,9 @@ export default function Login() {
         <div className="flex items-center gap-2.5">
           <Link
             href="/contact"
-            className="hidden md:inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.025] px-3.5 py-2 text-[12.5px] text-[#E6EAF0]/75 hover:border-[rgba(255,106,0,0.35)] hover:text-[#E6EAF0] transition"
+            className="hidden md:inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.025] px-3.5 py-2 text-[12.5px] text-[#E6EAF0]/75 hover:border-[rgba(255, 122, 0,0.35)] hover:text-[#E6EAF0] transition"
           >
-            <Headphones size={14} strokeWidth={1.8} className="text-[#FF6A00]" />
+            <Headphones size={14} strokeWidth={1.8} className="text-[#FF7A00]" />
             {t("login.header.help", "Need help?")}
           </Link>
         </div>
@@ -580,7 +580,7 @@ export default function Login() {
               <div className="relative">
                 <h1 className="font-display font-semibold text-[34px] md:text-[46px] xl:text-[52px] leading-[1.05] tracking-[-0.022em] text-[#E6EAF0]">
                   {t("login.hero.line1", "Secure access to your")}{" "}
-                  <span className="text-[#FF6A00]">
+                  <span className="text-[#FF7A00]">
                     {t("login.hero.accent", "operational intelligence")}
                   </span>{" "}
                   {t("login.hero.line2", "ecosystem.")}
@@ -596,7 +596,7 @@ export default function Login() {
               {/* Enterprise-grade security strip */}
               <div className="relative mt-12 md:mt-16">
                 <div className="flex items-center gap-3 mb-5">
-                  <span className="h-[6px] w-[6px] rounded-full bg-[#FF6A00] shadow-[0_0_12px_#FF6A00]" />
+                  <span className="h-[6px] w-[6px] rounded-full bg-[#FF7A00] shadow-[0_0_12px_#FF7A00]" />
                   <h3 className="font-display font-semibold text-[15px] tracking-[-0.012em] text-[#E6EAF0]">
                     {t("login.security.title", "Enterprise-grade security. Always.")}
                   </h3>
@@ -604,7 +604,7 @@ export default function Login() {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
                   <TrustMini
-                    icon={<ShieldCheck size={18} strokeWidth={1.8} className="text-[#FF6A00]" />}
+                    icon={<ShieldCheck size={18} strokeWidth={1.8} className="text-[#FF7A00]" />}
                     title={t("login.trust.encryption.title", "End-to-end encryption")}
                     body={t(
                       "login.trust.encryption.body",
@@ -612,7 +612,7 @@ export default function Login() {
                     )}
                   />
                   <TrustMini
-                    icon={<KeyRound size={18} strokeWidth={1.8} className="text-[#FF6A00]" />}
+                    icon={<KeyRound size={18} strokeWidth={1.8} className="text-[#FF7A00]" />}
                     title={t("login.trust.access.title", "Role-based access")}
                     body={t(
                       "login.trust.access.body",
@@ -620,7 +620,7 @@ export default function Login() {
                     )}
                   />
                   <TrustMini
-                    icon={<Activity size={18} strokeWidth={1.8} className="text-[#FF6A00]" />}
+                    icon={<Activity size={18} strokeWidth={1.8} className="text-[#FF7A00]" />}
                     title={t("login.trust.monitoring.title", "24/7 threat monitoring")}
                     body={t(
                       "login.trust.monitoring.body",
@@ -628,7 +628,7 @@ export default function Login() {
                     )}
                   />
                   <TrustMini
-                    icon={<Award size={18} strokeWidth={1.8} className="text-[#FF6A00]" />}
+                    icon={<Award size={18} strokeWidth={1.8} className="text-[#FF7A00]" />}
                     title={t("login.trust.compliance.title", "Compliance ready")}
                     body={t(
                       "login.trust.compliance.body",
@@ -647,7 +647,7 @@ export default function Login() {
                 {/* Top accent line */}
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#FF6A00]/65 to-transparent"
+                  className="pointer-events-none absolute -top-px left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#FF7A00]/65 to-transparent"
                 />
                 <form
                   onSubmit={onSubmit}
@@ -670,9 +670,9 @@ export default function Login() {
                   {/* Lock-shield icon */}
                   <div className="flex justify-center">
                     <div className="relative">
-                      <div className="absolute inset-0 rounded-2xl bg-[#FF6A00]/15 blur-2xl" />
-                      <div className="relative w-14 h-14 rounded-2xl border border-[#FF6A00]/45 bg-[#FF6A00]/10 flex items-center justify-center">
-                        <Lock size={22} strokeWidth={1.9} className="text-[#FF6A00]" />
+                      <div className="absolute inset-0 rounded-2xl bg-[#FF7A00]/15 blur-2xl" />
+                      <div className="relative w-14 h-14 rounded-2xl border border-[#FF7A00]/45 bg-[#FF7A00]/10 flex items-center justify-center">
+                        <Lock size={22} strokeWidth={1.9} className="text-[#FF7A00]" />
                       </div>
                     </div>
                   </div>
@@ -680,7 +680,7 @@ export default function Login() {
                   <h2 className="mt-5 text-center font-display font-semibold text-[22px] md:text-[24px] leading-[1.2] tracking-[-0.012em] text-[#E6EAF0]">
                     {t("login.card.line1", "Secure access to your")}
                     <br />
-                    <span className="text-[#FF6A00]">
+                    <span className="text-[#FF7A00]">
                       {t("login.card.accent", "operational intelligence ecosystem")}
                     </span>
                     .
@@ -718,7 +718,7 @@ export default function Login() {
                         "flex items-center gap-2.5 rounded-md border bg-white/[0.025] px-3.5 py-3 transition",
                         errors.email
                           ? "border-[rgba(255,80,80,0.5)] focus-within:border-[rgba(255,80,80,0.75)]"
-                          : "border-white/10 focus-within:border-[rgba(255,106,0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255,106,0,0.22)]",
+                          : "border-white/10 focus-within:border-[rgba(255, 122, 0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255, 122, 0,0.22)]",
                       ].join(" ")}
                     >
                       <Mail size={15} className="text-[#E6EAF0]/45" strokeWidth={1.8} />
@@ -754,7 +754,7 @@ export default function Login() {
                         "flex items-center gap-2.5 rounded-md border bg-white/[0.025] px-3.5 py-3 transition",
                         errors.password
                           ? "border-[rgba(255,80,80,0.5)] focus-within:border-[rgba(255,80,80,0.75)]"
-                          : "border-white/10 focus-within:border-[rgba(255,106,0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255,106,0,0.22)]",
+                          : "border-white/10 focus-within:border-[rgba(255, 122, 0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255, 122, 0,0.22)]",
                       ].join(" ")}
                     >
                       <Lock size={15} className="text-[#E6EAF0]/45" strokeWidth={1.8} />
@@ -775,7 +775,7 @@ export default function Login() {
                       <button
                         type="button"
                         onClick={() => setShowPwd((s) => !s)}
-                        className="p-1 rounded-md text-[#E6EAF0]/55 hover:text-[#FF6A00] transition"
+                        className="p-1 rounded-md text-[#E6EAF0]/55 hover:text-[#FF7A00] transition"
                         aria-label={
                           showPwd
                             ? t("login.password.hide", "Hide password")
@@ -801,7 +801,7 @@ export default function Login() {
                         type="checkbox"
                         checked={remember}
                         onChange={(e) => setRemember(e.target.checked)}
-                        className="h-3.5 w-3.5 rounded border border-white/15 bg-white/[0.04] accent-[#FF6A00] cursor-pointer"
+                        className="h-3.5 w-3.5 rounded border border-white/15 bg-white/[0.04] accent-[#FF7A00] cursor-pointer"
                       />
                       {t("login.remember", "Remember me")}
                     </label>
@@ -812,7 +812,7 @@ export default function Login() {
                         setForgotSent(false);
                         setForgotOpen(true);
                       }}
-                      className="text-[12.5px] text-[#FF6A00] hover:text-[#FFB347] transition"
+                      className="text-[12.5px] text-[#FF7A00] hover:text-[#FFB347] transition"
                     >
                       {t("login.forgot", "Forgot password?")}
                     </button>
@@ -853,7 +853,7 @@ export default function Login() {
                       onClick={() => setSsoOpen((s) => !s)}
                       className="btn-secondary w-full justify-center"
                     >
-                      <ShieldCheck size={15} strokeWidth={1.9} className="text-[#FF6A00]" />
+                      <ShieldCheck size={15} strokeWidth={1.9} className="text-[#FF7A00]" />
                       {t("login.sso", "Sign in with SSO")}
                       <ChevronDown
                         size={14}
@@ -899,7 +899,7 @@ export default function Login() {
                       </p>
                       <Link
                         href="/contact"
-                        className="mt-1 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#FF6A00] hover:text-[#FFB347] transition"
+                        className="mt-1 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#FF7A00] hover:text-[#FFB347] transition"
                       >
                         {t("login.request-access", "Request Access")}
                         <ArrowRight size={12} strokeWidth={2.2} />
@@ -911,7 +911,7 @@ export default function Login() {
                       </p>
                       <Link
                         href="/engineering-access"
-                        className="mt-1 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#FF6A00] hover:text-[#FFB347] transition"
+                        className="mt-1 inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#FF7A00] hover:text-[#FFB347] transition"
                       >
                         {t("login.developer-access", "Developer Access")}
                         <ArrowRight size={12} strokeWidth={2.2} />
@@ -931,7 +931,7 @@ export default function Login() {
                   {t("login.unified.title", "One workspace. One sign-in.")}
                 </h3>
               </div>
-              <span className="block h-[3px] w-10 rounded-full bg-[#FF6A00] mb-3" />
+              <span className="block h-[3px] w-10 rounded-full bg-[#FF7A00] mb-3" />
               <p className="text-[13px] text-[#E6EAF0]/65 max-w-[360px]">
                 {t(
                   "login.unified.sub",
@@ -942,7 +942,7 @@ export default function Login() {
               <ul className="mt-5 space-y-3.5">
                 {[
                   {
-                    icon: <ShieldCheck size={18} strokeWidth={1.8} className="text-[#FF6A00]" />,
+                    icon: <ShieldCheck size={18} strokeWidth={1.8} className="text-[#FF7A00]" />,
                     title: t("login.unified.f1.title", "Tenant-isolated by design"),
                     body: t(
                       "login.unified.f1.body",
@@ -950,7 +950,7 @@ export default function Login() {
                     ),
                   },
                   {
-                    icon: <Lock size={18} strokeWidth={1.8} className="text-[#FF6A00]" />,
+                    icon: <Lock size={18} strokeWidth={1.8} className="text-[#FF7A00]" />,
                     title: t("login.unified.f2.title", "Encrypted sessions, signed URLs"),
                     body: t(
                       "login.unified.f2.body",
@@ -958,7 +958,7 @@ export default function Login() {
                     ),
                   },
                   {
-                    icon: <ShieldAlert size={18} strokeWidth={1.8} className="text-[#FF6A00]" />,
+                    icon: <ShieldAlert size={18} strokeWidth={1.8} className="text-[#FF7A00]" />,
                     title: t("login.unified.f3.title", "Audit-logged from second one"),
                     body: t(
                       "login.unified.f3.body",
@@ -970,7 +970,7 @@ export default function Login() {
                     key={item.title}
                     className="glass-soft border border-white/[0.07] rounded-xl p-4 flex items-start gap-3.5"
                   >
-                    <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#FF6A00]/10 border border-[#FF6A00]/30 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#FF7A00]/10 border border-[#FF7A00]/30 flex items-center justify-center">
                       {item.icon}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -985,8 +985,8 @@ export default function Login() {
 
               {/* Need-help tile */}
               <div className="mt-5 glass-soft border border-white/[0.07] rounded-xl p-4 flex items-start gap-3.5">
-                <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#FF6A00]/10 border border-[#FF6A00]/30 flex items-center justify-center">
-                  <Headphones size={16} strokeWidth={1.8} className="text-[#FF6A00]" />
+                <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#FF7A00]/10 border border-[#FF7A00]/30 flex items-center justify-center">
+                  <Headphones size={16} strokeWidth={1.8} className="text-[#FF7A00]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[12.5px] font-semibold text-[#E6EAF0]">
@@ -998,7 +998,7 @@ export default function Login() {
                 </div>
                 <Link
                   href="/contact"
-                  className="self-center text-[12.5px] font-semibold text-[#FF6A00] hover:text-[#FFB347] transition whitespace-nowrap"
+                  className="self-center text-[12.5px] font-semibold text-[#FF7A00] hover:text-[#FFB347] transition whitespace-nowrap"
                 >
                   {t("login.help.cta", "Contact Support")}
                 </Link>
@@ -1016,22 +1016,22 @@ export default function Login() {
               <MetricTile
                 value={t("login.metric.uptime.value", "High-availability")}
                 label={t("login.metric.uptime", "Architecture")}
-                icon={<ShieldCheck size={20} strokeWidth={1.8} className="text-[#FF6A00]" />}
+                icon={<ShieldCheck size={20} strokeWidth={1.8} className="text-[#FF7A00]" />}
               />
               <MetricTile
                 value="256-bit"
                 label={t("login.metric.encryption", "Encryption")}
-                icon={<Lock size={20} strokeWidth={1.8} className="text-[#FF6A00]" />}
+                icon={<Lock size={20} strokeWidth={1.8} className="text-[#FF7A00]" />}
               />
               <MetricTile
                 value="24/7"
                 label={t("login.metric.monitoring", "Monitoring")}
-                icon={<Activity size={20} strokeWidth={1.8} className="text-[#FF6A00]" />}
+                icon={<Activity size={20} strokeWidth={1.8} className="text-[#FF7A00]" />}
               />
               <MetricTile
                 value="100%"
                 label={t("login.metric.data", "Data Protection")}
-                icon={<Database size={20} strokeWidth={1.8} className="text-[#FF6A00]" />}
+                icon={<Database size={20} strokeWidth={1.8} className="text-[#FF7A00]" />}
               />
               <div className="flex items-center gap-4 lg:justify-end">
                 <div>
@@ -1046,9 +1046,9 @@ export default function Login() {
                   </p>
                 </div>
                 <div className="relative flex-shrink-0">
-                  <div className="absolute inset-0 rounded-full bg-[#FF6A00]/22 blur-2xl" />
-                  <div className="relative w-14 h-14 rounded-full border border-[#FF6A00]/40 bg-gradient-to-b from-[#FF6A00]/15 to-transparent flex items-center justify-center">
-                    <ShieldCheck size={22} strokeWidth={1.9} className="text-[#FF6A00]" />
+                  <div className="absolute inset-0 rounded-full bg-[#FF7A00]/22 blur-2xl" />
+                  <div className="relative w-14 h-14 rounded-full border border-[#FF7A00]/40 bg-gradient-to-b from-[#FF7A00]/15 to-transparent flex items-center justify-center">
+                    <ShieldCheck size={22} strokeWidth={1.9} className="text-[#FF7A00]" />
                   </div>
                 </div>
               </div>
@@ -1067,19 +1067,19 @@ export default function Login() {
             </span>
           </div>
           <nav className="flex flex-wrap items-center gap-5">
-            <Link href="/privacy" className="hover:text-[#FF6A00] transition">
+            <Link href="/privacy" className="hover:text-[#FF7A00] transition">
               {t("footer.privacy", "Privacy Policy")}
             </Link>
-            <Link href="/terms" className="hover:text-[#FF6A00] transition">
+            <Link href="/terms" className="hover:text-[#FF7A00] transition">
               {t("footer.terms", "Terms & Conditions")}
             </Link>
-            <Link href="/cookies" className="hover:text-[#FF6A00] transition">
+            <Link href="/cookies" className="hover:text-[#FF7A00] transition">
               {t("footer.cookies", "Cookie Policy")}
             </Link>
-            <Link href="/security" className="hover:text-[#FF6A00] transition">
+            <Link href="/security" className="hover:text-[#FF7A00] transition">
               {t("footer.security", "Security")}
             </Link>
-            <Link href="/legal/compliance" className="hover:text-[#FF6A00] transition">
+            <Link href="/legal/compliance" className="hover:text-[#FF7A00] transition">
               {t("footer.compliance", "Compliance")}
             </Link>
           </nav>
@@ -1101,8 +1101,8 @@ export default function Login() {
             }}
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-[#FF6A00]/12 border border-[#FF6A00]/35 flex items-center justify-center">
-                <KeyRound size={17} strokeWidth={1.8} className="text-[#FF6A00]" />
+              <div className="w-10 h-10 rounded-lg bg-[#FF7A00]/12 border border-[#FF7A00]/35 flex items-center justify-center">
+                <KeyRound size={17} strokeWidth={1.8} className="text-[#FF7A00]" />
               </div>
               <div>
                 <h4 className="font-display font-semibold text-[17px] text-[#E6EAF0]">
@@ -1126,7 +1126,7 @@ export default function Login() {
 
             {!forgotSent ? (
               <form onSubmit={submitForgot} className="space-y-3">
-                <div className="flex items-center gap-2.5 rounded-md border border-white/10 bg-white/[0.025] px-3.5 py-3 focus-within:border-[rgba(255,106,0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255,106,0,0.22)] transition">
+                <div className="flex items-center gap-2.5 rounded-md border border-white/10 bg-white/[0.025] px-3.5 py-3 focus-within:border-[rgba(255, 122, 0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255, 122, 0,0.22)] transition">
                   <Mail size={15} className="text-[#E6EAF0]/45" strokeWidth={1.8} />
                   <input
                     type="email"
@@ -1153,7 +1153,7 @@ export default function Login() {
               </form>
             ) : (
               <div className="space-y-3">
-                <div className="rounded-lg border border-[#FF6A00]/22 bg-[#FF6A00]/06 p-3.5 text-[12.5px] text-[#E6EAF0]/80 leading-[1.55]">
+                <div className="rounded-lg border border-[#FF7A00]/22 bg-[#FF7A00]/06 p-3.5 text-[12.5px] text-[#E6EAF0]/80 leading-[1.55]">
                   {t(
                     "login.forgot.sent.body",
                     "The reset link expires automatically after 30 minutes. The attempt has been written to the security audit log.",
@@ -1192,7 +1192,7 @@ function BackdropAura() {
         className="pointer-events-none absolute inset-0 z-0"
         style={{
           backgroundImage:
-            "radial-gradient(800px 480px at 8% 18%, rgba(255,106,0,0.10), transparent 60%), radial-gradient(700px 480px at 92% 78%, rgba(255,106,0,0.06), transparent 65%)",
+            "radial-gradient(800px 480px at 8% 18%, rgba(255, 122, 0,0.10), transparent 60%), radial-gradient(700px 480px at 92% 78%, rgba(255, 122, 0,0.06), transparent 65%)",
         }}
       />
       <div
@@ -1221,7 +1221,7 @@ function TrustMini({
 }) {
   return (
     <div className="glass-soft border border-white/[0.07] rounded-xl p-3.5 lift-on-hover">
-      <div className="w-8 h-8 rounded-lg bg-[#FF6A00]/10 border border-[#FF6A00]/30 flex items-center justify-center mb-2.5">
+      <div className="w-8 h-8 rounded-lg bg-[#FF7A00]/10 border border-[#FF7A00]/30 flex items-center justify-center mb-2.5">
         {icon}
       </div>
       <p className="font-display font-semibold text-[12.5px] text-[#E6EAF0] leading-[1.3]">
@@ -1249,7 +1249,7 @@ function PortalCard({
       className="group block glass feature-card rounded-xl p-4 border border-white/[0.08]"
     >
       <div className="flex items-start gap-3.5">
-        <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-[#FF6A00]/10 border border-[#FF6A00]/30 flex items-center justify-center icon-chip">
+        <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-[#FF7A00]/10 border border-[#FF7A00]/30 flex items-center justify-center icon-chip">
           {icon}
         </div>
         <div className="flex-1 min-w-0">
@@ -1263,7 +1263,7 @@ function PortalCard({
         <ArrowRight
           size={16}
           strokeWidth={2.2}
-          className="self-center text-[#E6EAF0]/45 group-hover:text-[#FF6A00] arrow-grow transition-colors"
+          className="self-center text-[#E6EAF0]/45 group-hover:text-[#FF7A00] arrow-grow transition-colors"
         />
       </div>
     </Link>
@@ -1284,7 +1284,7 @@ function SsoOption({
       role="menuitem"
       type="button"
       onClick={onSelect}
-      className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-[13px] text-[#E6EAF0]/85 hover:bg-[#FF6A00]/08 hover:text-[#E6EAF0] transition"
+      className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-[13px] text-[#E6EAF0]/85 hover:bg-[#FF7A00]/08 hover:text-[#E6EAF0] transition"
     >
       <SsoIcon provider={provider} />
       <span className="flex-1">{label}</span>
@@ -1335,11 +1335,11 @@ function MetricTile({
 }) {
   return (
     <div className="flex items-center gap-3.5">
-      <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-[#FF6A00]/10 border border-[#FF6A00]/30 flex items-center justify-center">
+      <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-[#FF7A00]/10 border border-[#FF7A00]/30 flex items-center justify-center">
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="font-display font-semibold text-[20px] tracking-[-0.018em] text-[#FF6A00] leading-[1.05]">
+        <p className="font-display font-semibold text-[20px] tracking-[-0.018em] text-[#FF7A00] leading-[1.05]">
           {value}
         </p>
         <p className="text-[11.5px] text-[#E6EAF0]/65 mt-0.5">{label}</p>

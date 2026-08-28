@@ -427,7 +427,7 @@ export default function Contact() {
             <aside className="lg:col-span-3 relative overflow-hidden">
               {/* eyebrow */}
               <div className="inline-flex items-center gap-2 text-[10.5px] font-mono tracking-[0.24em] uppercase text-[var(--color-orange)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)] shadow-[0_0_10px_rgba(255,106,0,0.7)]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)] shadow-[0_0_10px_rgba(255, 122, 0,0.7)]" />
                 {t("contact.eyebrow", "Contact IO SKY")}
               </div>
 
@@ -499,12 +499,12 @@ export default function Contact() {
                     className="pointer-events-none absolute inset-x-0 top-0 h-px"
                     style={{
                       background:
-                        "linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.55) 50%, transparent 100%)",
+                        "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.55) 50%, transparent 100%)",
                     }}
                   />
                   {/* header */}
                   <header className="flex items-center gap-3 mb-1.5">
-                    <span className="w-9 h-9 rounded-lg border border-[#FF6A00]/30 bg-[rgba(255,106,0,0.08)] text-[var(--color-orange)] flex items-center justify-center">
+                    <span className="w-9 h-9 rounded-lg border border-[#FF7A00]/30 bg-[rgba(255, 122, 0,0.08)] text-[var(--color-orange)] flex items-center justify-center">
                       <Mail className="w-[18px] h-[18px]" strokeWidth={1.8} />
                     </span>
                     <h2 className="font-display text-[20px] md:text-[22px] font-medium tracking-[-0.012em] text-[var(--color-ivory)]">
@@ -563,7 +563,7 @@ export default function Contact() {
                       </label>
                       <div className="flex gap-2">
                         <Select value={countryCode} onValueChange={setCountryCode}>
-                          <SelectTrigger className="w-[120px] h-11 bg-white/[0.04] border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60 text-[var(--color-ivory)]">
+                          <SelectTrigger className="w-[120px] h-11 bg-white/[0.04] border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60 text-[var(--color-ivory)]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-[oklch(0.13_0.022_260)] border-white/10 max-h-[280px]">
@@ -585,7 +585,7 @@ export default function Contact() {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           placeholder={t("contact.placeholder.phone", "6 12345678")}
-                          className="flex-1 h-11 px-3 rounded-md bg-white/[0.04] border border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60 focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] transition-colors"
+                          className="flex-1 h-11 px-3 rounded-md bg-white/[0.04] border border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60 focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] transition-colors"
                         />
                       </div>
                     </div>
@@ -609,7 +609,7 @@ export default function Contact() {
                         {t("contact.field.industry", "Industry")}
                       </label>
                       <Select value={industry} onValueChange={setIndustry}>
-                        <SelectTrigger className="w-full h-11 bg-white/[0.04] border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60 text-[var(--color-ivory)]">
+                        <SelectTrigger className="w-full h-11 bg-white/[0.04] border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60 text-[var(--color-ivory)]">
                           <SelectValue
                             placeholder={t(
                               "contact.placeholder.industry",
@@ -631,7 +631,7 @@ export default function Contact() {
                         {t("contact.field.size", "Company Size")}
                       </label>
                       <Select value={size} onValueChange={setSize}>
-                        <SelectTrigger className="w-full h-11 bg-white/[0.04] border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60 text-[var(--color-ivory)]">
+                        <SelectTrigger className="w-full h-11 bg-white/[0.04] border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60 text-[var(--color-ivory)]">
                           <SelectValue
                             placeholder={t(
                               "contact.placeholder.size",
@@ -664,7 +664,7 @@ export default function Contact() {
                       }}
                     >
                       <SelectTrigger
-                        className={`w-full h-11 bg-white/[0.04] border ${err("subject", subjectValid) ? "border-rose-400/60 focus:border-rose-400" : "border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60"} text-[var(--color-ivory)]`}
+                        className={`w-full h-11 bg-white/[0.04] border ${err("subject", subjectValid) ? "border-rose-400/60 focus:border-rose-400" : "border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60"} text-[var(--color-ivory)]`}
                       >
                         <SelectValue
                           placeholder={t(
@@ -710,7 +710,7 @@ export default function Contact() {
                         "Tell us how we can help you…",
                       )}
                       rows={6}
-                      className={`w-full px-3 py-3 rounded-md bg-white/[0.04] border ${err("message", messageValid) ? "border-rose-400/60" : "border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60"} focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] resize-y transition-colors`}
+                      className={`w-full px-3 py-3 rounded-md bg-white/[0.04] border ${err("message", messageValid) ? "border-rose-400/60" : "border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60"} focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] resize-y transition-colors`}
                     />
                     {err("message", messageValid) && (
                       <p className="mt-1 text-[12px] text-rose-300">
@@ -783,7 +783,7 @@ export default function Contact() {
                   className="pointer-events-none absolute inset-x-0 top-0 h-px"
                   style={{
                     background:
-                      "linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.45) 50%, transparent 100%)",
+                      "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.45) 50%, transparent 100%)",
                   }}
                 />
                 <div className="flex items-center gap-2 mb-2">
@@ -800,7 +800,7 @@ export default function Contact() {
                 </p>
                 <Link
                   href="/book-strategy"
-                  className="mt-4 inline-flex items-center justify-between gap-2 w-full h-11 px-4 rounded-md border border-[#FF6A00]/40 bg-[rgba(255,106,0,0.08)] hover:bg-[rgba(255,106,0,0.16)] hover:border-[#FF6A00]/60 text-[13px] font-medium text-[var(--color-ivory)] transition-colors"
+                  className="mt-4 inline-flex items-center justify-between gap-2 w-full h-11 px-4 rounded-md border border-[#FF7A00]/40 bg-[rgba(255, 122, 0,0.08)] hover:bg-[rgba(255, 122, 0,0.16)] hover:border-[#FF7A00]/60 text-[13px] font-medium text-[var(--color-ivory)] transition-colors"
                 >
                   {t("contact.book.cta", "Book Your Call")}
                   <ArrowRight className="w-4 h-4 text-[var(--color-orange)]" strokeWidth={2} />
@@ -860,7 +860,7 @@ export default function Contact() {
                 );
               })}
               {/* Developer Access (subtle) */}
-              <div className="lg:col-span-1 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:border-[#FF6A00]/30 hover:bg-[rgba(255,106,0,0.04)] transition-colors p-4 flex flex-col gap-2">
+              <div className="lg:col-span-1 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:border-[#FF7A00]/30 hover:bg-[rgba(255, 122, 0,0.04)] transition-colors p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <Code2
                     className="w-4 h-4 text-[var(--color-orange)]"
@@ -878,7 +878,7 @@ export default function Contact() {
                 </p>
                 <Link
                   href="/engineering-access"
-                  className="mt-1 inline-flex items-center justify-between gap-2 w-full h-9 px-3 rounded-md border border-[#FF6A00]/40 bg-[rgba(255,106,0,0.08)] hover:bg-[rgba(255,106,0,0.18)] text-[12px] font-medium text-[var(--color-ivory)] transition-colors"
+                  className="mt-1 inline-flex items-center justify-between gap-2 w-full h-9 px-3 rounded-md border border-[#FF7A00]/40 bg-[rgba(255, 122, 0,0.08)] hover:bg-[rgba(255, 122, 0,0.18)] text-[12px] font-medium text-[var(--color-ivory)] transition-colors"
                 >
                   {t("contact.dev.cta", "Apply for Engineering Access")}
                   <ArrowUpRight
@@ -942,7 +942,7 @@ function Field({
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
           placeholder={placeholder}
-          className={`w-full h-11 ${icon ? "pl-9" : "pl-3"} pr-3 rounded-md bg-white/[0.04] border ${error ? "border-rose-400/60 focus:border-rose-400" : "border-white/10 hover:border-[#FF6A00]/30 focus:border-[#FF6A00]/60"} focus:outline-none focus:ring-2 focus:ring-[#FF6A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] transition-colors`}
+          className={`w-full h-11 ${icon ? "pl-9" : "pl-3"} pr-3 rounded-md bg-white/[0.04] border ${error ? "border-rose-400/60 focus:border-rose-400" : "border-white/10 hover:border-[#FF7A00]/30 focus:border-[#FF7A00]/60"} focus:outline-none focus:ring-2 focus:ring-[#FF7A00]/25 text-[14px] text-[var(--color-ivory)] placeholder:text-[oklch(0.55_0.014_250)] transition-colors`}
         />
       </div>
       {error && errorMsg && (
@@ -965,7 +965,7 @@ function InfoRow({
 }) {
   const Body = (
     <div className="flex items-start gap-3 group">
-      <span className="shrink-0 w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] group-hover:border-[#FF6A00]/30 group-hover:bg-[rgba(255,106,0,0.06)] flex items-center justify-center text-[var(--color-orange)] transition-colors">
+      <span className="shrink-0 w-9 h-9 rounded-lg border border-white/10 bg-white/[0.03] group-hover:border-[#FF7A00]/30 group-hover:bg-[rgba(255, 122, 0,0.06)] flex items-center justify-center text-[var(--color-orange)] transition-colors">
         {icon}
       </span>
       <div className="min-w-0">
@@ -1029,18 +1029,18 @@ function SuccessPanel({
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.6) 50%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.6) 50%, transparent 100%)",
         }}
       />
-      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-[#FF6A00]/40 bg-[rgba(255,106,0,0.1)] text-[var(--color-orange)] mb-5">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-[#FF7A00]/40 bg-[rgba(255, 122, 0,0.1)] text-[var(--color-orange)] mb-5">
         <CheckCircle2 className="w-8 h-8" strokeWidth={1.7} />
       </div>
       <h2 className="font-display text-[24px] md:text-[26px] font-medium tracking-[-0.012em] text-[var(--color-ivory)]">
         {t("contact.success.title", "Message received.")}
       </h2>
       {publicRef && (
-        <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FF6A00]/30 bg-[#FF6A00]/[0.08] text-[11.5px] font-mono uppercase tracking-[0.16em] text-[#FF6A00]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00] shadow-[0_0_8px_#FF6A00]" />
+        <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FF7A00]/30 bg-[#FF7A00]/[0.08] text-[11.5px] font-mono uppercase tracking-[0.16em] text-[#FF7A00]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00] shadow-[0_0_8px_#FF7A00]" />
           Reference · {publicRef}
         </div>
       )}

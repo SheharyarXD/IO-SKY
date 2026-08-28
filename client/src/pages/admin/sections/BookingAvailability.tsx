@@ -51,7 +51,7 @@ function formatLocal(ms: number): string {
 function Section({ title, eyebrow, children }: { title: string; eyebrow: string; children: React.ReactNode }) {
   return (
     <section className="rounded-[16px] border border-white/[0.07] bg-[#0E121B]/85 p-6">
-      <div className="font-mono text-[10.5px] tracking-[0.22em] uppercase text-[#FF6A00] mb-2">
+      <div className="font-mono text-[10.5px] tracking-[0.22em] uppercase text-[#FF7A00] mb-2">
         {eyebrow}
       </div>
       <h2 className="font-display text-[20px] text-white/90 mb-5 tracking-[-0.01em]">{title}</h2>
@@ -145,11 +145,11 @@ export default function BookingAvailability() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-soft font-mono text-[10.5px] uppercase tracking-[0.22em] text-[#E6EAF0]/70 self-start">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A00] shadow-[0_0_8px_#FF6A00]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00] shadow-[0_0_8px_#FF7A00]" />
           ADMIN · NATIVE BOOKING AVAILABILITY
         </div>
         <h1 className="font-display font-semibold text-[30px] md:text-[36px] leading-[1.05] tracking-[-0.02em] text-[#E6EAF0] mt-2">
-          Availability <span className="text-[#FF6A00]">control</span>
+          Availability <span className="text-[#FF7A00]">control</span>
         </h1>
         <p className="text-[13.5px] leading-[1.65] text-[#E6EAF0]/65 max-w-[680px]">
           The native booking adapter computes guest-facing slots directly from
@@ -200,7 +200,7 @@ export default function BookingAvailability() {
               endMinute: toMinute(ruleDraft.endHHMM),
               timezone: ruleDraft.timezone,
             })}
-            className="h-10 px-4 rounded-md bg-[#FF6A00] hover:bg-[#FF5500] text-[#0A0B10] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
+            className="h-10 px-4 rounded-md bg-[#FF7A00] hover:bg-[#FF5500] text-[#0A0B10] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
             <Plus className="w-4 h-4" /> Add rule
           </button>
@@ -268,7 +268,7 @@ export default function BookingAvailability() {
                 reason: windowDraft.reason || undefined,
               });
             }}
-            className="h-10 px-4 rounded-md bg-[#FF6A00] hover:bg-[#FF5500] text-[#0A0B10] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
+            className="h-10 px-4 rounded-md bg-[#FF7A00] hover:bg-[#FF5500] text-[#0A0B10] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
             <Clock4 className="w-4 h-4" /> Add window
           </button>
@@ -317,7 +317,7 @@ export default function BookingAvailability() {
                 label: blockDraft.label,
               });
             }}
-            className="h-10 px-4 rounded-md bg-[#FF6A00] hover:bg-[#FF5500] text-[#0A0B10] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
+            className="h-10 px-4 rounded-md bg-[#FF7A00] hover:bg-[#FF5500] text-[#0A0B10] font-semibold text-[13px] inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
             <CalendarOff className="w-4 h-4" /> Add block
           </button>
@@ -352,7 +352,7 @@ export default function BookingAvailability() {
       <Section eyebrow="Lifecycle" title="Cancel or mark no-show">
         <div className="flex items-center justify-between mb-4 text-[11.5px] font-mono uppercase tracking-[0.16em] text-white/55">
           <span>Recent {recentBookings.data?.length ?? 0} bookings</span>
-          <button onClick={() => recentBookings.refetch()} className="inline-flex items-center gap-1.5 text-white/70 hover:text-[#FF6A00]"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
+          <button onClick={() => recentBookings.refetch()} className="inline-flex items-center gap-1.5 text-white/70 hover:text-[#FF7A00]"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
         </div>
         <div className="rounded-[14px] border border-white/[0.07] overflow-x-auto">
           <table className="w-full text-left text-[13px]">
@@ -362,13 +362,13 @@ export default function BookingAvailability() {
             <tbody className="divide-y divide-white/[0.05]">
               {(recentBookings.data ?? []).slice(0, 25).map((b) => (
                 <tr key={b.id} className="hover:bg-white/[0.02]">
-                  <td className="px-4 py-3 font-mono text-[#FF6A00]">{b.publicRef}</td>
+                  <td className="px-4 py-3 font-mono text-[#FF7A00]">{b.publicRef}</td>
                   <td className="px-4 py-3 capitalize">{b.serviceId}</td>
                   <td className="px-4 py-3 text-white/70">{formatLocal(b.slotStartMs)}</td>
                   <td className="px-4 py-3 capitalize">{b.status}</td>
                   <td className="px-4 py-3 text-right space-x-2">
                     <button onClick={() => cancelBooking.mutate({ publicRef: b.publicRef })} className="text-[12px] text-red-300 hover:text-red-200">Cancel</button>
-                    <button onClick={() => markNoShow.mutate({ publicRef: b.publicRef })} className="text-[12px] text-white/70 hover:text-[#FF6A00]">No-show</button>
+                    <button onClick={() => markNoShow.mutate({ publicRef: b.publicRef })} className="text-[12px] text-white/70 hover:text-[#FF7A00]">No-show</button>
                   </td>
                 </tr>
               ))}

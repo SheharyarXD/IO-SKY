@@ -78,7 +78,7 @@ function workflowCols(opts: {
       key: "id" as keyof WorkflowDefRow,
       header: "Actions",
       render: (r) => (
-        <button onClick={() => opts.onToggle(r)} className="text-[11px] text-[#FF6A00] hover:underline">
+        <button onClick={() => opts.onToggle(r)} className="text-[11px] text-[#FF7A00] hover:underline">
           {r.enabled === 1 ? "Disable" : "Enable"}
         </button>
       ),
@@ -218,7 +218,7 @@ export function Automations() {
                         <span className="truncate">{w.name} · {w.triggerType}</span>
                         <button
                           onClick={() => toggleWebhook.mutate({ id: w.id, enabled: w.enabled !== 1 })}
-                          className="font-mono text-[11px] shrink-0 text-[#FF6A00] hover:underline"
+                          className="font-mono text-[11px] shrink-0 text-[#FF7A00] hover:underline"
                         >
                           {w.enabled === 1 ? "Disable" : "Enable"}
                         </button>
@@ -228,7 +228,7 @@ export function Automations() {
                 )}
                 <button
                   onClick={onNewWebhook}
-                  className="w-full text-[11.5px] font-mono uppercase tracking-[0.16em] py-1.5 rounded-md border border-white/[0.08] hover:border-[#FF6A00]/45 hover:bg-[#FF6A00]/10 text-white/75 hover:text-white transition-colors"
+                  className="w-full text-[11.5px] font-mono uppercase tracking-[0.16em] py-1.5 rounded-md border border-white/[0.08] hover:border-[#FF7A00]/45 hover:bg-[#FF7A00]/10 text-white/75 hover:text-white transition-colors"
                 >
                   New webhook
                 </button>
@@ -306,7 +306,7 @@ export function Analytics() {
                     </div>
                     <div className="h-2 mt-1 rounded-full bg-white/[0.05] overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-[#FF6A00] to-[#FF8E3D]"
+                        className="h-full bg-gradient-to-r from-[#FF7A00] to-[#FF8E3D]"
                         style={{ width: `${f.pct}%` }}
                       />
                     </div>
@@ -407,10 +407,10 @@ function buildUserCols(opts: {
       header: "Actions",
       render: (r) => (
         <div className="flex items-center gap-2 justify-end">
-          <button onClick={() => opts.onChangeRole(r)} className="text-[11px] text-[#FF6A00] hover:underline">
+          <button onClick={() => opts.onChangeRole(r)} className="text-[11px] text-[#FF7A00] hover:underline">
             Role
           </button>
-          <button onClick={() => opts.onAssignOrg(r)} className="text-[11px] text-[#FF6A00] hover:underline">
+          <button onClick={() => opts.onAssignOrg(r)} className="text-[11px] text-[#FF7A00] hover:underline">
             Org
           </button>
         </div>
@@ -551,7 +551,7 @@ export function UsersPermissions() {
             {isSuperAdmin && (
               <button
                 onClick={onCreateOrg}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF6A00] text-[#0B1020] text-[12px] font-semibold"
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF7A00] text-[#0B1020] text-[12px] font-semibold"
               >
                 New organization
               </button>
@@ -701,7 +701,7 @@ export function SystemSettings() {
               </div>
               <p className="mt-1.5 text-[12.5px] text-white/65 leading-relaxed">{s.desc}</p>
               <button
-                className="mt-3 inline-flex items-center gap-1.5 text-[11.5px] font-mono text-[#FF6A00] hover:text-[#FF7A1A]"
+                className="mt-3 inline-flex items-center gap-1.5 text-[11.5px] font-mono text-[#FF7A00] hover:text-[#FF7A1A]"
                 onClick={() =>
                   isSuperAdmin
                     ? onEdit(s.key, s.title, s.state)

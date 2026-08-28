@@ -41,8 +41,8 @@ export default function CustomSoftware() {
   return (
     <div className="relative min-h-screen bg-[#03060d] text-[var(--color-ivory)] overflow-x-hidden">
       <div aria-hidden className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-10%,rgba(255,106,0,0.10),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_85%_15%,rgba(255,106,0,0.06),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-10%,rgba(255, 122, 0,0.10),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_85%_15%,rgba(255, 122, 0,0.06),transparent_60%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#03060d_0%,#050a16_50%,#03060d_100%)]" />
       </div>
 
@@ -52,14 +52,14 @@ export default function CustomSoftware() {
         {/* HERO */}
         <section className="relative pt-32 md:pt-40 pb-16 md:pb-20 overflow-hidden">
           <div className="container max-w-[820px] text-center mx-auto">
-            <div className="inline-flex items-center gap-2 text-[12px] font-mono tracking-[0.22em] uppercase text-[#FF6A00]">
+            <div className="inline-flex items-center gap-2 text-[12px] font-mono tracking-[0.22em] uppercase text-[#FF7A00]">
               <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.25} />
               <span>{t("custom.eyebrow")}</span>
             </div>
             <h1 className="font-display text-[44px] sm:text-[54px] md:text-[64px] leading-[1.04] tracking-[-0.02em] font-semibold mt-6">
               {t("custom.hero.title.line1")}
               <br />
-              <span className="text-[#FF6A00]">{t("custom.hero.title.line2")}</span>
+              <span className="text-[#FF7A00]">{t("custom.hero.title.line2")}</span>
             </h1>
             <p className="text-[15.5px] leading-[1.7] text-[oklch(0.78_0.012_250)] mt-6 max-w-[640px] mx-auto">
               {t("custom.hero.body")}
@@ -71,7 +71,7 @@ export default function CustomSoftware() {
               </Link>
               <Link
                 href="#pillars"
-                className="inline-flex items-center gap-2 h-11 px-5 rounded-md border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-[#FF6A00]/40 hover:text-[#FF6A00] text-[13.5px] font-medium text-[var(--color-ivory)] transition-colors"
+                className="inline-flex items-center gap-2 h-11 px-5 rounded-md border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-[#FF7A00]/40 hover:text-[#FF7A00] text-[13.5px] font-medium text-[var(--color-ivory)] transition-colors"
               >
                 {t("custom.cta.explore")}
                 <ArrowRight className="w-4 h-4" strokeWidth={2.25} />
@@ -85,7 +85,7 @@ export default function CustomSoftware() {
           <div className="container">
             <div className="text-center max-w-[820px] mx-auto">
               <h2 className="font-display text-[34px] sm:text-[40px] md:text-[44px] leading-[1.08] tracking-[-0.015em] font-semibold">
-                {t("custom.pillars.title.lead")} <span className="text-[#FF6A00]">{t("custom.pillars.title.accent")}</span>
+                {t("custom.pillars.title.lead")} <span className="text-[#FF7A00]">{t("custom.pillars.title.accent")}</span>
               </h2>
               <p className="text-[15.5px] leading-[1.7] text-[oklch(0.78_0.012_250)] mt-5">
                 {t("custom.pillars.subtitle")}
@@ -126,10 +126,10 @@ export default function CustomSoftware() {
               {PROCESS.map((s, i) => (
                 <li key={s.id} className="feature-card glass-soft p-5 flex flex-col gap-3 min-h-[180px]">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10.5px] font-mono tracking-[0.22em] uppercase text-[#FF6A00]">
+                    <span className="text-[10.5px] font-mono tracking-[0.22em] uppercase text-[#FF7A00]">
                       0{i + 1}
                     </span>
-                    <ArrowRight className="w-4 h-4 text-[#FF6A00]/70" strokeWidth={2.25} />
+                    <ArrowRight className="w-4 h-4 text-[#FF7A00]/70" strokeWidth={2.25} />
                   </div>
                   <h3 className="font-display text-[17px] font-semibold tracking-[-0.005em]">{t(s.titleKey)}</h3>
                   <p className="text-[13px] leading-[1.6] text-[oklch(0.78_0.012_250)]">{t(s.bodyKey)}</p>
