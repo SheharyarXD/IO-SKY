@@ -1,10 +1,19 @@
 name: CI
 
-# Minimal Phase 1 CI foundation (Milestone 1 / RM-19): install, typecheck,
-# test. This is intentionally small — full build/deploy automation is
-# Milestone 3 scope (see PHASE1_CHECKLIST.md). The goal here is only to
-# make sure nothing merges to main without at least compiling and passing
-# the existing test suite.
+# Milestone 1 (RM-19) established the minimal install/typecheck/test gate.
+# Milestone 3 §3.3/§3.4 extends it (RM-96, RM-107, RM-82) with:
+#   - a dedicated, always-run auth/RBAC/tenant security suite that fails loudly
+#     if it silently collects zero tests;
+#   - a build + artifact secret scan, so a credential inlined by the bundler
+#     fails CI instead of shipping;
+#   - optional live-Supabase wiring so the RLS negative suite runs for real in
+#     CI once the repository secrets exist.
+#
+# Still NOT here: the staging/production deploy stages (RM-80). Those depend on
+# the hosting-provider decision (RM-74), which is an open client deliverable —
+# see MILESTONE3_CHECKLIST.md. Writing a deploy job against an unknown host
+# would be scaffolding that has never executed, which is exactly the kind of
+# unverified claim the Milestone 2 feedback asked us to stop making.
 
 on:
   push:
@@ -14,6 +23,7 @@ on:
 
 jobs:
   build-and-test:
+    name: Typecheck & test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,5 +47,89 @@ jobs:
       - name: Typecheck
         run: pnpm run check
 
+      # RM-96: the full backend suite runs against whatever stack the
+      # environment provides. Supabase-dependent files skip cleanly when the
+      # secrets below are absent (they probe for reachability, not just for
+      # env-var presence) — so this job is green on a fork PR with no secrets
+      # and exercises the real database on trunk once secrets are configured.
       - name: Test
         run: pnpm run test
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+  security-suite:
+    name: Auth / RBAC / tenant isolation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # RM-107: the highest-risk suite runs as its own job rather than being
+      # buried in the full run, so a failure here is unambiguous in the PR
+      # checks list. `test:security` also asserts a non-zero collected-test
+      # count — a suite that silently collects nothing would otherwise pass
+      # and look like protection that isn't there.
+      - name: Auth, RBAC and tenant-isolation suite
+        run: pnpm run test:security
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+  artifact-scan:
+    name: Build & secret-scan the artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      # RM-82: Milestone 1's RM-16 scanned git history; this scans what is
+      # actually deployed. The distinction matters because Vite inlines every
+      # VITE_-prefixed variable into the client bundle, so a mis-prefixed
+      # secret is absent from source and still public in the artifact.
+      #
+      # Secrets are deliberately passed in: the scanner value-matches real
+      # credentials against the built output, which is the half of the check
+      # that catches a secret that does not look like one.
+      - name: Scan build artifact for secrets
+        run: node scripts/scan-build-artifact.mjs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}

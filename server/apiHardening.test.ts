@@ -220,10 +220,14 @@ describe("RM-88: rate limiter", () => {
   });
 
   it("expires hits once they fall outside the window", async () => {
-    const limited = createRateLimiter(1, 30, createMemoryStore());
+    // Window is 200ms rather than something tighter: the two opening calls
+    // must land inside the same window for the second to be limited, and a
+    // 30ms window is narrow enough that a GC pause or a loaded CI runner
+    // between them prunes the first hit and flips this test's result.
+    const limited = createRateLimiter(1, 200, createMemoryStore());
     expect(await limited("1.1.1.1")).toBe(false);
     expect(await limited("1.1.1.1")).toBe(true);
-    await new Promise((r) => setTimeout(r, 45));
+    await new Promise((r) => setTimeout(r, 260));
     expect(await limited("1.1.1.1")).toBe(false);
   });
 

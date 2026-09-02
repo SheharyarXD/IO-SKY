@@ -10,7 +10,10 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "test:security": "node scripts/run-security-suite.mjs",
+    "scan:artifact": "node scripts/scan-build-artifact.mjs",
+    "verify": "pnpm run check && pnpm run test && pnpm run build && pnpm run scan:artifact"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

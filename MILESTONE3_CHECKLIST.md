@@ -43,9 +43,9 @@ section).
 | RM-77 | Supabase production configuration: connection pooling | ⏭ | Dev/staging already provisioned per Milestone 1 §1.4; production tier config is new. |
 | RM-78 | Supabase production configuration: automated backups | ⏭ | |
 | RM-79 | Tested backup restore before go-live | ⏭ | Must be exercised, not just configured. |
-| RM-80 | Full CI/CD pipeline: build + staging-deploy + approval-gated production deploy | ⏭ | Extends the Milestone 1 `.github/workflows/ci.yml` test-gate (RM-19). |
+| RM-80 | Full CI/CD pipeline: build + staging-deploy + approval-gated production deploy | 🔶 | **Build half done, deploy half blocked.** `ci.yml` now runs three jobs — typecheck+test, the RM-107 security suite, and build + RM-82 artifact scan — so every merge is gated on a real production build, not just a typecheck. The staging-deploy and approval-gated production-deploy stages are **not** written: they depend on the hosting provider (RM-74), an open client decision. Writing deploy jobs against an unknown host would be scaffolding that has never executed — precisely the unverified-claim pattern the Milestone 2 feedback asked us to stop. |
 | RM-81 | Secrets management: move all production secrets into host/CI secret manager | ⏭ | Depends on RM-74 hosting decision. |
-| RM-82 | Confirm no secret files ship in any build/deploy artifact | ⏭ | Repeat the RM-16-style scan against the actual build output, not just source. |
+| RM-82 | Confirm no secret files ship in any build/deploy artifact | ✅ | New `scripts/scan-build-artifact.mjs`, wired as its own CI job and as `pnpm run scan:artifact`. Scans what is actually deployed rather than source — a distinction that matters because Vite inlines every `VITE_`-prefixed var into the client bundle, so a mis-prefixed secret is absent from source yet public in the artifact. Two independent halves: verbatim value-matching against real env secrets (catches a credential that does not look like one) and narrow pattern matching (AWS keys, `sb_secret_*`, `sk-*`, `sk_live_*`, inline-password Postgres URLs, PEM blocks, Slack tokens), plus forbidden-filename checks (`.env*`, `.npmrc`, `*.pem`, `id_rsa`, `.project-config.json`). Refuses to report a clean scan against a missing or empty `dist/`, and says explicitly when no secrets were in the environment so only the pattern half ran. **Result: PASS — 395 files scanned, 0 findings.** |
 | RM-83 | DNS cutover: iosky.nl staging subdomain → production apex, low-TTL rollback window | ⏭ | Depends on RM-74 and the Milestone 1 §1.3 DNS staging work. |
 
 ## Workstream 3.3 — Security Hardening & Verification
@@ -59,9 +59,9 @@ section).
 | RM-88 | API hardening: shared-state rate limiting for multi-instance deployment | ✅ | `server/_core/rateLimiter.ts` refactored behind a `RateLimitStore` interface: `memory` (original per-process behaviour, still the default) and `postgres` (shared `rate_limit_hits` table, migration 0016), selected by `RATE_LIMIT_STORE`. Default stays `memory` deliberately — hosting topology is still open (RM-74), and defaulting to a store needing an unapplied migration would turn a missing table into a request-path failure. Prune+insert+count is one SQL statement so concurrent instances cannot interleave and both conclude they were under the limit. Fail-open with a warning if the store is unreachable: a limiter is abuse mitigation, not an authorisation boundary, and failing closed would convert a degraded DB into a full public-site outage. `isRateLimited` is now async — 6 call sites in aiScans/bookings/contact/engineering updated to `await`. Key namespacing preserves the per-endpoint isolation the closure gave for free. 6 tests. |
 | RM-89 | Session security: confirm Supabase session expiry/refresh is deliberately configured | ✅ | **Confirmed NOT deliberately configured — it was a defect.** Every login path (local, OAuth, Supabase, MFA-challenge) minted `expiresInMs: ONE_YEAR_MS`; that was simply the SDK default, never a considered choice. Replaced with `getSessionTtlMs()` in `shared/const.ts`: 12h default, `SESSION_TTL_HOURS` override, clamped to [5min, 30d] so a typo cannot silently reintroduce a year-long session. All four login paths and `sdk.signSession`'s own default now use it. 5 tests. |
 | RM-90 | Session security: confirm logout actually revokes sessions | ✅ | **Confirmed it did NOT — logout was cosmetic.** Sessions are stateless signed JWTs; logout cleared only the browser's cookie, so a captured token stayed valid until expiry (a year, pre-RM-89). Fixed with a real revocation cutoff: `users.sessionsRevokedAtMs` (migration 0016), stamped by `db.revokeUserSessions{,ByOpenId}()` and enforced in `sdk.authenticateRequest()`. `sdk.signSession` now signs an explicit `iat`; `verifySession` returns `issuedAtMs`. Comparison is `<=` not `<` — JWT `iat` has 1s granularity, so a strict `<` would let a token minted during the revocation second survive a logout-then-replay. Legacy tokens with no `iat` fail closed once a revocation exists, but still work when the user has never revoked, so deploying this does not sign everyone out. 8 tests in `server/sessionRevocation.test.ts`. |
-| RM-91 | Review `dangerouslySetInnerHTML` usage | ⏭ | |
+| RM-91 | Review `dangerouslySetInnerHTML` usage | ✅ | Audit found **exactly one** occurrence: `client/src/components/ui/chart.tsx`, unused shadcn scaffold that injected a `<style>` block built from caller-supplied `config` values (a `</style>` in a config value would break out into HTML). Confirmed unreferenced — nothing imports it, and recharts is used directly in `AIScanResult.tsx` — so it was **deleted** rather than hardened, following the RM-04 precedent that removed `ui/form.tsx` the same way. Enforced by a test asserting zero occurrences across `client/src` and `server` (test files excluded, since the assertion names the identifier), so the sink cannot silently return. |
 | RM-92 | Review cookie `SameSite`/`Secure` attributes against real hosting | ⏭ | Carries over Milestone 1's blocked RM-38, now unblockable once RM-74 lands. |
-| RM-93 | zod validation coverage audit across ported procedures | ⏭ | |
+| RM-93 | zod validation coverage audit across ported procedures | ✅ | Static audit of all 12 router files: **169 procedures, 0 gaps.** 102 declare a validator; the other 67 genuinely take no input (none of them destructure `input`). All 16 validators that are named constants rather than inline `z.object(...)` were resolved back to their declarations and confirmed zod. Written as a permanent test (`server/inputValidationCoverage.test.ts`) rather than a document: an audit that says "clean" is stale the moment a procedure is added, whereas this fails the CI gate. Includes a parser self-guard (asserts >150 procedures found) so a declaration-style refactor cannot make the coverage checks silently pass by matching nothing. |
 | RM-94 | Client decision: audit-log integrity — genuine tamper-evidence vs. corrected UI claim | ⛔ | Client deliverable per the source plan. |
 | RM-95 | Implement the RM-94 decision | ⏭ | Depends on RM-94. |
 
@@ -69,7 +69,7 @@ section).
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| RM-96 | Port all existing backend test files to run against the Supabase-backed stack in CI | ⏭ | Most already run against Supabase locally per Milestone 1/2; this is about permanent CI wiring. |
+| RM-96 | Port all existing backend test files to run against the Supabase-backed stack in CI | ✅ | `.github/workflows/ci.yml` now passes `DATABASE_URL`/`SUPABASE_*`/`JWT_SECRET` from repository secrets into the test job, so the Supabase-dependent files run against the real stack in CI instead of always skipping. They still skip cleanly when secrets are absent (fork PRs), because those files probe for **reachability**, not just env-var presence — the RM-60 distinction. ⚠️ The GitHub repository secrets themselves must still be added in repo settings; that needs admin access this environment does not have, and until then CI exercises the non-live subset only. |
 | RM-97 | Introduce React Testing Library | ⏭ | Not present in the repo yet. |
 | RM-98 | Frontend coverage: auth forms | ⏭ | Depends on RM-97. |
 | RM-99 | Frontend coverage: Notification Center | ⏭ | Depends on RM-97 and Milestone 2 §2.7's Notification Center UI. |
@@ -80,7 +80,7 @@ section).
 | RM-104 | E2E golden path: document upload | ⏭ | |
 | RM-105 | E2E golden path: messaging | ⏭ | |
 | RM-106 | E2E golden path: booking (per portal) | ⏭ | |
-| RM-107 | Formalize Milestone 1 negative-test patterns into a permanent CI-run auth/RBAC/tenant suite | ⏭ | Builds on `rbac.authOrigin.test.ts` / `rls.negative.test.ts`. |
+| RM-107 | Formalize Milestone 1 negative-test patterns into a permanent CI-run auth/RBAC/tenant suite | ✅ | New `scripts/run-security-suite.mjs` (`pnpm run test:security`) + a dedicated `security-suite` CI job, so the highest-risk files are a distinct PR check rather than lines in a 600-test scroll. 18 files across identity/session, MFA, RBAC, tenant isolation and the new API-hardening layer. The runner closes the gap the plain test files left: it **fails if any listed file is missing** (a rename would otherwise silently shrink coverage) and **fails if the run collects zero passing tests** (a green result that checked nothing is a false assurance). Skips are reported explicitly rather than hidden, with a pointer that tenant isolation is only truly re-verified by RM-84/RM-85 against a deployed environment. **Result: 162 security tests passing locally against live Supabase.** |
 | RM-108 | DB suite: FK/RLS/trigger enforcement | ⏭ | |
 | RM-109 | Workflow-specific suite per converted mockup (Payments, CRM, Role Management, etc.) | ⏭ | Depends on which mockups Milestone 2 §2.4 actually converted. |
 
@@ -172,13 +172,28 @@ land primarily in Milestone 2's scope, not Milestone 3's — tracked here for vi
 
 ## Summary
 
-**5 of 56 tasks (RM-64..RM-119) complete.** Completed so far: RM-86, RM-87, RM-88, RM-89, RM-90
-(Workstream 3.3 API hardening + session security). Two of those — RM-89 and RM-90 — turned out to be
-genuine defects rather than confirmations: sessions were year-long by accident, and logout did not
-actually revoke anything.
+**10 of 56 tasks (RM-64..RM-119) complete, 1 partial.**
 
-Verification for the completed set: `pnpm run check` clean; `pnpm run test` 602 passed / 15 skipped /
-0 failed across 54 files (up from 569 passed before this work, +33 new tests, zero regressions).
+| Batch | Tasks | Area |
+|---|---|---|
+| 1 | RM-86, RM-87, RM-88, RM-89, RM-90 | §3.3 API hardening + session security |
+| 2 | RM-82, RM-91, RM-93, RM-96, RM-107 | §3.2 artifact scan, §3.3 XSS/validation audit, §3.4 CI test wiring |
+| — | RM-80 (🔶) | §3.2 CI/CD — build half done, deploy half blocked on RM-74 |
+
+Three of these were specified as "confirm X" and turned out to be **genuine defects**, not confirmations:
+
+- **RM-89** — sessions were valid for a full year, by accident rather than decision (the SDK default).
+- **RM-90** — logout revoked nothing; it cleared the browser cookie while the token stayed valid.
+- **RM-91** — the codebase's only `dangerouslySetInnerHTML` sat in dead, unreferenced scaffold code.
+
+Two were clean on inspection and are now enforced rather than merely recorded:
+
+- **RM-93** — 169 procedures, 0 validation gaps; now a CI-failing test instead of a point-in-time audit.
+- **RM-82** — 395 artifact files, 0 secrets; now a CI job instead of a manual pass.
+
+Verification for the completed set: `pnpm run check` clean; `pnpm run test` 607 passed / 15 skipped /
+0 failed across 57 files (up from 569 before this work, +38 new tests, zero regressions);
+`pnpm run test:security` 162 passing; `pnpm run build` clean; `pnpm run scan:artifact` PASS.
 
 This document was originally scaffolding only, generated directly from
 the Milestone 3 section of `IO_SKY_Three_Milestone_Plan.pdf` so that future sessions have the same
