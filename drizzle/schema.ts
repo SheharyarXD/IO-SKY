@@ -165,7 +165,17 @@ export const users = pgTable(
      */
     sessionsRevokedAtMs: bigint("sessionsRevokedAtMs", { mode: "number" }),
   },
-  (table) => [index("users_organization_id_idx").on(table.organizationId)],
+  (table) => [
+    index("users_organization_id_idx").on(table.organizationId),
+    /**
+     * Milestone 3 §3.5 (RM-111): the local-login lookup
+     * (getUserByEmailWithPassword) had no usable index — `email` is neither a
+     * foreign key nor unique, so RM-45's sweep did not cover it. Deliberately
+     * not unique: whether two accounts may share an address is a product
+     * decision, not a performance one. Migration 0018.
+     */
+    index("users_email_idx").on(table.email),
+  ],
 );
 
 export type User = typeof users.$inferSelect;

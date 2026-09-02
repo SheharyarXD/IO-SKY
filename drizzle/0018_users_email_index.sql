@@ -1,0 +1,29 @@
+-- Milestone 3 §3.5 (RM-111) — index users.email.
+--
+-- Found by the RM-111 index-usage suite (server/queryPerformance.test.ts):
+-- with `enable_seqscan = off`, the planner still produced a Seq Scan for
+--
+--   SELECT * FROM "users" WHERE "email" = $1
+--
+-- at the disable-cost penalty (1e10), which is Postgres's way of saying "there
+-- is no usable index for this predicate at all".
+--
+-- That query is `getUserByEmailWithPassword`, run on every local
+-- email+password login. RM-45 indexed every foreign key and every
+-- status/tenant column, and `openId` and `authUserId` are covered by their
+-- UNIQUE constraints — but `email` is neither a FK nor unique, so it fell
+-- through both. The cost is invisible at today's row counts and grows
+-- linearly with the user table, on the authentication path.
+--
+-- Deliberately NOT UNIQUE. Making it unique would be a semantic change
+-- (whether two accounts may share an address is a product decision, and a
+-- UNIQUE index would fail outright on any existing duplicates), and RM-111 is
+-- a performance task. A plain btree fixes the lookup without deciding that.
+--
+-- CREATE INDEX IF NOT EXISTS is idempotent and takes a brief ACCESS SHARE
+-- lock; on a table this size it is effectively instant. If this is ever
+-- applied to a large, busy table, use CREATE INDEX CONCURRENTLY instead —
+-- it cannot run inside the migration transaction, so it would need to be a
+-- separate, manually-run step.
+
+CREATE INDEX IF NOT EXISTS "users_email_idx" ON "users" ("email");

@@ -79,26 +79,33 @@ section).
 | RM-103 | E2E golden path: dashboard | 🔶 | Written, skips pending staging accounts. Covers the client portal shell, absence of the error boundary, opening the Notification Center (the Milestone 2 §2.7 regression), horizontal-overflow at 390px, and the admin console accepting either the console **or** its MFA challenge as a correct outcome — Admin/Super Admin/Technical Operator carry a hard blocking MFA gate, so landing on the challenge is not a failure. |
 | RM-104 | E2E golden path: document upload | 🔶 | Written, **double-gated**: needs staging accounts *and* `E2E_ALLOW_MUTATIONS=true`. The only database currently configured is the client's live Supabase project, and an upload flow run by a test runner would be a real row in it. Covers the happy path and the >50mb rejection surfacing an error rather than an endless spinner. |
 | RM-105 | E2E golden path: messaging | 🔶 | Written, double-gated as RM-104. Covers send-and-appear plus the empty-message guard. |
-| RM-106 | E2E golden path: booking (per portal) | ⏭ | |
+| RM-106 | E2E golden path: booking (per portal) | ✅ | **4 specs passing for real.** Booking is the one flow with a genuinely public half — `/book-strategy` needs no auth — so unlike RM-103..105 this runs unconditionally. Drives the real 4-step wizard (service → date → time → details), which is itself worth covering: a break in the first two steps makes the whole public funnel unreachable and no unit test spans the transitions. Also asserts the honeypot exists (without filling it), that `listSlots` stays reachable unauthenticated, and no horizontal scroll at 390px. Only the final submit writes a row, so only that is gated behind `E2E_ALLOW_MUTATIONS`. |
 | RM-107 | Formalize Milestone 1 negative-test patterns into a permanent CI-run auth/RBAC/tenant suite | ✅ | New `scripts/run-security-suite.mjs` (`pnpm run test:security`) + a dedicated `security-suite` CI job, so the highest-risk files are a distinct PR check rather than lines in a 600-test scroll. 18 files across identity/session, MFA, RBAC, tenant isolation and the new API-hardening layer. The runner closes the gap the plain test files left: it **fails if any listed file is missing** (a rename would otherwise silently shrink coverage) and **fails if the run collects zero passing tests** (a green result that checked nothing is a false assurance). Skips are reported explicitly rather than hidden, with a pointer that tenant isolation is only truly re-verified by RM-84/RM-85 against a deployed environment. **Result: 162 security tests passing locally against live Supabase.** |
 | RM-108 | DB suite: FK/RLS/trigger enforcement | ✅ | **8 tests** in `server/dbConstraints.test.ts`, run against the live Supabase project (skips cleanly when unreachable, same probe pattern as RM-60). Complements RM-60, which proves RLS *behaves*, by proving the constraints are actually *declared and enforced*: application code can look correct while a constraint is missing — every write path just happens not to violate it yet. Covers FK count (≥30 of the ~40 from RM-44), explicit ON DELETE semantics, real orphan rejection (transaction, always rolled back), `updatedAt` trigger presence and actual firing, RLS enabled on every `organizationId` table, no RLS-enabled table left with zero policies, and unindexed FK columns. **Found a real defect — see RM-108-a below.** |
 | RM-108-a | **Defect found by RM-108:** `updatedAt` trigger missing on 3 tables | ✅ | `platform_settings`, `workflow_definitions` and `webhook_registrations` declare `updatedAt` but were never wired to `set_updated_at()`. Migration 0002 covered the 18 tables that existed then; these were added later by 0011/0013/0014 and missed. The failure was silent — `defaultNow()` populated the column on insert, so it always looked correct; it simply never advanced on UPDATE, meaning "last modified" reported row *creation* time forever. That matters most for `platform_settings` and `webhook_registrations`, which Milestone 2 §2.5 relies on for configuration-change auditing. Migration `0017_missing_updated_at_triggers.sql` (idempotent) closes it. **Applied to the live Supabase project and re-verified: 0 tables now missing a trigger.** |
 | RM-102-a | **Defect found by the RM-102 E2E run:** `URIError` on every page load | ✅ | `client/index.html` renders the analytics beacon as `src="%VITE_ANALYTICS_ENDPOINT%/umami"`. With that variable unset, Vite leaves the placeholder literal, the browser requests `/%VITE_ANALYTICS_ENDPOINT%/umami`, and Express's router throws `URIError: Failed to decode param` out of `decodeURIComponent` while matching the path — a stack trace **per page load**. Any client can trigger the same with a stray `%` in a URL, so this is not only about the beacon: an un-decodable path is a malformed request and belongs in the 400 family, not an unhandled exception. Added a guard in `server/_core/index.ts` + 4 tests. Verified gone on a re-run. |
-| RM-109 | Workflow-specific suite per converted mockup (Payments, CRM, Role Management, etc.) | ⏭ | Depends on which mockups Milestone 2 §2.4 actually converted. |
+| RM-109 | Workflow-specific suite per converted mockup (Payments, CRM, Role Management, etc.) | ✅ | Milestone 2 already shipped a suite per converted workflow; the plan's requirement is about the **set**, not any one file. `server/workflowCoverage.test.ts` pins that set: 20 converted capabilities mapped to their suites, failing if one is renamed or deleted. That closes a real hole — individual suites fail when the *code* breaks, but nothing previously failed when a *suite* was deleted, so coverage could silently drop while CI stayed green (the same false assurance RM-107's zero-test guard addresses). Also asserts each suite holds real assertions, and that no new `admin.*.test.ts` exists outside the manifest. **This flagged `admin.mfaPosture.test.ts` as the thinnest suite (2 assertions) — strengthened with the full role-rejection matrix, the unauthenticated case, super_admin acceptance, and a percentage-range guard on a value rendered straight into a progress bar.** |
+
+### Defects found by this milestone's own verification work
+
+| ID | Defect | Status |
+|---|---|---|
+| RM-111-a | **`users.email` had no index at all.** Even with `enable_seqscan=off` the planner produced a Seq Scan at the 1e10 disable penalty — Postgres's way of saying no usable index exists. That is `getUserByEmailWithPassword`, run on **every local login**. RM-45 indexed every FK and every status/tenant column, and `openId`/`authUserId` are covered by UNIQUE constraints — `email` is neither, so it fell through both sweeps. Migration 0018 adds a plain btree (deliberately not UNIQUE: whether two accounts may share an address is a product decision, not a performance one). **Applied to the live project; re-verified.** | ✅ |
+| RM-118-a | **Schema/code version skew broke every local login.** `sessionsRevokedAtMs` was added to `drizzle/schema.ts` while migration 0016 was still unapplied, so Drizzle began selecting a column the database did not have and every login failed with `DrizzleQueryError`. Unit tests missed it entirely — they stub the DB layer. The **E2E run caught it**, because it drove a real login against a real database. 0016 applied and verified; the additive-migration rule in the rollback plan exists because of this. | ✅ |
 
 ## Workstream 3.5 — Performance & Final Verification
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
 | RM-110 | Load-test highest-traffic procedures | ⏭ | |
-| RM-111 | Confirm Milestone 1's indexes are actually used under realistic queries | ⏭ | `EXPLAIN ANALYZE` against the 126 indexes from RM-45. |
+| RM-111 | Confirm Milestone 1's indexes are actually used under realistic queries | ✅ | `server/queryPerformance.test.ts` — 6 read-only `EXPLAIN` tests against the live planner. RM-108 proves indexes *exist*; this proves the planner can *use* them, which is a different question (wrong column order, a type mismatch forcing a cast, or an unusable predicate all leave an index in place and ignored). Uses `SET LOCAL enable_seqscan = off` to reveal whether an index plan is even available, rather than banning seq scans outright — on a small table a seq scan is the *correct* choice, and a test that failed on an empty dev database would just teach the team to ignore the suite. **Found a real gap — see RM-111-a.** |
 | RM-112 | Validate notification queue throughput against spec volume/SLA | ⏭ | Depends on RM-64/65 catalog being implemented. |
 | RM-113 | Verify booking-slot concurrency under load | ⏭ | |
 | RM-114 | Verify large-file upload performance | ⏭ | |
-| RM-115 | Comprehensive functional walkthrough: every route, role, button, workflow, API, integration | ⏭ | Single consolidated pre-launch checklist. |
+| RM-115 | Comprehensive functional walkthrough: every route, role, button, workflow, API, integration | 🔶 | **Checklist written; walkthrough not performed** — it cannot be, there is no deployed environment (RM-74) and no staging accounts. `docs/PRE_LAUNCH_WALKTHROUGH.md` covers all 45 client routes at three viewports, all 10 locales including Arabic RTL, the full authentication matrix, per-role boundary checks, all four portals, all 12 API routers, every integration, performance, and a post-go-live subset to re-run after DNS cutover. Every box is deliberately unticked, and lines already covered by automation say so — automation proves the mechanism works, not that the result is right. |
 | RM-116 | Go-live: public release | ⏭ | Depends on RM-83 DNS cutover. |
 | RM-117 | Monitored 48-hour stability window | ⏭ | |
-| RM-118 | Documented rollback plan | ⏭ | |
+| RM-118 | Documented rollback plan | 🔶 | **Written, never rehearsed** — `docs/RELEASE_ROLLBACK_PLAN.md`. Built around the asymmetry that actually governs rollback: code reverts in minutes, a schema change often cannot revert at all once data is written under it. Hence the additive-migration rule, which is not theoretical — it was violated during this milestone and caught by E2E (see RM-118-a). Covers pre-release gates, release ordering, smoke checks, DNS TTL discipline (TTL is the rollback speed limit and cannot be changed retroactively), explicit rollback triggers, the procedure itself, and a named gaps table. Deliberately not signed off: a rollback plan whose first execution is during a real incident is not a rollback plan. |
 | RM-119 | Formal decommissioning of legacy TiDB/Manus infrastructure | ⏭ | Only after the 48-hour window and explicit sign-off — the old TiDB database is the Milestone 1 exit-gate fallback and must stay untouched until this point. |
 
 ---
@@ -120,6 +127,11 @@ section).
 - Hosting provider (RM-74) — carried over unresolved from Milestone 1 §1.3.
 - Notification specification documents (RM-64) — gates all of §3.1.
 - Audit-log integrity approach (RM-94) — genuine tamper-evidence vs. corrected UI claim.
+- Staging/test accounts per role — gate RM-103/104/105 and the RM-115 walkthrough. Part of the staging
+  environment, which is itself Milestone 1 §1.3 scope still blocked on the hosting decision.
+- GitHub repository secrets (`DATABASE_URL`, `SUPABASE_*`, `JWT_SECRET`, `E2E_*`) — the CI jobs read
+  them, but they must be added in repo settings by someone with admin access. Until then CI exercises
+  the non-live subset only.
 - Any Milestone 1/2 decisions still open at the time Milestone 3 starts (Super Admin RM-57 live-migration
   status, CRM/Role-Management scope) should be re-confirmed closed before this milestone's exit gate is
   attempted, since several §3.3/§3.4 items re-verify them under load/production conditions rather than
@@ -174,7 +186,7 @@ land primarily in Milestone 2's scope, not Milestone 3's — tracked here for vi
 
 ## Summary
 
-**17 of 56 tasks (RM-64..RM-119) complete, 4 partial.**
+**21 of 56 tasks (RM-64..RM-119) complete, 6 partial.**
 
 | Batch | Tasks | Area |
 |---|---|---|
@@ -182,6 +194,7 @@ land primarily in Milestone 2's scope, not Milestone 3's — tracked here for vi
 | 2 | RM-82, RM-91, RM-93, RM-96, RM-107 | §3.2 artifact scan, §3.3 XSS/validation audit, §3.4 CI test wiring |
 | 3 | RM-97, RM-98, RM-99, RM-100, RM-108 | §3.4 React Testing Library + frontend coverage + DB constraint suite |
 | 4 | RM-101, RM-102 ✅ · RM-103, RM-104, RM-105 🔶 | §3.4 Playwright + E2E golden paths |
+| 5 | RM-106, RM-109, RM-111 ✅ · RM-115, RM-118 🔶 | §3.4 booking E2E + workflow manifest · §3.5 index usage, walkthrough, rollback plan |
 | — | RM-80 (🔶) | §3.2 CI/CD — build half done, deploy half blocked on RM-74 |
 
 Four of these were specified as "confirm X" or "audit X" and turned out to be **genuine defects**:
@@ -195,16 +208,21 @@ Four of these were specified as "confirm X" or "audit X" and turned out to be **
 - **RM-102** — the first E2E run exposed a `URIError` thrown out of Express's router on *every page
   load*, from an unconfigured analytics placeholder reaching the server verbatim. Guarded and tested.
 
-That last one is the argument for E2E in one line: four layers of unit tests never saw it, because it
-only exists when a real browser requests a real page from a real server.
+- **RM-111** — `users.email`, the local-login lookup, had no index at all; it fell between RM-45's
+  foreign-key sweep and the UNIQUE constraints covering `openId`. Migration 0018, applied.
+- **RM-118** — schema/code skew: `sessionsRevokedAtMs` was in the ORM schema before migration 0016 was
+  applied, so **every local login failed**. Unit tests stub the DB and saw nothing; the E2E run caught it.
+
+The last two are the argument for E2E and for live-database testing in one line: neither bug exists until
+a real browser talks to a real server backed by a real database. Four layers of unit tests never saw them.
 
 Two were clean on inspection and are now enforced rather than merely recorded:
 
 - **RM-93** — 169 procedures, 0 validation gaps; now a CI-failing test instead of a point-in-time audit.
 - **RM-82** — 395 artifact files, 0 secrets; now a CI job instead of a manual pass.
 
-Verification for the completed set: `pnpm run check` clean; `pnpm run test` **661 passed / 15 skipped /
-0 failed across 61 files** (up from 569 before this work — **+92 new tests**, zero regressions), confirmed
+Verification for the completed set: `pnpm run check` clean; `pnpm run test` **696 passed / 15 skipped /
+0 failed across 63 files** (up from 569 before this work — **+127 new tests**, zero regressions), confirmed
 stable over two consecutive full runs; `pnpm run test:security` 162 passing; `pnpm run build` clean;
 `pnpm run scan:artifact` PASS.
 
