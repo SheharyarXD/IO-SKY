@@ -14,9 +14,19 @@
  * revocation decision is pure logic over (token iat, user cutoff), and that
  * is what needs pinning.
  */
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
 
-process.env.JWT_SECRET = "test-jwt-secret-at-least-16-chars-long";
+// Set inside beforeAll, and to the same value every other test file uses.
+// Assigning process.env at module top level leaked into sibling files sharing
+// a worker and broke server/viewAs.test.ts's tampered-payload case, which
+// signs with its own secret — a failure that only appeared in the full run,
+// never in isolation. beforeAll is the convention the rest of the suite
+// already follows (bookings, mfa, viewAs, ...).
+const TEST_JWT_SECRET = "test-secret-test-secret-test-secret-1234";
+
+beforeAll(() => {
+  process.env.JWT_SECRET = TEST_JWT_SECRET;
+});
 
 /** The stubbed user row the SDK will load. Mutated per test. */
 const userRow: {
@@ -97,7 +107,7 @@ describe("RM-90: server-side session revocation", () => {
     const legacy = await new SignJWT({ openId: "local-test-user", appId: "", name: "Test User" })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime(Math.floor(Date.now() / 1000) + 3600)
-      .sign(new TextEncoder().encode(process.env.JWT_SECRET!));
+      .sign(new TextEncoder().encode(TEST_JWT_SECRET));
 
     userRow.sessionsRevokedAtMs = Date.now();
     await expect(sdk.authenticateRequest(requestWithCookie(legacy))).rejects.toThrow(
@@ -112,7 +122,7 @@ describe("RM-90: server-side session revocation", () => {
     const legacy = await new SignJWT({ openId: "local-test-user", appId: "", name: "Test User" })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime(Math.floor(Date.now() / 1000) + 3600)
-      .sign(new TextEncoder().encode(process.env.JWT_SECRET!));
+      .sign(new TextEncoder().encode(TEST_JWT_SECRET));
 
     userRow.sessionsRevokedAtMs = null;
     const user = await sdk.authenticateRequest(requestWithCookie(legacy));

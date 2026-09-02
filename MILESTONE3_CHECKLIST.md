@@ -70,10 +70,10 @@ section).
 | ID | Task | Status | Notes |
 |---|---|---|---|
 | RM-96 | Port all existing backend test files to run against the Supabase-backed stack in CI | ✅ | `.github/workflows/ci.yml` now passes `DATABASE_URL`/`SUPABASE_*`/`JWT_SECRET` from repository secrets into the test job, so the Supabase-dependent files run against the real stack in CI instead of always skipping. They still skip cleanly when secrets are absent (fork PRs), because those files probe for **reachability**, not just env-var presence — the RM-60 distinction. ⚠️ The GitHub repository secrets themselves must still be added in repo settings; that needs admin access this environment does not have, and until then CI exercises the non-live subset only. |
-| RM-97 | Introduce React Testing Library | ⏭ | Not present in the repo yet. |
-| RM-98 | Frontend coverage: auth forms | ⏭ | Depends on RM-97. |
-| RM-99 | Frontend coverage: Notification Center | ⏭ | Depends on RM-97 and Milestone 2 §2.7's Notification Center UI. |
-| RM-100 | Frontend coverage: every converted admin workflow | ⏭ | Depends on RM-97 and Milestone 2 §2.4's mockup-conversion decisions. |
+| RM-97 | Introduce React Testing Library | ✅ | Added `@testing-library/react`, `/jest-dom`, `/user-event` and `jsdom`. `vitest.config.ts` now runs the React plugin and routes `client/src/**/*.test.tsx` to jsdom via `environmentMatchGlobs`, leaving the ~600 server tests on the faster `node` environment (running them under jsdom would also mask accidental DOM deps in server modules). Shared harness in `client/src/test/`: `setup.ts` (jest-dom matchers, auto-cleanup, and stubs for `matchMedia`/`ResizeObserver`/`IntersectionObserver`/`scrollIntoView`, which jsdom lacks and Radix/framer-motion touch on mount) and `renderWithProviders.tsx` (language context + tRPC + react-query in one wrapper). The old config comment said broadening this was "a separate decision" — this is that decision, taken. |
+| RM-98 | Frontend coverage: auth forms | ✅ | **12 tests** on `client/src/pages/Login.test.tsx` — the entry point to every portal, previously with zero coverage of any kind. Covers field rendering and autocomplete hints, the submit-gating rules (valid email + ≥8 char password, pinned so a refactor cannot weaken the minimum), the password visibility toggle, Remember-me hydration including the private-mode case where `localStorage` throws rather than returning null, and both anti-automation gates (honeypot, and the 1.5s mount-time gate) asserting that no credentials leave the browser. Behavioural assertions, not snapshots — snapshots of a 1300-line page break on every style change while proving nothing about whether login works. |
+| RM-99 | Frontend coverage: Notification Center | ✅ | **14 tests** on `NotificationBell.test.tsx`. This is the component whose original defect — a bell that rendered a real unread badge but had no `onClick` at all — is exactly what the Milestone 2 exit gate ("no UI element claims a capability that isn't real") exists to prevent, so it gets a regression test rather than trust. Covers badge counting (including `readAt: undefined` as well as `null`, which a naive check undercounts), open-on-click, empty state, per-item and bulk mark-read, archive, that archiving does not also mark-read (both handlers `stopPropagation` and sit adjacent), and the unknown-priority fallback so an unrecognised DB value cannot render a classless, invisible dot. |
+| RM-100 | Frontend coverage: every converted admin workflow | ✅ | **16 tests** covering the primitives all 19 converted admin surfaces render through, rather than 19 near-identical per-module files: `ModuleStateBoundary` (the loading/error/forbidden/empty/data state machine) and `DataTable`/`StatusPill`. That is where the §2.4 conversion actually landed — the audit finding was not "this table renders wrong" but that modules showed fabricated data or claimed capabilities with nothing behind them. Several tests exist specifically to keep "you have no invoices" and "you are not allowed to see invoices" from looking identical to an admin, and to stop a failed load being indistinguishable from an empty one (that is how a broken module looks healthy on a dashboard). Also pins `data === undefined` vs falsy, so a payload of `0` is treated as loaded, not absent. |
 | RM-101 | Introduce Playwright | ⏭ | Not present in the repo yet. |
 | RM-102 | E2E golden path: login | ⏭ | |
 | RM-103 | E2E golden path: dashboard | ⏭ | |
@@ -81,7 +81,8 @@ section).
 | RM-105 | E2E golden path: messaging | ⏭ | |
 | RM-106 | E2E golden path: booking (per portal) | ⏭ | |
 | RM-107 | Formalize Milestone 1 negative-test patterns into a permanent CI-run auth/RBAC/tenant suite | ✅ | New `scripts/run-security-suite.mjs` (`pnpm run test:security`) + a dedicated `security-suite` CI job, so the highest-risk files are a distinct PR check rather than lines in a 600-test scroll. 18 files across identity/session, MFA, RBAC, tenant isolation and the new API-hardening layer. The runner closes the gap the plain test files left: it **fails if any listed file is missing** (a rename would otherwise silently shrink coverage) and **fails if the run collects zero passing tests** (a green result that checked nothing is a false assurance). Skips are reported explicitly rather than hidden, with a pointer that tenant isolation is only truly re-verified by RM-84/RM-85 against a deployed environment. **Result: 162 security tests passing locally against live Supabase.** |
-| RM-108 | DB suite: FK/RLS/trigger enforcement | ⏭ | |
+| RM-108 | DB suite: FK/RLS/trigger enforcement | ✅ | **8 tests** in `server/dbConstraints.test.ts`, run against the live Supabase project (skips cleanly when unreachable, same probe pattern as RM-60). Complements RM-60, which proves RLS *behaves*, by proving the constraints are actually *declared and enforced*: application code can look correct while a constraint is missing — every write path just happens not to violate it yet. Covers FK count (≥30 of the ~40 from RM-44), explicit ON DELETE semantics, real orphan rejection (transaction, always rolled back), `updatedAt` trigger presence and actual firing, RLS enabled on every `organizationId` table, no RLS-enabled table left with zero policies, and unindexed FK columns. **Found a real defect — see RM-108-a below.** |
+| RM-108-a | **Defect found by RM-108:** `updatedAt` trigger missing on 3 tables | ✅ | `platform_settings`, `workflow_definitions` and `webhook_registrations` declare `updatedAt` but were never wired to `set_updated_at()`. Migration 0002 covered the 18 tables that existed then; these were added later by 0011/0013/0014 and missed. The failure was silent — `defaultNow()` populated the column on insert, so it always looked correct; it simply never advanced on UPDATE, meaning "last modified" reported row *creation* time forever. That matters most for `platform_settings` and `webhook_registrations`, which Milestone 2 §2.5 relies on for configuration-change auditing. Migration `0017_missing_updated_at_triggers.sql` (idempotent) closes it. **Applied to the live Supabase project and re-verified: 0 tables now missing a trigger.** |
 | RM-109 | Workflow-specific suite per converted mockup (Payments, CRM, Role Management, etc.) | ⏭ | Depends on which mockups Milestone 2 §2.4 actually converted. |
 
 ## Workstream 3.5 — Performance & Final Verification
@@ -172,28 +173,38 @@ land primarily in Milestone 2's scope, not Milestone 3's — tracked here for vi
 
 ## Summary
 
-**10 of 56 tasks (RM-64..RM-119) complete, 1 partial.**
+**15 of 56 tasks (RM-64..RM-119) complete, 1 partial.**
 
 | Batch | Tasks | Area |
 |---|---|---|
 | 1 | RM-86, RM-87, RM-88, RM-89, RM-90 | §3.3 API hardening + session security |
 | 2 | RM-82, RM-91, RM-93, RM-96, RM-107 | §3.2 artifact scan, §3.3 XSS/validation audit, §3.4 CI test wiring |
+| 3 | RM-97, RM-98, RM-99, RM-100, RM-108 | §3.4 React Testing Library + frontend coverage + DB constraint suite |
 | — | RM-80 (🔶) | §3.2 CI/CD — build half done, deploy half blocked on RM-74 |
 
-Three of these were specified as "confirm X" and turned out to be **genuine defects**, not confirmations:
+Four of these were specified as "confirm X" or "audit X" and turned out to be **genuine defects**:
 
 - **RM-89** — sessions were valid for a full year, by accident rather than decision (the SDK default).
 - **RM-90** — logout revoked nothing; it cleared the browser cookie while the token stayed valid.
 - **RM-91** — the codebase's only `dangerouslySetInnerHTML` sat in dead, unreferenced scaffold code.
+- **RM-108** — three tables' `updatedAt` never advanced on UPDATE, so "last modified" reported creation
+  time. Silent, because insert-time defaults kept the column looking populated. Fixed in migration 0017
+  and applied to the live project.
 
 Two were clean on inspection and are now enforced rather than merely recorded:
 
 - **RM-93** — 169 procedures, 0 validation gaps; now a CI-failing test instead of a point-in-time audit.
 - **RM-82** — 395 artifact files, 0 secrets; now a CI job instead of a manual pass.
 
-Verification for the completed set: `pnpm run check` clean; `pnpm run test` 607 passed / 15 skipped /
-0 failed across 57 files (up from 569 before this work, +38 new tests, zero regressions);
-`pnpm run test:security` 162 passing; `pnpm run build` clean; `pnpm run scan:artifact` PASS.
+Verification for the completed set: `pnpm run check` clean; `pnpm run test` **657 passed / 15 skipped /
+0 failed across 61 files** (up from 569 before this work — **+88 new tests**, zero regressions), confirmed
+stable over two consecutive full runs; `pnpm run test:security` 162 passing; `pnpm run build` clean;
+`pnpm run scan:artifact` PASS.
+
+Two flakes of our own were found and fixed rather than left to intermittently fail CI: a rate-limit
+window test using a window narrow enough that a scheduling pause flipped its result, and
+`sessionRevocation.test.ts` assigning `process.env.JWT_SECRET` at module top level, which leaked into a
+sibling file sharing a worker and broke `viewAs.test.ts` only in the full run, never in isolation.
 
 This document was originally scaffolding only, generated directly from
 the Milestone 3 section of `IO_SKY_Three_Milestone_Plan.pdf` so that future sessions have the same
