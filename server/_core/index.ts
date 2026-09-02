@@ -54,6 +54,27 @@ async function startServer() {
   }
   registerSecurityHeaders(app);
   registerCorsPolicy(app);
+
+  // Milestone 3 §3.3 — reject malformed request URLs cleanly.
+  //
+  // Found by the RM-102 E2E run: `client/index.html` renders the analytics
+  // beacon as `src="%VITE_ANALYTICS_ENDPOINT%/umami"`. When that variable is
+  // not configured, Vite leaves the placeholder literal, the browser requests
+  // `/%VITE_ANALYTICS_ENDPOINT%/umami`, and Express's router throws a
+  // URIError out of decodeURIComponent while matching the path — on every
+  // single page load. It surfaced as a stack trace per request.
+  //
+  // Any client can trigger the same thing with a stray `%` in a URL, so this
+  // is not only about the beacon: an un-decodable path is a malformed request
+  // and belongs in the 400 family, not an unhandled exception.
+  app.use((req, res, next) => {
+    try {
+      decodeURIComponent(req.path);
+      next();
+    } catch {
+      res.status(400).type("text/plain").send("Bad Request: malformed URL");
+    }
+  });
   // Configure body parser with larger size limit for file uploads.
   // `verify` stashes the raw bytes alongside the parsed body — needed by
   // server/_core/resendWebhookRoute.ts (Milestone 2 §2.3) to check the

@@ -290,3 +290,45 @@ describe("RM-89: deliberate session TTL", () => {
     expect(getSessionTtlMs()).toBe(30 * 24 * 60 * 60 * 1000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Malformed URL handling (found by the RM-102 E2E run)
+// ---------------------------------------------------------------------------
+describe("malformed request URLs", () => {
+  function appWithGuard() {
+    const app = express();
+    app.use((req, res, next) => {
+      try {
+        decodeURIComponent(req.path);
+        next();
+      } catch {
+        res.status(400).type("text/plain").send("Bad Request: malformed URL");
+      }
+    });
+    app.get("/ok", (_req, res) => res.status(200).send("fine"));
+    return app;
+  }
+
+  it("answers 400 instead of throwing on an un-decodable path", async () => {
+    // Reproduces what the E2E run hit: an unconfigured
+    // %VITE_ANALYTICS_ENDPOINT% placeholder reaching the server verbatim,
+    // which threw a URIError out of Express's router on every page load.
+    const res = await request(appWithGuard(), "/%VITE_ANALYTICS_ENDPOINT%/umami");
+    expect(res.status).toBe(400);
+  });
+
+  it("answers 400 for a stray percent sign from any client", async () => {
+    const res = await request(appWithGuard(), "/search%");
+    expect(res.status).toBe(400);
+  });
+
+  it("leaves well-formed paths alone", async () => {
+    const res = await request(appWithGuard(), "/ok");
+    expect(res.status).toBe(200);
+  });
+
+  it("leaves correctly percent-encoded paths alone", async () => {
+    const res = await request(appWithGuard(), "/ok?q=%20space");
+    expect(res.status).toBe(200);
+  });
+});

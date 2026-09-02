@@ -74,15 +74,16 @@ section).
 | RM-98 | Frontend coverage: auth forms | ✅ | **12 tests** on `client/src/pages/Login.test.tsx` — the entry point to every portal, previously with zero coverage of any kind. Covers field rendering and autocomplete hints, the submit-gating rules (valid email + ≥8 char password, pinned so a refactor cannot weaken the minimum), the password visibility toggle, Remember-me hydration including the private-mode case where `localStorage` throws rather than returning null, and both anti-automation gates (honeypot, and the 1.5s mount-time gate) asserting that no credentials leave the browser. Behavioural assertions, not snapshots — snapshots of a 1300-line page break on every style change while proving nothing about whether login works. |
 | RM-99 | Frontend coverage: Notification Center | ✅ | **14 tests** on `NotificationBell.test.tsx`. This is the component whose original defect — a bell that rendered a real unread badge but had no `onClick` at all — is exactly what the Milestone 2 exit gate ("no UI element claims a capability that isn't real") exists to prevent, so it gets a regression test rather than trust. Covers badge counting (including `readAt: undefined` as well as `null`, which a naive check undercounts), open-on-click, empty state, per-item and bulk mark-read, archive, that archiving does not also mark-read (both handlers `stopPropagation` and sit adjacent), and the unknown-priority fallback so an unrecognised DB value cannot render a classless, invisible dot. |
 | RM-100 | Frontend coverage: every converted admin workflow | ✅ | **16 tests** covering the primitives all 19 converted admin surfaces render through, rather than 19 near-identical per-module files: `ModuleStateBoundary` (the loading/error/forbidden/empty/data state machine) and `DataTable`/`StatusPill`. That is where the §2.4 conversion actually landed — the audit finding was not "this table renders wrong" but that modules showed fabricated data or claimed capabilities with nothing behind them. Several tests exist specifically to keep "you have no invoices" and "you are not allowed to see invoices" from looking identical to an admin, and to stop a failed load being indistinguishable from an empty one (that is how a broken module looks healthy on a dashboard). Also pins `data === undefined` vs falsy, so a payload of `0` is treated as loaded, not absent. |
-| RM-101 | Introduce Playwright | ⏭ | Not present in the repo yet. |
-| RM-102 | E2E golden path: login | ⏭ | |
-| RM-103 | E2E golden path: dashboard | ⏭ | |
-| RM-104 | E2E golden path: document upload | ⏭ | |
-| RM-105 | E2E golden path: messaging | ⏭ | |
+| RM-101 | Introduce Playwright | ✅ | `@playwright/test` + `playwright.config.ts` + `e2e/`, plus an `e2e` CI job (Chromium only — the golden paths are behaviour tests, not a cross-browser matrix). Two projects: Desktop Chrome and Pixel 7, because the Milestone 2 feedback asks specifically for mobile behaviour to be reviewable. `webServer` boots the app locally via `npx tsx server/_core/index.ts` rather than `npm run dev` — that script's `NODE_ENV=development` inline prefix is POSIX-only and fails under cmd.exe on Windows. Setting `E2E_BASE_URL` points the identical specs at staging once it exists, with no code change. |
+| RM-102 | E2E golden path: login | ✅ | **10 specs passing against a real browser and a real server** (the unauthenticated half needs no credentials and writes nothing). Covers page load, submit-gating, password reveal, failed-login staying on `/login`, user-enumeration wording, no session cookie issued on failure, and anonymous access to all four portals (`/client-portal`, `/admin`, `/developer-workspace`, `/ops`) being gated. Signs in through the real form rather than injecting a cookie — the page has a 1.5s mount gate and a honeypot, and a test that bypasses them stops covering the part most likely to break. Authenticated specs (session cookie shape, logout re-gating) are written and skip pending staging accounts. |
+| RM-103 | E2E golden path: dashboard | 🔶 | Written, skips pending staging accounts. Covers the client portal shell, absence of the error boundary, opening the Notification Center (the Milestone 2 §2.7 regression), horizontal-overflow at 390px, and the admin console accepting either the console **or** its MFA challenge as a correct outcome — Admin/Super Admin/Technical Operator carry a hard blocking MFA gate, so landing on the challenge is not a failure. |
+| RM-104 | E2E golden path: document upload | 🔶 | Written, **double-gated**: needs staging accounts *and* `E2E_ALLOW_MUTATIONS=true`. The only database currently configured is the client's live Supabase project, and an upload flow run by a test runner would be a real row in it. Covers the happy path and the >50mb rejection surfacing an error rather than an endless spinner. |
+| RM-105 | E2E golden path: messaging | 🔶 | Written, double-gated as RM-104. Covers send-and-appear plus the empty-message guard. |
 | RM-106 | E2E golden path: booking (per portal) | ⏭ | |
 | RM-107 | Formalize Milestone 1 negative-test patterns into a permanent CI-run auth/RBAC/tenant suite | ✅ | New `scripts/run-security-suite.mjs` (`pnpm run test:security`) + a dedicated `security-suite` CI job, so the highest-risk files are a distinct PR check rather than lines in a 600-test scroll. 18 files across identity/session, MFA, RBAC, tenant isolation and the new API-hardening layer. The runner closes the gap the plain test files left: it **fails if any listed file is missing** (a rename would otherwise silently shrink coverage) and **fails if the run collects zero passing tests** (a green result that checked nothing is a false assurance). Skips are reported explicitly rather than hidden, with a pointer that tenant isolation is only truly re-verified by RM-84/RM-85 against a deployed environment. **Result: 162 security tests passing locally against live Supabase.** |
 | RM-108 | DB suite: FK/RLS/trigger enforcement | ✅ | **8 tests** in `server/dbConstraints.test.ts`, run against the live Supabase project (skips cleanly when unreachable, same probe pattern as RM-60). Complements RM-60, which proves RLS *behaves*, by proving the constraints are actually *declared and enforced*: application code can look correct while a constraint is missing — every write path just happens not to violate it yet. Covers FK count (≥30 of the ~40 from RM-44), explicit ON DELETE semantics, real orphan rejection (transaction, always rolled back), `updatedAt` trigger presence and actual firing, RLS enabled on every `organizationId` table, no RLS-enabled table left with zero policies, and unindexed FK columns. **Found a real defect — see RM-108-a below.** |
 | RM-108-a | **Defect found by RM-108:** `updatedAt` trigger missing on 3 tables | ✅ | `platform_settings`, `workflow_definitions` and `webhook_registrations` declare `updatedAt` but were never wired to `set_updated_at()`. Migration 0002 covered the 18 tables that existed then; these were added later by 0011/0013/0014 and missed. The failure was silent — `defaultNow()` populated the column on insert, so it always looked correct; it simply never advanced on UPDATE, meaning "last modified" reported row *creation* time forever. That matters most for `platform_settings` and `webhook_registrations`, which Milestone 2 §2.5 relies on for configuration-change auditing. Migration `0017_missing_updated_at_triggers.sql` (idempotent) closes it. **Applied to the live Supabase project and re-verified: 0 tables now missing a trigger.** |
+| RM-102-a | **Defect found by the RM-102 E2E run:** `URIError` on every page load | ✅ | `client/index.html` renders the analytics beacon as `src="%VITE_ANALYTICS_ENDPOINT%/umami"`. With that variable unset, Vite leaves the placeholder literal, the browser requests `/%VITE_ANALYTICS_ENDPOINT%/umami`, and Express's router throws `URIError: Failed to decode param` out of `decodeURIComponent` while matching the path — a stack trace **per page load**. Any client can trigger the same with a stray `%` in a URL, so this is not only about the beacon: an un-decodable path is a malformed request and belongs in the 400 family, not an unhandled exception. Added a guard in `server/_core/index.ts` + 4 tests. Verified gone on a re-run. |
 | RM-109 | Workflow-specific suite per converted mockup (Payments, CRM, Role Management, etc.) | ⏭ | Depends on which mockups Milestone 2 §2.4 actually converted. |
 
 ## Workstream 3.5 — Performance & Final Verification
@@ -173,13 +174,14 @@ land primarily in Milestone 2's scope, not Milestone 3's — tracked here for vi
 
 ## Summary
 
-**15 of 56 tasks (RM-64..RM-119) complete, 1 partial.**
+**17 of 56 tasks (RM-64..RM-119) complete, 4 partial.**
 
 | Batch | Tasks | Area |
 |---|---|---|
 | 1 | RM-86, RM-87, RM-88, RM-89, RM-90 | §3.3 API hardening + session security |
 | 2 | RM-82, RM-91, RM-93, RM-96, RM-107 | §3.2 artifact scan, §3.3 XSS/validation audit, §3.4 CI test wiring |
 | 3 | RM-97, RM-98, RM-99, RM-100, RM-108 | §3.4 React Testing Library + frontend coverage + DB constraint suite |
+| 4 | RM-101, RM-102 ✅ · RM-103, RM-104, RM-105 🔶 | §3.4 Playwright + E2E golden paths |
 | — | RM-80 (🔶) | §3.2 CI/CD — build half done, deploy half blocked on RM-74 |
 
 Four of these were specified as "confirm X" or "audit X" and turned out to be **genuine defects**:
@@ -190,14 +192,19 @@ Four of these were specified as "confirm X" or "audit X" and turned out to be **
 - **RM-108** — three tables' `updatedAt` never advanced on UPDATE, so "last modified" reported creation
   time. Silent, because insert-time defaults kept the column looking populated. Fixed in migration 0017
   and applied to the live project.
+- **RM-102** — the first E2E run exposed a `URIError` thrown out of Express's router on *every page
+  load*, from an unconfigured analytics placeholder reaching the server verbatim. Guarded and tested.
+
+That last one is the argument for E2E in one line: four layers of unit tests never saw it, because it
+only exists when a real browser requests a real page from a real server.
 
 Two were clean on inspection and are now enforced rather than merely recorded:
 
 - **RM-93** — 169 procedures, 0 validation gaps; now a CI-failing test instead of a point-in-time audit.
 - **RM-82** — 395 artifact files, 0 secrets; now a CI job instead of a manual pass.
 
-Verification for the completed set: `pnpm run check` clean; `pnpm run test` **657 passed / 15 skipped /
-0 failed across 61 files** (up from 569 before this work — **+88 new tests**, zero regressions), confirmed
+Verification for the completed set: `pnpm run check` clean; `pnpm run test` **661 passed / 15 skipped /
+0 failed across 61 files** (up from 569 before this work — **+92 new tests**, zero regressions), confirmed
 stable over two consecutive full runs; `pnpm run test:security` 162 passing; `pnpm run build` clean;
 `pnpm run scan:artifact` PASS.
 
