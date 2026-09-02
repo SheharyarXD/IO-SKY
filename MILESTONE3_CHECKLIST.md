@@ -54,11 +54,11 @@ section).
 |---|---|---|---|
 | RM-84 | RBAC & tenant-isolation sweep vs. original audit baseline | ⏭ | Re-run/extend `server/rbac.authOrigin.test.ts` and `server/rls.negative.test.ts` against the deployed environment. |
 | RM-85 | Negative cross-tenant tests on the deployed environment | ⏭ | The Milestone 1 suite (RM-60) ran against dev/staging; needs re-verification against production config. |
-| RM-86 | API hardening: helmet security headers | ⏭ | Not yet present in `server/`. |
-| RM-87 | API hardening: explicit CORS policy | ⏭ | |
-| RM-88 | API hardening: shared-state rate limiting for multi-instance deployment | ⏭ | Milestone 1's `server/_core/rateLimiter.ts` (RM-21) is in-memory/per-instance; needs a shared backing store if hosting is multi-instance. |
-| RM-89 | Session security: confirm Supabase session expiry/refresh is deliberately configured | ⏭ | |
-| RM-90 | Session security: confirm logout actually revokes sessions | ⏭ | |
+| RM-86 | API hardening: helmet security headers | ✅ | New `server/_core/securityHeaders.ts`, registered before all routes in `_core/index.ts`. `x-powered-by` disabled. CSP + HSTS enforced in production only (Vite dev needs inline scripts + ws; a dev-tolerant CSP would have to be watered down to uselessness). CSP allowlist derived from what `client/index.html`/`index.css` actually load (fonts.googleapis/gstatic, `*.supabase.co`, cloudfront) plus a configurable analytics origin. `script-src` has no `unsafe-inline`/`unsafe-eval`; `style-src` keeps `unsafe-inline` — a real, documented limitation (Tailwind/Radix/framer-motion inline styles, no nonce plumbing on the static path). COEP left off deliberately: it would block the third-party font/branding assets. 7 tests in `server/apiHardening.test.ts`. |
+| RM-87 | API hardening: explicit CORS policy | ✅ | New `server/_core/corsPolicy.ts`. Deny-by-default: with no `CORS_ALLOWED_ORIGINS` no cross-origin browser access is granted at all, which is the correct behaviour for the single-origin deployment the plan describes. `*` is rejected on purpose (cannot combine with credentials; a wildcard on a cookie-authed API is a CSRF primitive), as are malformed entries. Origin matching is exact — `server/apiHardening.test.ts` pins the suffix-confusion case (`app.iosky.nl.evil.com`) and the scheme-downgrade case. Disallowed origins get no `Access-Control-Allow-Origin` header rather than a 500. 8 tests. |
+| RM-88 | API hardening: shared-state rate limiting for multi-instance deployment | ✅ | `server/_core/rateLimiter.ts` refactored behind a `RateLimitStore` interface: `memory` (original per-process behaviour, still the default) and `postgres` (shared `rate_limit_hits` table, migration 0016), selected by `RATE_LIMIT_STORE`. Default stays `memory` deliberately — hosting topology is still open (RM-74), and defaulting to a store needing an unapplied migration would turn a missing table into a request-path failure. Prune+insert+count is one SQL statement so concurrent instances cannot interleave and both conclude they were under the limit. Fail-open with a warning if the store is unreachable: a limiter is abuse mitigation, not an authorisation boundary, and failing closed would convert a degraded DB into a full public-site outage. `isRateLimited` is now async — 6 call sites in aiScans/bookings/contact/engineering updated to `await`. Key namespacing preserves the per-endpoint isolation the closure gave for free. 6 tests. |
+| RM-89 | Session security: confirm Supabase session expiry/refresh is deliberately configured | ✅ | **Confirmed NOT deliberately configured — it was a defect.** Every login path (local, OAuth, Supabase, MFA-challenge) minted `expiresInMs: ONE_YEAR_MS`; that was simply the SDK default, never a considered choice. Replaced with `getSessionTtlMs()` in `shared/const.ts`: 12h default, `SESSION_TTL_HOURS` override, clamped to [5min, 30d] so a typo cannot silently reintroduce a year-long session. All four login paths and `sdk.signSession`'s own default now use it. 5 tests. |
+| RM-90 | Session security: confirm logout actually revokes sessions | ✅ | **Confirmed it did NOT — logout was cosmetic.** Sessions are stateless signed JWTs; logout cleared only the browser's cookie, so a captured token stayed valid until expiry (a year, pre-RM-89). Fixed with a real revocation cutoff: `users.sessionsRevokedAtMs` (migration 0016), stamped by `db.revokeUserSessions{,ByOpenId}()` and enforced in `sdk.authenticateRequest()`. `sdk.signSession` now signs an explicit `iat`; `verifySession` returns `issuedAtMs`. Comparison is `<=` not `<` — JWT `iat` has 1s granularity, so a strict `<` would let a token minted during the revocation second survive a logout-then-replay. Legacy tokens with no `iat` fail closed once a revocation exists, but still work when the user has never revoked, so deploying this does not sign everyone out. 8 tests in `server/sessionRevocation.test.ts`. |
 | RM-91 | Review `dangerouslySetInnerHTML` usage | ⏭ | |
 | RM-92 | Review cookie `SameSite`/`Secure` attributes against real hosting | ⏭ | Carries over Milestone 1's blocked RM-38, now unblockable once RM-74 lands. |
 | RM-93 | zod validation coverage audit across ported procedures | ⏭ | |
@@ -172,7 +172,15 @@ land primarily in Milestone 2's scope, not Milestone 3's — tracked here for vi
 
 ## Summary
 
-**0 of 56 tasks (RM-64..RM-119) started.** This document is scaffolding only, generated directly from
+**5 of 56 tasks (RM-64..RM-119) complete.** Completed so far: RM-86, RM-87, RM-88, RM-89, RM-90
+(Workstream 3.3 API hardening + session security). Two of those — RM-89 and RM-90 — turned out to be
+genuine defects rather than confirmations: sessions were year-long by accident, and logout did not
+actually revoke anything.
+
+Verification for the completed set: `pnpm run check` clean; `pnpm run test` 602 passed / 15 skipped /
+0 failed across 54 files (up from 569 passed before this work, +33 new tests, zero regressions).
+
+This document was originally scaffolding only, generated directly from
 the Milestone 3 section of `IO_SKY_Three_Milestone_Plan.pdf` so that future sessions have the same
 per-task tracking structure Milestone 1 (`PHASE1_CHECKLIST.md`) and Milestone 2
 (`MILESTONE2_PROGRESS.md`) already use. Update statuses and add Evidence/Notes as work actually

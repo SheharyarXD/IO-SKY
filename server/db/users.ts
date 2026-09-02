@@ -259,3 +259,44 @@ export async function getUserById(userId: number) {
   const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   return result[0] ?? undefined;
 }
+
+/**
+ * Milestone 3 §3.3 (RM-90): revoke every outstanding session for a user.
+ *
+ * Session cookies are stateless signed JWTs, so there is nothing to delete —
+ * revocation works by stamping a cutoff that `sdk.authenticateRequest()`
+ * compares each token's `iat` against. Call this on logout, on password
+ * change, and on admin-forced sign-out.
+ *
+ * Idempotent: calling it repeatedly just moves the cutoff forward.
+ *
+ * Returns `false` when there is no database connection so callers can decide
+ * whether that is fatal. Logout deliberately treats it as non-fatal — the
+ * cookie is still cleared, which is exactly the behaviour that existed before
+ * this function did — but it logs, because a logout that silently fails to
+ * revoke is the failure mode RM-90 exists to remove.
+ */
+export async function revokeUserSessions(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db
+    .update(users)
+    .set({ sessionsRevokedAtMs: Date.now() })
+    .where(eq(users.id, userId));
+  return true;
+}
+
+/**
+ * Same as revokeUserSessions but keyed by the session's own identifier, so
+ * logout paths that only hold the cookie's `openId` do not need a second
+ * lookup round-trip first.
+ */
+export async function revokeUserSessionsByOpenId(openId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db
+    .update(users)
+    .set({ sessionsRevokedAtMs: Date.now() })
+    .where(eq(users.openId, openId));
+  return true;
+}

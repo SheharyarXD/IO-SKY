@@ -44,7 +44,7 @@ import * as db from "../db";
 import { sdk } from "./sdk";
 import { verifySupabaseAccessToken } from "./supabaseAuth";
 import { getSessionCookieOptions } from "./cookies";
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, getSessionTtlMs } from "@shared/const";
 import { roleBasedDestination } from "./oauth";
 import { getRequestIp } from "./requestMeta";
 import {
@@ -54,7 +54,7 @@ import {
   signMfaPending,
 } from "./mfaChallenge";
 
-const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+// RM-89: session lifetime comes from getSessionTtlMs() (12h default).
 
 export function registerSupabaseAuthRoutes(app: Express) {
   app.post("/api/auth/supabase/session", async (req: Request, res: Response) => {
@@ -100,7 +100,7 @@ export function registerSupabaseAuthRoutes(app: Express) {
 
       const sessionToken = await sdk.createSessionToken(user.openId, {
         name: (user.name as string | null) ?? "",
-        expiresInMs: ONE_YEAR_MS,
+        expiresInMs: getSessionTtlMs(),
       });
 
       const cookieOptions = getSessionCookieOptions(req);
@@ -150,7 +150,7 @@ export function registerSupabaseAuthRoutes(app: Express) {
         return;
       }
 
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: getSessionTtlMs() });
 
       try {
         await db.appendLoginAudit({

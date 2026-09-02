@@ -20,11 +20,11 @@ import bcrypt from "bcryptjs";
 import * as db from "../db";
 import { sdk } from "./sdk";
 import { getSessionCookieOptions } from "./cookies";
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, getSessionTtlMs } from "@shared/const";
 import { roleBasedDestination } from "./oauth";
 import { getRequestIp } from "./requestMeta";
 
-const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+// RM-89: session lifetime is the configured TTL (12h default), not a year.
 
 export function registerLocalAuthRoutes(app: Express) {
   app.post("/api/auth/local/login", async (req: Request, res: Response) => {
@@ -82,14 +82,15 @@ export function registerLocalAuthRoutes(app: Express) {
         return;
       }
 
+      const sessionTtlMs = getSessionTtlMs();
       const sessionToken = await sdk.createSessionToken(user.openId, {
         name: (user.name as string | null) ?? "",
-        expiresInMs: ONE_YEAR_MS,
+        expiresInMs: sessionTtlMs,
       });
       console.log("[LocalAuth] session token created", { userId: user.id, role: user.role });
 
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: sessionTtlMs });
       console.log("[LocalAuth] session cookie set", { cookieName: COOKIE_NAME, role: user.role });
 
       try {
@@ -124,7 +125,33 @@ export function registerLocalAuthRoutes(app: Express) {
     }
   });
 
-  const logoutHandler = (req: Request, res: Response) => {
+  const logoutHandler = async (req: Request, res: Response) => {
+    // Milestone 3 §3.3 (RM-90): revoke server-side before clearing the cookie.
+    //
+    // Clearing the cookie only removes the browser's copy — the signed JWT
+    // itself stayed valid until expiry, so anyone holding a captured token
+    // could keep using it after the user had "logged out". Stamping the
+    // revocation cutoff is what actually ends the session.
+    //
+    // Best-effort by design: a revocation failure must not leave the user
+    // stuck logged in, so we still clear the cookie and return success. The
+    // warning is what surfaces the degraded case.
+    try {
+      const cookies = req.headers.cookie ?? "";
+      const match = /(?:^|;\s*)app_session_id=([^;]+)/.exec(cookies);
+      if (match) {
+        const session = await sdk.verifySession(decodeURIComponent(match[1]));
+        if (session?.openId) {
+          const revoked = await db.revokeUserSessionsByOpenId(session.openId);
+          if (!revoked) {
+            console.warn("[LocalAuth] logout: no DB connection, session not revoked server-side");
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[LocalAuth] logout: failed to revoke sessions server-side:", err);
+    }
+
     const cookieOptions = getSessionCookieOptions(req);
     res.cookie(COOKIE_NAME, "", { ...cookieOptions, maxAge: 0 });
     // For GET (link/menu), redirect to /login so the user lands somewhere sane.

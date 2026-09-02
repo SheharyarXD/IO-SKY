@@ -10,6 +10,8 @@ import { registerSupabaseAuthRoutes } from "./supabaseAuthRoute";
 import { registerStorageProxy } from "./storageProxy";
 import { registerViewAsRoutes } from "./viewAsRoute";
 import { registerStagingGate } from "./stagingGate";
+import { registerSecurityHeaders } from "./securityHeaders";
+import { registerCorsPolicy } from "./corsPolicy";
 import { registerResendWebhookRoutes } from "./resendWebhookRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -37,6 +39,21 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // Milestone 3 §3.3 — API hardening. Registered before any route so the
+  // headers and the CORS decision apply to every response, including the
+  // static-file and Vite paths further down.
+  //
+  // `trust proxy` is what makes req.protocol / X-Forwarded-Proto honest
+  // behind a TLS-terminating proxy. Without it, isSecureRequest() in
+  // cookies.ts reads plain HTTP behind a load balancer and downgrades the
+  // session cookie's Secure flag. Opt-in via TRUST_PROXY because trusting
+  // the header when NOT behind a proxy lets a client spoof it.
+  if (process.env.TRUST_PROXY === "true") {
+    app.set("trust proxy", 1);
+  }
+  registerSecurityHeaders(app);
+  registerCorsPolicy(app);
   // Configure body parser with larger size limit for file uploads.
   // `verify` stashes the raw bytes alongside the parsed body — needed by
   // server/_core/resendWebhookRoute.ts (Milestone 2 §2.3) to check the

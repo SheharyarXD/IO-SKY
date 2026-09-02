@@ -182,7 +182,7 @@ export const aiScansRouter = router({
 
       const { ip, userAgent } = getRequestMeta(ctx.req);
 
-      if (isAiScanRateLimited(ip)) {
+      if (await isAiScanRateLimited(ip)) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Too many submissions. Please try again shortly.",
@@ -268,7 +268,7 @@ export const aiScansRouter = router({
       }
 
       const { ip, userAgent } = getRequestMeta(ctx.req);
-      if (isAiScanRateLimited(ip)) {
+      if (await isAiScanRateLimited(ip)) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Too many submissions. Please try again shortly.",

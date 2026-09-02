@@ -77,7 +77,7 @@ export const engineeringRouter = router({
 
       const { ip, userAgent } = getRequestMeta(ctx.req);
 
-      if (isRateLimited(ip)) {
+      if (await isRateLimited(ip)) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Too many applications. Please try again shortly.",

@@ -133,7 +133,7 @@ export const bookingsRouter = router({
     .input(holdSchema)
     .mutation(async ({ ctx, input }) => {
       const ip = getRequestIp(ctx.req);
-      if (isHoldRateLimited(ip)) {
+      if (await isHoldRateLimited(ip)) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Too many requests. Please try again shortly.",
@@ -179,7 +179,7 @@ export const bookingsRouter = router({
 
       const { ip, userAgent } = getRequestMeta(ctx.req);
 
-      if (isSubmissionRateLimited(ip)) {
+      if (await isSubmissionRateLimited(ip)) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Too many booking attempts. Please try again shortly.",

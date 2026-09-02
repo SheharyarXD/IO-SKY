@@ -1,4 +1,4 @@
-import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { AXIOS_TIMEOUT_MS, COOKIE_NAME, getSessionTtlMs } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
@@ -204,7 +204,10 @@ class SDKServer {
     options: { expiresInMs?: number } = {}
   ): Promise<string> {
     const issuedAt = Date.now();
-    const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
+    // Milestone 3 §3.3 (RM-89): the default was ONE_YEAR_MS. Callers that
+    // pass an explicit expiresInMs still win, but no login path does any
+    // more — they all take the configured session TTL.
+    const expiresInMs = options.expiresInMs ?? getSessionTtlMs();
     const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1000);
     const secretKey = this.getSessionSecret();
 
@@ -214,13 +217,16 @@ class SDKServer {
       name: payload.name,
     })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+      // RM-90: revocation compares the user's revoked-at cutoff against this
+      // claim, so it has to be signed in rather than left to jose's default.
+      .setIssuedAt(Math.floor(issuedAt / 1000))
       .setExpirationTime(expirationSeconds)
       .sign(secretKey);
   }
 
   async verifySession(
     cookieValue: string | undefined | null
-  ): Promise<{ openId: string; appId: string; name: string } | null> {
+  ): Promise<{ openId: string; appId: string; name: string; issuedAtMs: number | null } | null> {
     if (!cookieValue) {
       console.warn("[Auth] Missing session cookie");
       return null;
@@ -231,7 +237,7 @@ class SDKServer {
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
-      const { openId, appId, name } = payload as Record<string, unknown>;
+      const { openId, appId, name, iat } = payload as Record<string, unknown>;
 
       // `appId` (VITE_APP_ID) is a legacy Manus-SDK field — it is signed
       // into every session token but never actually read back out for
@@ -253,6 +259,11 @@ class SDKServer {
         openId,
         appId: isNonEmptyString(appId) ? appId : "",
         name,
+        // Null for tokens minted before RM-90 added the claim. Those are
+        // treated as un-revocable-by-timestamp and handled explicitly at the
+        // enforcement point rather than being silently coerced to 0, which
+        // would make every legacy token look infinitely old and revoked.
+        issuedAtMs: typeof iat === "number" ? iat * 1000 : null,
       };
     } catch (error) {
       console.warn("[Auth] Session verification failed", String(error));
@@ -327,6 +338,24 @@ class SDKServer {
 
     if (!user) {
       throw ForbiddenError("User not found");
+    }
+
+    // Milestone 3 §3.3 (RM-90): enforce server-side session revocation.
+    //
+    // Session cookies are stateless JWTs, so logout cannot invalidate them by
+    // deleting anything — it stamps `sessionsRevokedAtMs` on the user, and
+    // this check is what actually makes a logged-out (or force-signed-out)
+    // token stop working. Without it, "logout" was purely cosmetic: it
+    // cleared the browser's copy while the token stayed valid until expiry.
+    const revokedAtMs = (user as { sessionsRevokedAtMs?: number | null }).sessionsRevokedAtMs;
+    if (typeof revokedAtMs === "number") {
+      // `<=` not `<`: a token minted in the same second as the revocation
+      // must not survive it. JWT `iat` has one-second granularity, so a
+      // strict `<` would let a token issued during the revocation second
+      // through — the exact race a logout-then-replay would exercise.
+      if (session.issuedAtMs === null || session.issuedAtMs <= revokedAtMs) {
+        throw ForbiddenError("Session has been revoked");
+      }
     }
 
     await db.upsertUser({

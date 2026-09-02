@@ -14,7 +14,7 @@
  */
 import type { Express, Request, Response } from "express";
 import { parse as parseCookieHeader } from "cookie";
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, getSessionTtlMs } from "@shared/const";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { envelopeDecrypt } from "./mfaCrypto";
@@ -216,12 +216,12 @@ async function issueRealSession(args: {
   cookieOptions: ReturnType<typeof getSessionCookieOptions>;
 }) {
   const token = await sdk.createSessionToken(args.pending.openId, {
-    expiresInMs: ONE_YEAR_MS,
+    expiresInMs: getSessionTtlMs(),
     name: args.pending.name,
   });
   args.res.cookie(COOKIE_NAME, token, {
     ...args.cookieOptions,
-    maxAge: ONE_YEAR_MS,
+    maxAge: getSessionTtlMs(),
   });
   args.res.cookie(MFA_PENDING_COOKIE, "", { ...args.cookieOptions, maxAge: 0 });
 }

@@ -147,6 +147,23 @@ export const users = pgTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().notNull(),
     lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+    /**
+     * Milestone 3 §3.3 (RM-90): server-side session revocation cutoff.
+     *
+     * Session cookies are stateless signed JWTs, so before this column
+     * "logging out" only deleted the browser's copy — the token itself stayed
+     * valid until its (previously one-year) expiry, and anyone who had
+     * captured it could keep using it. There was no way to invalidate a
+     * session server-side at all.
+     *
+     * Logout, password change and admin-forced sign-out now stamp this
+     * column; `authenticateRequest` rejects any token issued at or before it.
+     * Stored as epoch milliseconds rather than a timestamp so the comparison
+     * against the JWT's numeric `iat` needs no timezone reasoning.
+     *
+     * Null means "never revoked" — the correct default for existing rows.
+     */
+    sessionsRevokedAtMs: bigint("sessionsRevokedAtMs", { mode: "number" }),
   },
   (table) => [index("users_organization_id_idx").on(table.organizationId)],
 );
