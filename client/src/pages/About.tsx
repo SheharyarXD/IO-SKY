@@ -39,16 +39,21 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useT } from "@/contexts/LanguageContext";
+import { SiteImage } from "@/components/SiteImage";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 /* ------------------------------------------------------------------ */
 /* Static asset URLs (lifecycle-bound to webdev project)               */
 /* ------------------------------------------------------------------ */
-const GLOBE_IMG =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-about-globe-v2-kiHXtRNZogDKqZWBu6HdeC.webp";
-const TEAM_IMG =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-about-team-v2-3mpPvd2TLSVEFh3Jn7GDnp.webp";
+/*
+ * Editorial visuals resolve through the central registry (client/src/lib/siteImages.ts).
+ *
+ * These previously pointed at the Manus/Forge CDN, which now returns 403 for
+ * every asset — the originals are gone and no archived copy exists. <SiteImage>
+ * renders a placeholder occupying the same layout box until replacements are
+ * supplied, so a missing visual never shows as a broken-image icon.
+ */
 
 /* ------------------------------------------------------------------ */
 /* Section eyebrow                                                     */
@@ -71,12 +76,11 @@ function Hero() {
     <section className="relative overflow-hidden border-b border-white/5">
       {/* Globe visual */}
       <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[58%] lg:block">
-        <img
-          src={GLOBE_IMG}
+        <SiteImage
+          image="about.founders"
           alt=""
-          className="h-full w-full object-cover object-left"
+          imgClassName="object-left"
           loading="eager"
-          fetchPriority="high"
         />
         <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-[#0a0e1a] via-[#0a0e1a]/70 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-[#0a0e1a] to-transparent" />
@@ -84,10 +88,10 @@ function Hero() {
 
       {/* Mobile globe (cropped) */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 lg:hidden">
-        <img
-          src={GLOBE_IMG}
+        <SiteImage
+          image="about.founders"
           alt=""
-          className="h-full w-full object-cover opacity-50"
+          imgClassName="opacity-50"
           loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e1a]/40 via-[#0a0e1a]/85 to-[#0a0e1a]" />
@@ -510,11 +514,10 @@ function People() {
     <section className="border-b border-white/5 bg-white/[0.012]">
       <div className="container grid items-center gap-10 py-14 lg:grid-cols-12">
         <div className="overflow-hidden rounded-2xl border border-white/10 lg:col-span-6">
-          <img
-            src={TEAM_IMG}
+          <SiteImage
+            image="about.workspace"
             alt={t("about.people.alt")}
-            className="aspect-[16/10] w-full object-cover"
-            loading="lazy"
+            className="aspect-[16/10] w-full"
           />
         </div>
         <div className="lg:col-span-6">

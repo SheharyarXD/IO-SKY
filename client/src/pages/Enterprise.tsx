@@ -36,13 +36,18 @@ import {
   ShieldCheck as ShieldIcon, BarChart3, Sparkles,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { SiteImage } from "@/components/SiteImage";
 import Footer from "@/components/Footer";
 import { useT } from "@/contexts/LanguageContext";
 
-const HERO_VISUAL =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-enterprise-city-79Rkgw2soCRfRyspsX49EW.webp";
-const COMMAND_VISUAL =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-enterprise-command-room-ECc3xuN3udjC9Lo59q5etC.webp";
+/*
+ * Editorial visuals resolve through the central registry (client/src/lib/siteImages.ts).
+ *
+ * These previously pointed at the Manus/Forge CDN, which now returns 403 for
+ * every asset — the originals are gone and no archived copy exists. <SiteImage>
+ * renders a placeholder occupying the same layout box until replacements are
+ * supplied, so a missing visual never shows as a broken-image icon.
+ */
 
 const ICON = "w-[18px] h-[18px]";
 
@@ -158,8 +163,8 @@ export default function Enterprise() {
               <div className="relative">
                 <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
                   <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_50%,rgba(255, 122, 0,0.18),transparent_60%)]" />
-                  <img
-                    src={HERO_VISUAL}
+                  <SiteImage
+                    image="enterprise.systems"
                     alt={t("ent.hero.imageAlt")}
                     width={1408}
                     height={1056}
@@ -233,8 +238,8 @@ export default function Enterprise() {
           <div className="container">
             <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-10 lg:gap-14 items-center">
               <div className="relative aspect-[16/10] rounded-2xl overflow-hidden border border-white/[0.06] shadow-[0_30px_120px_rgba(0,0,0,0.55)]">
-                <img
-                  src={COMMAND_VISUAL}
+                <SiteImage
+                  image="enterprise.architecture"
                   alt={t("ent.cmd.imageAlt")}
                   width={2560}
                   height={1440}

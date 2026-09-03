@@ -25,12 +25,19 @@ import {
   Bot, Eye, LayoutList, Workflow,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { SiteImage } from "@/components/SiteImage";
 import Footer from "@/components/Footer";
 import RevealOnScroll from "@/components/RevealOnScroll";
 import { useT } from "@/contexts/LanguageContext";
 
-const HERO_VISUAL =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-intelligence-dome-au5JWDJ3Shwz3Yt4dWsF7j.webp";
+/*
+ * Editorial visuals resolve through the central registry (client/src/lib/siteImages.ts).
+ *
+ * These previously pointed at the Manus/Forge CDN, which now returns 403 for
+ * every asset — the originals are gone and no archived copy exists. <SiteImage>
+ * renders a placeholder occupying the same layout box until replacements are
+ * supplied, so a missing visual never shows as a broken-image icon.
+ */
 
 function TextSection({
   title,
@@ -107,8 +114,8 @@ export default function Intelligence() {
               {/* Right — particle dome visual */}
               <div className="lg:col-span-6 relative">
                 <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden">
-                  <img
-                    src={HERO_VISUAL}
+                  <SiteImage
+                    image="intelligence.hero"
                     alt="IO SKY operational intelligence dome"
                     className="absolute inset-0 w-full h-full object-cover"
                     loading="eager"

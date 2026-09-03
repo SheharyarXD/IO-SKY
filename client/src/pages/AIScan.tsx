@@ -19,6 +19,8 @@
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { SiteImage } from "@/components/SiteImage";
+import type { SiteImageKey } from "@/lib/siteImages";
 import { Link, useLocation } from "wouter";
 import { useT } from "@/contexts/LanguageContext";
 import Navbar from "@/components/Navbar";
@@ -59,10 +61,17 @@ import {
   Building2,
 } from "lucide-react";
 
-const HERO_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-aiscan-hero-7mx4aJFAtGTwYcUbZpUrYE.webp";
-const REPORT_FREE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-aiscan-report-free-FJNZinRYBpqm9MrCkeR8xy.webp";
-const REPORT_GROWTH = "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-aiscan-report-growth-gFu7LTjsJjDi4HNxLSBYSh.webp";
-const REPORT_ELITE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-aiscan-report-elite-jfhB99C8w8kv4JZKjPrmUo.webp";
+/*
+ * Editorial visuals resolve through the central registry (client/src/lib/siteImages.ts).
+ *
+ * These previously pointed at the Manus/Forge CDN, which now returns 403 for
+ * every asset — the originals are gone and no archived copy exists. <SiteImage>
+ * renders a placeholder occupying the same layout box until replacements are
+ * supplied, so a missing visual never shows as a broken-image icon.
+ */
+const REPORT_FREE = "aiScan.reportFree" as const;
+const REPORT_GROWTH = "aiScan.reportGrowth" as const;
+const REPORT_ELITE = "aiScan.reportElite" as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Section header
@@ -298,7 +307,7 @@ function ReportTile({
   title: string;
   pages: string;
   includes: string[];
-  image: string;
+  image: SiteImageKey;
   footer: string;
 }) {
   return (
@@ -308,7 +317,7 @@ function ReportTile({
       <div className="mt-0.5 text-[11px] text-neutral-500">{pages}</div>
 
       <div className="mt-4 aspect-[4/5] w-full overflow-hidden rounded-xl border border-white/10 bg-black/30">
-        <img src={image} alt={title} loading="lazy" className="h-full w-full object-cover" />
+        <SiteImage image={image} alt={title} />
       </div>
 
       <div className="mt-4">
@@ -399,7 +408,7 @@ export default function AIScan() {
               ))}
             </ul>
             <div className="mt-6 aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-black/30">
-              <img src={HERO_IMG} alt="IO SKY AI Scan" className="h-full w-full object-cover" />
+              <SiteImage image="aiScan.hero" alt="IO SKY AI Scan" />
             </div>
           </div>
 

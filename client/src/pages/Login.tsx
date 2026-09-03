@@ -30,6 +30,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { useT } from "@/contexts/LanguageContext";
+import { resolveSiteImage } from "@/lib/siteImages";
 import IOSkyLogo from "@/components/IOSkyLogo";
 import { trpc } from "@/lib/trpc";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -57,8 +58,15 @@ import LogoLoader from "@/components/LogoLoader";
 /* ------------------------------------------------------------------ */
 /* Static asset URLs                                                  */
 /* ------------------------------------------------------------------ */
-const GLOBE_IMG =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-login-globe-mockup-gG2umyFn7pmEaQUAbKnbxL.webp";
+/*
+ * Decorative background visual. Resolved through the central registry
+ * (client/src/lib/siteImages.ts) and null until a replacement is supplied —
+ * the original pointed at the Manus/Forge CDN, which now 403s for every asset.
+ *
+ * Null is handled at the use site by omitting backgroundImage entirely, rather
+ * than emitting url(null) and having the browser fetch a URL that cannot load.
+ */
+const GLOBE_IMG = resolveSiteImage("login.globe");
 
 /* ------------------------------------------------------------------ */
 /* Localised label helper — falls back to the provided English string */
@@ -549,7 +557,7 @@ export default function Login() {
                   bottom: "-22%",
                   width: "135%",
                   height: "110%",
-                  backgroundImage: `url(${GLOBE_IMG})`,
+                  ...(GLOBE_IMG ? { backgroundImage: `url(${GLOBE_IMG})` } : {}),
                   backgroundRepeat: "no-repeat",
                   backgroundSize: "contain",
                   backgroundPosition: "left bottom",
@@ -566,7 +574,7 @@ export default function Login() {
                 aria-hidden
                 className="pointer-events-none absolute md:hidden -left-8 -bottom-8 w-[120%] h-[60%] opacity-60"
                 style={{
-                  backgroundImage: `url(${GLOBE_IMG})`,
+                  ...(GLOBE_IMG ? { backgroundImage: `url(${GLOBE_IMG})` } : {}),
                   backgroundRepeat: "no-repeat",
                   backgroundSize: "cover",
                   backgroundPosition: "left bottom",

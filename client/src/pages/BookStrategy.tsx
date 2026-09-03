@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
+import { resolveSiteImage } from "@/lib/siteImages";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 import { useT as useLanguageContext } from "@/contexts/LanguageContext";
@@ -54,8 +55,15 @@ import { trpc } from "@/lib/trpc";
 /* ------------------------------------------------------------------ */
 /* Static asset URLs                                                  */
 /* ------------------------------------------------------------------ */
-const GLOBE_IMG =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663657847143/YvCUjmiq4ztE2dxYNn2BqA/io-login-globe-mockup-gG2umyFn7pmEaQUAbKnbxL.webp";
+/*
+ * Decorative background visual. Resolved through the central registry
+ * (client/src/lib/siteImages.ts) and null until a replacement is supplied —
+ * the original pointed at the Manus/Forge CDN, which now 403s for every asset.
+ *
+ * Null is handled at the use site by omitting backgroundImage entirely, rather
+ * than emitting url(null) and having the browser fetch a URL that cannot load.
+ */
+const GLOBE_IMG = resolveSiteImage("login.globe");
 
 /* ------------------------------------------------------------------ */
 /* Localised label helper                                              */
@@ -693,7 +701,7 @@ export default function BookStrategy() {
                   bottom: "-12%",
                   width: "150%",
                   height: "78%",
-                  backgroundImage: `url(${GLOBE_IMG})`,
+                  ...(GLOBE_IMG ? { backgroundImage: `url(${GLOBE_IMG})` } : {}),
                   backgroundRepeat: "no-repeat",
                   backgroundSize: "contain",
                   backgroundPosition: "left bottom",
