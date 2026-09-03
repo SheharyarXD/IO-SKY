@@ -249,6 +249,30 @@ export async function listTakenBookingSlots(
   });
 }
 
+/**
+ * Detect a Postgres unique_violation (23505) through any wrapper.
+ *
+ * Drizzle raises `DrizzleQueryError` and hangs the driver error off `cause`,
+ * so a naive `err.code === "23505"` check never matches. Walks the chain with
+ * a depth bound so a self-referential cause cannot loop forever.
+ *
+ * Exported for the RM-113 suite, which asserts the unwrapping directly rather
+ * than only observing it through a live race.
+ */
+export function isUniqueViolation(err: unknown): boolean {
+  let current: unknown = err;
+  for (let depth = 0; current && depth < 5; depth++) {
+    const code = (current as { code?: unknown }).code;
+    if (code === "23505") return true;
+    // postgres.js also exposes the SQLSTATE on some error shapes.
+    if ((current as { constraint_name?: unknown }).constraint_name && code === undefined) {
+      // fall through to cause
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 export async function tryHoldBookingSlot(input: {
   consultationType: string;
   slotStartMs: number;
@@ -286,7 +310,22 @@ export async function tryHoldBookingSlot(input: {
   } catch (err: unknown) {
     // Duplicate key = slot already held/booked by someone else.
     // Postgres unique_violation code (MySQL's ER_DUP_ENTRY/1062 equivalent).
-    const isDupe = (err as any)?.code === "23505";
+    //
+    // Must walk the `cause` chain, not just read `err.code`. Drizzle wraps
+    // driver errors in a DrizzleQueryError, so the postgres.js error carrying
+    // `code: "23505"` sits at `err.cause` (or deeper). Reading the top-level
+    // code alone returned undefined for every real conflict, which had two
+    // consequences once migration 0019 added the constraint:
+    //
+    //   1. A losing racer got `reason: "db"` instead of `"taken"`, so the UI
+    //      showed a generic failure rather than "this slot was just taken,
+    //      pick another time".
+    //   2. The expired-hold takeover below sits inside this branch, so it
+    //      never ran — an abandoned checkout would have blocked its slot
+    //      permanently instead of releasing it after the 10-minute TTL.
+    //
+    // Both were caught by the RM-113 concurrency suite.
+    const isDupe = isUniqueViolation(err);
     if (isDupe) {
       // Check if the existing hold has expired and can be taken over.
       const rows = await db

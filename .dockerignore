@@ -1,0 +1,26 @@
+# Keep the build context small and, more importantly, keep secrets and local
+# state out of the image entirely (Milestone 3 §3.2, RM-81/RM-82).
+.git
+.github
+node_modules
+dist
+e2e-report
+playwright-report
+test-results
+
+# Secrets must arrive at runtime from the host's secret manager, never baked
+# into a layer. A COPY . . would otherwise pull these in, and deleting them in
+# a later layer does NOT remove them from the image history.
+.env
+.env.*
+*.pem
+*.p12
+.npmrc
+
+# Documentation and audit artefacts — large, and not needed to run the app.
+*.md
+!README.md
+*.pdf
+docs
+references
+attached_assets

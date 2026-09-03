@@ -12,6 +12,7 @@ import { registerViewAsRoutes } from "./viewAsRoute";
 import { registerStagingGate } from "./stagingGate";
 import { registerSecurityHeaders } from "./securityHeaders";
 import { registerCorsPolicy } from "./corsPolicy";
+import { registerHealthRoutes } from "./healthRoute";
 import { registerResendWebhookRoutes } from "./resendWebhookRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -87,6 +88,11 @@ async function startServer() {
     },
   }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // RM-76: health endpoints go BEFORE the staging gate, so an uptime monitor
+  // or load balancer can probe them without holding the staging password. They
+  // expose no data beyond liveness, readiness and the build commit.
+  registerHealthRoutes(app);
+
   // Private staging / pre-launch gate (no-op unless STAGING_MODE=on).
   registerStagingGate(app);
   registerStorageProxy(app);

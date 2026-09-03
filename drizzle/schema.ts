@@ -1,4 +1,5 @@
 import {
+  uniqueIndex,
   bigint,
   index,
   integer,
@@ -1568,6 +1569,17 @@ export const bookingSlots = pgTable(
   (table) => [
     index("booking_slots_booking_id_idx").on(table.bookingId),
     index("booking_slots_status_idx").on(table.status),
+    /**
+     * Milestone 3 §3.5 (RM-113): the natural key — one slot of a given
+     * consultation type at a given start time.
+     *
+     * CRITICAL and previously missing. tryHoldBookingSlot() has always
+     * implemented double-booking protection by catching Postgres 23505 on
+     * insert, but no unique constraint existed to raise it, so the INSERT
+     * always succeeded and the guard was unreachable. Ten concurrent holds
+     * produced ten winners. Migration 0019.
+     */
+    uniqueIndex("booking_slots_slot_unique").on(table.consultationType, table.slotStartMs),
   ],
 );
 export type BookingSlot = typeof bookingSlots.$inferSelect;
