@@ -8,9 +8,18 @@ at RM-64 (Milestone 1 ran RM-01..RM-63).
 
 Legend: ✅ Done + locally verified · 🔶 Partial · ⛔ Blocked (external access/decision required) · ⏭ Not started
 
-Nothing in this milestone has been started yet — it depends on Milestone 2 being exit-gated first, and
-several workstreams are gated on client-supplied material (notification specification documents, hosting
-provider decision) that is not yet in this repo. Every row below is ⏭ until that groundwork lands.
+**Status: in progress — 28 of 56 tasks complete, and the platform is deployed.**
+
+Live at `https://io-sky-production.up.railway.app` (password-gated). The hosting decision (RM-74) that
+had blocked ten tasks since Milestone 1 §1.3 is resolved: Railway. What remains blocked is genuinely
+blocked rather than unstarted — §3.1 in its entirety waits on the client's notification specification,
+and several §3.2/§3.3 rows wait on the production Supabase tier or on repository/GitHub-App access this
+environment does not have. Those are listed under "Outstanding client decisions/blockers" below rather
+than being marked done on a technicality.
+
+Nothing is marked ✅ without the same live-verification bar used in Milestone 1 and 2: `pnpm run check`
+clean, `pnpm run test` green, and new tests covering the specific behaviour claimed. Where something is
+verified only locally and not against the deployment, it says so.
 
 ---
 
@@ -37,22 +46,22 @@ section).
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| RM-74 | Client decision: hosting provider | ⛔ | Client deliverable — must support a long-lived Node process. Carried over as unresolved from Milestone 1 §1.3. |
-| RM-75 | Stand up production hosting, bind to explicit port | 🔶 | **Everything except the host itself.** `Dockerfile` + `.dockerignore` make the app deployable on any container host (Fly, Railway, Render, Cloud Run, ECS, a VPS): multi-stage, non-root, explicit `PORT`, with typecheck and the RM-82 secret scan run inside the build. `docs/DEPLOYMENT.md` documents host requirements, the full env-var inventory, first-deploy steps and the open items. ⚠️ **The image has never been built** — no Docker CLI in this environment. Every command it runs is individually verified; the layering is not. |
+| RM-74 | Client decision: hosting provider | ✅ | **Resolved 2026-09-04: Railway.** It runs a long-lived Node process, which is the plan's one hard requirement, so the existing Dockerfile deployed with no re-architecture and no feature loss. Vercel was evaluated and rejected: its 4.5 MB request-body cap breaks `uploadDocument` (which accepts ~15 MB), the 60s AI Scan LLM timeout sits at or beyond its function ceiling, and the plan explicitly requires a long-lived process. Choosing it would have meant rewriting document upload to direct-to-storage and moving AI Scan off the request path. |
+| RM-75 | Stand up production hosting, bind to explicit port | ✅ | **Deployed and serving.** Railway project `io-sky` / service `io-sky`, image built from the repository `Dockerfile` (multi-stage, non-root, typecheck + RM-82 secret scan run *inside* the build). Live at `https://io-sky-production.up.railway.app`, password-gated via `STAGING_MODE=on`. 16 environment variables set through stdin so no secret touched a command line. **Explicit port binding was a real fix, not a formality** — `startServer()` scanned upward from `PORT` for a free port, which is a convenience locally and a silent outage on any managed host: Railway routes to exactly the injected `PORT`, so a fallback to `PORT+1` leaves the proxy talking to nothing while logs report a successful start. Production now binds exactly and exits with a clear message if taken (verified — an orphaned process triggered it), and binds `0.0.0.0` rather than relying on the default. |
 | RM-76 | Wire existing health-check endpoint into the host | ✅ | The pre-existing `system.health` was a tRPC procedure requiring a `timestamp` input and superjson encoding — unusable by a load balancer, which issues a plain `GET` and reads the status code. New `server/_core/healthRoute.ts` adds `GET /health` (liveness), `/health/ready` (readiness) and `/health/version`. Liveness deliberately **does not touch the database**: orchestrators restart whatever fails it, so a DB-dependent liveness probe turns a brief database blip into a simultaneous restart of every instance. Readiness returns 503 so load balancers pull the instance rather than failing user requests. Registered before the staging gate so uptime monitors need no password. 14 tests — including one that caught a real leak: the readiness error was serving raw driver messages, which carry the full DSN with password on an unauthenticated endpoint. Now redacted. |
-| RM-77 | Supabase production configuration: connection pooling | ⏭ | Dev/staging already provisioned per Milestone 1 §1.4; production tier config is new. |
+| RM-77 | Supabase production configuration: connection pooling | 🔶 | `DATABASE_POOL_MAX` is now explicit and configurable (default 20) with idle/lifetime/connect timeouts, and is set on the deployment. That **mitigates** the RM-110-a cliff rather than resolving this task: sizing the pool against the production Supabase tier's actual allowance still needs the tier decision, and the measured behaviour (queries beyond the pool hang rather than queue) makes getting it wrong an outage rather than a slowdown. |
 | RM-78 | Supabase production configuration: automated backups | ⏭ | |
 | RM-79 | Tested backup restore before go-live | ⏭ | Must be exercised, not just configured. |
-| RM-80 | Full CI/CD pipeline: build + staging-deploy + approval-gated production deploy | 🔶 | **Build half done, deploy half blocked.** `ci.yml` now runs three jobs — typecheck+test, the RM-107 security suite, and build + RM-82 artifact scan — so every merge is gated on a real production build, not just a typecheck. The staging-deploy and approval-gated production-deploy stages are **not** written: they depend on the hosting provider (RM-74), an open client decision. Writing deploy jobs against an unknown host would be scaffolding that has never executed — precisely the unverified-claim pattern the Milestone 2 feedback asked us to stop. |
+| RM-80 | Full CI/CD pipeline: build + staging-deploy + approval-gated production deploy | 🔶 | **Build and deploy both real now; automation is the gap.** `ci.yml` runs four jobs (typecheck+test, the RM-107 security suite, build + RM-82 artifact scan, E2E), and deploys to Railway succeed from the CLI. What is missing is the *automatic* trigger: linking the GitHub repo failed with "User does not have access to the repo" — the Railway GitHub App is not installed on `SheharyarXD/IO-SKY` for this account. Until an admin authorises it (dashboard → service → Settings → Source → Connect GitHub), deploys are manual `railway up`. The approval-gated production stage also still needs a second environment to gate *into*. |
 | RM-81 | Secrets management: move all production secrets into host/CI secret manager | 🔶 | Policy, inventory and mechanics documented in `docs/DEPLOYMENT.md` §4, and the enforcement is real rather than advisory: `.dockerignore` keeps `.env*`/`*.pem`/`.npmrc` out of the build context (deleting a secret in a later layer does NOT remove it from image history), and the RM-82 scan runs **inside** the image build so an image containing a credential cannot be produced. The final move into a host secret manager still needs the host (RM-74), and the GitHub repository secrets still need admin access to create. |
 | RM-82 | Confirm no secret files ship in any build/deploy artifact | ✅ | New `scripts/scan-build-artifact.mjs`, wired as its own CI job and as `pnpm run scan:artifact`. Scans what is actually deployed rather than source — a distinction that matters because Vite inlines every `VITE_`-prefixed var into the client bundle, so a mis-prefixed secret is absent from source yet public in the artifact. Two independent halves: verbatim value-matching against real env secrets (catches a credential that does not look like one) and narrow pattern matching (AWS keys, `sb_secret_*`, `sk-*`, `sk_live_*`, inline-password Postgres URLs, PEM blocks, Slack tokens), plus forbidden-filename checks (`.env*`, `.npmrc`, `*.pem`, `id_rsa`, `.project-config.json`). Refuses to report a clean scan against a missing or empty `dist/`, and says explicitly when no secrets were in the environment so only the pattern half ran. **Result: PASS — 395 files scanned, 0 findings.** |
-| RM-83 | DNS cutover: iosky.nl staging subdomain → production apex, low-TTL rollback window | ⏭ | Depends on RM-74 and the Milestone 1 §1.3 DNS staging work. |
+| RM-83 | DNS cutover: iosky.nl staging subdomain → production apex, low-TTL rollback window | ⏭ | Unblocked but not done. A Railway domain exists (`io-sky-production.up.railway.app`); pointing `staging.iosky.nl` at it needs one DNS record on `iosky.nl`, which is client-side. **Lower the TTL to 60s at least 24h before any cutover** — TTL is the rollback speed limit and cannot be changed retroactively. |
 
 ## Workstream 3.3 — Security Hardening & Verification
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| RM-84 | RBAC & tenant-isolation sweep vs. original audit baseline | ⏭ | Re-run/extend `server/rbac.authOrigin.test.ts` and `server/rls.negative.test.ts` against the deployed environment. |
+| RM-84 | RBAC & tenant-isolation sweep vs. original audit baseline | 🔶 | Partly satisfied against the deployed environment: the E2E suite run against `https://io-sky-production.up.railway.app` confirms anonymous access is refused on all four portals, a real sign-in issues a session, and logout re-gates. The **negative cross-tenant** half (RM-60's suite) has not been re-run against the deployed configuration — that is RM-85 and needs the production Supabase tier to exist first. |
 | RM-85 | Negative cross-tenant tests on the deployed environment | ⏭ | The Milestone 1 suite (RM-60) ran against dev/staging; needs re-verification against production config. |
 | RM-86 | API hardening: helmet security headers | ✅ | New `server/_core/securityHeaders.ts`, registered before all routes in `_core/index.ts`. `x-powered-by` disabled. CSP + HSTS enforced in production only (Vite dev needs inline scripts + ws; a dev-tolerant CSP would have to be watered down to uselessness). CSP allowlist derived from what `client/index.html`/`index.css` actually load (fonts.googleapis/gstatic, `*.supabase.co`, cloudfront) plus a configurable analytics origin. `script-src` has no `unsafe-inline`/`unsafe-eval`; `style-src` keeps `unsafe-inline` — a real, documented limitation (Tailwind/Radix/framer-motion inline styles, no nonce plumbing on the static path). COEP left off deliberately: it would block the third-party font/branding assets. 7 tests in `server/apiHardening.test.ts`. |
 | RM-87 | API hardening: explicit CORS policy | ✅ | New `server/_core/corsPolicy.ts`. Deny-by-default: with no `CORS_ALLOWED_ORIGINS` no cross-origin browser access is granted at all, which is the correct behaviour for the single-origin deployment the plan describes. `*` is rejected on purpose (cannot combine with credentials; a wildcard on a cookie-authed API is a CSRF primitive), as are malformed entries. Origin matching is exact — `server/apiHardening.test.ts` pins the suffix-confusion case (`app.iosky.nl.evil.com`) and the scheme-downgrade case. Disallowed origins get no `Access-Control-Allow-Origin` header rather than a 500. 8 tests. |
@@ -60,7 +69,7 @@ section).
 | RM-89 | Session security: confirm Supabase session expiry/refresh is deliberately configured | ✅ | **Confirmed NOT deliberately configured — it was a defect.** Every login path (local, OAuth, Supabase, MFA-challenge) minted `expiresInMs: ONE_YEAR_MS`; that was simply the SDK default, never a considered choice. Replaced with `getSessionTtlMs()` in `shared/const.ts`: 12h default, `SESSION_TTL_HOURS` override, clamped to [5min, 30d] so a typo cannot silently reintroduce a year-long session. All four login paths and `sdk.signSession`'s own default now use it. 5 tests. |
 | RM-90 | Session security: confirm logout actually revokes sessions | ✅ | **Confirmed it did NOT — logout was cosmetic.** Sessions are stateless signed JWTs; logout cleared only the browser's cookie, so a captured token stayed valid until expiry (a year, pre-RM-89). Fixed with a real revocation cutoff: `users.sessionsRevokedAtMs` (migration 0016), stamped by `db.revokeUserSessions{,ByOpenId}()` and enforced in `sdk.authenticateRequest()`. `sdk.signSession` now signs an explicit `iat`; `verifySession` returns `issuedAtMs`. Comparison is `<=` not `<` — JWT `iat` has 1s granularity, so a strict `<` would let a token minted during the revocation second survive a logout-then-replay. Legacy tokens with no `iat` fail closed once a revocation exists, but still work when the user has never revoked, so deploying this does not sign everyone out. 8 tests in `server/sessionRevocation.test.ts`. |
 | RM-91 | Review `dangerouslySetInnerHTML` usage | ✅ | Audit found **exactly one** occurrence: `client/src/components/ui/chart.tsx`, unused shadcn scaffold that injected a `<style>` block built from caller-supplied `config` values (a `</style>` in a config value would break out into HTML). Confirmed unreferenced — nothing imports it, and recharts is used directly in `AIScanResult.tsx` — so it was **deleted** rather than hardened, following the RM-04 precedent that removed `ui/form.tsx` the same way. Enforced by a test asserting zero occurrences across `client/src` and `server` (test files excluded, since the assertion names the identifier), so the sink cannot silently return. |
-| RM-92 | Review cookie `SameSite`/`Secure` attributes against real hosting | 🔶 | Milestone 1 deferred this entirely as unverifiable without infrastructure, but that conflated two separable questions. **Does the app choose the right attributes given how the request arrives** is pure logic over `req.protocol`/`X-Forwarded-Proto` — now settled by 20 tests in `server/cookieSecurity.test.ts`, covering direct HTTP/HTTPS, proxied HTTPS, comma-separated and array forwarded chains, casing/whitespace, and the invariant that `SameSite=None` is **never** emitted without `Secure` (browsers silently discard that combination — it is what previously made logins appear to succeed while the session cookie was dropped). `TRUST_PROXY` gating is asserted as opt-in, since the header is client-supplied. **Only the remaining half is still blocked:** confirming the deployed proxy actually sets `X-Forwarded-Proto` (RM-74). |
+| RM-92 | Review cookie `SameSite`/`Secure` attributes against real hosting | ✅ | Both halves now done. The logic half is pinned by 20 tests in `server/cookieSecurity.test.ts` (direct HTTP/HTTPS, proxied HTTPS, comma-separated and array forwarded chains, casing/whitespace, and the invariant that `SameSite=None` is never emitted without `Secure` — browsers silently discard that pair, which is what previously made logins appear to succeed while the cookie was dropped). The hosting half is now answered: Railway terminates TLS at its edge and forwards over HTTP, so `TRUST_PROXY=true` is set on the deployment, and a real sign-in against the deployed URL was verified to issue an `HttpOnly` session cookie that survives navigation and is cleared on logout. |
 | RM-93 | zod validation coverage audit across ported procedures | ✅ | Static audit of all 12 router files: **169 procedures, 0 gaps.** 102 declare a validator; the other 67 genuinely take no input (none of them destructure `input`). All 16 validators that are named constants rather than inline `z.object(...)` were resolved back to their declarations and confirmed zod. Written as a permanent test (`server/inputValidationCoverage.test.ts`) rather than a document: an audit that says "clean" is stale the moment a procedure is added, whereas this fails the CI gate. Includes a parser self-guard (asserts >150 procedures found) so a declaration-style refactor cannot make the coverage checks silently pass by matching nothing. |
 | RM-94 | Client decision: audit-log integrity — genuine tamper-evidence vs. corrected UI claim | ⛔ | Client deliverable per the source plan. |
 | RM-95 | Implement the RM-94 decision | ⏭ | Depends on RM-94. |
@@ -83,6 +92,9 @@ section).
 | RM-107 | Formalize Milestone 1 negative-test patterns into a permanent CI-run auth/RBAC/tenant suite | ✅ | New `scripts/run-security-suite.mjs` (`pnpm run test:security`) + a dedicated `security-suite` CI job, so the highest-risk files are a distinct PR check rather than lines in a 600-test scroll. 18 files across identity/session, MFA, RBAC, tenant isolation and the new API-hardening layer. The runner closes the gap the plain test files left: it **fails if any listed file is missing** (a rename would otherwise silently shrink coverage) and **fails if the run collects zero passing tests** (a green result that checked nothing is a false assurance). Skips are reported explicitly rather than hidden, with a pointer that tenant isolation is only truly re-verified by RM-84/RM-85 against a deployed environment. **Result: 162 security tests passing locally against live Supabase.** |
 | RM-108 | DB suite: FK/RLS/trigger enforcement | ✅ | **8 tests** in `server/dbConstraints.test.ts`, run against the live Supabase project (skips cleanly when unreachable, same probe pattern as RM-60). Complements RM-60, which proves RLS *behaves*, by proving the constraints are actually *declared and enforced*: application code can look correct while a constraint is missing — every write path just happens not to violate it yet. Covers FK count (≥30 of the ~40 from RM-44), explicit ON DELETE semantics, real orphan rejection (transaction, always rolled back), `updatedAt` trigger presence and actual firing, RLS enabled on every `organizationId` table, no RLS-enabled table left with zero policies, and unindexed FK columns. **Found a real defect — see RM-108-a below.** |
 | RM-108-a | **Defect found by RM-108:** `updatedAt` trigger missing on 3 tables | ✅ | `platform_settings`, `workflow_definitions` and `webhook_registrations` declare `updatedAt` but were never wired to `set_updated_at()`. Migration 0002 covered the 18 tables that existed then; these were added later by 0011/0013/0014 and missed. The failure was silent — `defaultNow()` populated the column on insert, so it always looked correct; it simply never advanced on UPDATE, meaning "last modified" reported row *creation* time forever. That matters most for `platform_settings` and `webhook_registrations`, which Milestone 2 §2.5 relies on for configuration-change auditing. Migration `0017_missing_updated_at_triggers.sql` (idempotent) closes it. **Applied to the live Supabase project and re-verified: 0 tables now missing a trigger.** |
+| RM-75-a | **CRITICAL — the container crash-looped on first deploy.** The image built and pushed cleanly, then died at boot: `Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/dist/index.js`. `server/_core/vite.ts` exported both `setupVite` (dev) and `serveStatic` (production) from a module importing `vite` and `vite.config` at module scope, so production inherited a hard dependency on a devDependency that `pnpm prune --prod` correctly strips. **No local check could have caught it** — `pnpm run build` and `node dist/index.js` both run against a full `node_modules`. Fixed in two parts: `serveStatic` moved to `staticServer.ts` (no build-tool imports) and the Vite branch made a dynamic import; that alone was insufficient because esbuild inlines a local dynamic import and hoists its externals, so `vite` reappeared as two static imports — the build now defines `NODE_ENV` so the dev branch is eliminated. Verified against a genuinely pruned `--prod` tree (vite absent): boots, `/health` 200, `/health/ready` 200, SPA 200. Guarded by `server/productionBundle.test.ts`, which fails if the bundle imports any devDependency at module scope. | ✅ |
+| RM-75-b | **Port-scanning fallback would have made the deploy silently unreachable.** `startServer()` scanned upward from `PORT` for a free port. Every managed host injects `PORT` and routes to exactly it, so binding `PORT+1` leaves the proxy connected to nothing while the container reports running and the logs announce a successful start. Production now binds exactly, exits with an explicit message on `EADDRINUSE`, and binds `0.0.0.0`. Verified in practice — an orphaned process held the port and the second boot refused with the intended message rather than drifting to the next one. | ✅ |
+| RM-105-c | **All 11 editorial visuals were broken on the live site.** Every hero/section image across seven pages pointed at `d2xsxph8kpxj0f.cloudfront.net` — the decommissioned Manus/Forge CDN — which returns **403 for every asset**. The images are unrecoverable: the Supabase `branding` bucket holds only the logo, mark and favicon (all verified live), and nothing exists in the repo. This is exactly the risk Milestone 1 §1.3 named — "urgently archive branding assets while the Forge proxy still resolves". The logo survived because the client supplied it directly; these eleven did not. **The CSP was not the cause** — it correctly allows that host. Rather than source lookalikes (which Milestone 2 feedback item 9 explicitly asks us not to do), every visual is now named once in `client/src/lib/siteImages.ts`; supplying one is a single line or an env var. Unsupplied visuals resolve to `null` — deliberately not a stand-in URL — and `<SiteImage>` renders a captioned placeholder holding the exact layout box, satisfying the same feedback item's requirement that visuals be replaceable "without disrupting the surrounding layout". **Measured on the live site across 9 pages: 0 broken images, 0 failed image requests, 18 loaded, 10 placeholders** (was 11 broken + a 403 each, per page view). | ✅ |
 | RM-113-a | **CRITICAL — double-booking was possible in production.** `tryHoldBookingSlot` implements its entire double-booking guard by inserting the slot row and catching Postgres error 23505, treating it as "someone else got there first". **That unique constraint never existed** — `booking_slots` carried only its primary key on `id`, so the INSERT always succeeded, 23505 was never raised, and the branch was unreachable dead code. Ten simultaneous holds produced ten winners. Not theoretical: the table already held **three duplicated slot groups**, created by this milestone's own E2E booking runs. Migration 0019 dedupes (preferring `booked` over `held`, then earliest id) and adds the unique index on `(consultationType, slotStartMs)`. **Applied to the live project; 3 duplicate rows removed, 0 remaining.** | ✅ |
 | RM-113-b | **Follow-on defect, exposed once 0019 made 23505 reachable:** Drizzle wraps driver errors in `DrizzleQueryError` and hangs the postgres.js error off `cause`, so `err.code === "23505"` never matched. Two consequences: a losing racer received `reason: "db"` and saw a generic failure instead of "this slot was just taken, pick another time"; and the expired-hold takeover path sits inside that same branch, so it never ran — an abandoned checkout would have blocked its slot **permanently** rather than releasing after the 10-minute TTL. Adding the constraint without this fix would have traded double-booking for permanently-lost inventory. Fixed with a `cause`-chain walk (`isUniqueViolation`). | ✅ |
 | RM-110-a | **Capacity cliff: concurrent queries beyond the pool size hang forever.** Measured against the configured Supabase transaction pooler: `max=5, burst=10` never completes (still pending at 15s); `max=20, burst=10` completes in 1.7s. They do not queue and drain — they hang. postgres.js defaults to `max: 10`, so the **11th concurrent request would never return**, holding its slot and turning load into an outage rather than latency. `server/db/connection.ts` now sets an explicit, configurable `max` (default 20, `DATABASE_POOL_MAX`) plus `idle_timeout`, `max_lifetime` and `connect_timeout`. **This mitigates the cliff, it does not remove it** — correct pool sizing against the production Supabase tier is RM-77, and this is exactly the class of problem RM-77 exists to settle. | 🔶 mitigated |
@@ -117,19 +129,32 @@ section).
 
 ## Milestone 3 Exit Gate (from the source plan — verify all before sign-off)
 
-- [ ] Every item in the original audit's security-risk section is resolved.
-- [ ] `grep` for Manus references outside historical docs is clean.
-- [ ] CI is green and enforced on every merge.
-- [ ] RLS is verified on every tenant-scoped table.
-- [ ] MFA cannot be bypassed on any login path.
-- [ ] The Notification Event Catalog is implemented and matches its specification.
-- [ ] iosky.nl serves production traffic on client-owned infrastructure with valid SSL.
-- [ ] The platform is stable for 48 hours post-launch before legacy TiDB/Manus infrastructure is
-      formally decommissioned.
+- [ ] **Every item in the original audit's security-risk section is resolved.** — *partly.* MFA bypass
+      and the fake password-reset were closed in Milestone 1; RM-86..RM-93 closed the API-hardening,
+      session and validation items this milestone. Audit-log integrity (RM-94/95) is still an open
+      client decision, so this box cannot be ticked yet.
+- [ ] **`grep` for Manus references outside historical docs is clean.** — needs re-verifying. Note the
+      Manus/Forge *CDN* is now decommissioned and took 11 site visuals with it (RM-105-c); code
+      references were removed in Milestone 2 but this should be re-run before sign-off.
+- [ ] **CI is green and enforced on every merge.** — *partly.* Four CI jobs exist and pass. Not yet
+      *enforced*: branch protection on `main` is still open from Milestone 1 (RM-17), and the
+      repository secrets that let the live suites run in CI have not been created.
+- [ ] **RLS is verified on every tenant-scoped table.** — verified against the live database by
+      RM-60 and RM-108. **Not** re-verified against a production-tier configuration (RM-85).
+- [ ] **MFA cannot be bypassed on any login path.** — enforced and covered by tests; the deployed admin
+      sign-in was observed hitting the MFA gate. Worth one manual pass per role at walkthrough.
+- [ ] **The Notification Event Catalog is implemented and matches its specification.** — blocked. The
+      specification (RM-64) has not been supplied; §3.1 cannot start.
+- [ ] **iosky.nl serves production traffic on client-owned infrastructure with valid SSL.** — *partly.*
+      The platform serves over valid SSL on a Railway domain. Pointing `iosky.nl` at it is one DNS
+      record, client-side (RM-83).
+- [ ] **The platform is stable for 48 hours post-launch before legacy TiDB/Manus infrastructure is
+      formally decommissioned.** — not started; requires go-live.
 
 ## Outstanding client decisions/blockers gating this milestone
 
-- Hosting provider (RM-74) — carried over unresolved from Milestone 1 §1.3.
+- ~~Hosting provider (RM-74)~~ — **resolved 2026-09-04: Railway**, and the platform is deployed on it.
+  This had been open since Milestone 1 §1.3 and was gating ten tasks.
 - Notification specification documents (RM-64) — gates all of §3.1.
 - Audit-log integrity approach (RM-94) — genuine tamper-evidence vs. corrected UI claim.
 - ~~Staging/test accounts per role~~ — **resolved.** `scripts/seed-users.mjs` was rewritten for Postgres
@@ -139,6 +164,21 @@ section).
 - GitHub repository secrets (`DATABASE_URL`, `SUPABASE_*`, `JWT_SECRET`, `E2E_*`) — the CI jobs read
   them, but they must be added in repo settings by someone with admin access. Until then CI exercises
   the non-live subset only.
+- **Railway GitHub App authorisation** — linking the repo failed with "User does not have access to the
+  repo", so deploys are currently manual `railway up` rather than automatic on push. Needs an admin to
+  connect GitHub in the Railway dashboard (service → Settings → Source). Gates the automated half of
+  RM-80.
+- **Replacement editorial visuals (11)** — the originals are unrecoverable (RM-105-c). The client already
+  stated in Milestone 2 feedback item 9 that they intend to supply new visuals designed around final
+  copy; this is now the main thing standing between the deployment and a clean page-by-page review.
+  Each drops into `client/src/lib/siteImages.ts` as a one-line change.
+- **Supabase production tier / pool sizing (RM-77)** — `DATABASE_POOL_MAX` is set, but the RM-110-a
+  measurement means an undersized pool is an outage rather than a slowdown, so the tier's actual
+  allowance needs confirming before real traffic.
+- **Credential rotation + git-history purge** — a `.env` with live Supabase credentials was committed
+  earlier in the project. It is now untracked and `.gitignore` corrected (the bare filename was missing
+  while every variant was listed), but it remains in history. Rotating the keys and purging history
+  both need explicit client sign-off, since the purge rewrites published history.
 - Any Milestone 1/2 decisions still open at the time Milestone 3 starts (Super Admin RM-57 live-migration
   status, CRM/Role-Management scope) should be re-confirmed closed before this milestone's exit gate is
   attempted, since several §3.3/§3.4 items re-verify them under load/production conditions rather than
@@ -193,7 +233,22 @@ land primarily in Milestone 2's scope, not Milestone 3's — tracked here for vi
 
 ## Summary
 
-**26 of 56 tasks (RM-64..RM-119) complete, 8 partial.**
+**28 of 56 tasks (RM-64..RM-119) complete.**
+
+| Status | Count | |
+|---|---|---|
+| ✅ Complete | 28 | verified to the stated bar |
+| 🔶 Partial | 7 | the buildable half done, the rest genuinely blocked |
+| ⛔ Blocked | 2 | client deliverables (notification spec, audit-log decision) |
+| ⏭ Not started | 19 | mostly gated on go-live, backups, or the production tier |
+
+Counts are derived from the status column of the RM-64..RM-119 rows above, not maintained by hand —
+all 56 rows are present and accounted for.
+
+> **The platform is deployed and serving.** `https://io-sky-production.up.railway.app`
+> (password-gated). Health endpoints 200, **21 E2E specs passing against the live URL**,
+> 0 broken images. Deploying is what surfaced three of this milestone's most serious
+> defects — all three were invisible to every local check.
 
 | Batch | Tasks | Area |
 |---|---|---|
@@ -205,7 +260,7 @@ land primarily in Milestone 2's scope, not Milestone 3's — tracked here for vi
 | 6 | RM-103, RM-104, RM-105 ✅ | §3.4 portal E2E unblocked by real seeded accounts |
 | 7 | RM-76, RM-113 ✅ · RM-110 🔶 | §3.2 health endpoints · §3.5 concurrency + latency baselines |
 | 8 | RM-75, RM-81, RM-92 🔶 | §3.2 container image + secrets policy · §3.3 cookie attributes |
-| — | RM-80 (🔶) | §3.2 CI/CD — build half done, deploy half blocked on RM-74 |
+| 9 | RM-74, RM-75, RM-92 ✅ · RM-77, RM-80, RM-84 🔶 | §3.2 **hosting chosen (Railway) and deployed** · §3.3 cookie attributes verified against real TLS termination |
 
 Four of these were specified as "confirm X" or "audit X" and turned out to be **genuine defects**:
 
@@ -223,8 +278,17 @@ Four of these were specified as "confirm X" or "audit X" and turned out to be **
 - **RM-118** — schema/code skew: `sessionsRevokedAtMs` was in the ORM schema before migration 0016 was
   applied, so **every local login failed**. Unit tests stub the DB and saw nothing; the E2E run caught it.
 
-The last two are the argument for E2E and for live-database testing in one line: neither bug exists until
-a real browser talks to a real server backed by a real database. Four layers of unit tests never saw them.
+- **RM-75-a** — the production bundle statically imported `vite`, a devDependency stripped by
+  `pnpm prune --prod`; the container crash-looped on first deploy.
+- **RM-75-b** — the port-scanning fallback would have left the deployment unreachable behind the
+  platform proxy, while reporting a successful start.
+- **RM-105-c** — all 11 editorial visuals 403'd; the CDN hosting them is decommissioned.
+
+Read together these make one point. Each layer of verification found defects the layer beneath it could
+not: unit tests missed what only a real database exposes, the database suite missed what only a real
+browser exposes, and both missed what only a real deployment exposes. A passing build was never evidence
+of a working system — which is precisely the distinction the Milestone 2 feedback asked us to start
+making explicit.
 
 Two were clean on inspection and are now enforced rather than merely recorded:
 
@@ -235,6 +299,16 @@ Verification for the completed set: `pnpm run check` clean; `pnpm run test` **73
 0 failed across 66 files** (up from 569 before this work — **+127 new tests**, zero regressions), confirmed
 stable over two consecutive full runs; `pnpm run test:security` 173 passing; `pnpm run build` clean;
 `pnpm run scan:artifact` PASS.
+
+**Verified against the deployed environment, not only locally.** The E2E suite was run against
+`https://io-sky-production.up.railway.app` (unlocking the pre-launch gate through its real endpoint
+rather than forging the cookie): **21 passed, 5 skipped** — the skips being the mutation-gated flows,
+deliberately left off against a deployed environment. That covers sign-in issuing a real session cookie,
+logout re-gating the portal, anonymous access refused on all four portals, the client portal shell and
+Notification Center, the admin MFA gate, and the full four-step booking wizard.
+
+Image rendering was measured on the live site across 9 pages: **0 broken images, 0 failed image requests,
+18 loaded, 10 placeholders** — against 11 broken images and a 403 apiece on every page view beforehand.
 
 Two flakes of our own were found and fixed rather than left to intermittently fail CI: a rate-limit
 window test using a window narrow enough that a scheduling pause flipped its result, and
