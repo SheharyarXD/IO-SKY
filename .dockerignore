@@ -13,6 +13,10 @@ test-results
 # a later layer does NOT remove them from the image history.
 .env
 .env.*
+# The Railway paste-file holds production secrets and does NOT match the
+# patterns above — it must be excluded explicitly or it would be uploaded
+# into the build context.
+railway.env.local
 *.pem
 *.p12
 .npmrc

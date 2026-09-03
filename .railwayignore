@@ -1,0 +1,13 @@
+# Never upload these to Railway's build context.
+# railway.env.local carries production secrets — it is for pasting into the
+# dashboard, never for shipping.
+railway.env.local
+.env
+.env.*
+*.pem
+.npmrc
+node_modules
+dist
+test-results
+e2e-report
+playwright-report
