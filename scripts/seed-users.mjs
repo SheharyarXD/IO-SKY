@@ -1,199 +1,231 @@
 #!/usr/bin/env node
 /**
- * IO SKY — Seed users + demo organization for local-password login.
+ * IO SKY — seed staging/test accounts and demo organizations.
+ *
+ * Milestone 3: rewritten for Postgres/Supabase. The previous version imported
+ * `mysql2`, which stopped being a dependency when Milestone 1 (RM-43/46)
+ * migrated the database from TiDB to Supabase Postgres — so the script had been
+ * dead since then and would throw `ERR_MODULE_NOT_FOUND` on first import.
+ *
+ * Creates one account per implemented role, plus two organizations so that
+ * cross-tenant behaviour has something real to be tested against (a single
+ * demo org cannot demonstrate isolation).
  *
  * Usage:
- *   node scripts/seed-users.mjs
+ *   node --env-file=.env scripts/seed-users.mjs
+ *   node --env-file=.env scripts/seed-users.mjs --reset   # delete seeded rows first
  *
- * Creates (or upserts) three accounts using bcrypt-hashed passwords:
+ * Idempotent: re-running upserts by `openId` rather than inserting duplicates,
+ * so it is safe on every boot and in CI.
  *
- *   admin@iosky.local       /  IOSky-Admin-2026!     (role=admin)
- *   client@iosky.local      /  IOSky-Client-2026!    (role=client)
- *   developer@iosky.local   /  IOSky-Developer-2026! (role=developer)
- *
- * In addition, this script bootstraps a single demo organization
- * ("iosky-demo") and links the test client to it with an `owner`
- * membership row. Without that link, every clientProcedure tRPC call
- * throws "No organization is linked to this account." and the client
- * portal renders an error.
- *
- * The script is idempotent — re-running updates existing rows in place
- * instead of inserting duplicates. Safe to run on every fresh database.
+ * SAFETY: every row this creates is prefixed `staging-` (openId) or lives on
+ * the `@staging.iosky.nl` domain, and `--reset` only ever deletes rows matching
+ * those markers. It will not touch real accounts, and it is deliberately
+ * incapable of a bare "DELETE FROM users".
  */
-import "dotenv/config";
-import mysql from "mysql2/promise";
+import postgres from "postgres";
 import bcrypt from "bcryptjs";
 
-const ACCOUNTS = [
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error("DATABASE_URL is not set. Run with: node --env-file=.env scripts/seed-users.mjs");
+  process.exit(1);
+}
+
+const RESET = process.argv.includes("--reset");
+
+/** Marker that identifies every row this script owns. */
+const SEED_PREFIX = "staging-";
+const SEED_DOMAIN = "@staging.iosky.nl";
+
+const ORGANIZATIONS = [
   {
-    openId: "local-admin-iosky",
-    email: "admin@iosky.local",
-    name: "IO SKY Super Admin",
-    role: "admin",
-    password: "IOSky-Admin-2026!",
-    loginMethod: "local",
+    slug: "staging-northwind",
+    name: "Northwind Logistics",
+    legalName: "Northwind Logistics B.V.",
+    industry: "Logistics",
+    size: "51-200",
+    country: "Netherlands",
+    operationalScore: 74,
+    statusLabel: "Healthy",
   },
   {
-    openId: "local-client-iosky",
-    email: "client@iosky.local",
-    name: "IO SKY Test Client",
-    role: "client",
-    password: "IOSky-Client-2026!",
-    loginMethod: "local",
-  },
-  {
-    openId: "local-developer-iosky",
-    email: "developer@iosky.local",
-    name: "IO SKY Test Developer",
-    role: "developer",
-    password: "IOSky-Developer-2026!",
-    loginMethod: "local",
+    // A second tenant exists so cross-tenant isolation can be demonstrated
+    // rather than asserted. With one org, an RLS regression is invisible.
+    slug: "staging-brightwave",
+    name: "Brightwave Retail",
+    legalName: "Brightwave Retail N.V.",
+    industry: "Retail",
+    size: "11-50",
+    country: "Belgium",
+    operationalScore: 61,
+    statusLabel: "Watching",
   },
 ];
 
-const DEMO_ORG = {
-  slug: "iosky-demo",
-  name: "IO SKY Demo Organization",
-  legalName: "IO SKY Demo Organization",
-  industry: "Professional Services",
-  size: "11–50",
-  country: "Netherlands",
-  operationalScore: 78,
-  statusLabel: "Healthy",
-};
+/**
+ * One account per implemented role.
+ *
+ * Passwords are long, obviously-synthetic and identical in shape so they are
+ * easy to hand to a reviewer. They are staging-only by construction: the
+ * accounts live on a domain that receives no mail and hold no real data.
+ */
+const ACCOUNTS = [
+  {
+    openId: `${SEED_PREFIX}client`,
+    email: `client${SEED_DOMAIN}`,
+    name: "Staging Client",
+    role: "client",
+    password: "IOSky-Staging-Client-2026!",
+    org: "staging-northwind",
+    membershipRole: "owner",
+  },
+  {
+    // Second tenant's client — the counterparty in every cross-tenant test.
+    openId: `${SEED_PREFIX}client-b`,
+    email: `client-b${SEED_DOMAIN}`,
+    name: "Staging Client B",
+    role: "client",
+    password: "IOSky-Staging-ClientB-2026!",
+    org: "staging-brightwave",
+    membershipRole: "owner",
+  },
+  {
+    openId: `${SEED_PREFIX}developer`,
+    email: `developer${SEED_DOMAIN}`,
+    name: "Staging Developer",
+    role: "developer",
+    password: "IOSky-Staging-Developer-2026!",
+    org: null,
+  },
+  {
+    openId: `${SEED_PREFIX}admin`,
+    email: `admin${SEED_DOMAIN}`,
+    name: "Staging Admin",
+    role: "admin",
+    password: "IOSky-Staging-Admin-2026!",
+    org: null,
+  },
+  {
+    openId: `${SEED_PREFIX}superadmin`,
+    email: `superadmin${SEED_DOMAIN}`,
+    name: "Staging Super Admin",
+    role: "super_admin",
+    password: "IOSky-Staging-SuperAdmin-2026!",
+    org: null,
+  },
+  {
+    openId: `${SEED_PREFIX}operator`,
+    email: `operator${SEED_DOMAIN}`,
+    name: "Staging Technical Operator",
+    role: "technical_operator",
+    password: "IOSky-Staging-Operator-2026!",
+    org: null,
+  },
+];
 
-async function upsertUser(conn, acc) {
-  const hash = bcrypt.hashSync(acc.password, 12);
-  const [existing] = await conn.execute(
-    "SELECT id FROM users WHERE email = ? LIMIT 1",
-    [acc.email],
-  );
-  if (Array.isArray(existing) && existing.length > 0) {
-    await conn.execute(
-      "UPDATE users SET passwordHash = ?, role = ?, name = ?, loginMethod = ?, lastSignedIn = NOW() WHERE email = ?",
-      [hash, acc.role, acc.name, acc.loginMethod, acc.email],
-    );
-    console.log(`  • updated   ${acc.email} (role=${acc.role})`);
-    return existing[0].id;
-  }
-  const [res] = await conn.execute(
-    "INSERT INTO users (openId, email, name, role, loginMethod, passwordHash, mfaMethod, createdAt, updatedAt, lastSignedIn) VALUES (?,?,?,?,?,?, 'none', NOW(), NOW(), NOW())",
-    [acc.openId, acc.email, acc.name, acc.role, acc.loginMethod, hash],
-  );
-  console.log(`  • inserted  ${acc.email} (role=${acc.role})`);
-  return res.insertId;
+const sql = postgres(DATABASE_URL, { prepare: false, max: 4 });
+
+async function reset() {
+  // Scoped deletes only — see the SAFETY note in the header.
+  const orgSlugs = ORGANIZATIONS.map((o) => o.slug);
+  await sql`
+    DELETE FROM "organization_memberships"
+    WHERE "userId" IN (SELECT "id" FROM "users" WHERE "openId" LIKE ${SEED_PREFIX + "%"})
+  `;
+  await sql`DELETE FROM "users" WHERE "openId" LIKE ${SEED_PREFIX + "%"}`;
+  await sql`DELETE FROM "organizations" WHERE "slug" = ANY(${orgSlugs})`;
+  console.log("[seed] --reset: removed previously seeded staging rows.");
 }
 
-async function upsertDemoOrganization(conn) {
-  const [existing] = await conn.execute(
-    "SELECT id FROM organizations WHERE slug = ? LIMIT 1",
-    [DEMO_ORG.slug],
-  );
-  if (Array.isArray(existing) && existing.length > 0) {
-    const orgId = existing[0].id;
-    await conn.execute(
-      `UPDATE organizations
-         SET name = ?, legalName = ?, industry = ?, size = ?, country = ?,
-             operationalScore = ?, statusLabel = ?, updatedAt = NOW()
-       WHERE id = ?`,
-      [
-        DEMO_ORG.name,
-        DEMO_ORG.legalName,
-        DEMO_ORG.industry,
-        DEMO_ORG.size,
-        DEMO_ORG.country,
-        DEMO_ORG.operationalScore,
-        DEMO_ORG.statusLabel,
-        orgId,
-      ],
-    );
-    console.log(`  • updated   organization #${orgId} (${DEMO_ORG.slug})`);
-    return orgId;
+async function seedOrganizations() {
+  const bySlug = new Map();
+  for (const org of ORGANIZATIONS) {
+    const rows = await sql`
+      INSERT INTO "organizations"
+        ("slug", "name", "legalName", "industry", "size", "country", "operationalScore", "statusLabel")
+      VALUES
+        (${org.slug}, ${org.name}, ${org.legalName}, ${org.industry}, ${org.size},
+         ${org.country}, ${org.operationalScore}, ${org.statusLabel})
+      ON CONFLICT ("slug") DO UPDATE SET
+        "name" = EXCLUDED."name",
+        "legalName" = EXCLUDED."legalName",
+        "industry" = EXCLUDED."industry",
+        "size" = EXCLUDED."size",
+        "country" = EXCLUDED."country"
+      RETURNING "id", "slug"
+    `;
+    bySlug.set(rows[0].slug, rows[0].id);
+    console.log(`[seed] organization ${org.slug} -> id ${rows[0].id}`);
   }
-  const [res] = await conn.execute(
-    `INSERT INTO organizations
-       (slug, name, legalName, industry, size, country,
-        operationalScore, accentHex, statusLabel, createdAt, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, NOW(), NOW())`,
-    [
-      DEMO_ORG.slug,
-      DEMO_ORG.name,
-      DEMO_ORG.legalName,
-      DEMO_ORG.industry,
-      DEMO_ORG.size,
-      DEMO_ORG.country,
-      DEMO_ORG.operationalScore,
-      DEMO_ORG.statusLabel,
-    ],
-  );
-  console.log(`  • inserted  organization #${res.insertId} (${DEMO_ORG.slug})`);
-  return res.insertId;
+  return bySlug;
 }
 
-async function linkClientToOrganization(conn, clientUserId, orgId) {
-  const [rows] = await conn.execute(
-    "SELECT organizationId FROM users WHERE id = ? LIMIT 1",
-    [clientUserId],
-  );
-  const currentOrgId = Array.isArray(rows) && rows[0] ? rows[0].organizationId : null;
-  if (currentOrgId !== orgId) {
-    await conn.execute(
-      "UPDATE users SET organizationId = ?, updatedAt = NOW() WHERE id = ?",
-      [orgId, clientUserId],
-    );
-    console.log(`  • linked    client (user #${clientUserId}) → org #${orgId}`);
-  } else {
-    console.log(`  • already   client linked to org #${orgId}`);
-  }
+async function seedAccounts(orgIdBySlug) {
+  const created = [];
+  for (const acct of ACCOUNTS) {
+    const hash = await bcrypt.hash(acct.password, 10);
+    const organizationId = acct.org ? orgIdBySlug.get(acct.org) : null;
 
-  const [existingMem] = await conn.execute(
-    "SELECT id FROM organization_memberships WHERE organizationId = ? AND userId = ? LIMIT 1",
-    [orgId, clientUserId],
-  );
-  if (!Array.isArray(existingMem) || existingMem.length === 0) {
-    await conn.execute(
-      `INSERT INTO organization_memberships
-         (organizationId, userId, membershipRole, createdAt)
-       VALUES (?, ?, 'owner', NOW())`,
-      [orgId, clientUserId],
-    );
-    console.log(`  • inserted  membership row (user #${clientUserId} → org #${orgId}, owner)`);
-  } else {
-    console.log(`  • membership row already present`);
+    const rows = await sql`
+      INSERT INTO "users"
+        ("openId", "email", "name", "role", "loginMethod", "passwordHash", "organizationId")
+      VALUES
+        (${acct.openId}, ${acct.email}, ${acct.name}, ${acct.role}::users_role,
+         'local', ${hash}, ${organizationId})
+      ON CONFLICT ("openId") DO UPDATE SET
+        "email" = EXCLUDED."email",
+        "name" = EXCLUDED."name",
+        "role" = EXCLUDED."role",
+        "loginMethod" = 'local',
+        "passwordHash" = EXCLUDED."passwordHash",
+        "organizationId" = EXCLUDED."organizationId",
+        -- Clear any revocation cutoff so a re-seed always yields a usable
+        -- account; otherwise a previous logout would leave the seeded user
+        -- unable to authenticate with a freshly-minted session (RM-90).
+        "sessionsRevokedAtMs" = NULL
+      RETURNING "id", "email", "role"
+    `;
+    const user = rows[0];
+
+    if (organizationId) {
+      await sql`
+        INSERT INTO "organization_memberships" ("organizationId", "userId", "membershipRole")
+        VALUES (${organizationId}, ${user.id}, ${acct.membershipRole}::organization_memberships_role)
+        ON CONFLICT DO NOTHING
+      `;
+    }
+
+    created.push({ ...user, password: acct.password, org: acct.org ?? "—" });
+    console.log(`[seed] user ${user.email} (${user.role}) -> id ${user.id}`);
   }
+  return created;
 }
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is not set");
-  }
-  const conn = await mysql.createConnection(process.env.DATABASE_URL);
-  console.log("Connected to database. Seeding users + demo organization…\n");
+  try {
+    if (RESET) await reset();
 
-  // 1. Upsert all three local accounts
-  const userIds = {};
-  for (const acc of ACCOUNTS) {
-    userIds[acc.email] = await upsertUser(conn, acc);
-  }
+    const orgIdBySlug = await seedOrganizations();
+    const accounts = await seedAccounts(orgIdBySlug);
 
-  // 2. Bootstrap demo organization
-  const orgId = await upsertDemoOrganization(conn);
-
-  // 3. Link the test client to the demo organization
-  const clientUserId = userIds["client@iosky.local"];
-  if (clientUserId) {
-    await linkClientToOrganization(conn, clientUserId, orgId);
-  }
-
-  await conn.end();
-  console.log("\nSeeding complete. Login URL → /login");
-  console.log("Use these credentials:");
-  for (const acc of ACCOUNTS) {
-    console.log(`  ${acc.email}  /  ${acc.password}`);
+    console.log("\n=== Staging accounts ===\n");
+    console.log(
+      accounts
+        .map((a) => `  ${a.role.padEnd(20)} ${a.email.padEnd(34)} ${a.password}`)
+        .join("\n"),
+    );
+    console.log(
+      "\nNOTE: admin, super_admin and technical_operator carry a hard blocking MFA\n" +
+        "gate (Milestone 2 §2.5). First sign-in on those three requires enrolling an\n" +
+        "authenticator app. Client and developer are not gated.\n",
+    );
+  } finally {
+    await sql.end({ timeout: 5 });
   }
 }
 
-main().catch(err => {
-  console.error(err);
+main().catch((err) => {
+  console.error("[seed] FAILED:", err);
   process.exit(1);
 });

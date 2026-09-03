@@ -8,6 +8,10 @@ build/
 *.dist
 
 # Environment variables
+# Bare .env was missing from this list, which is how a file with live
+# Supabase credentials came to be committed (Milestone 3). Every *variant*
+# was covered; the base name was not.
+.env
 .env.local
 .env.development
 .env.development.local

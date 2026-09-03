@@ -5,21 +5,29 @@
  *   RM-104 document upload
  *   RM-105 messaging
  *
- * Every spec here needs a signed-in session, and the write flows need a
- * database it is safe to write to. Neither exists yet: staging accounts are
- * part of the environment gated on the hosting decision (RM-74), and the only
- * configured database is the client's live Supabase project.
+ * Every spec here needs a signed-in session, and the write flows additionally
+ * write rows. Both are now satisfiable: `scripts/seed-users.mjs` provisions one
+ * account per role across two organizations, and the Supabase project holds
+ * dummy data only.
  *
- * So these are written and wired but skip by default, with the skip message
- * naming exactly what is missing. That is the honest state — writing them to
- * pass by stubbing out the portal would be worse than skipping, and pointing
- * them at the live database would be worse still.
+ * They still skip when credentials are absent rather than failing, so a fork PR
+ * with no secrets stays green and reports what it did not run. The write flows
+ * remain gated behind E2E_ALLOW_MUTATIONS on top of that — the gate is cheap and
+ * the day this points at a database that is not disposable, it is the only thing
+ * standing between a test run and real customer data.
  *
- * Once staging exists, they run unchanged:
+ * Run locally:
+ *   node --env-file=.env scripts/seed-users.mjs
+ *   E2E_USER_EMAIL=client@staging.iosky.nl E2E_USER_PASSWORD=...  *   E2E_ALLOW_MUTATIONS=true pnpm run test:e2e
+ *
+ * Against staging once it exists, unchanged apart from the base URL:
  *   E2E_BASE_URL=https://staging.iosky.nl \
  *   E2E_USER_EMAIL=client@staging.iosky.nl E2E_USER_PASSWORD=... \
  *   E2E_ALLOW_MUTATIONS=true pnpm run test:e2e
  */
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import {
   test,
   expect,
@@ -112,8 +120,12 @@ test.describe("RM-104: document upload", () => {
     await page.goto("/client-portal/documents");
     await page.waitForLoadState("networkidle");
 
+    // 30s rather than the 10s expect default: the documents section fetches
+    // before it renders its uploader, and under full-suite parallel load that
+    // round-trip exceeded 10s. In isolation this passes in ~11s total, so the
+    // failure was contention, not a missing element.
     const fileInput = page.locator('input[type="file"]').first();
-    await expect(fileInput).toBeAttached();
+    await expect(fileInput).toBeAttached({ timeout: 30_000 });
 
     const name = `e2e-upload-${Date.now()}.txt`;
     await fileInput.setInputFiles({
@@ -129,19 +141,27 @@ test.describe("RM-104: document upload", () => {
   test("rejects an oversized upload rather than failing silently", async ({ page }) => {
     // The body parser is capped at 50mb; the user must be told, not left
     // looking at a spinner that never resolves.
-    await page.goto("/client-portal/documents");
-    await page.waitForLoadState("networkidle");
+    //
+    // The payload is written to a real temp file rather than passed inline:
+    // Playwright refuses an in-memory buffer over 50MB ("Cannot set buffer
+    // larger than 50Mb"), which is its own limit, not the server's — passing
+    // a path is the supported route for exactly this case. Cleaned up in
+    // `finally` so a failure does not leave 51MB behind.
+    const tmp = path.join(os.tmpdir(), `iosky-e2e-oversize-${Date.now()}.bin`);
+    await fs.writeFile(tmp, Buffer.alloc(51 * 1024 * 1024));
 
-    const fileInput = page.locator('input[type="file"]').first();
-    await fileInput.setInputFiles({
-      name: "too-large.bin",
-      mimeType: "application/octet-stream",
-      buffer: Buffer.alloc(60 * 1024 * 1024),
-    });
+    try {
+      await page.goto("/client-portal/documents");
+      await page.waitForLoadState("networkidle");
 
-    await expect(page.locator("body")).toContainText(/too large|size|limit|failed/i, {
-      timeout: 60_000,
-    });
+      await page.locator('input[type="file"]').first().setInputFiles(tmp);
+
+      await expect(page.locator("body")).toContainText(/too large|size|limit|failed/i, {
+        timeout: 90_000,
+      });
+    } finally {
+      await fs.unlink(tmp).catch(() => {});
+    }
   });
 });
 
@@ -149,6 +169,10 @@ test.describe("RM-104: document upload", () => {
 // RM-105 — messaging
 // ---------------------------------------------------------------------------
 test.describe("RM-105: messaging", () => {
+  // The sign-in + navigate + settle sequence costs ~25s on the mobile project;
+  // the default 45s leaves too little headroom for the assertions themselves.
+  test.setTimeout(90_000);
+
   test.beforeEach(async ({ page }) => {
     requiresCredentials("client");
     requiresMutations();
@@ -167,7 +191,17 @@ test.describe("RM-105: messaging", () => {
       .first();
     await composer.fill(body);
 
-    await page.getByRole("button", { name: /send/i }).first().click();
+    // Filling the composer reflows the layout (the textarea auto-grows), which
+    // shifts the send button. On the narrow viewport that shift is large
+    // enough that Playwright's "stable" actionability check kept re-measuring
+    // and burned the whole timeout — while the click actually landed and the
+    // message sent. Scrolling to the button and letting the layout settle
+    // first makes the click deterministic instead of racing the reflow.
+    const send = page.getByRole("button", { name: /send/i }).first();
+    await send.scrollIntoViewIfNeeded();
+    await expect(send).toBeEnabled();
+    await page.waitForTimeout(300);
+    await send.click();
 
     await expect(page.getByText(body)).toBeVisible({ timeout: 30_000 });
   });
@@ -176,11 +210,12 @@ test.describe("RM-105: messaging", () => {
     await page.goto("/client-portal/messages");
     await page.waitForLoadState("networkidle");
 
+    // With an empty composer the send button must not be actionable. Asserting
+    // on `isDisabled` rather than attempting a click keeps this from depending
+    // on click actionability at all — which is what made the sibling test
+    // flaky on mobile.
     const send = page.getByRole("button", { name: /send/i }).first();
-    const before = await page.locator("body").innerText();
-    await send.click({ trial: true }).catch(() => {});
-    const after = await page.locator("body").innerText();
-    // Either the button is disabled (trial click throws) or nothing changed.
-    expect(after.length).toBeLessThanOrEqual(before.length + 200);
+    await send.scrollIntoViewIfNeeded();
+    await expect(send).toBeDisabled();
   });
 });

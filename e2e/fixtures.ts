@@ -55,6 +55,42 @@ export function requiresMutations() {
 }
 
 /**
+ * Pre-accept cookie consent for the session.
+ *
+ * The consent banner is `fixed bottom-0 z-50` with pointer-events enabled on
+ * its card. On a phone viewport it is tall enough to sit directly over primary
+ * actions further down the page — it was covering the client portal's "Send
+ * message" button, so the tap never reached it and the E2E click timed out
+ * while the button sat there visible and enabled.
+ *
+ * A real user dismisses the banner before doing anything else, so seeding the
+ * decision is the faithful setup rather than a workaround. It is written
+ * before navigation so the banner never renders at all.
+ *
+ * NOTE this is also a genuine mobile finding in its own right: until consent is
+ * given, the banner overlays portal content on small viewports. See the
+ * Milestone 3 checklist entry for RM-105-a.
+ */
+export async function acceptCookieConsent(page: Page) {
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem(
+        "iosky.consent.v1",
+        JSON.stringify({
+          subjectKey: "e2e-subject",
+          decision: "accepted-all",
+          categories: { functional: true, analytics: true, marketing: true },
+          recordedAt: new Date().toISOString(),
+        }),
+      );
+      window.localStorage.setItem("iosky.consent.subject", "e2e-subject");
+    } catch {
+      /* private-mode browsers throw; the banner simply stays visible */
+    }
+  });
+}
+
+/**
  * Sign in through the real form.
  *
  * Deliberately drives the UI rather than seeding a session cookie: the login
@@ -62,6 +98,7 @@ export function requiresMutations() {
  * them stops covering the thing most likely to break.
  */
 export async function signIn(page: Page, email: string, password: string) {
+  await acceptCookieConsent(page);
   await page.goto("/login");
   await page.locator("#login-email").fill(email);
   await page.locator("#login-password").fill(password);

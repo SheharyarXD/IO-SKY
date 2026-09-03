@@ -34,7 +34,12 @@ export default defineConfig({
   // silently reducing the CI suite to one test is not.
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Capped rather than left to default (one worker per CPU core). The suite
+  // runs against a single Vite dev server; saturating it with N parallel
+  // browsers pushed portal round-trips past the assertion timeouts and
+  // produced failures that passed in isolation every time. The bottleneck is
+  // the server under test, not the runner, so more workers bought nothing.
+  workers: process.env.CI ? 1 : 2,
 
   reporter: process.env.CI
     ? [["list"], ["html", { open: "never", outputFolder: "e2e-report" }]]

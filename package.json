@@ -15,7 +15,9 @@
     "scan:artifact": "node scripts/scan-build-artifact.mjs",
     "verify": "pnpm run check && pnpm run test && pnpm run build && pnpm run scan:artifact",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "seed": "node --env-file=.env scripts/seed-users.mjs",
+    "seed:reset": "node --env-file=.env scripts/seed-users.mjs --reset"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

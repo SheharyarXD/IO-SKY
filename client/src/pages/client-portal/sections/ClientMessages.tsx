@@ -224,7 +224,13 @@ export default function ClientMessages() {
           </div>
           <Button
             onClick={onSend}
-            disabled={send.isPending}
+            // Milestone 3 (RM-105): also disabled while the composer is empty.
+            // `onSend` already refused a body under 2 characters, and the
+            // server's zod schema enforces the same minimum — but the only way
+            // to discover that was to click and receive an error toast. This
+            // makes the existing guard visible instead of punitive, and matches
+            // the Login form, which likewise disables submit until valid.
+            disabled={send.isPending || body.trim().length < 2}
             className="mt-3 w-full bg-orange-500 hover:bg-orange-400 text-black font-semibold"
           >
             <Send className="h-4 w-4 mr-2" />

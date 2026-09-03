@@ -11,7 +11,7 @@
  * hence the gate, and hence the honeypot check below, which verifies the
  * anti-spam field exists rather than filling it.
  */
-import { test, expect, requiresMutations } from "./fixtures";
+import { test, expect, requiresMutations, acceptCookieConsent } from "./fixtures";
 import type { Page } from "@playwright/test";
 
 /**
@@ -22,6 +22,9 @@ import type { Page } from "@playwright/test";
  * mutation in this flow is the step-3 submit.
  */
 async function goToDetailsStep(page: Page) {
+  // The consent banner is fixed to the bottom of the viewport with pointer
+  // events enabled, and on a phone it covers the wizard's Continue button.
+  await acceptCookieConsent(page);
   await page.goto("/book-strategy");
   await page.waitForLoadState("networkidle");
 
@@ -111,21 +114,64 @@ test.describe("RM-106: booking page (public)", () => {
 test.describe("RM-106: booking submission", () => {
   test.beforeEach(() => requiresMutations());
 
-  test("creates a booking and confirms it", async ({ page }) => {
-    await page.goto("/book-strategy");
-    await page.waitForLoadState("networkidle");
+  // Walking the wizard costs ~18s before the form is even reachable.
+  test.setTimeout(90_000);
 
+  test("creates a booking and confirms it", async ({ page }) => {
+    // Must walk the wizard first — the contact fields live on step 3. An
+    // earlier version of this test filled them straight after `goto` and
+    // timed out on a field that does not exist yet at step 1.
+    await goToDetailsStep(page);
+
+    // All six fields plus consent are required — `canAdvance` for step 3 gates
+    // on fullName ≥2, a valid email, organisation ≥2, role ≥2, challenge ≥8
+    // AND the consent checkbox. Filling only name/email/company left the
+    // Confirm button correctly disabled, which is what the first version of
+    // this test tripped over.
     await page.getByPlaceholder("Your full name").fill("RM-106 E2E Probe");
     await page.getByPlaceholder("you@company.com").fill(`rm106+${Date.now()}@example.com`);
     await page.getByPlaceholder("Your company").fill("E2E Test Co");
+    await page.getByPlaceholder("CEO, COO, Head of Ops…").fill("Head of Operations");
+    await page
+      .getByPlaceholder("What slows your team down today?")
+      .fill("Automated end-to-end probe exercising the booking golden path.");
 
-    // Pick the first offered slot, then submit.
-    const slot = page.locator("button").filter({ hasText: /\d{1,2}:\d{2}/ }).first();
-    if (await slot.count()) await slot.click();
+    // Consent is a real GDPR checkbox, not a formality — the booking cannot be
+    // submitted without it, and it must be ticked explicitly rather than
+    // defaulted.
+    //
+    // The input itself is `sr-only` (the visible control is a styled span), so
+    // `.check()` on it times out waiting for visibility. Clicking the wrapping
+    // label is both what Playwright can act on and what a real user actually
+    // does — the accessible affordance, not the hidden input.
+    await page.locator('label:has(input[type="checkbox"])').first().click();
+    await expect(page.locator('input[type="checkbox"]').first()).toBeChecked();
 
-    await page.getByRole("button", { name: /confirm|book|submit/i }).last().click();
+    // `handleConfirm` refuses any submission made within 8s of the page
+    // mounting — an anti-automation gate, the same idea as the login form's
+    // 1.5s one. Wait it out rather than defeat it: a test that stubs the gate
+    // stops covering it.
+    //
+    // Waited unconditionally from here rather than computed from a timestamp
+    // taken before navigation. That earlier version under-waited: the clock
+    // started before the component mounted, so its "elapsed" was always larger
+    // than the component's own, and the submission still tripped the gate.
+    // Reaching step 3 necessarily happens after mount, so waiting the full
+    // interval from this point is correct by construction.
+    await page.waitForTimeout(8_500);
 
-    await expect(page.locator("body")).toContainText(/confirmed|thank you|booked/i, {
+    const submit = page.getByRole("button", { name: /confirm & book/i });
+    await submit.scrollIntoViewIfNeeded();
+    await expect(submit).toBeEnabled();
+    await submit.click();
+
+    // Step 4 is the durable confirmation state and renders "Scheduled for"
+    // alongside the consultation summary. Asserting on that rather than on the
+    // "Strategy call confirmed" toast: toasts auto-dismiss, so a test that
+    // races one is flaky by construction, and the toast also fires on the
+    // offline-fallback path — which is precisely the case this test must not
+    // accept as success.
+    await expect(page.locator("body")).toContainText(/scheduled for/i, {
       timeout: 30_000,
     });
   });
