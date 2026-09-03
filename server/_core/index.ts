@@ -118,14 +118,42 @@ async function startServer() {
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  const isProduction = process.env.NODE_ENV === "production";
 
-  if (port !== preferredPort) {
+  // Milestone 3 §3.2 (RM-75): in production, bind EXACTLY the requested port.
+  //
+  // The development behaviour below scans upward for a free port, which is a
+  // convenience locally and a silent outage in production. Every managed host
+  // — Railway, Fly, Render, Cloud Run — injects PORT and routes traffic to
+  // precisely that number. If the process quietly binds PORT+1 instead, the
+  // platform's proxy reaches nothing: the container is "running", health
+  // checks fail, and the logs cheerfully report a successful start on a port
+  // no one is talking to.
+  //
+  // Failing loudly is strictly better: the deploy stops with a real reason
+  // rather than coming up unreachable.
+  const port = isProduction ? preferredPort : await findAvailablePort(preferredPort);
+
+  if (!isProduction && port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(
+        `[Startup] Port ${port} is already in use. In production the port is assigned by the ` +
+          `host and must be bound exactly — refusing to fall back to another port, which would ` +
+          `leave the service unreachable behind the platform's proxy.`,
+      );
+      process.exit(1);
+    }
+    throw err;
+  });
+
+  // Bind 0.0.0.0 explicitly rather than relying on the default. A container
+  // that listens only on localhost is invisible to the host's network.
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`Server running on port ${port} (NODE_ENV=${process.env.NODE_ENV ?? "development"})`);
   });
 }
 

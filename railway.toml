@@ -1,0 +1,46 @@
+# Railway deployment configuration — IO SKY
+#
+# Milestone 3 §3.2 (RM-74/RM-75). Railway is a container host running a
+# long-lived Node process, which is exactly what the Three-Milestone Plan
+# requires, so the existing Dockerfile deploys without re-architecture.
+#
+# Railway reads this file from the repository root automatically. Anything set
+# here can still be overridden per-environment in the Railway dashboard.
+
+[build]
+# Use the repository Dockerfile rather than Railway's Nixpacks autodetection.
+# Nixpacks would guess the build, and its guess would be wrong here: the build
+# must run `pnpm run check` and the RM-82 artifact secret scan, so an image
+# containing a leaked credential can never be produced. That is encoded in the
+# Dockerfile, not in a buildpack heuristic.
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Liveness, deliberately NOT /health/ready.
+#
+# Railway restarts a container that fails its health check. /health touches
+# nothing external and reports only "is this process alive", so a brief
+# database blip cannot trigger a restart loop across every replica at once.
+# /health/ready exists for load-balancer readiness and returns 503 when the
+# database is unreachable — correct for routing decisions, wrong for restarts.
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+
+# Restart on genuine crashes, but bounded. An unbounded restart policy turns a
+# deterministic startup failure (a missing JWT_SECRET, say) into an infinite
+# crash loop that burns build minutes and buries the original error.
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+# Single instance to start.
+#
+# IMPORTANT before scaling past 1: the rate limiter defaults to an in-process
+# store, so N replicas give each caller N times the intended allowance. Set
+# RATE_LIMIT_STORE=postgres (the shared store already exists, migration 0016)
+# before increasing this.
+numReplicas = 1
+
+# Zero-downtime handover: keep the old container serving until the new one
+# passes its health check.
+overlapSeconds = 20
