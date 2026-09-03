@@ -53,6 +53,12 @@ async function goToDetailsStep(page: Page) {
 }
 
 test.describe("RM-106: booking page (public)", () => {
+  // Several specs here navigate directly rather than through goToDetailsStep,
+  // so the gate and consent are seeded for all of them.
+  test.beforeEach(async ({ page }) => {
+    await acceptCookieConsent(page);
+  });
+
   test("serves the booking page", async ({ page }) => {
     const response = await page.goto("/book-strategy");
     expect(response?.status()).toBeLessThan(400);

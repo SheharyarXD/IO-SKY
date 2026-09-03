@@ -21,6 +21,7 @@
 import { test as base, expect, type Page } from "@playwright/test";
 
 export const E2E = {
+  stagingPassword: process.env.E2E_STAGING_PASSWORD ?? "",
   email: process.env.E2E_USER_EMAIL ?? "",
   password: process.env.E2E_USER_PASSWORD ?? "",
   adminEmail: process.env.E2E_ADMIN_EMAIL ?? "",
@@ -55,6 +56,33 @@ export function requiresMutations() {
 }
 
 /**
+ * Unlock the pre-launch staging gate, if one is configured.
+ *
+ * A deployed review environment runs with STAGING_MODE=on, so every page
+ * returns the gate HTML until a signed cookie is present. Without this, every
+ * spec run against staging would fail on the gate rather than on anything it
+ * is actually testing.
+ *
+ * Posts the real password to the real unlock endpoint rather than forging the
+ * cookie — the gate's signing is part of what deploying it is meant to prove.
+ * No-op when E2E_STAGING_PASSWORD is unset, which is the local case.
+ */
+export async function unlockStagingGate(page: Page) {
+  if (!E2E.stagingPassword) return;
+  const base = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3100";
+  const res = await page.request.post(`${base}/api/staging/unlock`, {
+    form: { password: E2E.stagingPassword },
+    maxRedirects: 0,
+    failOnStatusCode: false,
+  });
+  if (res.status() !== 302 && res.status() !== 200) {
+    throw new Error(
+      `Staging gate refused the password (HTTP ${res.status()}). Check E2E_STAGING_PASSWORD.`,
+    );
+  }
+}
+
+/**
  * Pre-accept cookie consent for the session.
  *
  * The consent banner is `fixed bottom-0 z-50` with pointer-events enabled on
@@ -72,6 +100,7 @@ export function requiresMutations() {
  * Milestone 3 checklist entry for RM-105-a.
  */
 export async function acceptCookieConsent(page: Page) {
+  await unlockStagingGate(page);
   await page.addInitScript(() => {
     try {
       window.localStorage.setItem(

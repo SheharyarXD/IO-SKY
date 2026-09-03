@@ -11,7 +11,13 @@
  * server serves it, and the route guard redirects — none of which a jsdom
  * render can tell you.
  */
-import { test, expect, requiresCredentials, signIn, E2E } from "./fixtures";
+import { test, expect, requiresCredentials, signIn, acceptCookieConsent, E2E } from "./fixtures";
+
+// Unlocks the pre-launch gate (when E2E_STAGING_PASSWORD is set) and seeds the
+// consent decision, so specs that navigate directly are not blocked by either.
+test.beforeEach(async ({ page }) => {
+  await acceptCookieConsent(page);
+});
 
 test.describe("RM-102: login page (unauthenticated)", () => {
   test("serves the login page with both credential fields", async ({ page }) => {
