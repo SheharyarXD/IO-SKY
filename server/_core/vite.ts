@@ -1,3 +1,15 @@
+/**
+ * DEVELOPMENT ONLY - Vite middleware.
+ *
+ * This module imports 'vite' and 'vite.config' at module scope, so it must
+ * never be reachable from a production code path: 'vite' is a devDependency
+ * and is removed by `pnpm prune --prod` in the container build.
+ *
+ * serveStatic used to live here too, which meant production imported this
+ * module and inherited that dependency - the container then crash-looped on
+ * ERR_MODULE_NOT_FOUND at boot. It now lives in ./staticServer.ts, and this
+ * module is reached only through a dynamic import guarded by NODE_ENV.
+ */
 import express, { type Express } from "express";
 import fs from "fs";
 import { type Server } from "http";
@@ -44,24 +56,5 @@ export async function setupVite(app: Express, server: Server) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
     }
-  });
-}
-
-export function serveStatic(app: Express) {
-  const distPath =
-    process.env.NODE_ENV === "development"
-      ? path.resolve(import.meta.dirname, "../..", "dist", "public")
-      : path.resolve(import.meta.dirname, "public");
-  if (!fs.existsSync(distPath)) {
-    console.error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
-  }
-
-  app.use(express.static(distPath));
-
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

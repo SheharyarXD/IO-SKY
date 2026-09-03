@@ -16,7 +16,7 @@ import { registerHealthRoutes } from "./healthRoute";
 import { registerResendWebhookRoutes } from "./resendWebhookRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
+import { serveStatic } from "./staticServer";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -110,8 +110,16 @@ async function startServer() {
       createContext,
     })
   );
-  // development mode uses Vite, production mode uses static files
+  // Development uses Vite middleware; production serves the built client.
+  //
+  // The Vite branch is a DYNAMIC import on purpose. ./vite.ts imports 'vite'
+  // and 'vite.config' at module scope, and 'vite' is a devDependency that
+  // `pnpm prune --prod` strips from the production image. A static import
+  // here - even one guarded by this if - is resolved at load time, and that
+  // made the container crash-loop on ERR_MODULE_NOT_FOUND. Dynamic keeps it
+  // unresolved unless the branch actually runs.
   if (process.env.NODE_ENV === "development") {
+    const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
     serveStatic(app);
