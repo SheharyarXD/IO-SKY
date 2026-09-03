@@ -125,3 +125,6 @@ client/public/__manus__/version.json
 /e2e-report/
 /playwright-report/
 /blob-report/
+
+# Railway env paste-file — generated locally, never commit
+railway.env.local
