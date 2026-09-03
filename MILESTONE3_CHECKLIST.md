@@ -38,13 +38,13 @@ section).
 | ID | Task | Status | Notes |
 |---|---|---|---|
 | RM-74 | Client decision: hosting provider | ⛔ | Client deliverable — must support a long-lived Node process. Carried over as unresolved from Milestone 1 §1.3. |
-| RM-75 | Stand up production hosting, bind to explicit port | ⏭ | Depends on RM-74. |
+| RM-75 | Stand up production hosting, bind to explicit port | 🔶 | **Everything except the host itself.** `Dockerfile` + `.dockerignore` make the app deployable on any container host (Fly, Railway, Render, Cloud Run, ECS, a VPS): multi-stage, non-root, explicit `PORT`, with typecheck and the RM-82 secret scan run inside the build. `docs/DEPLOYMENT.md` documents host requirements, the full env-var inventory, first-deploy steps and the open items. ⚠️ **The image has never been built** — no Docker CLI in this environment. Every command it runs is individually verified; the layering is not. |
 | RM-76 | Wire existing health-check endpoint into the host | ✅ | The pre-existing `system.health` was a tRPC procedure requiring a `timestamp` input and superjson encoding — unusable by a load balancer, which issues a plain `GET` and reads the status code. New `server/_core/healthRoute.ts` adds `GET /health` (liveness), `/health/ready` (readiness) and `/health/version`. Liveness deliberately **does not touch the database**: orchestrators restart whatever fails it, so a DB-dependent liveness probe turns a brief database blip into a simultaneous restart of every instance. Readiness returns 503 so load balancers pull the instance rather than failing user requests. Registered before the staging gate so uptime monitors need no password. 14 tests — including one that caught a real leak: the readiness error was serving raw driver messages, which carry the full DSN with password on an unauthenticated endpoint. Now redacted. |
 | RM-77 | Supabase production configuration: connection pooling | ⏭ | Dev/staging already provisioned per Milestone 1 §1.4; production tier config is new. |
 | RM-78 | Supabase production configuration: automated backups | ⏭ | |
 | RM-79 | Tested backup restore before go-live | ⏭ | Must be exercised, not just configured. |
 | RM-80 | Full CI/CD pipeline: build + staging-deploy + approval-gated production deploy | 🔶 | **Build half done, deploy half blocked.** `ci.yml` now runs three jobs — typecheck+test, the RM-107 security suite, and build + RM-82 artifact scan — so every merge is gated on a real production build, not just a typecheck. The staging-deploy and approval-gated production-deploy stages are **not** written: they depend on the hosting provider (RM-74), an open client decision. Writing deploy jobs against an unknown host would be scaffolding that has never executed — precisely the unverified-claim pattern the Milestone 2 feedback asked us to stop. |
-| RM-81 | Secrets management: move all production secrets into host/CI secret manager | ⏭ | Depends on RM-74 hosting decision. |
+| RM-81 | Secrets management: move all production secrets into host/CI secret manager | 🔶 | Policy, inventory and mechanics documented in `docs/DEPLOYMENT.md` §4, and the enforcement is real rather than advisory: `.dockerignore` keeps `.env*`/`*.pem`/`.npmrc` out of the build context (deleting a secret in a later layer does NOT remove it from image history), and the RM-82 scan runs **inside** the image build so an image containing a credential cannot be produced. The final move into a host secret manager still needs the host (RM-74), and the GitHub repository secrets still need admin access to create. |
 | RM-82 | Confirm no secret files ship in any build/deploy artifact | ✅ | New `scripts/scan-build-artifact.mjs`, wired as its own CI job and as `pnpm run scan:artifact`. Scans what is actually deployed rather than source — a distinction that matters because Vite inlines every `VITE_`-prefixed var into the client bundle, so a mis-prefixed secret is absent from source yet public in the artifact. Two independent halves: verbatim value-matching against real env secrets (catches a credential that does not look like one) and narrow pattern matching (AWS keys, `sb_secret_*`, `sk-*`, `sk_live_*`, inline-password Postgres URLs, PEM blocks, Slack tokens), plus forbidden-filename checks (`.env*`, `.npmrc`, `*.pem`, `id_rsa`, `.project-config.json`). Refuses to report a clean scan against a missing or empty `dist/`, and says explicitly when no secrets were in the environment so only the pattern half ran. **Result: PASS — 395 files scanned, 0 findings.** |
 | RM-83 | DNS cutover: iosky.nl staging subdomain → production apex, low-TTL rollback window | ⏭ | Depends on RM-74 and the Milestone 1 §1.3 DNS staging work. |
 
@@ -60,7 +60,7 @@ section).
 | RM-89 | Session security: confirm Supabase session expiry/refresh is deliberately configured | ✅ | **Confirmed NOT deliberately configured — it was a defect.** Every login path (local, OAuth, Supabase, MFA-challenge) minted `expiresInMs: ONE_YEAR_MS`; that was simply the SDK default, never a considered choice. Replaced with `getSessionTtlMs()` in `shared/const.ts`: 12h default, `SESSION_TTL_HOURS` override, clamped to [5min, 30d] so a typo cannot silently reintroduce a year-long session. All four login paths and `sdk.signSession`'s own default now use it. 5 tests. |
 | RM-90 | Session security: confirm logout actually revokes sessions | ✅ | **Confirmed it did NOT — logout was cosmetic.** Sessions are stateless signed JWTs; logout cleared only the browser's cookie, so a captured token stayed valid until expiry (a year, pre-RM-89). Fixed with a real revocation cutoff: `users.sessionsRevokedAtMs` (migration 0016), stamped by `db.revokeUserSessions{,ByOpenId}()` and enforced in `sdk.authenticateRequest()`. `sdk.signSession` now signs an explicit `iat`; `verifySession` returns `issuedAtMs`. Comparison is `<=` not `<` — JWT `iat` has 1s granularity, so a strict `<` would let a token minted during the revocation second survive a logout-then-replay. Legacy tokens with no `iat` fail closed once a revocation exists, but still work when the user has never revoked, so deploying this does not sign everyone out. 8 tests in `server/sessionRevocation.test.ts`. |
 | RM-91 | Review `dangerouslySetInnerHTML` usage | ✅ | Audit found **exactly one** occurrence: `client/src/components/ui/chart.tsx`, unused shadcn scaffold that injected a `<style>` block built from caller-supplied `config` values (a `</style>` in a config value would break out into HTML). Confirmed unreferenced — nothing imports it, and recharts is used directly in `AIScanResult.tsx` — so it was **deleted** rather than hardened, following the RM-04 precedent that removed `ui/form.tsx` the same way. Enforced by a test asserting zero occurrences across `client/src` and `server` (test files excluded, since the assertion names the identifier), so the sink cannot silently return. |
-| RM-92 | Review cookie `SameSite`/`Secure` attributes against real hosting | ⏭ | Carries over Milestone 1's blocked RM-38, now unblockable once RM-74 lands. |
+| RM-92 | Review cookie `SameSite`/`Secure` attributes against real hosting | 🔶 | Milestone 1 deferred this entirely as unverifiable without infrastructure, but that conflated two separable questions. **Does the app choose the right attributes given how the request arrives** is pure logic over `req.protocol`/`X-Forwarded-Proto` — now settled by 20 tests in `server/cookieSecurity.test.ts`, covering direct HTTP/HTTPS, proxied HTTPS, comma-separated and array forwarded chains, casing/whitespace, and the invariant that `SameSite=None` is **never** emitted without `Secure` (browsers silently discard that combination — it is what previously made logins appear to succeed while the session cookie was dropped). `TRUST_PROXY` gating is asserted as opt-in, since the header is client-supplied. **Only the remaining half is still blocked:** confirming the deployed proxy actually sets `X-Forwarded-Proto` (RM-74). |
 | RM-93 | zod validation coverage audit across ported procedures | ✅ | Static audit of all 12 router files: **169 procedures, 0 gaps.** 102 declare a validator; the other 67 genuinely take no input (none of them destructure `input`). All 16 validators that are named constants rather than inline `z.object(...)` were resolved back to their declarations and confirmed zod. Written as a permanent test (`server/inputValidationCoverage.test.ts`) rather than a document: an audit that says "clean" is stale the moment a procedure is added, whereas this fails the CI gate. Includes a parser self-guard (asserts >150 procedures found) so a declaration-style refactor cannot make the coverage checks silently pass by matching nothing. |
 | RM-94 | Client decision: audit-log integrity — genuine tamper-evidence vs. corrected UI claim | ⛔ | Client deliverable per the source plan. |
 | RM-95 | Implement the RM-94 decision | ⏭ | Depends on RM-94. |
@@ -193,7 +193,7 @@ land primarily in Milestone 2's scope, not Milestone 3's — tracked here for vi
 
 ## Summary
 
-**26 of 56 tasks (RM-64..RM-119) complete, 5 partial.**
+**26 of 56 tasks (RM-64..RM-119) complete, 8 partial.**
 
 | Batch | Tasks | Area |
 |---|---|---|
@@ -204,6 +204,7 @@ land primarily in Milestone 2's scope, not Milestone 3's — tracked here for vi
 | 5 | RM-106, RM-109, RM-111 ✅ · RM-115, RM-118 🔶 | §3.4 booking E2E + workflow manifest · §3.5 index usage, walkthrough, rollback plan |
 | 6 | RM-103, RM-104, RM-105 ✅ | §3.4 portal E2E unblocked by real seeded accounts |
 | 7 | RM-76, RM-113 ✅ · RM-110 🔶 | §3.2 health endpoints · §3.5 concurrency + latency baselines |
+| 8 | RM-75, RM-81, RM-92 🔶 | §3.2 container image + secrets policy · §3.3 cookie attributes |
 | — | RM-80 (🔶) | §3.2 CI/CD — build half done, deploy half blocked on RM-74 |
 
 Four of these were specified as "confirm X" or "audit X" and turned out to be **genuine defects**:
@@ -230,9 +231,9 @@ Two were clean on inspection and are now enforced rather than merely recorded:
 - **RM-93** — 169 procedures, 0 validation gaps; now a CI-failing test instead of a point-in-time audit.
 - **RM-82** — 395 artifact files, 0 secrets; now a CI job instead of a manual pass.
 
-Verification for the completed set: `pnpm run check` clean; `pnpm run test` **719 passed / 15 skipped /
-0 failed across 65 files** (up from 569 before this work — **+127 new tests**, zero regressions), confirmed
-stable over two consecutive full runs; `pnpm run test:security` 162 passing; `pnpm run build` clean;
+Verification for the completed set: `pnpm run check` clean; `pnpm run test` **739 passed / 15 skipped /
+0 failed across 66 files** (up from 569 before this work — **+127 new tests**, zero regressions), confirmed
+stable over two consecutive full runs; `pnpm run test:security` 173 passing; `pnpm run build` clean;
 `pnpm run scan:artifact` PASS.
 
 Two flakes of our own were found and fixed rather than left to intermittently fail CI: a rate-limit
