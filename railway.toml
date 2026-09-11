@@ -44,3 +44,18 @@ numReplicas = 1
 # Zero-downtime handover: keep the old container serving until the new one
 # passes its health check.
 overlapSeconds = 20
+
+# Region: EU (Amsterdam), not the US.
+#
+# This is a GDPR requirement, not a latency preference. The Supabase Postgres
+# project holding every personal-data table lives in AWS eu-west-1 (Ireland),
+# but the application container was running in Railway's `sfo` region — so
+# every request carrying personal data was processed in the United States
+# before touching a database in the EEA. That is an international transfer
+# regardless of what the database region says, and it is not something a
+# provider's compliance page resolves.
+#
+# `europe-west4` is Railway's Amsterdam region, which keeps processing and
+# storage both inside the EEA.
+[deploy.multiRegionConfig.europe-west4]
+numReplicas = 1
