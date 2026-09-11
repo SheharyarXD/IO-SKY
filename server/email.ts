@@ -182,6 +182,35 @@ function formatHumanDate(slotStartMs: number, tz: string, bcp47 = "en-GB"): stri
   }
 }
 
+/**
+ * Brand palette for transactional email.
+ *
+ * These are the IO SKY brand values, not approximations: Warm Deep Teal
+ * #0D2D2E as the ground and IO SKY Orange #F58A1F as the accent. The
+ * templates previously shipped #0A0E14 / #FF7A00, which read as "close
+ * enough" on screen but are a different teal and a different orange, so
+ * every transactional email sat slightly outside the brand.
+ *
+ * Defined once and referenced everywhere so the three templates below
+ * cannot drift apart again, and so a future palette change is one edit.
+ */
+const BRAND = {
+  /** Page ground. */
+  ground: "#0D2D2E",
+  /** Card surface, one step lighter than the ground. */
+  surface: "#123A3B",
+  /** Accent: eyebrows, references, primary link borders. */
+  accent: "#F58A1F",
+  /** Accent at low opacity, for hairline borders. */
+  accentBorder: "rgba(245,138,31,0.22)",
+  /** Accent as a barely-there panel wash. */
+  accentWash: "rgba(245,138,31,0.06)",
+  /** Body and heading text on the dark ground. */
+  text: "#E6EAF0",
+  /** De-emphasised text and secondary link colour. */
+  textMuted: "rgba(230,234,240,0.7)",
+} as const;
+
 function renderHtml(input: BookingEmailInput): string {
   const locale: EmailLocale = normaliseLocale(input.locale);
   const t = bookingStrings(locale);
@@ -190,19 +219,19 @@ function renderHtml(input: BookingEmailInput): string {
   const align = isRtl(locale) ? "right" : "left";
   const firstName = escapeHtml(input.fullName.split(" ")[0] || input.fullName);
   return `<!doctype html>
-<html dir="${dir}"><body style="margin:0;padding:0;background:#0A0E14;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:#E6EAF0">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0E14;padding:32px 0">
+<html dir="${dir}"><body style="margin:0;padding:0;background:${BRAND.ground};font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:${BRAND.text}">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.ground};padding:32px 0">
     <tr><td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" dir="${dir}" style="background:#0F141B;border:1px solid rgba(255, 122, 0,0.18);border-radius:16px;padding:32px;text-align:${align}">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" dir="${dir}" style="background:${BRAND.surface};border:1px solid ${BRAND.accentBorder};border-radius:16px;padding:32px;text-align:${align}">
         <tr><td>
-          <div style="font-family:Inter,Segoe UI,sans-serif;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#FF7A00">${escapeHtml(t.eyebrow)}</div>
-          <h1 style="margin:18px 0 8px;font-size:26px;line-height:1.2;color:#E6EAF0;font-weight:600">${escapeHtml(t.heading)}</h1>
+          <div style="font-family:Inter,Segoe UI,sans-serif;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:${BRAND.accent}">${escapeHtml(t.eyebrow)}</div>
+          <h1 style="margin:18px 0 8px;font-size:26px;line-height:1.2;color:${BRAND.text};font-weight:600">${escapeHtml(t.heading)}</h1>
           <p style="margin:0 0 22px;font-size:14px;line-height:1.65;color:rgba(230,234,240,0.72)">${escapeHtml(fill(t.intro, { name: firstName, service: input.serviceLabel }))}</p>
 
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255, 122, 0,0.06);border:1px solid rgba(255, 122, 0,0.22);border-radius:12px;padding:18px 20px;margin-bottom:18px">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.accentWash};border:1px solid ${BRAND.accentBorder};border-radius:12px;padding:18px 20px;margin-bottom:18px">
             <tr><td>
               <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(230,234,240,0.55)">${escapeHtml(t.whenLabel)}</div>
-              <div style="font-size:16px;color:#E6EAF0;margin-top:4px;font-weight:500">${escapeHtml(when)}</div>
+              <div style="font-size:16px;color:${BRAND.text};margin-top:4px;font-weight:500">${escapeHtml(when)}</div>
               <div style="font-size:12px;color:rgba(230,234,240,0.55);margin-top:2px">${escapeHtml(fill(t.durationTz, { duration: input.durationMin, tz: input.timezone }))}</div>
             </td></tr>
           </table>
@@ -210,7 +239,7 @@ function renderHtml(input: BookingEmailInput): string {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;margin-bottom:18px">
             <tr><td>
               <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(230,234,240,0.55)">${escapeHtml(t.refLabel)}</div>
-              <div style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:15px;color:#FF7A00;margin-top:4px;letter-spacing:0.1em">${escapeHtml(input.publicRef)}</div>
+              <div style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:15px;color:${BRAND.accent};margin-top:4px;letter-spacing:0.1em">${escapeHtml(input.publicRef)}</div>
             </td></tr>
           </table>
 
@@ -218,7 +247,7 @@ function renderHtml(input: BookingEmailInput): string {
             ${escapeHtml(t.operatorNote)}
           </p>
 
-          ${(input.cancelToken || input.rescheduleToken) ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px"><tr><td align="${align}">${input.rescheduleToken ? `<a href="${getPublicBase()}/booking/reschedule?token=${encodeURIComponent(input.rescheduleToken)}" style="display:inline-block;padding:10px 16px;border:1px solid rgba(255, 122, 0,0.45);border-radius:8px;color:#FF7A00;font-size:13px;text-decoration:none;margin-right:8px">${escapeHtml(t.reschedule)}</a>` : ''}${input.cancelToken ? `<a href="${getPublicBase()}/booking/cancel?token=${encodeURIComponent(input.cancelToken)}" style="display:inline-block;padding:10px 16px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:rgba(230,234,240,0.7);font-size:13px;text-decoration:none">${escapeHtml(t.cancel)}</a>` : ''}</td></tr></table>` : ''}
+          ${(input.cancelToken || input.rescheduleToken) ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px"><tr><td align="${align}">${input.rescheduleToken ? `<a href="${getPublicBase()}/booking/reschedule?token=${encodeURIComponent(input.rescheduleToken)}" style="display:inline-block;padding:10px 16px;border:1px solid ${BRAND.accentBorder};border-radius:8px;color:${BRAND.accent};font-size:13px;text-decoration:none;margin-right:8px">${escapeHtml(t.reschedule)}</a>` : ''}${input.cancelToken ? `<a href="${getPublicBase()}/booking/cancel?token=${encodeURIComponent(input.cancelToken)}" style="display:inline-block;padding:10px 16px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:${BRAND.textMuted};font-size:13px;text-decoration:none">${escapeHtml(t.cancel)}</a>` : ''}</td></tr></table>` : ''}
           <p style="margin:18px 0 0;font-size:12px;color:rgba(230,234,240,0.5)">
             ${escapeHtml(t.footerNote)}<br/>
             <span style="color:rgba(230,234,240,0.4)">IO SKY · Rotterdam, Netherlands · iosky.com</span>
@@ -412,20 +441,20 @@ function renderContactHtml(input: ContactEmailInput): string {
   const align = isRtl(locale) ? "right" : "left";
   const firstName = escapeHtml(input.fullName.split(" ")[0] || input.fullName);
   return `<!doctype html>
-<html dir="${dir}"><body style="margin:0;padding:0;background:#0A0E14;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:#E6EAF0">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0E14;padding:32px 0">
+<html dir="${dir}"><body style="margin:0;padding:0;background:${BRAND.ground};font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:${BRAND.text}">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.ground};padding:32px 0">
     <tr><td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" dir="${dir}" style="background:#0F141B;border:1px solid rgba(255, 122, 0,0.18);border-radius:16px;padding:32px;text-align:${align}">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" dir="${dir}" style="background:${BRAND.surface};border:1px solid ${BRAND.accentBorder};border-radius:16px;padding:32px;text-align:${align}">
         <tr><td>
-          <div style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#FF7A00">${escapeHtml(t.eyebrow)}</div>
-          <h1 style="margin:18px 0 8px;font-size:26px;line-height:1.2;color:#E6EAF0;font-weight:600">${escapeHtml(t.heading)}</h1>
+          <div style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:${BRAND.accent}">${escapeHtml(t.eyebrow)}</div>
+          <h1 style="margin:18px 0 8px;font-size:26px;line-height:1.2;color:${BRAND.text};font-weight:600">${escapeHtml(t.heading)}</h1>
           <p style="margin:0 0 22px;font-size:14px;line-height:1.65;color:rgba(230,234,240,0.72)">${escapeHtml(fill(t.intro, { name: firstName }))}</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;margin-bottom:18px">
             <tr><td>
               <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(230,234,240,0.55)">${escapeHtml(t.refLabel)}</div>
-              <div style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:15px;color:#FF7A00;margin-top:4px;letter-spacing:0.1em">${escapeHtml(input.publicRef)}</div>
+              <div style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:15px;color:${BRAND.accent};margin-top:4px;letter-spacing:0.1em">${escapeHtml(input.publicRef)}</div>
               <div style="margin-top:14px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(230,234,240,0.55)">${escapeHtml(t.subjectLabel)}</div>
-              <div style="font-size:14px;color:#E6EAF0;margin-top:4px">${escapeHtml(input.subject)}</div>
+              <div style="font-size:14px;color:${BRAND.text};margin-top:4px">${escapeHtml(input.subject)}</div>
             </td></tr>
           </table>
           <p style="margin:18px 0 0;font-size:12px;color:rgba(230,234,240,0.5)">IO SKY · Rotterdam, Netherlands · iosky.com</p>
@@ -486,18 +515,18 @@ function renderDevAppHtml(input: DevAppEmailInput): string {
   const align = isRtl(locale) ? "right" : "left";
   const firstName = escapeHtml(input.fullName.split(" ")[0] || input.fullName);
   return `<!doctype html>
-<html dir="${dir}"><body style="margin:0;padding:0;background:#0A0E14;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:#E6EAF0">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0E14;padding:32px 0">
+<html dir="${dir}"><body style="margin:0;padding:0;background:${BRAND.ground};font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:${BRAND.text}">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.ground};padding:32px 0">
     <tr><td align="center">
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" dir="${dir}" style="background:#0F141B;border:1px solid rgba(255, 122, 0,0.18);border-radius:16px;padding:32px;text-align:${align}">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" dir="${dir}" style="background:${BRAND.surface};border:1px solid ${BRAND.accentBorder};border-radius:16px;padding:32px;text-align:${align}">
         <tr><td>
-          <div style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#FF7A00">${escapeHtml(t.eyebrow)}</div>
-          <h1 style="margin:18px 0 8px;font-size:26px;line-height:1.2;color:#E6EAF0;font-weight:600">${escapeHtml(t.heading)}</h1>
+          <div style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:${BRAND.accent}">${escapeHtml(t.eyebrow)}</div>
+          <h1 style="margin:18px 0 8px;font-size:26px;line-height:1.2;color:${BRAND.text};font-weight:600">${escapeHtml(t.heading)}</h1>
           <p style="margin:0 0 22px;font-size:14px;line-height:1.65;color:rgba(230,234,240,0.72)">${escapeHtml(fill(t.intro, { name: firstName }))}</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;margin-bottom:18px">
             <tr><td>
               <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(230,234,240,0.55)">${escapeHtml(t.refLabel)}</div>
-              <div style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:15px;color:#FF7A00;margin-top:4px;letter-spacing:0.1em">${escapeHtml(input.publicRef)}</div>
+              <div style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:15px;color:${BRAND.accent};margin-top:4px;letter-spacing:0.1em">${escapeHtml(input.publicRef)}</div>
             </td></tr>
           </table>
           <p style="margin:0 0 0;font-size:13px;line-height:1.7;color:rgba(230,234,240,0.6)">${escapeHtml(t.ndaNote)}</p>

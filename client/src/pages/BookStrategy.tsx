@@ -235,6 +235,14 @@ interface DraftState {
   workEmail: string;
   organisation: string;
   role: string;
+  /**
+   * Required on the Discovery Call, deliberately absent from the Contact
+   * form. A discovery call is a scheduled telephone or video conversation,
+   * so a number is data we actually need to deliver the thing being booked;
+   * a general contact enquiry is answered by email and collecting a number
+   * there would be more data than the purpose justifies.
+   */
+  phone: string;
   challenge: string;
   maturity: string;
   goals: string;
@@ -254,6 +262,7 @@ const DEFAULT_DRAFT: DraftState = {
   workEmail: "",
   organisation: "",
   role: "",
+  phone: "",
   challenge: "",
   maturity: "",
   goals: "",
@@ -514,6 +523,9 @@ export default function BookStrategy() {
         validEmail &&
         draft.organisation.trim().length >= 2 &&
         draft.role.trim().length >= 2 &&
+        // Digits only, so "+31 6 1234 5678" and "0031612345678" both pass but
+        // a placeholder like "n/a" does not.
+        draft.phone.replace(/[^0-9]/g, "").length >= 7 &&
         draft.challenge.trim().length >= 8 &&
         draft.consent
       );
@@ -576,6 +588,7 @@ export default function BookStrategy() {
           workEmail: draft.workEmail.trim(),
           organisation: draft.organisation.trim(),
           role: draft.role.trim(),
+          phone: draft.phone.trim(),
         },
         preparation: {
           challenge: draft.challenge.trim(),
@@ -599,6 +612,7 @@ export default function BookStrategy() {
           email: draft.workEmail.trim(),
           company: draft.organisation.trim() || null,
           role: draft.role.trim() || null,
+          phone: draft.phone.trim(),
           preparation: {
             challenge: draft.challenge.trim(),
             maturity: draft.maturity,
@@ -1113,6 +1127,13 @@ export default function BookStrategy() {
                           placeholder="CEO, COO, Head of Ops…"
                           value={draft.role}
                           onChange={(v) => setDraft((p) => ({ ...p, role: v }))}
+                        />
+                        <Field
+                          label="Telephone *"
+                          type="tel"
+                          placeholder="+31 6 12 34 56 78"
+                          value={draft.phone}
+                          onChange={(v) => setDraft((p) => ({ ...p, phone: v }))}
                         />
                       </div>
 

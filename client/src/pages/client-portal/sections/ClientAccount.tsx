@@ -24,6 +24,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProfilePhoto } from "@/components/ProfilePhoto";
 import {
   GlassCard,
   SectionHeader,
@@ -74,6 +75,7 @@ export default function ClientAccount() {
           <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">
             Your Profile
           </p>
+          <ProfilePhoto className="mt-4" />
           <div className="mt-4 space-y-4">
             <div>
               <label

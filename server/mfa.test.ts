@@ -164,6 +164,40 @@ describe("mfa.enrollTotpBegin", () => {
     expect(factorStore[0].verifiedAt).toBeNull();
     expect(auditLog.at(-1)?.reason).toBe("mfa_totp_enroll_begin");
   });
+
+  it("replaces an abandoned un-verified factor instead of stacking a new one", async () => {
+    // Each call mints a fresh secret, so the previous un-verified row is dead:
+    // it can never satisfy the privileged gate and can never be used to sign
+    // in. Before this was handled, every abandoned attempt left an extra
+    // "Authenticator app" entry behind — staging admin had accumulated two
+    // before anyone noticed the enrolment dialog was the real problem.
+    const c = caller(makeCtx());
+    const first = await c.mfa.enrollTotpBegin();
+    const second = await c.mfa.enrollTotpBegin();
+
+    expect(second.factorId).not.toBe(first.factorId);
+    expect(factorStore).toHaveLength(1);
+    expect(factorStore[0].id).toBe(second.factorId);
+  });
+
+  it("never discards a verified factor when starting a new enrolment", async () => {
+    const c = caller(makeCtx());
+    const { factorId } = await c.mfa.enrollTotpBegin();
+    const { envelopeDecrypt } = await import("./_core/mfaCrypto");
+    const secret = envelopeDecrypt(factorStore[0].secret);
+    const token = generateSync({ strategy: "totp", secret, digits: 6, period: 30 });
+    await c.mfa.enrollTotpVerify({
+      factorId,
+      token: typeof token === "string" ? token : (token as any).otp,
+    });
+
+    await c.mfa.enrollTotpBegin();
+
+    // The verified factor survives — removing one of those is an explicit,
+    // separately audited action, not a side effect of opening a dialog.
+    expect(factorStore.some(f => f.id === factorId && f.verifiedAt !== null)).toBe(true);
+    expect(factorStore).toHaveLength(2);
+  });
 });
 
 describe("mfa.enrollTotpVerify", () => {

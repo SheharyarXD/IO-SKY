@@ -191,6 +191,29 @@ export async function updateUserDisplayName(
 }
 
 /**
+ * Set or clear the profile photo storage key.
+ *
+ * Stamps `avatarUpdatedAt` alongside it so a client can cache-bust a changed
+ * photo without the server having to mint a new storage key every time. Both
+ * columns are cleared together when the key is null: an updated-at with no
+ * key would describe a photo that is not there.
+ */
+export async function updateUserAvatarKey(
+  userId: number,
+  avatarKey: string | null,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(users)
+    .set({
+      avatarKey,
+      avatarUpdatedAt: avatarKey === null ? null : new Date(),
+    })
+    .where(eq(users.id, userId));
+}
+
+/**
  * Update the MFA method stored on the user row.
  * Used by the Security Center when the user enables/disables MFA.
  */

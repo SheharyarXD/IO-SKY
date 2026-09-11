@@ -223,32 +223,63 @@ const normalizeToolChoice = (
  * whichever of those the client selects is the entire integration step;
  * no code change should be needed to switch providers within that set.
  *
- * BLOCKED — production activation: no provider has been selected and no
- * credentials are configured in this environment. See
- * MILESTONE2_PROGRESS.md §2.2 for exactly what's needed.
+ * Activation requires one credential and nothing else. Either set the
+ * neutral trio (LLM_API_URL + LLM_API_KEY + LLM_MODEL) for any
+ * OpenAI-compatible endpoint, or set OPENAI_API_KEY on its own and the
+ * URL defaults to OpenAI's public Chat Completions endpoint. The second
+ * form exists because the deployment environment already carries an
+ * OPENAI_API_KEY slot; without this shortcut that variable would sit
+ * populated and unread, which is a confusing way for a platform to be
+ * broken.
  */
 const DEFAULT_MODEL = "gpt-4o-mini";
 const DEFAULT_TIMEOUT_MS = 60_000;
+const OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
+
+const readEnv = (name: string): string | null => {
+  const raw = process.env[name];
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
 
 const resolveApiUrl = () => {
-  const url = process.env.LLM_API_URL;
-  if (!url || url.trim().length === 0) {
-    throw new Error(
-      "LLM_API_URL is not configured — no LLM provider has been selected/activated for this environment.",
-    );
-  }
-  return url;
+  const explicit = readEnv("LLM_API_URL");
+  if (explicit) return explicit;
+  // An OPENAI_API_KEY on its own is unambiguous about which endpoint it is
+  // for, so requiring the URL as well would be busywork.
+  if (readEnv("OPENAI_API_KEY")) return OPENAI_CHAT_COMPLETIONS_URL;
+  throw new Error(
+    "No LLM provider is configured. Set OPENAI_API_KEY, or set LLM_API_URL, LLM_API_KEY and LLM_MODEL for an OpenAI-compatible endpoint.",
+  );
 };
 
 const resolveApiKey = () => {
-  const key = process.env.LLM_API_KEY;
-  if (!key || key.trim().length === 0) {
+  const key = readEnv("LLM_API_KEY") ?? readEnv("OPENAI_API_KEY");
+  if (!key) {
     throw new Error(
-      "LLM_API_KEY is not configured — no LLM provider has been selected/activated for this environment.",
+      "No LLM credential is configured. Set OPENAI_API_KEY, or set LLM_API_KEY alongside LLM_API_URL.",
     );
   }
   return key;
 };
+
+/**
+ * Whether a provider is configured at all.
+ *
+ * Exported so operational surfaces can report "AI scoring is not configured"
+ * as a status rather than letting every scan fail one at a time and leaving
+ * the reason buried in a per-row error message.
+ */
+export function isLlmConfigured(): boolean {
+  try {
+    resolveApiUrl();
+    resolveApiKey();
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const resolveModel = () => process.env.LLM_MODEL || DEFAULT_MODEL;
 

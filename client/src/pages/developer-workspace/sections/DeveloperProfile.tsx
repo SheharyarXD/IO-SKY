@@ -31,6 +31,7 @@ import {
 import { UserCircle2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { ProfilePhoto } from "@/components/ProfilePhoto";
 
 type Availability = "available" | "limited" | "unavailable";
 
@@ -163,6 +164,8 @@ export default function DeveloperProfile() {
                 }
               />
             </div>
+
+            <ProfilePhoto />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">

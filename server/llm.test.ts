@@ -4,7 +4,7 @@
  * OpenAI-Chat-Completions-compatible endpoint works via env config alone.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { invokeLLM } from "./_core/llm";
+import { invokeLLM, isLlmConfigured } from "./_core/llm";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -14,6 +14,7 @@ describe("invokeLLM (Milestone 2 §2.2)", () => {
     delete process.env.LLM_API_KEY;
     delete process.env.LLM_MODEL;
     delete process.env.LLM_TIMEOUT_MS;
+    delete process.env.OPENAI_API_KEY;
   });
 
   afterEach(() => {
@@ -21,17 +22,17 @@ describe("invokeLLM (Milestone 2 §2.2)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("throws a clear config error when LLM_API_URL is unset — no silent fallback to a hardcoded Manus/Forge URL", async () => {
+  it("throws a clear config error when no endpoint is configured — no silent fallback to a hardcoded Manus/Forge URL", async () => {
     process.env.LLM_API_KEY = "sk-test";
     await expect(invokeLLM({ messages: [{ role: "user", content: "hi" }] })).rejects.toThrow(
-      /LLM_API_URL is not configured/,
+      /No LLM provider is configured/,
     );
   });
 
-  it("throws a clear config error when LLM_API_KEY is unset", async () => {
+  it("throws a clear config error when no credential is configured", async () => {
     process.env.LLM_API_URL = "https://api.example.com/v1/chat/completions";
     await expect(invokeLLM({ messages: [{ role: "user", content: "hi" }] })).rejects.toThrow(
-      /LLM_API_KEY is not configured/,
+      /No LLM credential is configured/,
     );
   });
 
@@ -115,5 +116,55 @@ describe("invokeLLM (Milestone 2 §2.2)", () => {
     await expect(invokeLLM({ messages: [{ role: "user", content: "hi" }] })).rejects.toThrow(
       /failed to reach the provider/,
     );
+  });
+
+  it("activates from OPENAI_API_KEY alone, defaulting to OpenAI's endpoint", async () => {
+    // The deployment environment already carries an OPENAI_API_KEY slot. If
+    // the code only ever read LLM_API_URL/LLM_API_KEY, that variable would sit
+    // populated and unread and every AI Scan would fail with a config error
+    // that looks nothing like the variable the operator actually set.
+    process.env.OPENAI_API_KEY = "sk-openai-test";
+    let seenUrl = "";
+    let seenAuth = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) => {
+        seenUrl = String(url);
+        seenAuth = String((init.headers as Record<string, string>).authorization ?? "");
+        return new Response(
+          JSON.stringify({ choices: [{ message: { content: "ok" } }] }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }),
+    );
+
+    await invokeLLM({ messages: [{ role: "user", content: "hi" }] });
+    expect(seenUrl).toBe("https://api.openai.com/v1/chat/completions");
+    expect(seenAuth).toContain("sk-openai-test");
+  });
+
+  it("lets an explicit LLM_API_URL win over the OpenAI default", async () => {
+    process.env.OPENAI_API_KEY = "sk-openai-test";
+    process.env.LLM_API_URL = "https://azure.example.com/v1/chat/completions";
+    let seenUrl = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        seenUrl = String(url);
+        return new Response(
+          JSON.stringify({ choices: [{ message: { content: "ok" } }] }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }),
+    );
+
+    await invokeLLM({ messages: [{ role: "user", content: "hi" }] });
+    expect(seenUrl).toBe("https://azure.example.com/v1/chat/completions");
+  });
+
+  it("reports configuration status without performing a call", () => {
+    expect(isLlmConfigured()).toBe(false);
+    process.env.OPENAI_API_KEY = "sk-openai-test";
+    expect(isLlmConfigured()).toBe(true);
   });
 });

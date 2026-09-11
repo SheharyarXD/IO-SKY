@@ -42,12 +42,14 @@ export function TOTPEnrollDialog(props: {
   const [phase, setPhase] = useState<Phase>("loading");
   const [factorId, setFactorId] = useState<number | null>(null);
   const [secret, setSecret] = useState<string>("");
+  const [otpauthUri, setOtpauthUri] = useState<string>("");
+  const [qrFailed, setQrFailed] = useState(false);
   const [code, setCode] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const qrCanvas = useRef<HTMLCanvasElement | null>(null);
 
   const begin = trpc.mfa.enrollTotpBegin.useMutation({
-    onSuccess: async (out) => {
+    onSuccess: (out) => {
       setFactorId(out.factorId);
       // Extract the base32 secret out of the otpauth URI for manual entry.
       try {
@@ -57,19 +59,9 @@ export function TOTPEnrollDialog(props: {
       } catch {
         setSecret("");
       }
+      setOtpauthUri(out.otpauthUri);
+      setQrFailed(false);
       setPhase("verify");
-      // Render the QR.
-      try {
-        if (qrCanvas.current) {
-          await QRCode.toCanvas(qrCanvas.current, out.otpauthUri, {
-            width: 220,
-            margin: 1,
-            color: { dark: "#FFFFFFFF", light: "#0B0F1AFF" },
-          });
-        }
-      } catch (e) {
-        console.warn("QR render failed", e);
-      }
     },
     onError: (err) => {
       toast.error(err.message ?? "Could not start TOTP enrolment");
@@ -96,6 +88,8 @@ export function TOTPEnrollDialog(props: {
       setPhase("loading");
       setFactorId(null);
       setSecret("");
+      setOtpauthUri("");
+      setQrFailed(false);
       setCode("");
       setRecoveryCodes([]);
       return;
@@ -106,6 +100,45 @@ export function TOTPEnrollDialog(props: {
     // every render because the mutation object is recreated.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  /**
+   * Paint the QR once the canvas is actually in the DOM.
+   *
+   * This deliberately does NOT live in the mutation's onSuccess handler.
+   * React batches the `setPhase("verify")` above, so the canvas — which is
+   * only mounted in the "verify" branch — is still unmounted on the next
+   * synchronous line, and `qrCanvas.current` is null. The old code guarded
+   * on that ref and silently skipped the render, so the dialog showed an
+   * empty bordered box and enrolment could only be completed by someone who
+   * noticed the manual-entry secret underneath it. Running as an effect
+   * keyed on the URI means the canvas is guaranteed mounted before we draw.
+   */
+  useEffect(() => {
+    if (phase !== "verify" || !otpauthUri) return;
+    const canvas = qrCanvas.current;
+    if (!canvas) {
+      setQrFailed(true);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toCanvas(canvas, otpauthUri, {
+      width: 220,
+      margin: 1,
+      color: { dark: "#FFFFFFFF", light: "#0B0F1AFF" },
+    })
+      .then(() => {
+        if (!cancelled) setQrFailed(false);
+      })
+      .catch((e: unknown) => {
+        // A failed QR must not become a dead end: surface it so the manual
+        // secret is presented as the way forward rather than as a footnote.
+        console.warn("QR render failed", e);
+        if (!cancelled) setQrFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, otpauthUri]);
 
   const onSubmitCode = (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,18 +168,40 @@ export function TOTPEnrollDialog(props: {
             <div className="flex items-center justify-center">
               <canvas
                 ref={qrCanvas}
+                hidden={qrFailed}
                 className="rounded-md border border-white/10 bg-[#0B0F1A] p-2"
                 aria-label="TOTP QR code"
               />
+              {qrFailed && (
+                <div className="flex h-[220px] w-[220px] items-center justify-center rounded-md border border-amber-400/30 bg-amber-400/[0.06] p-4 text-center text-[12px] text-amber-200/90">
+                  The QR code could not be drawn in this browser. Use the
+                  manual entry key below instead — it enrols exactly the same
+                  factor.
+                </div>
+              )}
             </div>
             {secret && (
               <div className="rounded-md border border-white/10 bg-white/[0.03] p-3 text-xs">
                 <div className="text-white/55 mb-1">
-                  Manual entry secret (case-insensitive):
+                  Manual entry key (case-insensitive, spaces ignored):
                 </div>
-                <code className="block break-all font-mono text-[11px] text-white/85">
+                <code className="block break-all font-mono text-[11px] text-white/85 select-all">
                   {secret}
                 </code>
+                <button
+                  type="button"
+                  className="mt-2 text-[11px] text-white/60 underline underline-offset-2 hover:text-white/85"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(secret);
+                      toast.success("Key copied");
+                    } catch {
+                      toast.error("Clipboard unavailable — select and copy manually");
+                    }
+                  }}
+                >
+                  Copy key
+                </button>
               </div>
             )}
             <div>

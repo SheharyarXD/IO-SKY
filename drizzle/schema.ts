@@ -165,6 +165,15 @@ export const users = pgTable(
      * Null means "never revoked" — the correct default for existing rows.
      */
     sessionsRevokedAtMs: bigint("sessionsRevokedAtMs", { mode: "number" }),
+    /**
+     * Profile photo, stored in the private `avatars` bucket under
+     * `{userId}/{filename}` (see 0020_user_avatars.sql). The key rather than
+     * a URL: the bucket is private, so reads are signed per request and any
+     * stored URL would expire.
+     */
+    avatarKey: varchar("avatarKey", { length: 512 }),
+    /** Lets a client cache-bust a changed photo without a new storage key. */
+    avatarUpdatedAt: timestamp("avatarUpdatedAt"),
   },
   (table) => [
     index("users_organization_id_idx").on(table.organizationId),

@@ -91,6 +91,14 @@ describe.skipIf(!liveReachable)("RM-60: RLS negative tests (live Supabase projec
   let userAId: number, userBId: number, devXId: number, devYId: number, adminId: number;
   let devXProfileId: number, devYProfileId: number;
   let reportAId: number, invoiceAId: number, leadId: number;
+  /**
+   * Set at the very end of `beforeAll`. The teardown below must not run
+   * unless setup got far enough to have something to tear down: if setup
+   * throws partway (an unusable Supabase key, say) every id is still
+   * `undefined`, postgres.js refuses to stringify undefined, and the teardown
+   * failure buries the setup failure that actually explains the problem.
+   */
+  let setupCompleted = false;
   let legalDocId: number, publishedVersionId: number, draftVersionId: number;
 
   let clientA: SupabaseClient; // signed in as User A (org A)
@@ -204,9 +212,18 @@ describe.skipIf(!liveReachable)("RM-60: RLS negative tests (live Supabase projec
     anonClient = createClient(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+    setupCompleted = true;
   }, 60_000);
 
   afterAll(async () => {
+    // `describe.skipIf` skips the tests and `beforeAll`, but Vitest still runs
+    // `afterAll`. With `beforeAll` skipped every id below is `undefined`, and
+    // postgres.js refuses to stringify undefined — so the teardown threw and
+    // the whole FILE reported as failed even though all 18 tests had correctly
+    // skipped. That turned "no database configured" into a red suite, which is
+    // exactly the signal a real failure needs to be able to use.
+    if (!liveReachable || !setupCompleted) return;
+
     try {
       await sql`delete from agreement_versions where "documentId" = ${legalDocId}`;
       await sql`delete from legal_documents where id = ${legalDocId}`;

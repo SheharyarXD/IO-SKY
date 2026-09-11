@@ -30,6 +30,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProfilePhoto } from "@/components/ProfilePhoto";
 import OperationalPage, { SideCard } from "./_shared/OperationalPage";
 import { TOTPEnrollDialog } from "@/pages/developer-workspace/components/TOTPEnrollDialog";
 import { SMSEnrollDialog } from "@/pages/developer-workspace/components/SMSEnrollDialog";
@@ -96,6 +97,20 @@ export default function AdminSecurityCenter() {
         tagline="Protect your administrator account with a second factor. Add an authenticator app or SMS, manage factors, and store single-use recovery codes. All changes are audited."
         primary={
           <div className="space-y-5">
+            {/*
+              Profile photo lives here rather than in a separate section
+              because this IS the personal-account surface for the three
+              privileged roles: the Ops Console renders this same component
+              for Technical Operator, so one placement covers Admin, Super
+              Admin and Technical Operator.
+            */}
+            <div>
+              <h3 className="text-[15px] font-medium text-white">Your profile</h3>
+              <ProfilePhoto className="mt-3" />
+            </div>
+
+            <div className="h-px bg-white/[0.07]" />
+
             {/* MFA status + actions */}
             <div className="flex flex-wrap items-center gap-2">
               <span

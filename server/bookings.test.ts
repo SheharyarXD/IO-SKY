@@ -155,6 +155,7 @@ const validInput = () => ({
   email: "test@example.com",
   company: "Example BV",
   role: "Director",
+  phone: "+31 6 12 34 56 78",
   preparation: { challenge: "Bottlenecks across CRM and ops." },
 });
 
@@ -206,6 +207,47 @@ describe("bookings.create", () => {
         email: "not-an-email",
       }),
     ).rejects.toThrow();
+  });
+
+  it("requires a telephone number", async () => {
+    // A discovery call is a scheduled telephone or video conversation, so the
+    // number is needed to deliver the thing being booked. The Contact form is
+    // the deliberate opposite: it collects no number at all.
+    const caller = appRouter.createCaller(createCtx());
+    await expect(
+      caller.bookings.create({ ...validInput(), phone: "" }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects a placeholder in the telephone field", async () => {
+    const caller = appRouter.createCaller(createCtx());
+    await expect(
+      caller.bookings.create({ ...validInput(), phone: "n/a" }),
+    ).rejects.toThrow();
+  });
+
+  it("accepts international telephone formats", async () => {
+    // Each iteration gets its own source IP: the public booking endpoint is
+    // rate-limited per IP, and a loop sharing one address exhausts the budget
+    // and then fails whichever test happens to run next.
+    const phones = ["+31 6 12 34 56 78", "0031612345678", "(020) 123 4567"];
+    for (const [i, phone] of phones.entries()) {
+      const caller = appRouter.createCaller(
+        createCtx({
+          req: {
+            headers: { "user-agent": "vitest" },
+            socket: { remoteAddress: `10.0.0.${i + 1}` },
+          } as unknown as TrpcContext["req"],
+        }),
+      );
+      const out = await caller.bookings.create({
+        ...validInput(),
+        phone,
+        slotStartMs: Date.now() + (7 * 24 + i) * 3600 * 1000,
+        email: `caller-${i}@example.com`,
+      });
+      expect(out.publicRef).toBeTruthy();
+    }
   });
 });
 

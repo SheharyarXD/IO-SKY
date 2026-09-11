@@ -129,15 +129,19 @@ test.describe("RM-106: booking submission", () => {
     // timed out on a field that does not exist yet at step 1.
     await goToDetailsStep(page);
 
-    // All six fields plus consent are required — `canAdvance` for step 3 gates
-    // on fullName ≥2, a valid email, organisation ≥2, role ≥2, challenge ≥8
-    // AND the consent checkbox. Filling only name/email/company left the
+    // All seven fields plus consent are required — `canAdvance` for step 3 gates
+    // on fullName ≥2, a valid email, organisation ≥2, role ≥2, a telephone
+    // number of at least 7 digits, challenge ≥8 AND the consent checkbox. Filling only name/email/company left the
     // Confirm button correctly disabled, which is what the first version of
     // this test tripped over.
     await page.getByPlaceholder("Your full name").fill("RM-106 E2E Probe");
     await page.getByPlaceholder("you@company.com").fill(`rm106+${Date.now()}@example.com`);
     await page.getByPlaceholder("Your company").fill("E2E Test Co");
     await page.getByPlaceholder("CEO, COO, Head of Ops…").fill("Head of Operations");
+    // Required on the Discovery Call (and deliberately absent from Contact):
+    // the call is a telephone or video conversation, so the number is needed
+    // to deliver it. Omitting it leaves Confirm correctly disabled.
+    await page.getByPlaceholder("+31 6 12 34 56 78").fill("+31 6 12 34 56 78");
     await page
       .getByPlaceholder("What slows your team down today?")
       .fill("Automated end-to-end probe exercising the booking golden path.");

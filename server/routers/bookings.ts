@@ -93,7 +93,20 @@ const createInputSchema = z.object({
   email: z.string().email().max(320),
   company: z.string().max(200).optional().nullable(),
   role: z.string().max(120).optional().nullable(),
-  phone: z.string().max(64).optional().nullable(),
+  /**
+   * Required, not optional. A discovery call is a scheduled telephone or
+   * video conversation, so the number is operationally necessary to deliver
+   * what is being booked. Validated on digit count rather than shape so
+   * international formats ("+31 6 12 34 56 78", "0031 6 12345678") all pass
+   * while a placeholder such as "n/a" does not. The Contact form
+   * deliberately collects no telephone number at all.
+   */
+  phone: z
+    .string()
+    .max(64)
+    .refine(v => v.replace(/[^0-9]/g, "").length >= 7, {
+      message: "A telephone number is required for a discovery call.",
+    }),
   preparation: z.record(z.string(), z.string().max(2000)).optional().nullable(),
   note: z.string().max(4000).optional().nullable(),
   utmSource: z.string().max(120).optional().nullable(),
@@ -226,7 +239,7 @@ export const bookingsRouter = router({
         email: input.email.trim().toLowerCase(),
         company: input.company?.trim() || null,
         role: input.role?.trim() || null,
-        phone: input.phone?.trim() || null,
+        phone: input.phone.trim(),
         preparation: input.preparation ? JSON.stringify(input.preparation) : null,
         note: input.note?.trim() || null,
         utmSource: input.utmSource?.trim() || null,

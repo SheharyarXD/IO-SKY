@@ -12,7 +12,7 @@
  * boundary can't be bypassed by a router reaching for the Supabase SDK
  * directly.
  *
- * Four buckets, one per tenancy shape — see 0007_storage_buckets.sql's
+ * Five buckets, one per tenancy shape — see 0007_storage_buckets.sql's
  * header for the exact path convention each one expects. Passing the
  * wrong bucket for a path shape won't fail at this layer (bucket and key
  * are independent strings); callers are expected to use the constants in
@@ -26,6 +26,7 @@ export const STORAGE_BUCKETS = [
   "client-portal",
   "developer-workspace",
   "ai-scan-reports",
+  "avatars",
 ] as const;
 
 export type StorageBucket = (typeof STORAGE_BUCKETS)[number];

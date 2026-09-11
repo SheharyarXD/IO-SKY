@@ -118,6 +118,22 @@ export const mfaRouter = router({
   enrollTotpBegin: protectedProcedure
     .input(z.object({ label: z.string().trim().min(1).max(80).optional() }).optional())
     .mutation(async ({ ctx, input }) => {
+      // Discard any TOTP factor this user started but never verified.
+      //
+      // Every call here mints a fresh secret, so an earlier un-verified row is
+      // already dead weight: it can never satisfy the privileged gate and can
+      // never be used to sign in. Left in place they accumulate one per
+      // abandoned attempt and clutter the factor list with identical-looking
+      // "Authenticator app" entries that a user cannot tell apart. Verified
+      // factors are never touched — removing one of those is an explicit,
+      // separately audited action.
+      const existing = await listMfaFactorsForUser(ctx.user.id);
+      for (const stale of existing) {
+        if (stale.kind === "totp" && stale.verifiedAt === null) {
+          await deleteMfaFactor(stale.id, ctx.user.id);
+        }
+      }
+
       const secret = generateTotpSecret();
       const otpauthUri = buildOtpAuthUri({
         secret,
