@@ -5,7 +5,7 @@
  * Covers: upsert on OAuth login, lookup by openId / email, display-name
  * update, MFA-method update, and last-signed-in touch.
  */
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { InsertUser, users } from "../../drizzle/schema";
 import { ENV } from "../_core/env";
 import { getDb } from "./connection";
@@ -162,6 +162,26 @@ export async function getUserByEmailWithPassword(email: string) {
     .where(eq(users.email, email))
     .limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Look up a user by email address, case-insensitively.
+ *
+ * Distinct from `getUserByEmailWithPassword` above, which matches the column
+ * exactly because that is what the login path compares against. A data
+ * subject writing in to exercise their rights will not reproduce the casing
+ * they registered with, so this one folds case. Returns null rather than
+ * undefined: callers here treat "no account" as an ordinary, expected answer.
+ */
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(users)
+    .where(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`)
+    .limit(1);
+  return result[0] ?? null;
 }
 
 /** Update lastSignedIn timestamp after a successful local-password login. */

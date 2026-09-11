@@ -244,6 +244,63 @@ export const adminProcedure = t.procedure.use(
  * super_admin also passes (see isAdminRole above) — this procedure is
  * additive, not a replacement for adminProcedure elsewhere.
  */
+/**
+ * privacyOfficerProcedure — Data Subject Rights administration.
+ *
+ * The client's requirement was explicit: "Only specifically authorised users
+ * may perform privacy-request actions. Developers, Admins or other roles must
+ * not receive access merely because of their general role."
+ *
+ * So this middleware deliberately does NOT consult `user.role` at all. There
+ * is no admin fallback and no super-admin override. Authority comes from a
+ * live row in `privacy_officer_grants` naming this specific user, and nothing
+ * else. A Super Admin without a grant gets exactly the same refusal as an
+ * anonymous caller would.
+ *
+ * The privileged MFA gate still applies on top, because acting on a privacy
+ * request means reading other people's personal data, and that should not be
+ * reachable from a session secured by a password alone. Note the ordering:
+ * the grant is checked FIRST, so a user with no grant never learns whether
+ * their MFA state would have been acceptable.
+ */
+export const privacyOfficerProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+
+    const { getActivePrivacyOfficerGrant } = await import("../db");
+    const grant = await getActivePrivacyOfficerGrant(ctx.user.id);
+    if (!grant) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "privacy_officer_required",
+      });
+    }
+
+    // Reading another person's personal data is not something a
+    // password-only session should reach.
+    const mfa = await evaluatePrivilegedMfaGate({
+      ...ctx.user,
+      // The gate is scoped to three roles by design; a privacy officer must
+      // clear it whatever their role is, so evaluate them as one of those.
+      role: "admin",
+    } as User);
+    if (!mfa.ok) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: `privileged_gate:${mfa.reason}`,
+      });
+    }
+
+    return next({
+      ctx: { ...ctx, user: ctx.user, privacyGrant: grant },
+    });
+  }),
+);
+
 export const superAdminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;

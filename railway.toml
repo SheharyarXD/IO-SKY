@@ -56,6 +56,14 @@ overlapSeconds = 20
 # provider's compliance page resolves.
 #
 # `europe-west4` is Railway's Amsterdam region, which keeps processing and
-# storage both inside the EEA.
+# storage both inside the EEA. Verified after the move: the readiness probe
+# reports ~23 ms to the database, which is co-located latency rather than
+# transatlantic.
+#
+# Note for whoever changes this next: the region also lives on the service
+# instance itself, and this file alone did not move it. The working sequence
+# was to set multiRegionConfig via the Railway API and then run a fresh
+# `railway up`, because `railway redeploy` re-uses the previous deployment's
+# manifest and therefore its previous region.
 [deploy.multiRegionConfig.europe-west4]
 numReplicas = 1

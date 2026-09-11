@@ -40,3 +40,4 @@ export * from "./emailDelivery";
 export * from "./platformSettings";
 export * from "./workflows";
 export * from "./webhooks";
+export * from "./privacy";

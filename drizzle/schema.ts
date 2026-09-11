@@ -2118,3 +2118,98 @@ export const webhookDeliveries = pgTable(
 );
 export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
 export type InsertWebhookDelivery = typeof webhookDeliveries.$inferInsert;
+
+/**
+ * Data Subject Rights administration — see 0021_privacy_requests.sql for the
+ * three design decisions behind this shape (authorisation is not a role, the
+ * history is append-only, nothing completes itself).
+ */
+export const privacyOfficerGrants = pgTable(
+  "privacy_officer_grants",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Nullable only so the first grant can be seeded outside the application. */
+    grantedByUserId: integer("grantedByUserId").references(() => users.id),
+    reason: text("reason").notNull(),
+    grantedAt: timestamp("grantedAt").defaultNow().notNull(),
+    /**
+     * Revocation is a stamp, not a delete. Removing the row would erase the
+     * evidence that this person once had access to personal data.
+     */
+    revokedAt: timestamp("revokedAt"),
+    revokedByUserId: integer("revokedByUserId").references(() => users.id),
+    revokedReason: text("revokedReason"),
+  },
+  (table) => [index("privacy_officer_grants_user_idx").on(table.userId)],
+);
+export type PrivacyOfficerGrant = typeof privacyOfficerGrants.$inferSelect;
+export type InsertPrivacyOfficerGrant = typeof privacyOfficerGrants.$inferInsert;
+
+export const privacyRequests = pgTable(
+  "privacy_requests",
+  {
+    id: serial("id").primaryKey(),
+    publicRef: varchar("publicRef", { length: 64 }).notNull().unique(),
+    /** GDPR Articles 15 to 21. */
+    requestType: varchar("requestType", { length: 32 }).notNull(),
+    /**
+     * Null when the subject never held an account. A contact form submitter
+     * or a booking attendee is still a data subject; their data is keyed by
+     * email address alone.
+     */
+    subjectUserId: integer("subjectUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    subjectEmail: varchar("subjectEmail", { length: 320 }).notNull(),
+    subjectName: varchar("subjectName", { length: 200 }),
+    receivedAt: timestamp("receivedAt").defaultNow().notNull(),
+    /** Stored rather than computed so a lawful extension is recorded as fact. */
+    dueAt: timestamp("dueAt"),
+    identityVerificationStatus: varchar("identityVerificationStatus", { length: 32 })
+      .default("unverified")
+      .notNull(),
+    identityVerificationNote: text("identityVerificationNote"),
+    identityVerifiedAt: timestamp("identityVerifiedAt"),
+    identityVerifiedByUserId: integer("identityVerifiedByUserId").references(() => users.id),
+    assignedToUserId: integer("assignedToUserId").references(() => users.id),
+    /** JSON text: the shape differs per request type, and it is evidence to read, not data to query. */
+    affectedSystemsJson: text("affectedSystemsJson"),
+    actionsTakenJson: text("actionsTakenJson"),
+    status: varchar("status", { length: 32 }).default("received").notNull(),
+    decision: text("decision"),
+    completedAt: timestamp("completedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("privacy_requests_status_idx").on(table.status),
+    index("privacy_requests_subject_email_idx").on(table.subjectEmail),
+    index("privacy_requests_subject_user_idx").on(table.subjectUserId),
+  ],
+);
+export type PrivacyRequest = typeof privacyRequests.$inferSelect;
+export type InsertPrivacyRequest = typeof privacyRequests.$inferInsert;
+
+/** Append-only. The application has no update or delete path for these rows. */
+export const privacyRequestEvents = pgTable(
+  "privacy_request_events",
+  {
+    id: serial("id").primaryKey(),
+    requestId: integer("requestId")
+      .notNull()
+      .references(() => privacyRequests.id, { onDelete: "cascade" }),
+    /** Null only for events the system raises on its own, such as a lapsed due date. */
+    actorUserId: integer("actorUserId").references(() => users.id),
+    event: varchar("event", { length: 64 }).notNull(),
+    detail: text("detail"),
+    ip: varchar("ip", { length: 64 }),
+    userAgent: text("userAgent"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => [index("privacy_request_events_request_idx").on(table.requestId, table.createdAt)],
+);
+export type PrivacyRequestEvent = typeof privacyRequestEvents.$inferSelect;
+export type InsertPrivacyRequestEvent = typeof privacyRequestEvents.$inferInsert;
