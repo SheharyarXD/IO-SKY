@@ -321,3 +321,76 @@ per-task tracking structure Milestone 1 (`PHASE1_CHECKLIST.md`) and Milestone 2
 (`MILESTONE2_PROGRESS.md`) already use. Update statuses and add Evidence/Notes as work actually
 happens — do not mark anything ✅ without the same live-verification bar (`tsc`, tests, and where
 applicable a real running check) used in the other two documents.
+
+---
+
+## Addendum — client feedback round, 12 September 2026
+
+Work done in response to the client's combined GDPR, access and feature message. Recorded here rather
+than in the tables above because none of it was scoped in the original Milestone 3 list, and folding it
+in silently would misrepresent what Milestone 3 itself covered.
+
+### Defects found and fixed
+
+- **MFA enrolment was unusable, which is what blocked Admin and Super Admin entirely.**
+  `TOTPEnrollDialog` painted the QR inside the mutation's `onSuccess`, immediately after
+  `setPhase("verify")`. React batches that update, so the canvas the QR draws onto was not mounted yet
+  and the ref was null. The code guarded on the ref and silently skipped the render, leaving an empty
+  bordered box. Two abandoned unverified factors were sitting in the database from 10 September, which
+  is the signature of exactly that. QR rendering now runs in an effect keyed on the otpauth URI, and a
+  failed render surfaces the manual key instead of a blank square. The privileged MFA gate itself was
+  not weakened.
+- **The production container was running in the United States while the database is in Ireland.**
+  Railway region `sfo`, Supabase `aws-0-eu-west-1`. Every request carrying personal data was processed
+  outside the EEA before reaching a database inside it. Moved to `europe-west4` (Amsterdam). Verified:
+  readiness probe reports 22-24 ms steady-state to the database, down from transatlantic.
+- **Discovery Call and Contact had their telephone requirements inverted.** Both were optional. The
+  Discovery Call now requires a number (validated on digit count, so international formats pass and
+  "n/a" does not) and the Contact form collects none.
+- **Transactional email shipped off-brand colours.** `#0A0E14` and `#FF7A00` rather than Warm Deep Teal
+  `#0D2D2E` and IO SKY Orange `#F58A1F`. Now one shared palette with a test pinning it.
+- **`OPENAI_API_KEY` sat populated and unread.** The LLM layer only read `LLM_API_URL`/`LLM_API_KEY`, so
+  a key placed in the environment's own OpenAI slot would never have been used. That variable alone now
+  activates the provider.
+- **`rls.negative.test.ts` ran its teardown after a skipped or failed setup** and died on undefined ids,
+  turning a setup problem into a confusing teardown failure that masked the real cause.
+
+### Built
+
+- **Profile photos for all five roles.** `avatars` bucket with owner-scoped RLS (0020), `avatarKey` and
+  `avatarUpdatedAt` on `users`, a role-neutral `profile` router, and one shared `ProfilePhoto`
+  component in the client portal, the developer workspace and the privileged-role account surface.
+  Uploads validated by magic bytes rather than the caller's declared content type; SVG refused because
+  it can carry script.
+- **Data Subject Rights administration** (0021, `server/routers/privacy.ts`). Authorisation is an
+  explicit per-user grant, never a role, per the client's requirement that role alone must not confer
+  access. Append-only event history. Locate across 23 personal-data tables, keyed by user id where one
+  exists and by email otherwise. Export as JSON or RFC 4180 CSV. Staged approval with self-approval
+  refused. Erasure deliberately refused rather than faked.
+
+### Blocked on credentials, not on code
+
+- **Supabase API key is not valid for the project.** Verified three ways: Auth admin API returns
+  "Unregistered API key", REST returns 401, Storage returns "Invalid Compact JWS". The app itself runs
+  because it connects over `DATABASE_URL` directly. Consequence: all file storage is down, which means
+  client document upload and download, invoice and report downloads, AI Scan report PDFs, and profile
+  photo upload. This is also the one remaining file-level failure in the test suite.
+- **No LLM provider key.** A real AI Scan run against production creates the lead, creates the scan,
+  validates and stores the questionnaire, reaches the scoring step and fails there. Report generation
+  produces nothing until a key exists.
+
+### Not started, and named as such
+
+Automated retention and deletion (a retention *note* field exists; nothing acts on it), the Case Study
+page (no page, no route, no content model), manual template email sending, Stripe, a UI for the Data
+Subject Rights backend, and the AI voice products (AI Receptionist, Scheduling Agent, Sales Outbound,
+IVR — the admin screen for these is a design preview carrying placeholder figures and is labelled as
+sample data in the interface).
+
+### Verification for this round
+
+`tsc --noEmit` clean. Full suite **767 passed / 33 skipped / 0 failed tests across 71 files**, up from
+749, with the single file-level error being the Supabase key blocker above rather than a test failure.
+Live checks against the deployed EU container: Admin and Super Admin both clear the MFA gate and load
+their consoles, `privacy.list` refuses a Super Admin holding no grant with `privacy_officer_required`,
+and `/health/ready` reports the database healthy at 22-24 ms.
