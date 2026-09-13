@@ -529,7 +529,7 @@ export default function Login() {
         <div className="flex items-center gap-2.5">
           <Link
             href="/contact"
-            className="hidden md:inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.025] px-3.5 py-2 text-[12.5px] text-[#E6EAF0]/75 hover:border-[rgba(255, 122, 0,0.35)] hover:text-[#E6EAF0] transition"
+            className="hidden md:inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.025] px-3.5 py-2 text-[12.5px] text-[#E6EAF0]/75 hover:border-[rgba(255,122,0,0.35)] hover:text-[#E6EAF0] transition"
           >
             <Headphones size={14} strokeWidth={1.8} className="text-[#FF7A00]" />
             {t("login.header.help", "Need help?")}
@@ -726,7 +726,7 @@ export default function Login() {
                         "flex items-center gap-2.5 rounded-md border bg-white/[0.025] px-3.5 py-3 transition",
                         errors.email
                           ? "border-[rgba(255,80,80,0.5)] focus-within:border-[rgba(255,80,80,0.75)]"
-                          : "border-white/10 focus-within:border-[rgba(255, 122, 0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255, 122, 0,0.22)]",
+                          : "border-white/10 focus-within:border-[rgba(255,122,0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255,122,0,0.22)]",
                       ].join(" ")}
                     >
                       <Mail size={15} className="text-[#E6EAF0]/45" strokeWidth={1.8} />
@@ -762,7 +762,7 @@ export default function Login() {
                         "flex items-center gap-2.5 rounded-md border bg-white/[0.025] px-3.5 py-3 transition",
                         errors.password
                           ? "border-[rgba(255,80,80,0.5)] focus-within:border-[rgba(255,80,80,0.75)]"
-                          : "border-white/10 focus-within:border-[rgba(255, 122, 0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255, 122, 0,0.22)]",
+                          : "border-white/10 focus-within:border-[rgba(255,122,0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255,122,0,0.22)]",
                       ].join(" ")}
                     >
                       <Lock size={15} className="text-[#E6EAF0]/45" strokeWidth={1.8} />
@@ -1134,7 +1134,7 @@ export default function Login() {
 
             {!forgotSent ? (
               <form onSubmit={submitForgot} className="space-y-3">
-                <div className="flex items-center gap-2.5 rounded-md border border-white/10 bg-white/[0.025] px-3.5 py-3 focus-within:border-[rgba(255, 122, 0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255, 122, 0,0.22)] transition">
+                <div className="flex items-center gap-2.5 rounded-md border border-white/10 bg-white/[0.025] px-3.5 py-3 focus-within:border-[rgba(255,122,0,0.55)] focus-within:ring-2 focus-within:ring-[rgba(255,122,0,0.22)] transition">
                   <Mail size={15} className="text-[#E6EAF0]/45" strokeWidth={1.8} />
                   <input
                     type="email"

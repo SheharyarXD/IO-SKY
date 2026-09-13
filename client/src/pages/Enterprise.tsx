@@ -120,8 +120,8 @@ export default function Enterprise() {
   return (
     <div className="relative min-h-screen bg-[#03060d] text-[var(--color-ivory)] overflow-x-hidden">
       <div aria-hidden className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-10%,rgba(255, 122, 0,0.10),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_85%_15%,rgba(255, 122, 0,0.06),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-10%,rgba(255,122,0,0.10),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_85%_15%,rgba(255,122,0,0.06),transparent_60%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#03060d_0%,#050a16_50%,#03060d_100%)]" />
       </div>
 
@@ -162,7 +162,7 @@ export default function Enterprise() {
 
               <div className="relative">
                 <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_50%,rgba(255, 122, 0,0.18),transparent_60%)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_50%,rgba(255,122,0,0.18),transparent_60%)]" />
                   <SiteImage
                     image="enterprise.systems"
                     alt={t("ent.hero.imageAlt")}
@@ -215,7 +215,7 @@ export default function Enterprise() {
                   <ul className="flex flex-col gap-1.5 mt-auto">
                     {c.bullets.map((b) => (
                       <li key={b} className="flex items-start gap-2.5 text-[13px] text-[var(--color-ivory)]">
-                        <span aria-hidden className="mt-[7px] w-[5px] h-[5px] rounded-full bg-[#FF7A00] shadow-[0_0_8px_rgba(255, 122, 0,0.6)]" />
+                        <span aria-hidden className="mt-[7px] w-[5px] h-[5px] rounded-full bg-[#FF7A00] shadow-[0_0_8px_rgba(255,122,0,0.6)]" />
                         <span>{t(b)}</span>
                       </li>
                     ))}

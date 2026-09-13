@@ -128,7 +128,7 @@ export default function Portal({ role }: { role: Role }) {
             </Link>
             <button
               onClick={signOut}
-              className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.025] hover:border-[rgba(255, 122, 0,0.35)] px-3 py-1.5 text-[12.5px] text-[#E6EAF0]/80 transition"
+              className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.025] hover:border-[rgba(255,122,0,0.35)] px-3 py-1.5 text-[12.5px] text-[#E6EAF0]/80 transition"
             >
               <LogOut size={13} strokeWidth={1.9} />
               {t("portal.signout", "Sign out")}

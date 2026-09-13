@@ -314,7 +314,7 @@ function StepDot({
         className={cn(
           "h-11 w-11 rounded-full grid place-items-center border transition-colors duration-200",
           done && "border-[#FF7A00]/60 bg-[#FF7A00]/10 text-[#FF7A00]",
-          active && !done && "border-[#FF7A00] bg-[#FF7A00] text-[#0A0B10] shadow-[0_0_24px_rgba(255, 122, 0,0.45)]",
+          active && !done && "border-[#FF7A00] bg-[#FF7A00] text-[#0A0B10] shadow-[0_0_24px_rgba(255,122,0,0.45)]",
           !active && !done && "border-white/10 bg-white/[0.02] text-white/45",
         )}
       >
@@ -694,7 +694,7 @@ export default function BookStrategy() {
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(900px 600px at 12% 92%, rgba(255, 122, 0,0.07), transparent 60%), radial-gradient(700px 500px at 88% 18%, rgba(0,180,255,0.04), transparent 65%), #040508",
+            "radial-gradient(900px 600px at 12% 92%, rgba(255,122,0,0.07), transparent 60%), radial-gradient(700px 500px at 88% 18%, rgba(0,180,255,0.04), transparent 65%), #040508",
         }}
       />
       <Navbar />
@@ -846,13 +846,13 @@ export default function BookStrategy() {
                                 "relative text-left rounded-[18px] border p-5 transition-all duration-200",
                                 "bg-[#0E121B]/85 hover:-translate-y-0.5",
                                 active
-                                  ? "border-[#FF7A00]/80 shadow-[0_24px_80px_-30px_rgba(255, 122, 0,0.55),0_0_0_1px_rgba(255, 122, 0,0.45)_inset]"
+                                  ? "border-[#FF7A00]/80 shadow-[0_24px_80px_-30px_rgba(255,122,0,0.55),0_0_0_1px_rgba(255,122,0,0.45)_inset]"
                                   : "border-white/[0.07] hover:border-[#FF7A00]/35",
                               )}
                             >
                               {/* MOST CHOSEN ribbon for highlighted service */}
                               {svc.highlighted && (
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#FF7A00] text-[#0A0B10] text-[10px] tracking-[0.22em] uppercase font-semibold shadow-[0_8px_24px_rgba(255, 122, 0,0.45)]">
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#FF7A00] text-[#0A0B10] text-[10px] tracking-[0.22em] uppercase font-semibold shadow-[0_8px_24px_rgba(255,122,0,0.45)]">
                                   Most chosen
                                 </div>
                               )}
@@ -982,7 +982,7 @@ export default function BookStrategy() {
                                   className={cn(
                                     "h-9 rounded-full text-[13px] tabular-nums transition-colors",
                                     selected &&
-                                      "bg-[#FF7A00] text-[#0A0B10] font-semibold shadow-[0_0_24px_rgba(255, 122, 0,0.45)]",
+                                      "bg-[#FF7A00] text-[#0A0B10] font-semibold shadow-[0_0_24px_rgba(255,122,0,0.45)]",
                                     !selected && !disabled &&
                                       "text-white/80 hover:bg-white/[0.05] hover:text-[#FF7A00]",
                                     disabled && "text-white/20 cursor-not-allowed",
@@ -1027,7 +1027,7 @@ export default function BookStrategy() {
                                   className={cn(
                                     "flex items-center gap-3 px-4 h-11 rounded-full border transition-all duration-200",
                                     active
-                                      ? "border-[#FF7A00] bg-[#FF7A00] text-[#0A0B10] font-semibold shadow-[0_12px_30px_-12px_rgba(255, 122, 0,0.6)]"
+                                      ? "border-[#FF7A00] bg-[#FF7A00] text-[#0A0B10] font-semibold shadow-[0_12px_30px_-12px_rgba(255,122,0,0.6)]"
                                       : "border-white/10 bg-white/[0.02] text-white/80 hover:border-[#FF7A00]/40 hover:text-[#FF7A00]",
                                   )}
                                 >
@@ -1309,10 +1309,10 @@ export default function BookStrategy() {
                           className="absolute inset-0 rounded-full blur-2xl"
                           style={{
                             background:
-                              "radial-gradient(circle, rgba(255, 122, 0,0.45), transparent 70%)",
+                              "radial-gradient(circle, rgba(255,122,0,0.45), transparent 70%)",
                           }}
                         />
-                        <div className="relative h-20 w-20 rounded-full bg-[#FF7A00] grid place-items-center shadow-[0_30px_60px_-20px_rgba(255, 122, 0,0.6)]">
+                        <div className="relative h-20 w-20 rounded-full bg-[#FF7A00] grid place-items-center shadow-[0_30px_60px_-20px_rgba(255,122,0,0.6)]">
                           <CheckCircle2 className="w-10 h-10 text-[#0A0B10]" />
                         </div>
                       </div>

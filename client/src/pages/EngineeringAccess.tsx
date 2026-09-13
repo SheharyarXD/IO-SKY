@@ -304,7 +304,7 @@ export default function EngineeringAccess() {
         <section className="container">
           <div className="max-w-[820px]">
             <div className="inline-flex items-center gap-2 text-[10.5px] font-mono tracking-[0.24em] uppercase text-[var(--color-orange)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)] shadow-[0_0_10px_rgba(255, 122, 0,0.7)]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)] shadow-[0_0_10px_rgba(255,122,0,0.7)]" />
               {t("eng.eyebrow", "Engineering Access")}
             </div>
             <h1 className="mt-5 font-display font-medium tracking-[-0.022em] leading-[1.05] text-[40px] md:text-[52px] xl:text-[58px] text-[var(--color-ivory)]">
@@ -404,7 +404,7 @@ export default function EngineeringAccess() {
                   />
 
                   <header className="flex items-center gap-3 mb-5">
-                    <span className="w-9 h-9 rounded-lg border border-[#FF7A00]/30 bg-[rgba(255, 122, 0,0.08)] text-[var(--color-orange)] flex items-center justify-center">
+                    <span className="w-9 h-9 rounded-lg border border-[#FF7A00]/30 bg-[rgba(255,122,0,0.08)] text-[var(--color-orange)] flex items-center justify-center">
                       <Code2 className="w-[18px] h-[18px]" strokeWidth={1.8} />
                     </span>
                     <h2 className="font-display text-[20px] md:text-[22px] font-medium tracking-[-0.012em] text-[var(--color-ivory)]">
@@ -602,7 +602,7 @@ export default function EngineeringAccess() {
                   </div>
 
                   {/* Legal block */}
-                  <div className="rounded-lg border border-[#FF7A00]/20 bg-[rgba(255, 122, 0,0.04)] p-4 md:p-5 mb-6">
+                  <div className="rounded-lg border border-[#FF7A00]/20 bg-[rgba(255,122,0,0.04)] p-4 md:p-5 mb-6">
                     <div className="flex items-center gap-2 mb-3">
                       <Lock className="w-4 h-4 text-[var(--color-orange)]" strokeWidth={2} />
                       <h3 className="font-display text-[14px] font-medium text-[var(--color-ivory)]">
@@ -804,7 +804,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[12px] transition-colors ${active ? "border-[#FF7A00]/55 bg-[rgba(255, 122, 0,0.12)] text-[var(--color-ivory)]" : "border-white/10 bg-white/[0.03] text-[oklch(0.78_0.014_250)] hover:border-[#FF7A00]/30 hover:text-[var(--color-orange)]"}`}
+      className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[12px] transition-colors ${active ? "border-[#FF7A00]/55 bg-[rgba(255,122,0,0.12)] text-[var(--color-ivory)]" : "border-white/10 bg-white/[0.03] text-[oklch(0.78_0.014_250)] hover:border-[#FF7A00]/30 hover:text-[var(--color-orange)]"}`}
     >
       {children}
     </button>
@@ -861,7 +861,7 @@ function EngineeringSuccess({
             "linear-gradient(90deg, transparent 0%, rgba(255, 122, 0,0.6) 50%, transparent 100%)",
         }}
       />
-      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-[#FF7A00]/40 bg-[rgba(255, 122, 0,0.1)] text-[var(--color-orange)] mb-5">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border border-[#FF7A00]/40 bg-[rgba(255,122,0,0.1)] text-[var(--color-orange)] mb-5">
         <CheckCircle2 className="w-8 h-8" strokeWidth={1.7} />
       </div>
       <h2 className="font-display text-[24px] md:text-[28px] font-medium tracking-[-0.012em] text-[var(--color-ivory)]">
@@ -886,7 +886,7 @@ function EngineeringSuccess({
         </Link>
         <Link
           href="/contact"
-          className="inline-flex items-center gap-2 h-11 px-5 rounded-md border border-white/10 bg-white/[0.03] hover:border-[#FF7A00]/30 hover:bg-[rgba(255, 122, 0,0.06)] text-[13.5px] text-[var(--color-ivory)] transition-colors"
+          className="inline-flex items-center gap-2 h-11 px-5 rounded-md border border-white/10 bg-white/[0.03] hover:border-[#FF7A00]/30 hover:bg-[rgba(255,122,0,0.06)] text-[13.5px] text-[var(--color-ivory)] transition-colors"
         >
           {t("eng.success.contact", "Contact IO SKY")}
           <ArrowUpRight className="w-4 h-4 text-[var(--color-orange)]" strokeWidth={2} />

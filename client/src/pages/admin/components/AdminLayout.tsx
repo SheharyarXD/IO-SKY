@@ -461,7 +461,7 @@ export function AdminLayout({
                 <button className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-white/[0.07] text-[12px] text-white/75 hover:text-white hover:border-[#FF7A00]/40 transition-colors">
                   View as <ChevronDown className="w-3 h-3 opacity-60" />
                 </button>
-                <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF7A00] text-[#0B1020] text-[12.5px] font-semibold shadow-[0_6px_18px_-6px_rgba(255, 122, 0,0.55)] hover:brightness-105 transition-all">
+                <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF7A00] text-[#0B1020] text-[12.5px] font-semibold shadow-[0_6px_18px_-6px_rgba(255,122,0,0.55)] hover:brightness-105 transition-all">
                   <Plus className="w-3.5 h-3.5" /> Quick Actions
                 </button>
               </div>

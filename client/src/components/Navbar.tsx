@@ -250,7 +250,7 @@ export default function Navbar() {
                       className={cn(
                         "w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md text-[13px] transition-colors",
                         l.code === lang
-                          ? "text-[#FF7A00] bg-[rgba(255, 122, 0,0.08)]"
+                          ? "text-[#FF7A00] bg-[rgba(255,122,0,0.08)]"
                           : "text-[#E6EAF0] hover:bg-white/[0.04] hover:text-[#FF7A00]",
                       )}
                     >
@@ -291,36 +291,69 @@ export default function Navbar() {
         </nav>
       </div>
 
-      {/* Mobile drawer */}
+      {/*
+        Mobile drawer.
+
+        Sized with `h-[calc(100dvh-…)]` rather than `bottom-0`. Dynamic
+        viewport units track the mobile browser's collapsing URL bar, which
+        `100vh` does not: on iOS Safari `100vh` is the TALLEST the viewport
+        ever gets, so a drawer sized that way hides its last rows behind the
+        browser chrome exactly when the chrome is showing.
+
+        The background is fully opaque. It was 0.92 alpha over a backdrop
+        blur, and the page headline read straight through it on a dark hero.
+        A blur is a decoration here, not a substitute for an opaque surface,
+        and `backdrop-filter` is the first thing a browser drops under load.
+      */}
       <div
         className={cn(
-          "lg:hidden fixed inset-x-0 top-[68px] md:top-[76px] bottom-0 z-40 transition-[opacity,transform] duration-300",
+          "lg:hidden fixed inset-x-0 top-[68px] md:top-[76px] z-40 h-[calc(100dvh-68px)] md:h-[calc(100dvh-76px)] transition-[opacity,transform] duration-300",
           open ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none",
         )}
         aria-hidden={!open}
       >
-        <div className="absolute inset-0 bg-[oklch(0.07_0.022_260/0.92)] backdrop-blur-2xl" />
-        <div className="relative h-full overflow-y-auto">
-          <div className="container py-6 flex flex-col gap-1">
+        <div className="absolute inset-0 bg-[oklch(0.07_0.022_260)] backdrop-blur-2xl" />
+        {/*
+          `overscroll-contain` stops a scroll that reaches the end of this
+          panel from chaining to the page behind it, which on iOS otherwise
+          drags the whole document under the open drawer.
+        */}
+        <div className="relative h-full overflow-y-auto overscroll-contain">
+          {/*
+            The bottom padding is what guarantees the two calls to action are
+            reachable. `env(safe-area-inset-bottom)` clears the iPhone home
+            indicator, which sits over the last ~34px of the viewport and
+            would otherwise cover the primary button on exactly the devices
+            most likely to see this menu.
+          */}
+          <div className="container pt-6 pb-[calc(2rem+env(safe-area-inset-bottom))] flex flex-col gap-1">
             {NAV.map((item) => (
               <MobileNavItem key={item.labelKey} item={item} t={t} />
             ))}
 
-            <div className="mt-6 flex flex-wrap items-center gap-2">
+            {/*
+              A fixed two-column grid rather than a wrapping flex row. Ten
+              language pills of differing widths wrap to a different number
+              of rows at every screen width, so the height of the block below
+              them was unpredictable; this is the same height on every phone.
+            */}
+            <div className="mt-6 grid grid-cols-2 gap-2">
               {LANGUAGES.map((l) => (
                 <button
                   key={l.code}
                   type="button"
                   onClick={() => setLang(l.code as LangCode)}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-[12.5px] border transition-colors flex items-center gap-2 whitespace-nowrap",
+                    "px-3 py-2 rounded-md text-[12.5px] border transition-colors flex items-center gap-2 min-w-0",
                     l.code === lang
-                      ? "border-[#FF7A00]/40 text-[#FF7A00] bg-[rgba(255, 122, 0,0.08)]"
+                      ? "border-[#FF7A00]/40 text-[#FF7A00] bg-[rgba(255,122,0,0.08)]"
                       : "border-white/10 text-[#E6EAF0] bg-white/[0.03]",
                   )}
                 >
-                  <span className="font-mono text-[10px] tracking-[0.18em] uppercase opacity-80">{l.code}</span>
-                  <span>{l.native}</span>
+                  <span className="font-mono text-[10px] tracking-[0.18em] uppercase opacity-80 shrink-0">
+                    {l.code}
+                  </span>
+                  <span className="truncate">{l.native}</span>
                 </button>
               ))}
             </div>
@@ -360,7 +393,7 @@ function MegaMenu({ item, t }: { item: NavItem; t: (k: string) => string }) {
             className="group flex items-start gap-3 px-3 py-2.5 rounded-md hover:bg-white/[0.04] transition-colors"
           >
             <div
-              className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border border-white/[0.07] bg-white/[0.02] text-[oklch(0.8_0.012_250)] group-hover:text-[var(--color-orange)] group-hover:border-[#FF7A00]/30 group-hover:bg-[rgba(255, 122, 0,0.06)] transition-colors"
+              className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border border-white/[0.07] bg-white/[0.02] text-[oklch(0.8_0.012_250)] group-hover:text-[var(--color-orange)] group-hover:border-[#FF7A00]/30 group-hover:bg-[rgba(255,122,0,0.06)] transition-colors"
               aria-hidden
             >
               {c.icon}
@@ -454,7 +487,7 @@ function MobileNavItem({
                 <Link
                   key={c.href}
                   href={c.href}
-                  className="flex items-start gap-3 px-3 py-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-[#FF7A00]/30 hover:bg-[rgba(255, 122, 0,0.05)] transition-colors"
+                  className="flex items-start gap-3 px-3 py-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] hover:border-[#FF7A00]/30 hover:bg-[rgba(255,122,0,0.05)] transition-colors"
                 >
                   <div
                     className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border border-white/[0.07] bg-white/[0.02] text-[oklch(0.8_0.012_250)] [a:hover_&]:text-[var(--color-orange)]"

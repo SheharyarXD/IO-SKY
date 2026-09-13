@@ -41,8 +41,8 @@ export default function CustomSoftware() {
   return (
     <div className="relative min-h-screen bg-[#03060d] text-[var(--color-ivory)] overflow-x-hidden">
       <div aria-hidden className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-10%,rgba(255, 122, 0,0.10),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_85%_15%,rgba(255, 122, 0,0.06),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_-10%,rgba(255,122,0,0.10),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_85%_15%,rgba(255,122,0,0.06),transparent_60%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#03060d_0%,#050a16_50%,#03060d_100%)]" />
       </div>
 

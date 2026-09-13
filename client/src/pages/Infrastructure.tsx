@@ -296,7 +296,7 @@ function CommandCenter({
           {t("infra.viz.badge")}
         </span>
         <span className="flex items-center gap-1.5 text-[11px] text-[oklch(0.7_0.014_250)]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)]" style={{ boxShadow: "0 0 8px rgba(255, 122, 0,0.7)" }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)]" style={{ boxShadow: "0 0 8px rgba(255,122,0,0.7)" }} />
           live
         </span>
       </div>

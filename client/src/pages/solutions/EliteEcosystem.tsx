@@ -97,7 +97,7 @@ export default function EliteEcosystem() {
           </div>
         </div>
 
-        <aside className="rounded-2xl glass-soft p-7 ring-2 ring-[var(--orange)]/55 shadow-[0_24px_72px_-26px_rgba(255, 122, 0,0.55)]">
+        <aside className="rounded-2xl glass-soft p-7 ring-2 ring-[var(--orange)]/55 shadow-[0_24px_72px_-26px_rgba(255,122,0,0.55)]">
           <p className="text-[11px] uppercase tracking-[0.20em] text-white/45">
             Investment
           </p>

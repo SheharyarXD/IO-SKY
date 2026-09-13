@@ -386,8 +386,8 @@ export default function ExecutiveOverview() {
           {/* IO SYMBOL replaces robot — neural pulse halo */}
           <div className="mt-4 flex items-start gap-3">
             <div className="relative shrink-0">
-              <div className="absolute inset-0 -m-2 rounded-full bg-[radial-gradient(circle,rgba(255, 122, 0,0.45)_0%,rgba(255, 122, 0,0)_70%)] blur-md animate-pulse" />
-              <div className="relative w-[88px] h-[88px] rounded-[18px] border border-[#FF7A00]/25 bg-gradient-to-b from-[#0B1020] to-[#070A14] flex items-center justify-center shadow-[inset_0_0_20px_rgba(255, 122, 0,0.18)]">
+              <div className="absolute inset-0 -m-2 rounded-full bg-[radial-gradient(circle,rgba(255,122,0,0.45)_0%,rgba(255,122,0,0)_70%)] blur-md animate-pulse" />
+              <div className="relative w-[88px] h-[88px] rounded-[18px] border border-[#FF7A00]/25 bg-gradient-to-b from-[#0B1020] to-[#070A14] flex items-center justify-center shadow-[inset_0_0_20px_rgba(255,122,0,0.18)]">
                 <IOSkyLogo variant="mark" height={56} />
               </div>
               <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-[#FF7A00] border-2 border-[#0E1320] shadow-[0_0_8px_#FF7A00]" />
@@ -431,7 +431,7 @@ export default function ExecutiveOverview() {
           </ul>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF7A00] text-[#0B1020] text-[11.5px] font-semibold shadow-[0_6px_18px_-6px_rgba(255, 122, 0,0.55)]">
+            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] bg-gradient-to-b from-[#FFB347] to-[#FF7A00] text-[#0B1020] text-[11.5px] font-semibold shadow-[0_6px_18px_-6px_rgba(255,122,0,0.55)]">
               <Plus className="w-3.5 h-3.5" /> Ask Agent
             </button>
             <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] border border-white/[0.08] text-[11.5px] text-white/80 hover:border-[#FF7A00]/35 transition-colors">
@@ -452,7 +452,7 @@ export default function ExecutiveOverview() {
             <SampleBadge />
           </div>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="relative h-[220px] rounded-[14px] border border-white/[0.05] bg-[radial-gradient(circle_at_50%_50%,rgba(255, 122, 0,0.08)_0%,rgba(11,16,32,0.6)_60%)] flex items-center justify-center overflow-hidden">
+            <div className="relative h-[220px] rounded-[14px] border border-white/[0.05] bg-[radial-gradient(circle_at_50%_50%,rgba(255,122,0,0.08)_0%,rgba(11,16,32,0.6)_60%)] flex items-center justify-center overflow-hidden">
               <Globe2 className="w-[160px] h-[160px] text-[#FF7A00]/55" strokeWidth={0.7} />
               <div className="absolute inset-0 pointer-events-none">
                 {[
@@ -586,7 +586,7 @@ export default function ExecutiveOverview() {
             )}
           </div>
           <div className="text-[11px] text-white/45">{kpis ? `vs ${kpis.compareLabel}` : "awaiting first billing cycle"}</div>
-          <div className="mt-3 relative h-[150px] rounded-[12px] bg-[radial-gradient(circle_at_70%_30%,rgba(255, 122, 0,0.08)_0%,rgba(11,16,32,0)_70%)] border border-white/[0.04] overflow-hidden">
+          <div className="mt-3 relative h-[150px] rounded-[12px] bg-[radial-gradient(circle_at_70%_30%,rgba(255,122,0,0.08)_0%,rgba(11,16,32,0)_70%)] border border-white/[0.04] overflow-hidden">
             <RevenueTrendChart points={data?.revenueByDay ?? []} />
           </div>
           <div className="mt-2 flex items-center gap-3 text-[10.5px] font-mono text-white/55">
