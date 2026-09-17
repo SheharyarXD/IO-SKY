@@ -73,7 +73,7 @@ The specifications themselves require these to be raised early rather than absor
 |---|---|---|---|
 | RM-120 | Telephony provider selection and account | All of 4.1, most of 4.2 and 4.3 | Needs to support SIP, concurrent channels, DTMF, call recording control, transfer and programmable call control. Nothing in telephony can start without this. |
 | RM-121 | Speech to text and text to speech provider selection | 4.2, 4.3, parts of 4.4 | Must meet the Dutch and English naturalness bar in Receptionist §8 and Playbook §9. Dutch quality is the binding constraint, not English. |
-| RM-122 | LLM provider account and key | 4.2 through 4.6, and the existing AI Scan | OpenAI named as intended primary in Sales Outbound §57. Still outstanding from Milestone 2. |
+| RM-122 | LLM provider accounts and keys, OpenAI and Anthropic | 4.2 through 4.6, and the existing AI Scan | OpenAI named as intended primary in Sales Outbound §57. Still outstanding from Milestone 2. |
 | RM-123 | Concurrency capacity provisioning and limits | RM-201, RM-202 | IVR §25 requires ten simultaneous calls as an acceptance test and explicitly states ten is not the ceiling. Real capacity has to be purchased and documented. |
 | RM-124 | IO SKY 020 business number provisioning and porting | 4.1 | Receptionist §30, IVR §30. |
 | RM-125 | `iosky.co` outbound domain ownership, DNS, SPF, DKIM, DMARC | 4.5 email execution | Sales Outbound §46 states it becomes production authoritative only after ownership and DNS are verified. |
@@ -563,21 +563,63 @@ capability tiers, not vendor products. The router (RM-134) maps a business task 
 maps to a configured model. §64 requires that mapping to be central so a model can be replaced without
 rewriting workflows.
 
-| Tier | Used for | Map to |
+**Recommended: OpenAI and Anthropic together, split by what each is actually best at.** This is not a
+hedge to satisfy the neutrality clause. The two workloads in these specifications have genuinely
+different shapes.
+
+| Workload | Provider | Why |
 |---|---|---|
-| Luna | Extraction, normalisation, classification, tagging | A small fast model |
-| Terra | Research synthesis, qualification, standard drafts | A standard model |
-| Sol | Difficult research, conflicting evidence, high value accounts | A strong model |
-| Astra | Exceptional multi step complexity | A frontier model |
+| Live voice conversation | OpenAI Realtime API | Speech to speech in one model. Anthropic has no realtime speech API, so this is not a comparison |
+| Research, qualification, personalisation, reply handling | Anthropic Claude | Long context for research briefs and call histories, strong structured output, and prompt caching that matters enormously for this specific workload |
 
-Configure at least one secondary provider. An abstraction with a single provider behind it has not been
-tested and will not hold the first time it is needed.
+That split also satisfies §57 and §64 honestly. Two providers are genuinely in production, so the
+abstraction is exercised rather than theoretical.
 
-| Credential |
-|---|
-| `OPENAI_API_KEY` |
-| A second provider key, Anthropic or Google, so the abstraction is real |
-| `LLM_TIER_MAP` as configuration rather than code |
+### Tier mapping
+
+| Tier | Used for (§58) | Recommended model | Input / Output per million |
+|---|---|---|---|
+| Luna | Extraction, normalisation, classification, tagging | `claude-haiku-4-5` | $1.00 / $5.00 |
+| Terra | Research synthesis, qualification, standard drafts, subject lines, routine replies | `claude-sonnet-5` | $2.00 / $10.00 |
+| Sol | Difficult research, conflicting evidence, high value accounts, sophisticated personalisation | `claude-opus-5` | $5.00 / $25.00 |
+| Astra | Exceptional multi step complexity, cases unresolved by lower tiers | `claude-opus-5` at higher effort, or `claude-fable-5-1` | $10.00 / $50.00 for Fable |
+
+### Four Anthropic capabilities that map directly onto spec requirements
+
+**Prompt caching, for §63 cost governance.** The governed knowledge layer (§11), the ICP and the
+Campaign Mandate are re-sent on every single call and never change between them. Caching that prefix
+makes repeat reads roughly ten times cheaper. On a workload that researches hundreds of prospects
+against the same campaign definition, this is the single largest cost lever available and it requires
+no quality tradeoff.
+
+**Batch processing, for §29 bulk import.** Hundreds of records through durable background workflows is
+exactly what the Batches API is for, at half the standard rate. Import is not latency sensitive, so
+there is no reason to pay realtime pricing for it.
+
+**Structured outputs and strict tools, for §60 and §13.** The structured relay contract between model
+tiers needs named fields rather than a transcript, and §13 requires Verified Fact, Evidence, Inference
+and Unknown never to be silently collapsed. Schema-validated output enforces that at the API boundary
+instead of hoping the prompt holds. It also fits §36 exactly: the model proposes a tool call, the
+backend decides whether it is permitted.
+
+**Effort control, which changes how the escalation ladder should be built.** Before escalating from one
+model to a more expensive one, the cheaper move is often the same model at higher effort. This matters
+architecturally because **prompt caches are scoped per model**, so every jump across the Luna to Terra
+to Sol ladder throws away the cache. An escalation design that tries effort first, within one model and
+one cache namespace, will be materially cheaper than one that jumps tiers immediately. §59 already says
+to seek the lowest cost model reasonably capable of the required quality; effort is the finer grained
+version of that instruction and should be the first step of the ladder, not an afterthought.
+
+### Credentials
+
+| Credential | Notes |
+|---|---|
+| `ANTHROPIC_API_KEY` | Research, qualification, personalisation and reply tiers |
+| `OPENAI_API_KEY` | Realtime voice, and the existing AI Scan |
+| `LLM_TIER_MAP` | Tier to model mapping held as configuration, never in code (§64) |
+
+Set a spend limit on both accounts before the first production campaign. §63 requires budget controls,
+and an uncapped key on an autonomous prospecting system is the wrong place to discover that.
 
 ## Decision 4 — cold outbound email, separate from transactional
 
@@ -686,8 +728,8 @@ it says so honestly.
 
 ### New accounts to open
 
-- OpenAI, with realtime access and a spend limit
-- A second LLM provider, so the abstraction is genuinely exercised
+- OpenAI, with realtime access and a spend limit, for the voice layer and the AI Scan
+- Anthropic, with a spend limit, for the research, qualification and personalisation tiers
 - ElevenLabs, or Azure Speech
 - Deepgram, or Azure Speech
 - Amazon SES, or a second Resend account for cold outbound
