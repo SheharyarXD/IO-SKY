@@ -464,3 +464,250 @@ Nothing in this document is marked complete, because nothing in it has been buil
 verification bar used in Milestones 1, 2 and 3 applies: no task is marked ✅ without a typecheck, tests
 covering the specific behaviour claimed, and where applicable a demonstration against a real running
 system.
+
+---
+
+# Appendix A — APIs and credentials required
+
+Every provider below has to satisfy three constraints the specifications impose, not just do the job:
+
+1. **EEA processing.** The application container was moved to Amsterdam and the database is in Ireland.
+   A provider that processes call audio, transcripts or prospect data outside the EEA reintroduces the
+   transfer problem we just removed, and it becomes an input to the GDPR package legal counsel is
+   waiting on.
+2. **Provider neutrality.** Receptionist §50 and Sales Outbound §57 and §64 require that no LLM, speech,
+   voice or telephony vendor is baked into business logic. Every credential below sits behind an
+   abstraction (RM-132, RM-133, RM-134), not scattered through the code.
+3. **Configurable, not hardcoded.** Receptionist §49 and IVR §35 require Super Admin to change routine
+   operational settings without a code change.
+
+## Already in the project, reuse rather than buy
+
+| Capability | Provider | State |
+|---|---|---|
+| Database and storage | Supabase | Working, except the API key was revoked after a credential leak and never replaced (RM-129) |
+| SMS | Twilio | Working today, used only for MFA codes. The same account extends to voice |
+| Transactional email | Resend, with generic SMTP fallback | Working |
+| LLM | Slot exists, no key | `OPENAI_API_KEY` alone now activates it |
+
+## Decision 1 — telephony
+
+The single largest decision. It determines the call path, the fallback IVR, queues, transfers, recording
+control and the concurrency ceiling.
+
+**Recommended: Twilio.** Reasons specific to these specifications rather than general preference:
+
+- Programmable Voice plus Media Streams gives bidirectional audio over WebSocket, which is what a
+  realtime conversational agent needs.
+- TwiML gives a genuine traditional IVR for the fallback path. IVR §2 requires a real DTMF menu, not a
+  degraded AI. Building that from scratch on a thinner provider is real work.
+- TaskRouter covers queues and operator availability, which IVR §11 requires even with one operator.
+- Elastic SIP Trunking covers the SIP identity requirement in IVR §30.
+- Dutch +31 20 numbers and porting for RM-124.
+- An EU region exists for voice processing.
+- The account already exists for SMS, so one vendor relationship also covers RM-127.
+
+**Alternatives worth pricing:** Telnyx, which owns its network and is usually cheaper, with EU points of
+presence. Vonage. Both are credible. Twilio wins mainly on the IVR and queue primitives being ready made.
+
+**Not recommended for this build:** the managed voice-agent platforms such as Vapi, Retell or Bland.
+They would get a demo working faster, and they fight three hard requirements: Super Admin configuring
+behaviour without code, provider neutrality, and a separately controlled traditional IVR fallback with
+its own queue and routing.
+
+| Credential | Notes |
+|---|---|
+| `TWILIO_ACCOUNT_SID` | Already set |
+| `TWILIO_API_KEY_SID` / `TWILIO_API_KEY_SECRET` | Use API keys rather than the master auth token for voice. Revocable per environment |
+| `TWILIO_VOICE_APP_SID` | TwiML application for call control |
+| `TWILIO_PHONE_NUMBER_SID` | The 020 business number once provisioned |
+| `TWILIO_SIP_DOMAIN` | For operator SIP endpoints |
+| `TWILIO_WEBHOOK_SIGNING_KEY` | Inbound webhooks must be signature verified. Telephony input is untrusted (IVR §33) |
+
+## Decision 2 — the conversational voice layer
+
+Two viable architectures. This choice decides whether the Receptionist actually sounds natural.
+
+**Option A, speech to speech.** A realtime model handles audio in and audio out directly. Fewer moving
+parts, materially lower latency, and native handling of interruption and barge-in, which Receptionist §9
+and Playbook §65 explicitly require.
+
+**Option B, composable.** Separate speech to text, language model and text to speech. More control,
+easier to swap one piece, more latency engineering. Needed anyway for IVR prompt audio and voicemail
+transcription.
+
+**Recommendation: both, behind one abstraction.** Speech to speech for the live Receptionist
+conversation, composable components for IVR prompts, voicemail transcription and batch work. RM-133
+already exists for this. Provider neutrality then lives at the abstraction boundary, which is what §50
+actually asks for.
+
+| Capability | Recommended | Why | Alternatives |
+|---|---|---|---|
+| Realtime conversation | OpenAI Realtime API | Named intended primary in ASO §57. Handles interruption natively. Dutch supported | Google Gemini Live |
+| Text to speech | ElevenLabs | Strongest Dutch naturalness, and a configurable adult female professional voice is the launch requirement (Receptionist §8) | Azure Speech (stronger EEA compliance story), Cartesia (lowest latency) |
+| Speech to text | Deepgram | Strong streaming Dutch, low latency | Azure Speech, AssemblyAI |
+
+Dutch quality is the binding constraint, not English. Any shortlist should be judged on a real Dutch
+call before the contract, not on a demo reel.
+
+| Credential |
+|---|
+| `OPENAI_API_KEY` and `OPENAI_REALTIME_MODEL` |
+| `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` |
+| `DEEPGRAM_API_KEY` |
+
+## Decision 3 — language models and the model router
+
+Sales Outbound §58 names four internal tiers: Luna, Terra, Sol and Astra. Those are IO SKY's names for
+capability tiers, not vendor products. The router (RM-134) maps a business task to a tier, and the tier
+maps to a configured model. §64 requires that mapping to be central so a model can be replaced without
+rewriting workflows.
+
+| Tier | Used for | Map to |
+|---|---|---|
+| Luna | Extraction, normalisation, classification, tagging | A small fast model |
+| Terra | Research synthesis, qualification, standard drafts | A standard model |
+| Sol | Difficult research, conflicting evidence, high value accounts | A strong model |
+| Astra | Exceptional multi step complexity | A frontier model |
+
+Configure at least one secondary provider. An abstraction with a single provider behind it has not been
+tested and will not hold the first time it is needed.
+
+| Credential |
+|---|
+| `OPENAI_API_KEY` |
+| A second provider key, Anthropic or Google, so the abstraction is real |
+| `LLM_TIER_MAP` as configuration rather than code |
+
+## Decision 4 — cold outbound email, separate from transactional
+
+**This is the one place where reusing an existing provider would be a mistake.**
+
+Cold outbound and transactional email must not share a domain, and preferably not a provider or sending
+IP. Booking confirmations and password resets currently go through Resend on `iosky.nl`. If cold
+prospecting runs through the same reputation and recipients mark it as spam, booking confirmations stop
+arriving. That is exactly why Sales Outbound §46 specifies a separate `iosky.co` domain.
+
+**Recommended: Amazon SES with a dedicated IP in an EU region**, or a second Resend account on a
+separate dedicated domain. SES is cheaper at volume and gives direct control of the sending IP and its
+warmup.
+
+**Do not use Postmark for this.** Their terms prohibit cold outreach and the account would be closed.
+
+| Credential |
+|---|
+| `OUTBOUND_EMAIL_PROVIDER_KEY` |
+| `OUTBOUND_DOMAIN` set to `iosky.co`, configurable and never hardcoded (§46) |
+| SPF, DKIM and DMARC records on `iosky.co` |
+| Bounce and complaint webhook endpoints with signature verification |
+
+Domain warmup takes weeks. Start it early, in parallel with the build, not at launch.
+
+## Decision 5 — calendars
+
+Scheduling §29 requires external free/busy and two way sync. Both providers are needed, since the team
+uses Gmail and Outlook.
+
+| Provider | Credential |
+|---|---|
+| Google Calendar API | OAuth client ID and secret, with a verified consent screen |
+| Microsoft Graph | Azure app registration, client ID and secret, admin consent |
+
+Only free/busy is required for availability. §5 says external calendar detail is not needed and §47 says
+event titles must never be exposed to callers, so request the narrowest scopes that work.
+
+## Decision 6 — payments
+
+Required by Scheduling §14, where a verified AI Scan payment is the only public self service account
+creation path.
+
+**For a Dutch market, Mollie is the stronger default.** iDEAL dominates Dutch payment and Mollie is
+native to it. **Stripe** is the alternative if a single global processor matters more, and it supports
+iDEAL. The project already has empty Stripe slots, which is convenience rather than a reason.
+
+| Credential |
+|---|
+| Provider secret key, publishable key and webhook signing secret |
+
+## Decision 7 — push and handoff notifications
+
+IVR §14 is explicit that transfer context must not depend on the operator having a dashboard open.
+
+| Capability | Recommended | Credential |
+|---|---|---|
+| Mobile push | Firebase Cloud Messaging | Service account JSON |
+| Team alert | Slack or Microsoft Teams incoming webhook | Webhook URL. One is already configured for owner alerts |
+
+External notifications must carry minimal content plus a deep link to the authorised record (§14).
+
+## Decision 8 — model observability and cost governance
+
+Sales Outbound §63 requires per task and per campaign token usage, cost, latency, escalation reason,
+budget controls and abnormal usage visibility. That is a requirement, not tooling preference, and
+building it from scratch duplicates a solved problem.
+
+**Recommended: Langfuse**, which is open source and self hostable, so model traces containing prospect
+data stay inside the EEA on infrastructure already running. Helicone is the managed alternative.
+
+| Credential |
+|---|
+| `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST` |
+
+## Decision 9 — prospecting source connectors
+
+The least certain area, and the one most likely to need the escalation route in §98.
+
+| Source | Reality check |
+|---|---|
+| Indeed | Public job search API access has been heavily restricted. Assume partner approval is needed and may not be granted. A genuine risk to §21, not a formality |
+| Werken voor Nederland | Government vacancy environment. Check for an open data feed before assuming anything else |
+| Dutch commercial vacancy source | Terms need reading per site. Several prohibit automated collection |
+| Company career pages | §24 prohibits circumventing anti automation safeguards, which limits what is permissible |
+| Freelance and contract source | Same terms question |
+
+§23 requires a documented capability matrix per connector and §48 requires a Human Action Required path
+where direct execution is unavailable. **Plan for at least two of the five launch sources to be partly
+manual.** A connector that cannot legally automate is still a valid connector under the spec, provided
+it says so honestly.
+
+## Complete credential checklist
+
+### IO SKY provides
+
+- Twilio voice API key and secret, on the existing account
+- IO SKY 020 number, provisioned or ported
+- `iosky.co` domain ownership plus DNS access for SPF, DKIM and DMARC
+- Replacement Supabase secret key, outstanding since the credential leak
+- Payment provider account, Mollie or Stripe
+- Google Workspace admin consent for the Calendar OAuth app
+- Microsoft tenant admin consent for the Graph app
+- Source connector accounts and written confirmation of terms
+- A written decision on what each AI provider may do with the data, which is what legal counsel needs
+
+### New accounts to open
+
+- OpenAI, with realtime access and a spend limit
+- A second LLM provider, so the abstraction is genuinely exercised
+- ElevenLabs, or Azure Speech
+- Deepgram, or Azure Speech
+- Amazon SES, or a second Resend account for cold outbound
+- Firebase, for push
+- Langfuse, self hosted or cloud
+
+### Capacity to provision, not merely credentials
+
+IVR §25 requires ten simultaneous calls as an acceptance test and states plainly that ten is not the
+ceiling. Concurrency has to be purchased and documented on three services at once: telephony channels,
+realtime model sessions, and speech processing. §26 requires each limit documented along with how IO SKY
+raises it. Each has its own per account cap and each needs raising before the acceptance test, not
+during it.
+
+## One cost note worth raising early
+
+Realtime voice AI bills per minute of conversation across three meters simultaneously: telephony, the
+realtime model, and speech synthesis. A caller who talks for eight minutes costs materially more than a
+chat message, and the AI Receptionist is specified to be available 24 hours a day.
+
+Sales Outbound §63 already requires budget controls and abnormal usage alerts. Set those before the
+first production call rather than after the first invoice, and agree an expected monthly call volume
+with IO SKY so capacity and budget are provisioned against a real number.
