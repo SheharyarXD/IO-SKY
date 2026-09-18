@@ -58,6 +58,13 @@ const submitLeadInput = z.object({
   acceptedAiDisclaimer: z.boolean().refine((v) => v === true, {
     message: "AI Disclaimer must be accepted",
   }),
+  // AI Scan landing page spec §Purchase Configuration: preferred assessment
+  // language and primary audience must be captured before the assessment
+  // begins. No dedicated columns exist for these yet, so they ride along in
+  // the lead's free-text `note` below rather than requiring a schema change
+  // for what is, for now, informational metadata on the lead.
+  preferredLanguage: z.string().max(40).optional().nullable(),
+  primaryAudience: z.string().max(60).optional().nullable(),
   utmSource: z.string().max(120).optional().nullable(),
   utmCampaign: z.string().max(120).optional().nullable(),
   website: z.string().max(0).optional().nullable(),
@@ -197,7 +204,13 @@ export const aiScansRouter = router({
         company: input.company.trim(),
         phone: input.phone?.trim() || null,
         interest: `ai-scan:${input.tier}`,
-        note: `AI Scan funnel · tier=${input.tier}`,
+        note: [
+          `AI Scan funnel · tier=${input.tier}`,
+          input.preferredLanguage ? `language=${input.preferredLanguage}` : null,
+          input.primaryAudience ? `audience=${input.primaryAudience}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
         status: "new",
         utmSource: input.utmSource ?? null,
         utmCampaign: input.utmCampaign ?? null,

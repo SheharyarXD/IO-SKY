@@ -1,26 +1,30 @@
 /**
- * IO SKY — AI SCAN (flagship operational intelligence funnel)
+ * IO SKY — AI Scan Landing Page.
  *
- * Design language locked from master spec & mockup:
- *   - deep navy-black atmosphere (#103438)
- *   - restrained orange interaction language (#F97316 / #FB923C)
- *   - premium glass surfaces, cinematic spacing
- *   - executive typography hierarchy
- *   - progressive disclosure (no overload)
+ * Rebuilt per IO_SKY_AI_Scan_Landing_Page_FINAL_COMPLETE_v2 spec. Customer-
+ * facing structure (locked, do not rewrite/shorten/paraphrase without
+ * Product Owner approval):
+ *   01 Hero · 02 Why a Scan · 03 The Right Question First · 04 Expert Review
+ *   05 What You Receive (+ preview) · Decision Value · 06 Choose Your Scan
+ *   (3 Signature Glass cards) · 07 What Happens Next · Help Me Choose
  *
- * Structure (mirrors uploaded mockup):
- *   1. Hero (IO symbol art) + 3 pricing tiers + WHY THIS INVESTMENT PAYS OFF
- *   2. HOW THE AI SCAN WORKS — 6 steps
- *   3. QUESTIONS YOU'LL ANSWER — 3 tier previews with example questions + result previews
- *   4. WHAT YOU RECEIVE — 3 report mockups
- *   5. HOW WE CALCULATE YOUR SCORES + SCORING MODULE + HYBRID ANALYSIS
- *   6. UNLOCK FULL RESULTS form + WHAT HAPPENS NEXT + TRUST & SECURITY
- *   7. Bottom value strip
+ * Orange (#F58A1F) is semantic: eyebrows, the three primary Start Scan CTAs,
+ * functional focus/active states. Preview the Assessment and Help Me Choose
+ * are secondary soft CTAs (restrained orange outline, off-white text).
+ *
+ * Backend reality check, so this isn't overclaimed: there is no Stripe
+ * integration in this codebase and no credentials for one (see
+ * MILESTONE3_CHECKLIST.md addendum + docs/client/IO_SKY_Scope_Position.pdf —
+ * "no payment processor is integrated anywhere in this app"). The spec's
+ * backend-verified-payment-gated account creation is therefore NOT built.
+ * "Start X Scan" opens the existing lead-capture flow (trpc.aiScans.submitLead,
+ * already live and tested) so the funnel keeps working end-to-end; preferred
+ * language and primary audience are captured and stored on the lead. Wiring
+ * real payment/checkout in front of this is a separate, credentialed piece
+ * of work.
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { SiteImage } from "@/components/SiteImage";
-import type { SiteImageKey } from "@/lib/siteImages";
 import { Link, useLocation } from "wouter";
 import { useT } from "@/contexts/LanguageContext";
 import Navbar from "@/components/Navbar";
@@ -33,1004 +37,645 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowRight,
-  CheckCircle2,
+  ChevronDown,
   Lock,
-  TrendingUp,
-  Cog,
-  Brain,
-  Rocket,
-  ClipboardList,
-  HelpCircle,
-  Sparkles,
-  FileText,
-  CheckCheck,
-  ShieldCheck,
-  GaugeCircle,
-  Activity,
-  Layers,
-  Network,
-  CircuitBoard,
-  Users,
-  UserCog,
-  Compass,
-  Calendar,
-  Phone,
-  Mail,
   User,
+  Mail,
+  Phone,
   Building2,
+  X,
 } from "lucide-react";
 
-/*
- * Editorial visuals resolve through the central registry (client/src/lib/siteImages.ts).
- *
- * These previously pointed at the Manus/Forge CDN, which now returns 403 for
- * every asset — the originals are gone and no archived copy exists. <SiteImage>
- * renders a placeholder occupying the same layout box until replacements are
- * supplied, so a missing visual never shows as a broken-image icon.
- */
-const REPORT_FREE = "aiScan.reportFree" as const;
-const REPORT_GROWTH = "aiScan.reportGrowth" as const;
-const REPORT_ELITE = "aiScan.reportElite" as const;
+type Tier = "free" | "growth" | "elite";
+/** Backend tier enum (server/routers/aiScans.ts) predates this redesign and
+ * is deeply wired into a working, tested 35-question/5-dimension/3-tier
+ * scoring system — renaming it is a data-model change, not a restyle, so
+ * the new Operations/Cyber/Elite names are a display-layer mapping only. */
+const TIER_DISPLAY: Record<Tier, "operations" | "cyber" | "elite"> = {
+  free: "operations",
+  growth: "cyber",
+  elite: "elite",
+};
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Section header
-// ─────────────────────────────────────────────────────────────────────────────
-function SectionTitle({ children, sub }: { children: React.ReactNode; sub?: string }) {
+const AUDIENCE_OPTIONS = ["leadership", "technical", "investors"] as const;
+const LANGUAGE_OPTIONS = ["en", "nl", "de", "fr", "es", "it", "pt", "ja", "zh", "ar"] as const;
+
+/** Spec: "Direct telephone action... the centrally configured official IO
+ * SKY number." No such number has ever been configured anywhere in this
+ * codebase — rather than show a placeholder that looks real, the CTA
+ * degrades to informational-only text when it's unset. */
+const IOSKY_PHONE_NUMBER = (import.meta.env.VITE_IOSKY_PHONE_NUMBER as string | undefined) || "";
+
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return <div className="eyebrow justify-center">{children}</div>;
+}
+
+/** Open, editorial text section — sections 02–04 per spec (not boxes/cards/grids). */
+function EditorialSection({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="text-center">
-      <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">{children}</h2>
-      {sub ? <p className="mt-3 text-sm md:text-base text-neutral-400 max-w-3xl mx-auto">{sub}</p> : null}
-    </div>
+    <section className="py-16 md:py-20">
+      <div className="container max-w-[820px] mx-auto text-center">
+        <Eyebrow>{eyebrow}</Eyebrow>
+        <h2 className="mt-5 font-display font-semibold text-[26px] md:text-[34px] leading-[1.2] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+          {title}
+        </h2>
+        <div className="mt-6 space-y-4 text-[15px] md:text-[16px] leading-[1.7] text-[var(--io-text-secondary)] text-left">
+          {children}
+        </div>
+      </div>
+    </section>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Pricing tier card
-// ─────────────────────────────────────────────────────────────────────────────
-function TierCard({
-  eyebrow,
-  eyebrowColor,
-  title,
-  subtitle,
-  setup,
-  setupLabel,
-  monthly,
-  monthlyLabel,
-  features,
-  cta,
-  onCta,
-  highlight = false,
+/** Collapsed-by-default add-on disclosure inside a Scan card. */
+function AddonDisclosure({
+  note,
+  items,
 }: {
-  eyebrow: string;
-  eyebrowColor: string;
-  title: string;
-  subtitle: string;
-  setup: string;
-  setupLabel: string;
-  monthly?: string;
-  monthlyLabel?: string;
-  features: string[];
-  cta: string;
-  onCta: () => void;
-  highlight?: boolean;
+  note: string;
+  items: { title: string; body: string }[];
 }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div
-      className={`relative flex h-full flex-col rounded-2xl border bg-[#103438]/70 p-6 md:p-7 backdrop-blur transition will-change-transform ${
-        highlight
-          ? "border-[#F58A1F]/60 shadow-[0_0_40px_-12px_rgba(249,115,22,0.55)]"
-          : "border-white/10 hover:border-[#F58A1F]/40 hover:shadow-[0_0_28px_-14px_rgba(249,115,22,0.45)]"
-      }`}
-    >
-      {highlight && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#F58A1F] px-3 py-1 text-[10px] font-semibold tracking-widest text-white">
-          MOST CHOSEN
-        </div>
-      )}
-      <div className="text-center">
-        <div className={`text-xs font-semibold tracking-[0.18em] ${eyebrowColor}`}>{eyebrow}</div>
-        <h3 className="mt-3 text-lg font-semibold text-white">{title}</h3>
-        <p className="mt-1 text-xs text-neutral-400">{subtitle}</p>
-      </div>
-
-      <div className="mt-6 text-center">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-neutral-500">{setupLabel}</div>
-        <div className="mt-1 text-4xl font-semibold text-white">{setup}</div>
-        {monthly && (
-          <>
-            <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-neutral-500">{monthlyLabel}</div>
-            <div className="mt-1 text-3xl font-semibold text-[#F58A1F]">{monthly}</div>
-          </>
-        )}
-      </div>
-
-      <ul className="mt-6 space-y-2.5 text-sm text-neutral-300">
-        {features.map((f) => (
-          <li key={f} className="flex gap-2.5">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#F58A1F]" />
-            <span>{f}</span>
-          </li>
-        ))}
-      </ul>
-
+    <div className="mt-4 border-t border-white/10 pt-4">
       <button
         type="button"
-        onClick={onCta}
-        className={`mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
-          highlight
-            ? "bg-[#F58A1F] text-white hover:bg-[#F58A1F]"
-            : "border border-white/15 text-white hover:border-[#F58A1F] hover:text-[#F58A1F]"
-        }`}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between text-left text-[12.5px] font-medium text-[var(--color-ivory)]/85"
+        aria-expanded={open}
       >
-        {cta} <ArrowRight className="h-4 w-4" />
+        <span>Optional ways to review or present your results</span>
+        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Why-invest card
-// ─────────────────────────────────────────────────────────────────────────────
-function WhyCard({ icon: Icon, title, body }: { icon: typeof TrendingUp; title: string; body: string }) {
-  return (
-    <div className="flex gap-3">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
-        <Icon className="h-5 w-5" />
-      </div>
-      <div>
-        <div className="text-sm font-semibold text-white">{title}</div>
-        <p className="mt-0.5 text-xs text-neutral-400 leading-relaxed">{body}</p>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Step pill
-// ─────────────────────────────────────────────────────────────────────────────
-function StepPill({
-  n,
-  icon: Icon,
-  title,
-  body,
-}: {
-  n: number;
-  icon: typeof ClipboardList;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div className="flex-1 min-w-[160px] rounded-2xl border border-white/10 bg-[#103438]/70 p-5 backdrop-blur transition hover:border-[#F58A1F]/40">
-      <div className="flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-xl border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
-          <Icon className="h-5 w-5" />
+      {open && (
+        <div className="mt-3 space-y-3">
+          <p className="text-[12px] leading-[1.6] text-[var(--io-text-secondary)]">{note}</p>
+          {items.map((it) => (
+            <div key={it.title}>
+              <div className="text-[12.5px] font-semibold text-[var(--color-ivory)]">{it.title}</div>
+              <p className="mt-0.5 text-[12px] leading-[1.6] text-[var(--io-text-secondary)]">{it.body}</p>
+            </div>
+          ))}
         </div>
-        <div className="text-2xl font-semibold text-[#F58A1F]">{n}</div>
-      </div>
-      <div className="mt-4 text-sm font-semibold text-white">{title}</div>
-      <p className="mt-1 text-xs text-neutral-400 leading-relaxed">{body}</p>
+      )}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Question preview card (per tier)
-// ─────────────────────────────────────────────────────────────────────────────
-function QuestionPreviewCard({
-  eyebrow,
-  eyebrowColor,
+function ScanCard({
+  tier,
   title,
+  paragraphs,
   questions,
-  whatYoullSee,
-  examplePreview,
-  step,
-  stepColor,
+  receives,
+  delivery,
+  price,
+  cta,
+  addonNote,
+  addons,
+  connections,
+  onStart,
 }: {
-  eyebrow: string;
-  eyebrowColor: string;
+  tier: Tier;
   title: string;
+  paragraphs: string[];
   questions: string[];
-  whatYoullSee: { items: string[] };
-  examplePreview: React.ReactNode;
-  step: string;
-  stepColor: string;
+  receives: string[];
+  delivery: string;
+  price: string;
+  cta: string;
+  addonNote: string;
+  addons: { title: string; body: string }[];
+  connections?: { title: string; items: { title: string; body: string }[] };
+  onStart: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-5 md:p-6 backdrop-blur">
-      <div className="flex items-baseline justify-between gap-4">
-        <div>
-          <div className={`text-xs font-semibold tracking-[0.18em] ${eyebrowColor}`}>{eyebrow}</div>
-          <div className="text-xs text-neutral-500 mt-0.5">{title}</div>
+    <div className="io-signature-glass io-signature-glass--card flex flex-col h-full">
+      <div className="io-signature-glass__content flex flex-col h-full">
+        <h3 className="font-display font-semibold text-[19px] leading-[1.3] text-[var(--color-ivory)]">
+          {title}
+        </h3>
+        <div className="mt-4 space-y-3 text-[13.5px] leading-[1.6] text-[var(--io-text-secondary)]">
+          {paragraphs.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
         </div>
-      </div>
 
-      <ol className="mt-4 space-y-2.5 text-sm text-neutral-300">
-        {questions.map((q, i) => (
-          <li key={q} className="flex gap-2.5">
-            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[10px] font-semibold text-[#F58A1F]">
-              {i + 1}
-            </span>
-            <span>{q}</span>
-          </li>
-        ))}
-      </ol>
+        {connections && (
+          <div className="mt-5">
+            <div className="text-[12.5px] font-semibold text-[var(--color-ivory)]">{connections.title}</div>
+            <div className="mt-3 space-y-3">
+              {connections.items.map((it) => (
+                <div key={it.title}>
+                  <div className="text-[12.5px] font-medium text-[var(--color-orange)]">{it.title}</div>
+                  <p className="mt-0.5 text-[12.5px] leading-[1.6] text-[var(--io-text-secondary)]">{it.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-      {/* In-progress question shell */}
-      <div className="mt-5 rounded-xl border border-white/10 bg-black/30 p-4">
-        <div className={`text-[10px] font-semibold tracking-[0.18em] ${stepColor}`}>{step}</div>
-        <div className="mt-2 text-sm font-medium text-white leading-snug">{title}</div>
-        <div className="mt-3 h-9 rounded-md border border-white/10 bg-black/40 text-[11px] text-neutral-500 px-3 py-2">
-          Type your answer here...
-        </div>
-        <div className="mt-3 flex items-center justify-between text-[11px]">
-          <span className="text-neutral-500">Back</span>
-          <span className={`rounded-md bg-[#F58A1F]/20 px-2.5 py-1 text-[#F58A1F] ${stepColor}`}>Next →</span>
-        </div>
-      </div>
-
-      {/* What you'll see + example preview */}
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <div className="text-[10px] font-semibold tracking-[0.18em] text-[#F58A1F]">WHAT YOU'LL SEE</div>
-          <ul className="mt-2 space-y-1.5 text-xs text-neutral-300">
-            {whatYoullSee.items.map((i) => (
-              <li key={i} className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 rounded-full bg-[#F58A1F]" /> {i}
+        <div className="mt-5">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[var(--color-ivory)]/70">
+            Questions this Scan helps answer
+          </div>
+          <ul className="mt-2 space-y-1.5">
+            {questions.map((q) => (
+              <li key={q} className="text-[13px] leading-[1.55] text-[var(--io-text-secondary)] flex gap-2">
+                <span aria-hidden className="text-[var(--color-orange)]">•</span>
+                <span>{q}</span>
               </li>
             ))}
           </ul>
         </div>
-        <div>
-          <div className="text-[10px] font-semibold tracking-[0.18em] text-[#F58A1F]">EXAMPLE PREVIEW</div>
-          <div className="mt-2">{examplePreview}</div>
+
+        <div className="mt-5">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[var(--color-ivory)]/70">
+            What you receive
+          </div>
+          <ul className="mt-2 space-y-1.5">
+            {receives.map((r) => (
+              <li key={r} className="text-[13px] leading-[1.55] text-[var(--color-ivory)] flex gap-2">
+                <span aria-hidden className="text-[var(--color-orange)]">✓</span>
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <AddonDisclosure note={addonNote} items={addons} />
+
+        <div className="mt-auto pt-6">
+          <div className="text-[12px] text-[var(--io-text-secondary)]">{delivery}</div>
+          <div className="mt-1 text-[22px] font-display font-semibold text-[var(--color-ivory)]">{price}</div>
+          <button type="button" onClick={onStart} className="btn-primary mt-4 w-full justify-center">
+            {cta}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Report preview tile
-// ─────────────────────────────────────────────────────────────────────────────
-function ReportTile({
-  eyebrow,
-  eyebrowColor,
-  title,
-  pages,
-  includes,
-  image,
-  footer,
-}: {
-  eyebrow: string;
-  eyebrowColor: string;
-  title: string;
-  pages: string;
-  includes: string[];
-  image: SiteImageKey;
-  footer: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-5 md:p-6 backdrop-blur">
-      <div className={`text-xs font-semibold tracking-[0.18em] ${eyebrowColor}`}>{eyebrow}</div>
-      <div className="mt-1 text-sm text-neutral-400">{title}</div>
-      <div className="mt-0.5 text-[11px] text-neutral-500">{pages}</div>
-
-      <div className="mt-4 aspect-[4/5] w-full overflow-hidden rounded-xl border border-white/10 bg-black/30">
-        <SiteImage image={image} alt={title} />
-      </div>
-
-      <div className="mt-4">
-        <div className="text-[10px] font-semibold tracking-[0.18em] text-[#F58A1F]">INCLUDES</div>
-        <ul className="mt-2 space-y-1.5 text-xs text-neutral-300">
-          {includes.map((i) => (
-            <li key={i} className="flex gap-2">
-              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#F58A1F]" />
-              {i}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mt-4 text-[11px] text-neutral-500">{footer}</div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Page
-// ─────────────────────────────────────────────────────────────────────────────
 export default function AIScan() {
-  const ctx = useT();
-  const t = (key: string, fallback: string) => {
-    const v = ctx.t(key);
-    return v === key ? fallback : v;
-  };
-  const [form, setForm] = useState({ name: "", email: "", phone: "", company: "" });
+  const { t } = useT();
   const [, navigate] = useLocation();
-  const [unlockOpen, setUnlockOpen] = useState(false);
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<Tier>("free");
+  const [form, setForm] = useState({ name: "", email: "", phone: "", company: "" });
+  const [language, setLanguage] = useState("en");
+  const [audience, setAudience] = useState("");
   const [acceptedDisclaimer, setAcceptedDisclaimer] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<"free" | "growth" | "elite">("free");
   const [submitState, setSubmitState] = useState<
-    | { kind: "idle" }
-    | { kind: "success"; tier: "free" | "growth" | "elite" }
-    | { kind: "error"; message: string }
+    { kind: "idle" } | { kind: "success" } | { kind: "error"; message: string }
   >({ kind: "idle" });
+
   const acknowledgeAi = trpc.legal.acknowledgeAi.useMutation();
   const submitLead = trpc.aiScans.submitLead.useMutation({
     onSuccess: (data) => {
-      setSubmitState({ kind: "success", tier: data.tier });
+      setSubmitState({ kind: "success" });
       acknowledgeAi.mutate({ context: `ai-scan:${data.tier}` });
-      setForm({ name: "", email: "", phone: "", company: "" });
-      setAcceptedDisclaimer(false);
+      // No payment gate exists yet (see file header), so the working path
+      // is straight into the existing, tested questionnaire flow.
+      window.setTimeout(() => navigate(`/ai-scan/start?tier=${data.tier}`), 900);
     },
     onError: (err) => {
       setSubmitState({
         kind: "error",
-        message:
-          err.message ||
-          t(
-            "aiscan.unlock.errorGeneric",
-            "Something went wrong submitting your request. Please try again.",
-          ),
+        message: err.message || "Something went wrong submitting your request. Please try again.",
       });
     },
   });
-  const openUnlock = (tier: "free" | "growth" | "elite") => {
+
+  const openPurchase = (tier: Tier) => {
     setSelectedTier(tier);
     setSubmitState({ kind: "idle" });
-    setUnlockOpen(true);
+    setPurchaseOpen(true);
+  };
+
+  const scrollToChoose = () => {
+    document.getElementById("choose-scan")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-[#0D2D2E] text-[#E6EAF0] pt-20">
-      <div className="container max-w-[1280px] py-10 md:py-14 page-enter">
-        {/* ─── 1. HERO + PRICING ─────────────────────────────────────────── */}
-        <section className="grid grid-cols-1 lg:grid-cols-[1.05fr_2fr_1fr] gap-6">
-          {/* Left: title + sub + bullets + hero art */}
-          <div className="rounded-2xl border border-white/10 bg-[#103438]/60 p-6 md:p-7 backdrop-blur">
-            <div className="text-4xl md:text-5xl font-semibold tracking-tight text-white">AI SCAN</div>
-            <p className="mt-3 text-sm text-neutral-400 leading-relaxed">
-              {t("aiscan.hero.sub", "Discover what's holding your operations back — and how to unlock unstoppable growth.")}
+      <main className="page-enter">
+        {/* 01 — HERO */}
+        <section className="pt-32 md:pt-40 pb-16 md:pb-20">
+          <div className="container max-w-[760px] mx-auto text-center">
+            <h1 className="font-display font-semibold text-[32px] md:text-[44px] leading-[1.15] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+              {t("aiscan2.hero.title")}
+            </h1>
+            <p className="mt-6 text-[16px] leading-[1.7] text-[var(--io-text-secondary)]">
+              {t("aiscan2.hero.body1")}
             </p>
-            <ul className="mt-5 space-y-2 text-sm">
+            <p className="mt-4 text-[16px] leading-[1.7] text-[var(--io-text-secondary)]">
+              {t("aiscan2.hero.body2")}
+            </p>
+            <button type="button" onClick={scrollToChoose} className="btn-primary mt-8">
+              {t("aiscan2.hero.cta")}
+              <ArrowRight className="w-4 h-4" strokeWidth={2} />
+            </button>
+          </div>
+        </section>
+
+        {/* 02 — WHY A SCAN */}
+        <EditorialSection eyebrow={t("aiscan2.why.eyebrow")} title={t("aiscan2.why.title")}>
+          <p>{t("aiscan2.why.body1")}</p>
+          <p>{t("aiscan2.why.body2")}</p>
+          <p className="text-[var(--color-ivory)] font-medium">{t("aiscan2.why.body3")}</p>
+        </EditorialSection>
+
+        {/* 03 — THE RIGHT QUESTION FIRST */}
+        <EditorialSection eyebrow={t("aiscan2.right.eyebrow")} title={t("aiscan2.right.title")}>
+          <p className="font-medium text-[var(--color-ivory)]">{t("aiscan2.right.body1")}</p>
+          <p>{t("aiscan2.right.body2")}</p>
+          <p>{t("aiscan2.right.body3")}</p>
+          <p>{t("aiscan2.right.body4")}</p>
+        </EditorialSection>
+
+        {/* 04 — EXPERT REVIEW */}
+        <EditorialSection eyebrow={t("aiscan2.expert.eyebrow")} title={t("aiscan2.expert.title")}>
+          <p>{t("aiscan2.expert.body1")}</p>
+          <p>{t("aiscan2.expert.body2")}</p>
+          <p>{t("aiscan2.expert.body3")}</p>
+          <p className="font-medium text-[var(--color-ivory)]">{t("aiscan2.expert.body4")}</p>
+        </EditorialSection>
+
+        {/* 05 — WHAT YOU RECEIVE */}
+        <section className="py-16 md:py-20">
+          <div className="container max-w-[820px] mx-auto text-center">
+            <Eyebrow>{t("aiscan2.receive.eyebrow")}</Eyebrow>
+            <h2 className="mt-5 font-display font-semibold text-[26px] md:text-[34px] leading-[1.2] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+              {t("aiscan2.receive.title")}
+            </h2>
+            <p className="mt-6 text-[15px] md:text-[16px] leading-[1.7] text-[var(--io-text-secondary)]">
+              {t("aiscan2.receive.body")}
+            </p>
+            <div className="mt-8 text-left space-y-5 max-w-[560px] mx-auto">
               {[
-                t("aiscan.hero.li1", "AI-Powered Analysis"),
-                t("aiscan.hero.li2", "Expert Refinement"),
-                t("aiscan.hero.li3", "Actionable Roadmaps"),
-                t("aiscan.hero.li4", "Measurable Results"),
+                ["report", t("aiscan2.receive.report.title"), t("aiscan2.receive.report.body")],
+                ["roadmap", t("aiscan2.receive.roadmap.title"), t("aiscan2.receive.roadmap.body")],
+                ["summary", t("aiscan2.receive.summary.title"), t("aiscan2.receive.summary.body")],
+              ].map(([key, title, body]) => (
+                <div key={key}>
+                  <div className="font-display font-semibold text-[15px] text-[var(--color-ivory)]">{title}</div>
+                  <p className="mt-1 text-[13.5px] leading-[1.6] text-[var(--io-text-secondary)]">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="container max-w-[900px] mx-auto mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+            <div>
+              <div className="font-medium text-[14px] text-[var(--color-ivory)]">{t("aiscan2.receive.audience.title")}</div>
+              <p className="mt-2 text-[13px] leading-[1.6] text-[var(--io-text-secondary)]">{t("aiscan2.receive.audience.body")}</p>
+              <p className="mt-3 text-[13px] font-medium text-[var(--color-ivory)]">{t("aiscan2.receive.language")}</p>
+            </div>
+            <div>
+              <div className="font-medium text-[14px] text-[var(--color-ivory)]">{t("aiscan2.receive.preview.title")}</div>
+              <p className="mt-2 text-[13px] leading-[1.6] text-[var(--io-text-secondary)]">{t("aiscan2.receive.preview.body")}</p>
+              <button type="button" onClick={() => setPreviewOpen(true)} className="btn-secondary mt-3">
+                {t("aiscan2.receive.preview.cta")}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* DECISION VALUE */}
+        <EditorialSection eyebrow={t("aiscan2.decision.eyebrow")} title={t("aiscan2.decision.title")}>
+          <p>{t("aiscan2.decision.body1")}</p>
+          <p className="font-medium text-[var(--color-ivory)]">{t("aiscan2.decision.body2")}</p>
+        </EditorialSection>
+
+        {/* 06 — CHOOSE YOUR SCAN (deliberate exception: 3 equal Signature Glass cards) */}
+        <section id="choose-scan" className="py-16 md:py-20 scroll-mt-24">
+          <div className="container max-w-[820px] mx-auto text-center">
+            <Eyebrow>{t("aiscan2.choose.eyebrow")}</Eyebrow>
+            <h2 className="mt-5 font-display font-semibold text-[26px] md:text-[34px] leading-[1.2] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+              {t("aiscan2.choose.title")}
+            </h2>
+            <p className="mt-6 text-[15px] leading-[1.7] text-[var(--io-text-secondary)]">
+              {t("aiscan2.choose.body")}
+            </p>
+          </div>
+
+          <div className="container mt-12 grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+            <ScanCard
+              tier="free"
+              title={t("aiscan2.tier.operations.title")}
+              paragraphs={[t("aiscan2.tier.operations.body1"), t("aiscan2.tier.operations.body2"), t("aiscan2.tier.operations.body3")]}
+              questions={[t("aiscan2.tier.operations.q1"), t("aiscan2.tier.operations.q2"), t("aiscan2.tier.operations.q3"), t("aiscan2.tier.operations.q4")]}
+              receives={[t("aiscan2.tier.operations.receive1"), t("aiscan2.tier.operations.receive2"), t("aiscan2.tier.operations.receive3")]}
+              delivery={t("aiscan2.tier.operations.delivery")}
+              price={t("aiscan2.tier.operations.price")}
+              cta={t("aiscan2.tier.operations.cta")}
+              addonNote={t("aiscan2.tier.operations.addonNote")}
+              addons={[
+                { title: t("aiscan2.tier.operations.addon1.title"), body: t("aiscan2.tier.operations.addon1.body") },
+                { title: t("aiscan2.tier.operations.addon2.title"), body: t("aiscan2.tier.operations.addon2.body") },
+                { title: t("aiscan2.tier.operations.addon3.title"), body: t("aiscan2.tier.operations.addon3.body") },
+              ]}
+              onStart={() => openPurchase("free")}
+            />
+            <ScanCard
+              tier="growth"
+              title={t("aiscan2.tier.cyber.title")}
+              paragraphs={[t("aiscan2.tier.cyber.body1"), t("aiscan2.tier.cyber.body2"), t("aiscan2.tier.cyber.body3"), t("aiscan2.tier.cyber.body4")]}
+              questions={[t("aiscan2.tier.cyber.q1"), t("aiscan2.tier.cyber.q2"), t("aiscan2.tier.cyber.q3"), t("aiscan2.tier.cyber.q4")]}
+              receives={[t("aiscan2.tier.cyber.receive1"), t("aiscan2.tier.cyber.receive2"), t("aiscan2.tier.cyber.receive3")]}
+              delivery={t("aiscan2.tier.cyber.delivery")}
+              price={t("aiscan2.tier.cyber.price")}
+              cta={t("aiscan2.tier.cyber.cta")}
+              addonNote={t("aiscan2.tier.cyber.addonNote")}
+              addons={[
+                { title: t("aiscan2.tier.cyber.addon1.title"), body: t("aiscan2.tier.cyber.addon1.body") },
+                { title: t("aiscan2.tier.cyber.addon2.title"), body: t("aiscan2.tier.cyber.addon2.body") },
+                { title: t("aiscan2.tier.cyber.addon3.title"), body: t("aiscan2.tier.cyber.addon3.body") },
+              ]}
+              onStart={() => openPurchase("growth")}
+            />
+            <ScanCard
+              tier="elite"
+              title={t("aiscan2.tier.elite.title")}
+              paragraphs={[t("aiscan2.tier.elite.body1"), t("aiscan2.tier.elite.body2"), t("aiscan2.tier.elite.body3")]}
+              connections={{
+                title: t("aiscan2.tier.elite.connections.title"),
+                items: [
+                  { title: t("aiscan2.tier.elite.connections1.title"), body: t("aiscan2.tier.elite.connections1.body") },
+                  { title: t("aiscan2.tier.elite.connections2.title"), body: t("aiscan2.tier.elite.connections2.body") },
+                  { title: t("aiscan2.tier.elite.connections3.title"), body: t("aiscan2.tier.elite.connections3.body") },
+                ],
+              }}
+              questions={[t("aiscan2.tier.elite.q1"), t("aiscan2.tier.elite.q2"), t("aiscan2.tier.elite.q3"), t("aiscan2.tier.elite.q4")]}
+              receives={[t("aiscan2.tier.elite.receive1"), t("aiscan2.tier.elite.receive2"), t("aiscan2.tier.elite.receive3"), t("aiscan2.tier.elite.receive4")]}
+              delivery={t("aiscan2.tier.elite.delivery")}
+              price={t("aiscan2.tier.elite.price")}
+              cta={t("aiscan2.tier.elite.cta")}
+              addonNote={t("aiscan2.tier.elite.addonNote")}
+              addons={[{ title: t("aiscan2.tier.elite.addon1.title"), body: t("aiscan2.tier.elite.addon1.body") }]}
+              onStart={() => openPurchase("elite")}
+            />
+          </div>
+        </section>
+
+        {/* 07 — WHAT HAPPENS NEXT */}
+        <section className="py-16 md:py-20">
+          <div className="container max-w-[760px] mx-auto">
+            <div className="text-center">
+              <Eyebrow>{t("aiscan2.next.eyebrow")}</Eyebrow>
+              <h2 className="mt-5 font-display font-semibold text-[26px] md:text-[34px] leading-[1.2] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+                {t("aiscan2.next.title")}
+              </h2>
+            </div>
+            <ol className="mt-12 relative border-l border-white/10 ml-4 space-y-9">
+              {[
+                { n: "01", title: t("aiscan2.next.step1.title"), body: t("aiscan2.next.step1.body") },
+                { n: "02", title: t("aiscan2.next.step2.title"), body: t("aiscan2.next.step2.body") },
+                { n: "03", title: t("aiscan2.next.step3.title"), lead: t("aiscan2.next.step3.lead"), body: t("aiscan2.next.step3.body") },
+                { n: "04", title: t("aiscan2.next.step4.title"), body: t("aiscan2.next.step4.body") },
+                { n: "05", title: t("aiscan2.next.step5.title"), body: t("aiscan2.next.step5.body") },
+                { n: "06", title: t("aiscan2.next.step6.title"), body: t("aiscan2.next.step6.body") },
               ].map((s) => (
-                <li key={s} className="flex items-center gap-2.5 text-neutral-200">
-                  <CheckCircle2 className="h-4 w-4 text-[#F58A1F]" /> {s}
+                <li key={s.n} className="pl-8 relative">
+                  <span className="absolute -left-[13px] top-0 grid h-6 w-6 place-items-center rounded-full border border-[var(--color-orange)]/50 bg-[var(--io-bg)] text-[11px] font-semibold text-[var(--color-orange)]">
+                    {s.n}
+                  </span>
+                  <div className="font-display font-semibold text-[15px] text-[var(--color-ivory)]">{s.title}</div>
+                  {s.lead && <p className="mt-1 text-[13.5px] font-medium text-[var(--color-ivory)]">{s.lead}</p>}
+                  <p className="mt-1 text-[13.5px] leading-[1.6] text-[var(--io-text-secondary)]">{s.body}</p>
                 </li>
               ))}
-            </ul>
-            <div className="mt-6 aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-black/30">
-              <SiteImage image="aiScan.hero" alt="IO SKY AI Scan" />
-            </div>
-          </div>
-
-          {/* Middle: 3 pricing tiers */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
-            <TierCard
-              eyebrow={t("aiscan.tier.free.eyebrow", "FREE AI SCAN")}
-              eyebrowColor="text-sky-400"
-              title={t("aiscan.tier.free.title", "Get instant insights about your operations.")}
-              subtitle=""
-              setup="€0"
-              setupLabel={t("aiscan.tier.free.setupLabel", "ONE-TIME SCAN")}
-              features={[
-                t("aiscan.tier.free.f1", "Basic operational score"),
-                t("aiscan.tier.free.f2", "Top 3 opportunities"),
-                t("aiscan.tier.free.f3", "Limited insights preview"),
-                t("aiscan.tier.free.f4", "Manual summary (basic)"),
-              ]}
-              cta={t("aiscan.tier.free.cta", "Start Free Scan")}
-              onCta={() => navigate("/ai-scan/start?tier=free")}
-            />
-            <TierCard
-              eyebrow={t("aiscan.tier.growth.eyebrow", "GROWTH AI SCAN")}
-              eyebrowColor="text-[#F58A1F]"
-              title={t("aiscan.tier.growth.title", "Deep operational analysis for growing companies.")}
-              subtitle=""
-              setup="€1,500"
-              setupLabel={t("aiscan.tier.growth.setupLabel", "SETUP (ONE-TIME)")}
-              monthly="€350"
-              monthlyLabel={t("aiscan.tier.growth.monthlyLabel", "ONGOING INSIGHTS & OPTIMIZATION")}
-              features={[
-                t("aiscan.tier.growth.f1", "Complete operational analysis"),
-                t("aiscan.tier.growth.f2", "Detailed opportunities"),
-                t("aiscan.tier.growth.f3", "Growth roadmap preview"),
-                t("aiscan.tier.growth.f4", "Ecosystem recommendation"),
-                t("aiscan.tier.growth.f5", "Expert refinement"),
-                t("aiscan.tier.growth.f6", "Executive PDF report"),
-                t("aiscan.tier.growth.f7", "Ongoing monitoring & updates"),
-              ]}
-              cta={t("aiscan.tier.growth.cta", "Start Growth Scan")}
-              onCta={() => navigate("/ai-scan/start?tier=growth")}
-              highlight
-            />
-            <TierCard
-              eyebrow={t("aiscan.tier.elite.eyebrow", "ELITE AI SCAN")}
-              eyebrowColor="text-fuchsia-300"
-              title={t("aiscan.tier.elite.title", "Enterprise-grade analysis for complex organizations.")}
-              subtitle=""
-              setup="€5,000+"
-              setupLabel={t("aiscan.tier.elite.setupLabel", "SETUP (ONE-TIME)")}
-              monthly="€1,500"
-              monthlyLabel={t("aiscan.tier.elite.monthlyLabel", "ONGOING INSIGHTS & OPTIMIZATION")}
-              features={[
-                t("aiscan.tier.elite.f1", "Deep operational audit"),
-                t("aiscan.tier.elite.f2", "AI opportunity mapping"),
-                t("aiscan.tier.elite.f3", "Infrastructure & risk analysis"),
-                t("aiscan.tier.elite.f4", "Custom ecosystem architecture"),
-                t("aiscan.tier.elite.f5", "Executive roadmap"),
-                t("aiscan.tier.elite.f6", "Expert refinement by specialists"),
-                t("aiscan.tier.elite.f7", "Premium executive report with appendix"),
-                t("aiscan.tier.elite.f8", "Priority support & consultations"),
-              ]}
-              cta={t("aiscan.tier.elite.cta", "Start Elite Scan")}
-              onCta={() => navigate("/ai-scan/start?tier=elite")}
-            />
-          </div>
-
-          {/* Right: WHY THIS INVESTMENT PAYS OFF */}
-          <div className="rounded-2xl border border-white/10 bg-[#103438]/60 p-6 md:p-7 backdrop-blur">
-            <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.why.eyebrow", "WHY THIS INVESTMENT PAYS OFF")}</div>
-            <div className="mt-5 space-y-5">
-              <WhyCard
-                icon={TrendingUp}
-                title={t("aiscan.why.1.t", "Increase Operational Efficiency")}
-                body={t("aiscan.why.1.b", "Reduce costs by 20–40%")}
-              />
-              <WhyCard
-                icon={Cog}
-                title={t("aiscan.why.2.t", "Automate & Scale")}
-                body={t("aiscan.why.2.b", "Eliminate manual work and scale without limits")}
-              />
-              <WhyCard
-                icon={Brain}
-                title={t("aiscan.why.3.t", "Make Smarter Decisions")}
-                body={t("aiscan.why.3.b", "Data-driven insights for better decision making")}
-              />
-              <WhyCard
-                icon={Rocket}
-                title={t("aiscan.why.4.t", "Accelerate Growth")}
-                body={t("aiscan.why.4.b", "Clear roadmap to sustainable growth and profitability")}
-              />
-            </div>
+            </ol>
           </div>
         </section>
 
-        {/* ─── 2. HOW THE AI SCAN WORKS ──────────────────────────────────── */}
-        <section className="mt-10 md:mt-14">
-          <SectionTitle>{t("aiscan.flow.title", "HOW THE AI SCAN WORKS")}</SectionTitle>
-          <div className="mt-8 flex flex-wrap gap-4">
-            {[
-              { icon: ClipboardList, title: t("aiscan.flow.1.t", "Choose Your Scan"), body: t("aiscan.flow.1.b", "Select the scan that fits your needs.") },
-              { icon: HelpCircle, title: t("aiscan.flow.2.t", "Answer Questions"), body: t("aiscan.flow.2.b", "Answer a series of strategic questions about your operations.") },
-              { icon: Sparkles, title: t("aiscan.flow.3.t", "AI Analysis"), body: t("aiscan.flow.3.b", "Our AI analyzes your inputs and systems in real-time.") },
-              { icon: UserCog, title: t("aiscan.flow.4.t", "Expert Refinement"), body: t("aiscan.flow.4.b", "Our experts refine the analysis for maximum accuracy.") },
-              { icon: FileText, title: t("aiscan.flow.5.t", "Get Your Results"), body: t("aiscan.flow.5.b", "Receive your detailed report and roadmap.") },
-              { icon: CheckCheck, title: t("aiscan.flow.6.t", "Take Action"), body: t("aiscan.flow.6.b", "Implement, optimize and achieve measurable growth.") },
-            ].map((s, i) => (
-              <StepPill key={i} n={i + 1} icon={s.icon} title={s.title} body={s.body} />
-            ))}
-          </div>
-        </section>
-
-        {/* ─── 3. QUESTIONS YOU'LL ANSWER ─────────────────────────────────── */}
-        <section className="mt-10 md:mt-14">
-          <SectionTitle>{t("aiscan.q.title", "QUESTIONS YOU'LL ANSWER (EXAMPLES PER SCAN)")}</SectionTitle>
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <QuestionPreviewCard
-              eyebrow={t("aiscan.q.free.eyebrow", "FREE AI SCAN — 7 QUESTIONS")}
-              eyebrowColor="text-sky-400"
-              title={t("aiscan.q.free.shortSub", "Quick assessment to give you instant insights.")}
-              questions={[
-                t("aiscan.q.free.q1", "Company snapshot — name, industry, size"),
-                t("aiscan.q.free.q2", "Primary operational goal for the next 12 months"),
-                t("aiscan.q.free.q3", "Top friction point slowing the team down"),
-                t("aiscan.q.free.q4", "Core systems currently in use"),
-              ]}
-              whatYoullSee={{
-                items: [
-                  t("aiscan.q.free.s1", "Operational Score (preview)"),
-                  t("aiscan.q.free.s2", "Top 3 Opportunities"),
-                  t("aiscan.q.free.s3", "Key Strengths"),
-                  t("aiscan.q.free.s4", "Critical Gaps (blurred)"),
-                  t("aiscan.q.free.s5", "Recommendations (blurred)"),
-                ],
-              }}
-              examplePreview={
-                <div className="rounded-md border border-white/10 bg-black/40 p-3">
-                  <div className="text-[10px] uppercase tracking-widest text-neutral-500">Operational Score (Preview)</div>
-                  <div className="mt-1 text-3xl font-semibold text-white">58<span className="text-sm text-neutral-500">/100</span></div>
-                  <div className="text-[10px] text-[#F58A1F] mt-0.5">Fair</div>
-                  <button
-                    type="button"
-                    onClick={() => openUnlock("free")}
-                    className="mt-2 flex items-center gap-2 text-[10px] text-neutral-400 hover:text-[#F58A1F] transition"
-                  >
-                    <Lock className="h-3 w-3" /> {t("aiscan.preview.unlockHint", "Unlock full results to see your complete analysis.")}
-                  </button>
-                </div>
-              }
-              step={t("aiscan.q.free.step", "PREVIEW · 4 OF 7")}
-              stepColor="text-sky-300"
-            />
-            <QuestionPreviewCard
-              eyebrow={t("aiscan.q.growth.eyebrow", "GROWTH AI SCAN — 18 QUESTIONS")}
-              eyebrowColor="text-[#F58A1F]"
-              title={t("aiscan.q.growth.shortSub", "In-depth analysis for growing businesses.")}
-              questions={[
-                t("aiscan.q.growth.q1", "Where workflows break or slow down"),
-                t("aiscan.q.growth.q2", "Reporting & KPI visibility today"),
-                t("aiscan.q.growth.q3", "Integrations between core tools"),
-                t("aiscan.q.growth.q4", "Capacity to scale current operations"),
-                t("aiscan.q.growth.q5", "Expected ROI from optimization"),
-              ]}
-              whatYoullSee={{
-                items: [
-                  t("aiscan.q.growth.s1", "Full operational score"),
-                  t("aiscan.q.growth.s2", "5 key opportunities"),
-                  t("aiscan.q.growth.s3", "Efficiency estimates"),
-                  t("aiscan.q.growth.s4", "Risk indicators"),
-                  t("aiscan.q.growth.s5", "Ecosystem recommendation"),
-                  t("aiscan.q.growth.s6", "Roadmap preview"),
-                ],
-              }}
-              examplePreview={
-                <div className="rounded-md border border-white/10 bg-black/40 p-3">
-                  <div className="text-[10px] uppercase tracking-widest text-neutral-500">Operational Maturity Score</div>
-                  <div className="mt-1 text-3xl font-semibold text-white">72<span className="text-sm text-neutral-500">/100</span></div>
-                  <div className="text-[10px] text-emerald-400 mt-0.5">Good</div>
-                  <div className="mt-2 text-[10px] uppercase tracking-widest text-[#F58A1F]">Recommended Ecosystem</div>
-                  <div className="text-[11px] font-semibold text-white">GROWTH ECOSYSTEM</div>
-                  <div className="text-[10px] text-[#F58A1F]">View details →</div>
-                </div>
-              }
-              step={t("aiscan.q.growth.step", "PREVIEW · 5 OF 18")}
-              stepColor="text-[#F58A1F]"
-            />
-            <QuestionPreviewCard
-              eyebrow={t("aiscan.q.elite.eyebrow", "ELITE AI SCAN — 30+ QUESTIONS")}
-              eyebrowColor="text-fuchsia-300"
-              title={t("aiscan.q.elite.shortSub", "Comprehensive audit for complex organizations.")}
-              questions={[
-                t("aiscan.q.elite.q1", "Governance, risk & compliance posture"),
-                t("aiscan.q.elite.q2", "Architecture maturity & resilience"),
-                t("aiscan.q.elite.q3", "Capacity planning across business units"),
-                t("aiscan.q.elite.q4", "Transformation readiness & change capacity"),
-                t("aiscan.q.elite.q5", "Strategic objectives over 24 months"),
-              ]}
-              whatYoullSee={{
-                items: [
-                  t("aiscan.q.elite.s1", "Enterprise operational score"),
-                  t("aiscan.q.elite.s2", "Detailed risk map"),
-                  t("aiscan.q.elite.s3", "AI opportunity map"),
-                  t("aiscan.q.elite.s4", "Infrastructure assessment"),
-                  t("aiscan.q.elite.s5", "Executive summary"),
-                  t("aiscan.q.elite.s6", "Strategic roadmap"),
-                  t("aiscan.q.elite.s7", "Ecosystem architecture"),
-                ],
-              }}
-              examplePreview={
-                <div className="rounded-md border border-white/10 bg-black/40 p-3">
-                  <div className="text-[10px] uppercase tracking-widest text-neutral-500">Enterprise Score</div>
-                  <div className="mt-1 text-3xl font-semibold text-white">86<span className="text-sm text-neutral-500">/100</span></div>
-                  <div className="text-[10px] text-emerald-400 mt-0.5">Excellent</div>
-                  <div className="mt-2 text-[10px] uppercase tracking-widest text-[#F58A1F]">Recommended Ecosystem</div>
-                  <div className="text-[11px] font-semibold text-white">ELITE ECOSYSTEM</div>
-                  <div className="text-[10px] text-[#F58A1F]">View details →</div>
-                </div>
-              }
-              step={t("aiscan.q.elite.step", "PREVIEW · 5 OF 30+")}
-              stepColor="text-fuchsia-300"
-            />
-          </div>
-        </section>
-
-        {/* ─── 4. WHAT YOU RECEIVE — 3 reports ────────────────────────────── */}
-        <section className="mt-10 md:mt-14">
-          <SectionTitle>{t("aiscan.reports.title", "WHAT YOU RECEIVE")}</SectionTitle>
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-5">
-            <ReportTile
-              eyebrow={t("aiscan.report.free.eyebrow", "FREE AI SCAN REPORT")}
-              eyebrowColor="text-sky-400"
-              title={t("aiscan.report.free.sub", "Executive PDF preview")}
-              pages={t("aiscan.report.free.pages", "Basic operational insights")}
-              includes={[
-                t("aiscan.report.free.i1", "Operational score"),
-                t("aiscan.report.free.i2", "Top 3 opportunities"),
-                t("aiscan.report.free.i3", "Key strengths"),
-                t("aiscan.report.free.i4", "Basic recommendations"),
-              ]}
-              image={REPORT_FREE}
-              footer={t("aiscan.report.free.footer", "Unlock full report — see your complete analysis and roadmap.")}
-            />
-            <ReportTile
-              eyebrow={t("aiscan.report.growth.eyebrow", "GROWTH AI SCAN REPORT")}
-              eyebrowColor="text-[#F58A1F]"
-              title={t("aiscan.report.growth.sub", "Executive PDF sample")}
-              pages={t("aiscan.report.growth.pages", "Professional, detailed, actionable")}
-              includes={[
-                t("aiscan.report.growth.i1", "Executive summary"),
-                t("aiscan.report.growth.i2", "Detailed analysis"),
-                t("aiscan.report.growth.i3", "Opportunities (Top 5)"),
-                t("aiscan.report.growth.i4", "Roadmap preview"),
-                t("aiscan.report.growth.i5", "ROI estimates"),
-                t("aiscan.report.growth.i6", "Recommendations"),
-                t("aiscan.report.growth.i7", "Next steps"),
-              ]}
-              image={REPORT_GROWTH}
-              footer={t("aiscan.report.growth.footer", "Operational intelligence for sustainable growth.")}
-            />
-            <ReportTile
-              eyebrow={t("aiscan.report.elite.eyebrow", "ELITE AI SCAN REPORT")}
-              eyebrowColor="text-fuchsia-300"
-              title={t("aiscan.report.elite.sub", "Premium executive PDF sample")}
-              pages={t("aiscan.report.elite.pages", "Executive-level, comprehensive, transformation-focused")}
-              includes={[
-                t("aiscan.report.elite.i1", "Executive summary"),
-                t("aiscan.report.elite.i2", "Deep operational audit"),
-                t("aiscan.report.elite.i3", "Infrastructure analysis"),
-                t("aiscan.report.elite.i4", "Risk assessment"),
-                t("aiscan.report.elite.i5", "AI opportunity mapping"),
-                t("aiscan.report.elite.i6", "Custom ecosystem architecture"),
-                t("aiscan.report.elite.i7", "ROI & business case"),
-              ]}
-              image={REPORT_ELITE}
-              footer={t("aiscan.report.elite.footer", "Strategic operational transformation blueprint.")}
-            />
-          </div>
-        </section>
-
-        {/* ─── 5. HOW WE CALCULATE YOUR SCORES + SCORING + HYBRID ─────────── */}
-        <section className="mt-10 md:mt-14">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {/* HOW WE CALCULATE */}
-            <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-6 backdrop-blur">
-              <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.scores.eyebrow", "HOW WE CALCULATE YOUR SCORES")}</div>
-              <ul className="mt-5 space-y-4">
-                {[
-                  { icon: GaugeCircle, t: t("aiscan.score.1.t", "Operational Efficiency Score"), b: t("aiscan.score.1.b", "Measures how efficiently your operations run."), w: "25%" },
-                  { icon: Cog, t: t("aiscan.score.2.t", "Automation Score"), b: t("aiscan.score.2.b", "Evaluates the level of automation and system integration."), w: "25%" },
-                  { icon: Layers, t: t("aiscan.score.3.t", "Scalability Score"), b: t("aiscan.score.3.b", "Analyzes your ability to scale without operational friction."), w: "20%" },
-                  { icon: Network, t: t("aiscan.score.4.t", "Infrastructure Score"), b: t("aiscan.score.4.b", "Assesses the strength and connectivity of your systems."), w: "20%" },
-                  { icon: Sparkles, t: t("aiscan.score.5.t", "AI Opportunity Score"), b: t("aiscan.score.5.b", "Identifies the potential for AI to drive impact."), w: "10%" },
-                ].map((s, i) => (
-                  <li key={i} className="flex gap-3">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
-                      <s.icon className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-sm font-semibold text-white">{s.t}</div>
-                        <div className="text-xs font-semibold text-[#F58A1F]">{s.w}</div>
-                      </div>
-                      <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">{s.b}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* SCORING CALCULATION MODULE */}
-            <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-6 backdrop-blur">
-              <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.module.eyebrow", "THE SCORING CALCULATION MODULE (EXAMPLE)")}</div>
-              <div className="mt-5 grid grid-cols-3 gap-3 text-[11px]">
-                {[
-                  { s: t("aiscan.module.step1.t", "Step 1: Question Scoring"), b: t("aiscan.module.step1.b", "Each answer is scored based on impact.") },
-                  { s: t("aiscan.module.step2.t", "Step 2: Category Score"), b: t("aiscan.module.step2.b", "Average of all related questions.") },
-                  { s: t("aiscan.module.step3.t", "Step 3: Weighted Score"), b: t("aiscan.module.step3.b", "Applied to overall operational score.") },
-                ].map((s, i) => (
-                  <div key={i} className="rounded-md border border-white/10 bg-black/30 p-3">
-                    <div className="text-[10px] font-semibold text-[#F58A1F]">{s.s}</div>
-                    <p className="mt-1.5 text-neutral-400 leading-relaxed">{s.b}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                <div className="rounded-md border border-white/10 bg-black/30 p-3">
-                  <div className="text-[10px] uppercase tracking-widest text-neutral-500">Automation Score</div>
-                  <div className="mt-1 text-2xl font-semibold text-white">78<span className="text-xs text-neutral-500">/100</span></div>
-                </div>
-                <div className="rounded-md border border-white/10 bg-black/30 p-3">
-                  <div className="text-[10px] uppercase tracking-widest text-neutral-500">Overall Operational Score</div>
-                  <div className="mt-1 text-2xl font-semibold text-white">72<span className="text-xs text-neutral-500">/100</span></div>
-                  <div className="text-[10px] text-emerald-400">Good</div>
-                </div>
-              </div>
-              <p className="mt-3 text-[11px] text-neutral-500">
-                {t("aiscan.module.footer", "100+ data points · AI analysis · Expert validation = Accurate, actionable insights")}
+        {/* HELP ME CHOOSE */}
+        <section className="py-16 md:py-24">
+          <div className="container max-w-[600px] mx-auto text-center">
+            <Eyebrow>{t("aiscan2.helpChoose.eyebrow")}</Eyebrow>
+            <h2 className="mt-5 font-display font-semibold text-[24px] md:text-[30px] leading-[1.2] tracking-[-0.02em] text-[var(--color-ivory)] text-balance">
+              {t("aiscan2.helpChoose.title")}
+            </h2>
+            <p className="mt-4 text-[14.5px] leading-[1.7] text-[var(--io-text-secondary)]">
+              {t("aiscan2.helpChoose.body")}
+            </p>
+            {IOSKY_PHONE_NUMBER ? (
+              <a href={`tel:${IOSKY_PHONE_NUMBER.replace(/[^+\d]/g, "")}`} className="btn-secondary mt-6 inline-flex">
+                <Phone className="w-4 h-4" strokeWidth={2} />
+                {IOSKY_PHONE_NUMBER}
+              </a>
+            ) : (
+              <p className="mt-6 text-[12.5px] text-[var(--io-text-secondary)]/70 italic">
+                {t("aiscan2.helpChoose.cta")} — official number not yet configured (VITE_IOSKY_PHONE_NUMBER).
               </p>
-            </div>
-
-            {/* HYBRID ANALYSIS */}
-            <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-6 backdrop-blur">
-              <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.hybrid.eyebrow", "HYBRID ANALYSIS PROCESS (ELITE SCAN)")}</div>
-              <ol className="mt-5 space-y-3 text-sm">
-                {[
-                  { n: 1, t: t("aiscan.hybrid.1.t", "AI Analysis"), b: t("aiscan.hybrid.1.b", "AI analyzes all inputs and systems.") },
-                  { n: 2, t: t("aiscan.hybrid.2.t", "Expert Review"), b: t("aiscan.hybrid.2.b", "Our experts refine and validate the analysis.") },
-                  { n: 3, t: t("aiscan.hybrid.3.t", "Strategic Refinement"), b: t("aiscan.hybrid.3.b", "We add strategic insights and industry expertise.") },
-                  { n: 4, t: t("aiscan.hybrid.4.t", "Final Report"), b: t("aiscan.hybrid.4.b", "Premium report delivered to you.") },
-                ].map((s) => (
-                  <li key={s.n} className="flex gap-3 rounded-md border border-white/10 bg-black/30 p-3">
-                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[11px] font-semibold text-[#F58A1F]">{s.n}</div>
-                    <div>
-                      <div className="text-sm font-semibold text-white">{s.t}</div>
-                      <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">{s.b}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-              <div className="mt-4 rounded-md border border-[#F58A1F]/30 bg-[#F58A1F]/5 p-3">
-                <div className="text-[10px] font-semibold tracking-widest text-[#F58A1F]">{t("aiscan.hybrid.why.eyebrow", "WHY HYBRID IS BEST")}</div>
-                <p className="mt-1 text-xs text-neutral-300 leading-relaxed">
-                  {t("aiscan.hybrid.why.b", "Combines the speed of AI with the insight of human experts. More accurate. More strategic. More valuable.")}
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </section>
+      </main>
+      <Footer />
 
-        {/* ─── 6. WHAT HAPPENS NEXT + TRUST (unlock form moved to modal) ─── */}
-        <section id="unlock" className="mt-10 md:mt-14 grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Hidden form lives inside <Dialog> further down */}
-          <Dialog open={unlockOpen} onOpenChange={setUnlockOpen}>
-            <DialogContent className="max-w-md border border-white/10 bg-[#103438]/95 text-white backdrop-blur">
-              <DialogHeader>
-                <DialogTitle className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">
-                  {selectedTier === "free"
-                    ? t("aiscan.unlock.eyebrow.free", "UNLOCK FREE AI SCAN")
-                    : selectedTier === "growth"
-                    ? t("aiscan.unlock.eyebrow.growth", "REQUEST GROWTH AI SCAN")
-                    : t("aiscan.unlock.eyebrow.elite", "REQUEST ELITE AI SCAN")}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-neutral-400">
-                  {selectedTier === "free"
-                    ? t("aiscan.unlock.sub.free", "To see your complete free analysis and roadmap, please provide your details.")
-                    : t("aiscan.unlock.sub.paid", "Tell us a bit about you and our team will reach out to plan the scan engagement.")}
-                </DialogDescription>
-              </DialogHeader>
-              {submitState.kind === "success" ? (
-                <div className="mt-3 rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
-                  <div className="font-semibold mb-1">
-                    {t("aiscan.unlock.success.title", "Thank you — request received.")}
-                  </div>
-                  <p className="text-emerald-200/80 text-xs leading-relaxed">
-                    {submitState.tier === "free"
-                      ? t("aiscan.unlock.success.free", "We'll email you the free AI Scan preview shortly. No payment required.")
-                      : t("aiscan.unlock.success.paid", "Our team will contact you within one business day to plan the engagement. This does not auto-book a discovery call.")}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setUnlockOpen(false)}
-                    className="mt-3 inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white hover:bg-white/10"
-                  >
-                    {t("aiscan.unlock.success.close", "Close")}
-                  </button>
-                </div>
-              ) : (
-            <form className="mt-2 space-y-3" onSubmit={(e) => {
-              e.preventDefault();
-              if (!acceptedDisclaimer || submitLead.isPending) return;
-              setSubmitState({ kind: "idle" });
-              submitLead.mutate({
-                tier: selectedTier,
-                fullName: form.name.trim(),
-                email: form.email.trim(),
-                phone: form.phone.trim() || null,
-                company: form.company.trim(),
-                acceptedAiDisclaimer: true,
-              });
-            }}>
+      {/* Preview the Assessment — generic illustrative excerpt, not real client data */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-lg border border-white/10 bg-[var(--card)] text-[var(--color-ivory)] backdrop-blur">
+          <DialogHeader>
+            <DialogTitle className="font-display text-[18px]">{t("aiscan2.preview.title")}</DialogTitle>
+            <DialogDescription className="text-[12.5px] text-[var(--io-text-secondary)]">
+              {t("aiscan2.preview.intro")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-3 space-y-4">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.14em] text-[var(--color-orange)] font-medium">
+                {t("aiscan2.preview.finding.label")}
+              </div>
+              <div className="mt-1 text-[14px] font-semibold text-[var(--color-ivory)]">{t("aiscan2.preview.finding.title")}</div>
+              <p className="mt-1 text-[13px] leading-[1.6] text-[var(--io-text-secondary)]">{t("aiscan2.preview.finding.body")}</p>
+            </div>
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.14em] text-[var(--color-orange)] font-medium">
+                {t("aiscan2.preview.recommendation.label")}
+              </div>
+              <div className="mt-1 text-[14px] font-semibold text-[var(--color-ivory)]">{t("aiscan2.preview.recommendation.title")}</div>
+              <p className="mt-1 text-[13px] leading-[1.6] text-[var(--io-text-secondary)]">{t("aiscan2.preview.recommendation.body")}</p>
+            </div>
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.14em] text-[var(--color-orange)] font-medium">
+                {t("aiscan2.preview.priority.label")}
+              </div>
+              <p className="mt-1 text-[13px] text-[var(--color-ivory)]">{t("aiscan2.preview.priority.value")}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(false)}
+            className="btn-secondary mt-5 w-full justify-center"
+          >
+            <X className="w-4 h-4" strokeWidth={2} />
+            {t("aiscan2.preview.close")}
+          </button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Purchase configuration — general info + language + audience, then the
+          existing (tested) lead-capture path. See file header re: no Stripe. */}
+      <Dialog open={purchaseOpen} onOpenChange={setPurchaseOpen}>
+        <DialogContent className="max-w-md border border-white/10 bg-[var(--card)] text-[var(--color-ivory)] backdrop-blur">
+          <DialogHeader>
+            <DialogTitle className="text-xs font-semibold tracking-[0.18em] text-[var(--color-orange)]">
+              {TIER_DISPLAY[selectedTier].toUpperCase()} SCAN
+            </DialogTitle>
+            <DialogDescription className="text-xs text-[var(--io-text-secondary)]">
+              Tell us a little about you before we set up your Scan.
+            </DialogDescription>
+          </DialogHeader>
+          {submitState.kind === "success" ? (
+            <div className="mt-3 rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+              <div className="font-semibold mb-1">Thank you — request received.</div>
+              <p className="text-emerald-200/80 text-xs leading-relaxed">
+                Our team will be in touch to plan the engagement.
+              </p>
+              <button
+                type="button"
+                onClick={() => setPurchaseOpen(false)}
+                className="btn-secondary mt-3"
+              >
+                Close
+              </button>
+            </div>
+          ) : (
+            <form
+              className="mt-2 space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!acceptedDisclaimer || submitLead.isPending) return;
+                setSubmitState({ kind: "idle" });
+                submitLead.mutate({
+                  tier: selectedTier,
+                  fullName: form.name.trim(),
+                  email: form.email.trim(),
+                  phone: form.phone.trim() || null,
+                  company: form.company.trim(),
+                  acceptedAiDisclaimer: true,
+                  preferredLanguage: language,
+                  primaryAudience: audience || null,
+                });
+              }}
+            >
               <label className="block">
-                <span className="text-[10px] uppercase tracking-widest text-neutral-500">{t("aiscan.unlock.name", "Full Name")}</span>
-                <div className="mt-1 flex items-center gap-2 rounded-md border border-white/10 bg-black/40 px-3 py-2">
-                  <User className="h-3.5 w-3.5 text-neutral-500" />
+                <span className="text-[10px] uppercase tracking-widest text-[var(--io-text-secondary)]/70">Full Name</span>
+                <div className="io-control-surface mt-1 flex items-center gap-2 rounded-md px-3 py-2">
+                  <User className="h-3.5 w-3.5 opacity-60" />
                   <input
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder={t("aiscan.unlock.namePh", "Enter your name")}
-                    className="w-full bg-transparent text-sm text-white outline-none placeholder:text-neutral-600"
+                    className="w-full bg-transparent text-sm outline-none placeholder:opacity-40"
+                    placeholder="Enter your name"
                   />
                 </div>
               </label>
               <label className="block">
-                <span className="text-[10px] uppercase tracking-widest text-neutral-500">{t("aiscan.unlock.email", "Work Email")}</span>
-                <div className="mt-1 flex items-center gap-2 rounded-md border border-white/10 bg-black/40 px-3 py-2">
-                  <Mail className="h-3.5 w-3.5 text-neutral-500" />
+                <span className="text-[10px] uppercase tracking-widest text-[var(--io-text-secondary)]/70">Work Email</span>
+                <div className="io-control-surface mt-1 flex items-center gap-2 rounded-md px-3 py-2">
+                  <Mail className="h-3.5 w-3.5 opacity-60" />
                   <input
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder={t("aiscan.unlock.emailPh", "Enter your email")}
-                    className="w-full bg-transparent text-sm text-white outline-none placeholder:text-neutral-600"
+                    className="w-full bg-transparent text-sm outline-none placeholder:opacity-40"
+                    placeholder="name@company.com"
                   />
                 </div>
               </label>
               <label className="block">
-                <span className="text-[10px] uppercase tracking-widest text-neutral-500">{t("aiscan.unlock.phone", "Phone Number")}</span>
-                <div className="mt-1 flex items-center gap-2 rounded-md border border-white/10 bg-black/40 px-3 py-2">
-                  <Phone className="h-3.5 w-3.5 text-neutral-500" />
-                  <span className="text-xs text-neutral-500">+31</span>
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder={t("aiscan.unlock.phonePh", "Enter your phone number")}
-                    className="w-full bg-transparent text-sm text-white outline-none placeholder:text-neutral-600"
-                  />
-                </div>
-              </label>
-              <label className="block">
-                <span className="text-[10px] uppercase tracking-widest text-neutral-500">{t("aiscan.unlock.company", "Company")}</span>
-                <div className="mt-1 flex items-center gap-2 rounded-md border border-white/10 bg-black/40 px-3 py-2">
-                  <Building2 className="h-3.5 w-3.5 text-neutral-500" />
+                <span className="text-[10px] uppercase tracking-widest text-[var(--io-text-secondary)]/70">Company</span>
+                <div className="io-control-surface mt-1 flex items-center gap-2 rounded-md px-3 py-2">
+                  <Building2 className="h-3.5 w-3.5 opacity-60" />
                   <input
                     value={form.company}
                     onChange={(e) => setForm({ ...form, company: e.target.value })}
-                    placeholder={t("aiscan.unlock.companyPh", "Company name")}
-                    className="w-full bg-transparent text-sm text-white outline-none placeholder:text-neutral-600"
+                    className="w-full bg-transparent text-sm outline-none placeholder:opacity-40"
+                    placeholder="Company name"
                   />
                 </div>
               </label>
-              <label className="flex items-start gap-2 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-[10px] uppercase tracking-widest text-[var(--io-text-secondary)]/70">Preferred language</span>
+                  <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger className="io-control-surface mt-1 h-9 text-[13px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGE_OPTIONS.map((l) => (
+                        <SelectItem key={l} value={l}>{l.toUpperCase()}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+                <label className="block">
+                  <span className="text-[10px] uppercase tracking-widest text-[var(--io-text-secondary)]/70">Primary audience</span>
+                  <Select value={audience} onValueChange={setAudience}>
+                    <SelectTrigger className="io-control-surface mt-1 h-9 text-[13px]">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AUDIENCE_OPTIONS.map((a) => (
+                        <SelectItem key={a} value={a} className="capitalize">{a}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+              </div>
+              <label className="flex items-start gap-2 pt-1">
                 <input
                   type="checkbox"
                   checked={acceptedDisclaimer}
                   onChange={(e) => setAcceptedDisclaimer(e.target.checked)}
-                  className="mt-0.5 h-3.5 w-3.5 accent-[#F58A1F]"
+                  className="mt-0.5 h-3.5 w-3.5 accent-[var(--color-orange)]"
                 />
-                <span className="text-[11px] leading-[1.55] text-neutral-400">
-                  {t(
-                    "aiscan.unlock.disclaimerLeader",
-                    "I understand this is an AI-assisted assessment with inherent limitations and accept the",
-                  )}{" "}
-                  <Link href="/ai-disclaimer" className="text-[#F58A1F] hover:underline">
-                    {t("aiscan.unlock.aiDisclaimer", "AI Disclaimer")}
-                  </Link>{" "}
+                <span className="text-[11px] leading-[1.55] text-[var(--io-text-secondary)]">
+                  I understand this is an AI-assisted assessment with inherent limitations and accept the{" "}
+                  <Link href="/ai-disclaimer" className="text-[var(--color-orange)] hover:underline">AI Disclaimer</Link>{" "}
                   &amp;{" "}
-                  <Link href="/privacy" className="text-[#F58A1F] hover:underline">
-                    {t("aiscan.unlock.privacyNotice", "Privacy Notice")}
-                  </Link>
-                  .
+                  <Link href="/privacy" className="text-[var(--color-orange)] hover:underline">Privacy Notice</Link>.
                 </span>
               </label>
-              {submitState.kind === "error" ? (
+              {submitState.kind === "error" && (
                 <div className="rounded-md border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-200">
                   {submitState.message}
                 </div>
-              ) : null}
+              )}
               <button
                 type="submit"
                 disabled={!acceptedDisclaimer || submitLead.isPending}
-                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#F58A1F] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#F58A1F] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary mt-2 w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Lock className="h-4 w-4" />
-                {submitLead.isPending
-                  ? t("aiscan.unlock.submitting", "Submitting…")
-                  : selectedTier === "free"
-                  ? t("aiscan.unlock.cta.free", "Unlock My Free Results")
-                  : t("aiscan.unlock.cta.paid", "Request This AI Scan")}
+                <Lock className="h-4 w-4" strokeWidth={2} />
+                {submitLead.isPending ? "Submitting…" : "Continue"}
               </button>
-              <p className="text-[10px] text-neutral-500 leading-relaxed">
-                {t("aiscan.unlock.privacy", "We respect your privacy. Your data is secure and will only be used to deliver your results and follow up.")}
-              </p>
             </form>
-              )}
-            </DialogContent>
-          </Dialog>
-
-          {/* What happens next */}
-          <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-6 backdrop-blur">
-            <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.next.eyebrow", "WHAT HAPPENS NEXT")}</div>
-            <ol className="mt-5 space-y-3">
-              {[
-                { n: 1, icon: Lock, t: t("aiscan.next.1.t", "Instant Access"), b: t("aiscan.next.1.b", "Get immediate access to your full report and roadmap.") },
-                { n: 2, icon: Users, t: t("aiscan.next.2.t", "Expert Consultation"), b: t("aiscan.next.2.b", "We'll contact you to walk through your results.") },
-                { n: 3, icon: Compass, t: t("aiscan.next.3.t", "Custom Strategy"), b: t("aiscan.next.3.b", "Receive a personalized strategy and ecosystem recommendation.") },
-                { n: 4, icon: Rocket, t: t("aiscan.next.4.t", "Implementation Support"), b: t("aiscan.next.4.b", "We help you execute and scale.") },
-              ].map((s) => (
-                <li key={s.n} className="flex gap-3 rounded-md border border-white/10 bg-black/30 p-3">
-                  <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[11px] font-semibold text-[#F58A1F]">
-                    {s.n}
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-white">{s.t}</div>
-                    <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">{s.b}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-
-            {/* Dashboard preview */}
-            <div className="mt-5 rounded-xl border border-white/10 bg-black/40 p-4">
-              <div className="text-[10px] uppercase tracking-widest text-neutral-500">{t("aiscan.next.dash", "Your AI Scan Dashboard")}</div>
-              <div className="mt-1 text-xs text-white">Welcome back, <span className="font-semibold">John</span></div>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]">
-                <div className="rounded-md border border-white/10 p-2">
-                  <div className="text-neutral-500">Operational Score</div>
-                  <div className="text-base font-semibold text-white">72<span className="text-[9px] text-neutral-500">/100</span></div>
-                </div>
-                <div className="rounded-md border border-white/10 p-2">
-                  <div className="text-neutral-500">Top Opportunities</div>
-                  <div className="text-base font-semibold text-white">5</div>
-                </div>
-                <div className="rounded-md border border-white/10 p-2">
-                  <div className="text-neutral-500">Potential Impact</div>
-                  <div className="text-base font-semibold text-[#F58A1F]">€120K+</div>
-                </div>
-              </div>
-              <div className="mt-3 text-[10px] text-neutral-400">{t("aiscan.next.roadmap", "Your Roadmap")}: Phase 1 (0–30 days) → Phase 2 (30–60 days) → Phase 3 (60–90 days)</div>
-              <div className="mt-3 flex items-center gap-2">
-                <button className="rounded-md border border-white/15 px-2.5 py-1 text-[10px] text-white hover:border-[#F58A1F] hover:text-[#F58A1F]">
-                  {t("aiscan.next.download", "Download Full Report")}
-                </button>
-                <button className="rounded-md bg-[#F58A1F] px-2.5 py-1 text-[10px] font-medium text-white hover:bg-[#F58A1F]">
-                  <Calendar className="mr-1 inline h-3 w-3" />
-                  {t("aiscan.next.book", "Book Discovery Call")}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Trust & Security */}
-          <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-6 backdrop-blur">
-            <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.trust.eyebrow", "TRUST & SECURITY")}</div>
-            <p className="mt-3 text-xs text-neutral-400">{t("aiscan.trust.sub", "Your data is safe with us.")}</p>
-            <ul className="mt-5 space-y-3">
-              {[
-                { icon: ShieldCheck, t: t("aiscan.trust.1", "Enterprise-grade security") },
-                { icon: CircuitBoard, t: t("aiscan.trust.2", "GDPR compliant") },
-                { icon: Activity, t: t("aiscan.trust.3", "Data encrypted in transit & at rest") },
-                { icon: Lock, t: t("aiscan.trust.4", "No data sharing or selling") },
-                { icon: CheckCheck, t: t("aiscan.trust.5", "Used only to deliver your results") },
-              ].map((s, i) => (
-                <li key={i} className="flex items-start gap-3 rounded-md border border-white/10 bg-black/30 p-3">
-                  <s.icon className="mt-0.5 h-4 w-4 shrink-0 text-[#F58A1F]" />
-                  <div className="text-xs text-neutral-200">{s.t}</div>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-5 grid place-items-center rounded-xl border border-white/10 bg-black/40 py-6">
-              <div className="grid h-16 w-16 place-items-center rounded-xl border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
-                <ShieldCheck className="h-8 w-8" />
-              </div>
-              <div className="mt-3 text-[10px] uppercase tracking-widest text-neutral-500">{t("aiscan.trust.iso", "ISO-aligned · Enterprise-grade")}</div>
-            </div>
-          </div>
-        </section>
-
-        {/* ─── 7. Bottom value strip ─────────────────────────────────────── */}
-        <section className="mt-10 md:mt-14 rounded-2xl border border-white/10 bg-[#103438]/60 p-6 backdrop-blur">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-            {[
-              { icon: Sparkles, t: t("aiscan.strip.1.t", "AI-Powered"), b: t("aiscan.strip.1.b", "Advanced models analyze your operations in real-time.") },
-              { icon: UserCog, t: t("aiscan.strip.2.t", "Expert Refined"), b: t("aiscan.strip.2.b", "Human experts refine insights for maximum accuracy.") },
-              { icon: Compass, t: t("aiscan.strip.3.t", "Actionable Insights"), b: t("aiscan.strip.3.b", "Clear recommendations you can implement immediately.") },
-              { icon: TrendingUp, t: t("aiscan.strip.4.t", "Measurable Results"), b: t("aiscan.strip.4.b", "Track performance and see the impact on real business outcomes.") },
-            ].map((s, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
-                  <s.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-white">{s.t}</div>
-                  <p className="mt-0.5 text-xs text-neutral-400 leading-relaxed">{s.b}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    </main>
-      <Footer />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
