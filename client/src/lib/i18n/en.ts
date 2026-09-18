@@ -33,8 +33,8 @@ export const en: Record<string, string> = {
   "nav.langLabel": "Language",
 
   // Hero
-  "hero.title.part1": "Technology should not define how your business works.",
-  "hero.title.accent": "",
+  "hero.title.part1": "Technology should not define how your",
+  "hero.title.accent": "business works.",
   "hero.title.part2": "It should be designed around it.",
   "hero.body":
     "IO SKY designs and builds the operational infrastructure behind growing businesses — shaped around how the organisation actually needs to function.",

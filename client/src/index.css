@@ -1,8 +1,11 @@
 /*
  * IO SKY — global design system.
- * Master source of truth: design_master.md.
- * Deep navy-black surfaces, controlled orange accent, premium glass panels,
- * geometric humanist typography. No purple, no rounded-everything, no AI-slop.
+ * Master source of truth: docs/design/IO_SKY_Signature_High_Glass_Global_Developer_Specification_FINAL.pdf
+ * (colors, glass material) plus the per-page visual specs in docs/design/.
+ * design_master.md describes an earlier homepage concept and is superseded
+ * by those documents wherever the two disagree.
+ * Warm Deep Teal surfaces, IO SKY Orange #F58A1F accent (semantic, not
+ * decorative), Signature High Glass panels, geometric humanist typography.
  */
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -45,63 +48,85 @@
 }
 
 :root {
-  /* ---- Official brand palette (exact hex from brand sheet) ----
-   *   #0B1020  navy-black background
-   *   #1A2333  panel / glass surface base
-   *   #E6EAF0  ivory foreground
-   *   #FF7A00  primary orange (action / accent)
-   *   #FFB347  soft orange (highlight / hover state)
+  /* ---- Official brand palette (Signature High Glass spec, FINAL/APPROVED) ----
+   *   #0D2D2E  Brand Deep Teal background (--io-bg)
+   *   #F58A1F  IO SKY Orange — semantic accent, never decorative (--io-orange)
+   *   #F3F5F2  off-white foreground
+   * Homepage/Contact/Discovery-Call docs quote slightly different teal values
+   * (#1C4744, #0C2F33, #0F3438) for their own canvases/inputs; #0D2D2E is the
+   * one Signature-Glass spec explicitly scopes to "entire IO SKY website and
+   * authenticated platform", so it is the single source of truth for
+   * --background. Page-specific darker input/control surfaces use
+   * --io-input-surface below rather than a competing --background value.
    */
-  --orange: #FF7A00;
-  --orange-hover: #FFB347;
-  --orange-soft: rgb(255 122 0 / 0.18);
-  --ivory: #E6EAF0;
-  --mute-1: oklch(0.78 0.014 250);
-  --mute-2: oklch(0.62 0.018 250);
+  --io-bg: #0D2D2E;
+  --io-orange: #F58A1F;
+  --io-text-primary: #F3F5F2;
+  --io-text-secondary: rgb(243 245 242 / 0.82);
+  --io-input-surface: #0F3438;
+
+  --io-glass-base: rgb(12 43 45 / 0.68);
+  --io-glass-border: rgb(224 241 239 / 0.075);
+  --io-glass-border-soft: rgb(224 241 239 / 0.025);
+  --io-glass-highlight: rgb(255 255 255 / 0.024);
+  --io-glass-orange-core: rgb(245 138 31 / 0.20);
+  --io-glass-orange-soft: rgb(245 138 31 / 0.065);
+  --io-glass-blur: 24px;
+  --io-glass-saturation: 108%;
+  --io-glass-shadow: 0 20px 52px rgb(0 0 0 / 0.16);
+  --io-glass-radius-card: 23px;
+  --io-glass-radius-large: 24px;
+
+  --orange: var(--io-orange);
+  --orange-hover: #FFA64D;
+  --orange-soft: rgb(245 138 31 / 0.18);
+  --ivory: var(--io-text-primary);
+  --mute-1: rgb(243 245 242 / 0.82);
+  --mute-2: rgb(243 245 242 / 0.62);
 
   /* Surfaces */
-  --background: #0B1020;
-  --foreground: #E6EAF0;
-  --card: #1A2333;
-  --card-foreground: oklch(0.96 0.005 250);
-  --popover: oklch(0.13 0.022 260);
-  --popover-foreground: oklch(0.96 0.005 250);
-  --primary: #FF7A00;
-  --primary-foreground: #0B1020;
-  --secondary: oklch(0.17 0.022 260);
-  --secondary-foreground: oklch(0.88 0.01 250);
-  --muted: oklch(0.17 0.022 260);
-  --muted-foreground: oklch(0.7 0.018 250);
-  --accent: oklch(0.18 0.022 260);
-  --accent-foreground: oklch(0.96 0.005 250);
+  --background: var(--io-bg);
+  --foreground: var(--io-text-primary);
+  --card: #103438;
+  --card-foreground: var(--io-text-primary);
+  --popover: #103438;
+  --popover-foreground: var(--io-text-primary);
+  --primary: var(--io-orange);
+  --primary-foreground: #0D2D2E;
+  --secondary: #123336;
+  --secondary-foreground: var(--io-text-secondary);
+  --muted: #123336;
+  --muted-foreground: rgb(243 245 242 / 0.62);
+  --accent: #123336;
+  --accent-foreground: var(--io-text-primary);
   --destructive: oklch(0.65 0.21 25);
   --destructive-foreground: oklch(0.98 0.005 250);
-  --border: oklch(1 0 0 / 0.08);
-  --input: oklch(1 0 0 / 0.1);
-  --ring: rgb(255 122 0 / 0.55);
+  --border: rgb(224 241 239 / 0.10);
+  --input: rgb(224 241 239 / 0.12);
+  --ring: rgb(245 138 31 / 0.55);
 
   --radius: 0.75rem;
 }
 
 .dark {
   /* Same values — we never run light theme */
-  --background: #0B1020;
-  --foreground: #E6EAF0;
-  --card: #1A2333;
-  --card-foreground: oklch(0.96 0.005 250);
-  --popover: oklch(0.13 0.022 260);
-  --popover-foreground: oklch(0.96 0.005 250);
-  --primary: #FF7A00;
-  --primary-foreground: #0B1020;
-  --secondary: oklch(0.17 0.022 260);
-  --secondary-foreground: oklch(0.88 0.01 250);
-  --muted: oklch(0.17 0.022 260);
-  --muted-foreground: oklch(0.7 0.018 250);
-  --accent: oklch(0.18 0.022 260);
-  --accent-foreground: oklch(0.96 0.005 250);
-  --border: oklch(1 0 0 / 0.08);
-  --input: oklch(1 0 0 / 0.1);
-  --ring: rgb(255 122 0 / 0.55);
+  --background: var(--io-bg);
+  --foreground: var(--io-text-primary);
+  --card: #103438;
+  --card-foreground: var(--io-text-primary);
+  --popover: #103438;
+  --popover-foreground: var(--io-text-primary);
+  --primary: var(--io-orange);
+  --primary-foreground: #0D2D2E;
+  --secondary: #123336;
+  --secondary-foreground: var(--io-text-secondary);
+  --muted: #123336;
+  --muted-foreground: rgb(243 245 242 / 0.62);
+  --accent: #123336;
+  --accent-foreground: var(--io-text-primary);
+  --border: rgb(224 241 239 / 0.10);
+  --input: rgb(224 241 239 / 0.12);
+  --ring: rgb(245 138 31 / 0.55);
 }
 
 @layer base {
@@ -219,46 +244,44 @@
     font-size: 13.5px;
     font-weight: 600;
     letter-spacing: 0.005em;
-    color: #0B1020;
-    background: linear-gradient(180deg, #FFB347 0%, #FF7A00 100%);
-    border: 1px solid rgb(255 179 71 / 0.7);
-    border-radius: 10px;
+    color: #17110A;
+    background: var(--io-orange);
+    border: 1px solid rgb(245 138 31 / 0.7);
+    border-radius: 999px;
     box-shadow:
-      0 1px 0 oklch(1 0 0 / 0.25) inset,
-      0 0 0 1px oklch(0 0 0 / 0.18),
-      0 14px 28px -10px oklch(0.72 0.205 45 / 0.55),
-      0 0 28px -6px oklch(0.72 0.205 45 / 0.45);
+      0 1px 0 rgb(255 255 255 / 0.25) inset,
+      0 0 0 1px rgb(0 0 0 / 0.18),
+      0 14px 28px -10px rgb(245 138 31 / 0.45);
     transition: transform 160ms cubic-bezier(0.23,1,0.32,1), filter 160ms ease-out, box-shadow 220ms ease-out;
   }
   .btn-primary:hover {
-    filter: brightness(1.04);
+    filter: brightness(1.06);
     box-shadow:
-      0 1px 0 oklch(1 0 0 / 0.3) inset,
-      0 0 0 1px oklch(0 0 0 / 0.2),
-      0 18px 32px -10px oklch(0.72 0.205 45 / 0.6),
-      0 0 36px -4px oklch(0.72 0.205 45 / 0.55);
+      0 1px 0 rgb(255 255 255 / 0.3) inset,
+      0 0 0 1px rgb(0 0 0 / 0.2),
+      0 18px 32px -10px rgb(245 138 31 / 0.55);
   }
   .btn-primary:active { transform: scale(0.985); }
 
+  /* Secondary CTA = restrained orange outline, off-white text (AI Scan spec §Orange emphasis). */
   .btn-secondary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.82rem 1.3rem;
+    padding: 0.8rem 1.28rem;
     font-size: 13.5px;
     font-weight: 600;
     letter-spacing: 0.005em;
-    color: var(--ivory);
-    background: oklch(1 0 0 / 0.04);
-    border: 1px solid oklch(1 0 0 / 0.12);
-    border-radius: 10px;
-    backdrop-filter: blur(10px);
+    color: var(--io-text-primary);
+    background: transparent;
+    border: 1px solid rgb(245 138 31 / 0.55);
+    border-radius: 999px;
     transition: transform 160ms cubic-bezier(0.23,1,0.32,1), background 200ms ease-out, border-color 200ms ease-out;
   }
   .btn-secondary:hover {
-    background: oklch(1 0 0 / 0.07);
-    border-color: oklch(1 0 0 / 0.22);
+    background: rgb(245 138 31 / 0.08);
+    border-color: rgb(245 138 31 / 0.85);
   }
   .btn-secondary:active { transform: scale(0.985); }
 
@@ -273,34 +296,129 @@
   }
   .link-orange:hover { gap: 0.55rem; color: oklch(0.8 0.2 48); }
 
-  /* ---------- Glass surfaces ---------- */
+  /* ---------- Glass surfaces ----------
+   * Realigned to the Signature High Glass tokens (Deep Teal, not navy) so
+   * every existing .glass/.glass-soft/.glass-strong usage site-wide inherits
+   * the approved material without a per-file rewrite. New markup should
+   * prefer .io-signature-glass (below), which also carries the approved
+   * upper-left/lower-right refraction.
+   */
   .glass {
     background:
-      linear-gradient(180deg, oklch(0.18 0.022 260 / 0.5) 0%, oklch(0.12 0.022 260 / 0.55) 100%);
-    border: 1px solid oklch(1 0 0 / 0.08);
+      linear-gradient(180deg, rgb(255 255 255 / 0.022) 0%, rgb(0 0 0 / 0.018) 100%),
+      var(--io-glass-base);
+    border: 1px solid var(--io-glass-border);
     border-radius: 16px;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(var(--io-glass-blur)) saturate(var(--io-glass-saturation));
+    -webkit-backdrop-filter: blur(var(--io-glass-blur)) saturate(var(--io-glass-saturation));
     box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.05),
-      0 30px 60px -30px oklch(0 0 0 / 0.6);
+      inset 0 1px 0 rgb(255 255 255 / 0.05),
+      var(--io-glass-shadow);
   }
   .glass-soft {
-    background: oklch(0.16 0.022 260 / 0.5);
-    border: 1px solid oklch(1 0 0 / 0.06);
+    background: var(--io-glass-base);
+    border: 1px solid var(--io-glass-border-soft);
     border-radius: 14px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(14px);
   }
   .glass-strong {
     background:
-      linear-gradient(180deg, oklch(0.2 0.022 260 / 0.65) 0%, oklch(0.13 0.022 260 / 0.7) 100%);
-    border: 1px solid oklch(1 0 0 / 0.1);
+      linear-gradient(180deg, rgb(255 255 255 / 0.03) 0%, rgb(0 0 0 / 0.02) 100%),
+      var(--io-glass-base);
+    border: 1px solid var(--io-glass-border);
     border-radius: 18px;
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(var(--io-glass-blur)) saturate(var(--io-glass-saturation));
     box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.06),
-      0 40px 80px -30px oklch(0 0 0 / 0.7),
-      0 0 0 1px oklch(0 0 0 / 0.25);
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      var(--io-glass-shadow),
+      0 0 0 1px rgb(0 0 0 / 0.2);
+  }
+
+  /* ---------- IO SKY Signature High Glass (global, non-negotiable material) ----------
+   * Verbatim from IO_SKY_Signature_High_Glass_Global_Developer_Specification_FINAL.pdf.
+   * Use for every card/panel/form-container/elevated-surface site-wide and
+   * across the authenticated platform. Do not create page-specific variants —
+   * only geometry (via the --card/--panel/--form/--surface modifiers) may
+   * change; the material itself must not.
+   */
+  .io-signature-glass {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    box-sizing: border-box;
+    background:
+      linear-gradient(
+        135deg,
+        rgb(255 255 255 / 0.022) 0%,
+        rgb(255 255 255 / 0.008) 24%,
+        rgb(0 0 0 / 0.018) 58%,
+        rgb(255 255 255 / 0.004) 100%
+      ),
+      var(--io-glass-base);
+    -webkit-backdrop-filter: blur(var(--io-glass-blur)) saturate(var(--io-glass-saturation));
+    backdrop-filter: blur(var(--io-glass-blur)) saturate(var(--io-glass-saturation));
+    border: 1px solid var(--io-glass-border);
+    box-shadow:
+      var(--io-glass-shadow),
+      inset 0 1px 0 rgb(255 255 255 / 0.018);
+  }
+  .io-signature-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        ellipse 38% 42% at 5% 2%,
+        rgb(255 255 255 / 0.030) 0%,
+        rgb(255 255 255 / 0.012) 22%,
+        rgb(255 255 255 / 0.003) 42%,
+        transparent 68%
+      );
+    filter: blur(14px);
+    opacity: 0.58;
+  }
+  .io-signature-glass::after {
+    content: "";
+    position: absolute;
+    right: -8%;
+    bottom: -24%;
+    width: 34%;
+    height: 52%;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        ellipse at bottom right,
+        var(--io-glass-orange-core) 0%,
+        var(--io-glass-orange-soft) 24%,
+        rgb(245 138 31 / 0.018) 44%,
+        transparent 70%
+      );
+    filter: blur(20px);
+    opacity: 0.72;
+  }
+  .io-signature-glass__content {
+    position: relative;
+    z-index: 1;
+  }
+  .io-signature-glass--card { border-radius: var(--io-glass-radius-card); padding: 32px 40px; }
+  .io-signature-glass--panel { border-radius: var(--io-glass-radius-large); padding: 40px 48px; }
+  .io-signature-glass--form { border-radius: var(--io-glass-radius-large); padding: clamp(28px, 4vw, 48px); }
+  .io-signature-glass--surface { border-radius: var(--io-glass-radius-large); padding: clamp(32px, 4vw, 56px); }
+
+  /* Solid, never-transparent control surface for inputs/selects inside a
+   * Signature Glass form container (Discovery Call + Contact spec). */
+  .io-control-surface {
+    background: var(--io-input-surface);
+    border: 1px solid var(--io-glass-border);
+    color: var(--io-text-primary);
+  }
+  .io-control-surface:focus-visible,
+  .io-control-surface[data-selected="true"] {
+    border-color: var(--io-orange);
+    outline: none;
   }
 
   /* Subtle hover lift for feature cards */

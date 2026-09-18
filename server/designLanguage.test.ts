@@ -51,13 +51,25 @@ describe("Pakket 2 — design-language tokens", () => {
     expect(css.includes(token)).toBe(true);
   });
 
-  it("brand orange variable is the exact #FF7A00 sampled from the official logo file", () => {
-    // Was #FF6A00 (an earlier session's best guess at "the brand sheet"
-    // value) until the client provided the actual official logo PNG,
-    // whose swoosh/wordmark colour was directly pixel-sampled and averaged
-    // (avg rgb(251,121,2) over a solid interior region) — #FF7A00 is the
-    // closest clean hex to that real, ground-truth value.
-    expect(css).toMatch(/--orange:\s*#FF7A00/);
+  it("brand orange variable is the exact #F58A1F specified by the approved design system", () => {
+    // Was #FF7A00 (pixel-sampled from the official logo PNG as a ground-truth
+    // best guess) until the client-approved Signature High Glass spec and the
+    // AI Scan / Discovery Call / Contact developer specs gave an explicit,
+    // repeated instruction: "IO SKY Orange #F58A1F exactly (RGB 245, 138, 31)
+    // — never yellow, amber, gold or any alternate orange. Do not substitute
+    // a visually similar token." That written spec now outranks the earlier
+    // pixel sample.
+    expect(css).toMatch(/--io-orange:\s*#F58A1F/);
+    expect(css).toMatch(/--orange:\s*var\(--io-orange\)/);
+  });
+
+  it("brand background is the exact #0D2D2E Deep Teal specified by the approved design system", () => {
+    // The Signature High Glass spec scopes #0D2D2E to "the entire IO SKY
+    // website and authenticated platform" — it is the single background
+    // source of truth even though individual page specs (Homepage, Contact)
+    // quote their own slightly different teal values for their own canvases.
+    expect(css).toMatch(/--io-bg:\s*#0D2D2E/);
+    expect(css).toMatch(/--background:\s*var\(--io-bg\)/);
   });
 
   it("respects prefers-reduced-motion globally", () => {
