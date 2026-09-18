@@ -1634,5 +1634,6 @@ export const ar: Record<string, string> = {
   "contact2.success.cta": "العودة إلى IO SKY",
   "contact2.failure.title": "لم تُرسَل رسالتك بعد.",
   "contact2.failure.body": "حدث خطأ ما أثناء الإرسال. تم الاحتفاظ بمعلوماتك. يُرجى المحاولة مرة أخرى.",
+  "contact2.failure.fallbackBody": "لم تصل رسالتك بعد حتى بعد عدة محاولات. تم الاحتفاظ بمعلوماتك — يُرجى التواصل معنا مباشرة على",
   "contact2.failure.cta": "أعد المحاولة",
 };

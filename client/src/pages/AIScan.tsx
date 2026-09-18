@@ -117,14 +117,14 @@ function TierCard({
 }) {
   return (
     <div
-      className={`relative flex h-full flex-col rounded-2xl border bg-[#0E1422]/70 p-6 md:p-7 backdrop-blur transition will-change-transform ${
+      className={`relative flex h-full flex-col rounded-2xl border bg-[#103438]/70 p-6 md:p-7 backdrop-blur transition will-change-transform ${
         highlight
-          ? "border-orange-500/60 shadow-[0_0_40px_-12px_rgba(249,115,22,0.55)]"
-          : "border-white/10 hover:border-orange-400/40 hover:shadow-[0_0_28px_-14px_rgba(249,115,22,0.45)]"
+          ? "border-[#F58A1F]/60 shadow-[0_0_40px_-12px_rgba(249,115,22,0.55)]"
+          : "border-white/10 hover:border-[#F58A1F]/40 hover:shadow-[0_0_28px_-14px_rgba(249,115,22,0.45)]"
       }`}
     >
       {highlight && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-orange-500 px-3 py-1 text-[10px] font-semibold tracking-widest text-white">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#F58A1F] px-3 py-1 text-[10px] font-semibold tracking-widest text-white">
           MOST CHOSEN
         </div>
       )}
@@ -140,7 +140,7 @@ function TierCard({
         {monthly && (
           <>
             <div className="mt-3 text-[10px] uppercase tracking-[0.18em] text-neutral-500">{monthlyLabel}</div>
-            <div className="mt-1 text-3xl font-semibold text-orange-400">{monthly}</div>
+            <div className="mt-1 text-3xl font-semibold text-[#F58A1F]">{monthly}</div>
           </>
         )}
       </div>
@@ -148,7 +148,7 @@ function TierCard({
       <ul className="mt-6 space-y-2.5 text-sm text-neutral-300">
         {features.map((f) => (
           <li key={f} className="flex gap-2.5">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#F58A1F]" />
             <span>{f}</span>
           </li>
         ))}
@@ -159,8 +159,8 @@ function TierCard({
         onClick={onCta}
         className={`mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
           highlight
-            ? "bg-orange-500 text-white hover:bg-orange-400"
-            : "border border-white/15 text-white hover:border-orange-400 hover:text-orange-300"
+            ? "bg-[#F58A1F] text-white hover:bg-[#F58A1F]"
+            : "border border-white/15 text-white hover:border-[#F58A1F] hover:text-[#F58A1F]"
         }`}
       >
         {cta} <ArrowRight className="h-4 w-4" />
@@ -175,7 +175,7 @@ function TierCard({
 function WhyCard({ icon: Icon, title, body }: { icon: typeof TrendingUp; title: string; body: string }) {
   return (
     <div className="flex gap-3">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-orange-400/30 bg-orange-500/10 text-orange-300">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
         <Icon className="h-5 w-5" />
       </div>
       <div>
@@ -201,12 +201,12 @@ function StepPill({
   body: string;
 }) {
   return (
-    <div className="flex-1 min-w-[160px] rounded-2xl border border-white/10 bg-[#0E1422]/70 p-5 backdrop-blur transition hover:border-orange-400/40">
+    <div className="flex-1 min-w-[160px] rounded-2xl border border-white/10 bg-[#103438]/70 p-5 backdrop-blur transition hover:border-[#F58A1F]/40">
       <div className="flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-xl border border-orange-400/30 bg-orange-500/10 text-orange-300">
+        <div className="grid h-10 w-10 place-items-center rounded-xl border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
           <Icon className="h-5 w-5" />
         </div>
-        <div className="text-2xl font-semibold text-orange-300">{n}</div>
+        <div className="text-2xl font-semibold text-[#F58A1F]">{n}</div>
       </div>
       <div className="mt-4 text-sm font-semibold text-white">{title}</div>
       <p className="mt-1 text-xs text-neutral-400 leading-relaxed">{body}</p>
@@ -237,7 +237,7 @@ function QuestionPreviewCard({
   stepColor: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0E1422]/70 p-5 md:p-6 backdrop-blur">
+    <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-5 md:p-6 backdrop-blur">
       <div className="flex items-baseline justify-between gap-4">
         <div>
           <div className={`text-xs font-semibold tracking-[0.18em] ${eyebrowColor}`}>{eyebrow}</div>
@@ -248,7 +248,7 @@ function QuestionPreviewCard({
       <ol className="mt-4 space-y-2.5 text-sm text-neutral-300">
         {questions.map((q, i) => (
           <li key={q} className="flex gap-2.5">
-            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border border-orange-400/30 bg-orange-500/10 text-[10px] font-semibold text-orange-300">
+            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[10px] font-semibold text-[#F58A1F]">
               {i + 1}
             </span>
             <span>{q}</span>
@@ -265,24 +265,24 @@ function QuestionPreviewCard({
         </div>
         <div className="mt-3 flex items-center justify-between text-[11px]">
           <span className="text-neutral-500">Back</span>
-          <span className={`rounded-md bg-orange-500/20 px-2.5 py-1 text-orange-300 ${stepColor}`}>Next →</span>
+          <span className={`rounded-md bg-[#F58A1F]/20 px-2.5 py-1 text-[#F58A1F] ${stepColor}`}>Next →</span>
         </div>
       </div>
 
       {/* What you'll see + example preview */}
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <div className="text-[10px] font-semibold tracking-[0.18em] text-orange-300">WHAT YOU'LL SEE</div>
+          <div className="text-[10px] font-semibold tracking-[0.18em] text-[#F58A1F]">WHAT YOU'LL SEE</div>
           <ul className="mt-2 space-y-1.5 text-xs text-neutral-300">
             {whatYoullSee.items.map((i) => (
               <li key={i} className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 rounded-full bg-orange-400" /> {i}
+                <span className="mt-1.5 h-1 w-1 rounded-full bg-[#F58A1F]" /> {i}
               </li>
             ))}
           </ul>
         </div>
         <div>
-          <div className="text-[10px] font-semibold tracking-[0.18em] text-orange-300">EXAMPLE PREVIEW</div>
+          <div className="text-[10px] font-semibold tracking-[0.18em] text-[#F58A1F]">EXAMPLE PREVIEW</div>
           <div className="mt-2">{examplePreview}</div>
         </div>
       </div>
@@ -311,7 +311,7 @@ function ReportTile({
   footer: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0E1422]/70 p-5 md:p-6 backdrop-blur">
+    <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-5 md:p-6 backdrop-blur">
       <div className={`text-xs font-semibold tracking-[0.18em] ${eyebrowColor}`}>{eyebrow}</div>
       <div className="mt-1 text-sm text-neutral-400">{title}</div>
       <div className="mt-0.5 text-[11px] text-neutral-500">{pages}</div>
@@ -321,11 +321,11 @@ function ReportTile({
       </div>
 
       <div className="mt-4">
-        <div className="text-[10px] font-semibold tracking-[0.18em] text-orange-300">INCLUDES</div>
+        <div className="text-[10px] font-semibold tracking-[0.18em] text-[#F58A1F]">INCLUDES</div>
         <ul className="mt-2 space-y-1.5 text-xs text-neutral-300">
           {includes.map((i) => (
             <li key={i} className="flex gap-2">
-              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-400" />
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#F58A1F]" />
               {i}
             </li>
           ))}
@@ -385,12 +385,12 @@ export default function AIScan() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-[#070A12] text-[#E6EAF0] pt-20">
+      <main className="min-h-screen bg-[#0D2D2E] text-[#E6EAF0] pt-20">
       <div className="container max-w-[1280px] py-10 md:py-14 page-enter">
         {/* ─── 1. HERO + PRICING ─────────────────────────────────────────── */}
         <section className="grid grid-cols-1 lg:grid-cols-[1.05fr_2fr_1fr] gap-6">
           {/* Left: title + sub + bullets + hero art */}
-          <div className="rounded-2xl border border-white/10 bg-[#0E1422]/60 p-6 md:p-7 backdrop-blur">
+          <div className="rounded-2xl border border-white/10 bg-[#103438]/60 p-6 md:p-7 backdrop-blur">
             <div className="text-4xl md:text-5xl font-semibold tracking-tight text-white">AI SCAN</div>
             <p className="mt-3 text-sm text-neutral-400 leading-relaxed">
               {t("aiscan.hero.sub", "Discover what's holding your operations back — and how to unlock unstoppable growth.")}
@@ -403,7 +403,7 @@ export default function AIScan() {
                 t("aiscan.hero.li4", "Measurable Results"),
               ].map((s) => (
                 <li key={s} className="flex items-center gap-2.5 text-neutral-200">
-                  <CheckCircle2 className="h-4 w-4 text-orange-400" /> {s}
+                  <CheckCircle2 className="h-4 w-4 text-[#F58A1F]" /> {s}
                 </li>
               ))}
             </ul>
@@ -432,7 +432,7 @@ export default function AIScan() {
             />
             <TierCard
               eyebrow={t("aiscan.tier.growth.eyebrow", "GROWTH AI SCAN")}
-              eyebrowColor="text-orange-300"
+              eyebrowColor="text-[#F58A1F]"
               title={t("aiscan.tier.growth.title", "Deep operational analysis for growing companies.")}
               subtitle=""
               setup="€1,500"
@@ -477,8 +477,8 @@ export default function AIScan() {
           </div>
 
           {/* Right: WHY THIS INVESTMENT PAYS OFF */}
-          <div className="rounded-2xl border border-white/10 bg-[#0E1422]/60 p-6 md:p-7 backdrop-blur">
-            <div className="text-xs font-semibold tracking-[0.18em] text-orange-300">{t("aiscan.why.eyebrow", "WHY THIS INVESTMENT PAYS OFF")}</div>
+          <div className="rounded-2xl border border-white/10 bg-[#103438]/60 p-6 md:p-7 backdrop-blur">
+            <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.why.eyebrow", "WHY THIS INVESTMENT PAYS OFF")}</div>
             <div className="mt-5 space-y-5">
               <WhyCard
                 icon={TrendingUp}
@@ -548,11 +548,11 @@ export default function AIScan() {
                 <div className="rounded-md border border-white/10 bg-black/40 p-3">
                   <div className="text-[10px] uppercase tracking-widest text-neutral-500">Operational Score (Preview)</div>
                   <div className="mt-1 text-3xl font-semibold text-white">58<span className="text-sm text-neutral-500">/100</span></div>
-                  <div className="text-[10px] text-orange-300 mt-0.5">Fair</div>
+                  <div className="text-[10px] text-[#F58A1F] mt-0.5">Fair</div>
                   <button
                     type="button"
                     onClick={() => openUnlock("free")}
-                    className="mt-2 flex items-center gap-2 text-[10px] text-neutral-400 hover:text-orange-300 transition"
+                    className="mt-2 flex items-center gap-2 text-[10px] text-neutral-400 hover:text-[#F58A1F] transition"
                   >
                     <Lock className="h-3 w-3" /> {t("aiscan.preview.unlockHint", "Unlock full results to see your complete analysis.")}
                   </button>
@@ -563,7 +563,7 @@ export default function AIScan() {
             />
             <QuestionPreviewCard
               eyebrow={t("aiscan.q.growth.eyebrow", "GROWTH AI SCAN — 18 QUESTIONS")}
-              eyebrowColor="text-orange-300"
+              eyebrowColor="text-[#F58A1F]"
               title={t("aiscan.q.growth.shortSub", "In-depth analysis for growing businesses.")}
               questions={[
                 t("aiscan.q.growth.q1", "Where workflows break or slow down"),
@@ -587,13 +587,13 @@ export default function AIScan() {
                   <div className="text-[10px] uppercase tracking-widest text-neutral-500">Operational Maturity Score</div>
                   <div className="mt-1 text-3xl font-semibold text-white">72<span className="text-sm text-neutral-500">/100</span></div>
                   <div className="text-[10px] text-emerald-400 mt-0.5">Good</div>
-                  <div className="mt-2 text-[10px] uppercase tracking-widest text-orange-300">Recommended Ecosystem</div>
+                  <div className="mt-2 text-[10px] uppercase tracking-widest text-[#F58A1F]">Recommended Ecosystem</div>
                   <div className="text-[11px] font-semibold text-white">GROWTH ECOSYSTEM</div>
-                  <div className="text-[10px] text-orange-300">View details →</div>
+                  <div className="text-[10px] text-[#F58A1F]">View details →</div>
                 </div>
               }
               step={t("aiscan.q.growth.step", "PREVIEW · 5 OF 18")}
-              stepColor="text-orange-300"
+              stepColor="text-[#F58A1F]"
             />
             <QuestionPreviewCard
               eyebrow={t("aiscan.q.elite.eyebrow", "ELITE AI SCAN — 30+ QUESTIONS")}
@@ -622,9 +622,9 @@ export default function AIScan() {
                   <div className="text-[10px] uppercase tracking-widest text-neutral-500">Enterprise Score</div>
                   <div className="mt-1 text-3xl font-semibold text-white">86<span className="text-sm text-neutral-500">/100</span></div>
                   <div className="text-[10px] text-emerald-400 mt-0.5">Excellent</div>
-                  <div className="mt-2 text-[10px] uppercase tracking-widest text-orange-300">Recommended Ecosystem</div>
+                  <div className="mt-2 text-[10px] uppercase tracking-widest text-[#F58A1F]">Recommended Ecosystem</div>
                   <div className="text-[11px] font-semibold text-white">ELITE ECOSYSTEM</div>
-                  <div className="text-[10px] text-orange-300">View details →</div>
+                  <div className="text-[10px] text-[#F58A1F]">View details →</div>
                 </div>
               }
               step={t("aiscan.q.elite.step", "PREVIEW · 5 OF 30+")}
@@ -653,7 +653,7 @@ export default function AIScan() {
             />
             <ReportTile
               eyebrow={t("aiscan.report.growth.eyebrow", "GROWTH AI SCAN REPORT")}
-              eyebrowColor="text-orange-300"
+              eyebrowColor="text-[#F58A1F]"
               title={t("aiscan.report.growth.sub", "Executive PDF sample")}
               pages={t("aiscan.report.growth.pages", "Professional, detailed, actionable")}
               includes={[
@@ -692,8 +692,8 @@ export default function AIScan() {
         <section className="mt-10 md:mt-14">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             {/* HOW WE CALCULATE */}
-            <div className="rounded-2xl border border-white/10 bg-[#0E1422]/70 p-6 backdrop-blur">
-              <div className="text-xs font-semibold tracking-[0.18em] text-orange-300">{t("aiscan.scores.eyebrow", "HOW WE CALCULATE YOUR SCORES")}</div>
+            <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-6 backdrop-blur">
+              <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.scores.eyebrow", "HOW WE CALCULATE YOUR SCORES")}</div>
               <ul className="mt-5 space-y-4">
                 {[
                   { icon: GaugeCircle, t: t("aiscan.score.1.t", "Operational Efficiency Score"), b: t("aiscan.score.1.b", "Measures how efficiently your operations run."), w: "25%" },
@@ -703,13 +703,13 @@ export default function AIScan() {
                   { icon: Sparkles, t: t("aiscan.score.5.t", "AI Opportunity Score"), b: t("aiscan.score.5.b", "Identifies the potential for AI to drive impact."), w: "10%" },
                 ].map((s, i) => (
                   <li key={i} className="flex gap-3">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-orange-400/30 bg-orange-500/10 text-orange-300">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
                       <s.icon className="h-4 w-4" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-sm font-semibold text-white">{s.t}</div>
-                        <div className="text-xs font-semibold text-orange-300">{s.w}</div>
+                        <div className="text-xs font-semibold text-[#F58A1F]">{s.w}</div>
                       </div>
                       <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">{s.b}</p>
                     </div>
@@ -719,8 +719,8 @@ export default function AIScan() {
             </div>
 
             {/* SCORING CALCULATION MODULE */}
-            <div className="rounded-2xl border border-white/10 bg-[#0E1422]/70 p-6 backdrop-blur">
-              <div className="text-xs font-semibold tracking-[0.18em] text-orange-300">{t("aiscan.module.eyebrow", "THE SCORING CALCULATION MODULE (EXAMPLE)")}</div>
+            <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-6 backdrop-blur">
+              <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.module.eyebrow", "THE SCORING CALCULATION MODULE (EXAMPLE)")}</div>
               <div className="mt-5 grid grid-cols-3 gap-3 text-[11px]">
                 {[
                   { s: t("aiscan.module.step1.t", "Step 1: Question Scoring"), b: t("aiscan.module.step1.b", "Each answer is scored based on impact.") },
@@ -728,7 +728,7 @@ export default function AIScan() {
                   { s: t("aiscan.module.step3.t", "Step 3: Weighted Score"), b: t("aiscan.module.step3.b", "Applied to overall operational score.") },
                 ].map((s, i) => (
                   <div key={i} className="rounded-md border border-white/10 bg-black/30 p-3">
-                    <div className="text-[10px] font-semibold text-orange-300">{s.s}</div>
+                    <div className="text-[10px] font-semibold text-[#F58A1F]">{s.s}</div>
                     <p className="mt-1.5 text-neutral-400 leading-relaxed">{s.b}</p>
                   </div>
                 ))}
@@ -750,8 +750,8 @@ export default function AIScan() {
             </div>
 
             {/* HYBRID ANALYSIS */}
-            <div className="rounded-2xl border border-white/10 bg-[#0E1422]/70 p-6 backdrop-blur">
-              <div className="text-xs font-semibold tracking-[0.18em] text-orange-300">{t("aiscan.hybrid.eyebrow", "HYBRID ANALYSIS PROCESS (ELITE SCAN)")}</div>
+            <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-6 backdrop-blur">
+              <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.hybrid.eyebrow", "HYBRID ANALYSIS PROCESS (ELITE SCAN)")}</div>
               <ol className="mt-5 space-y-3 text-sm">
                 {[
                   { n: 1, t: t("aiscan.hybrid.1.t", "AI Analysis"), b: t("aiscan.hybrid.1.b", "AI analyzes all inputs and systems.") },
@@ -760,7 +760,7 @@ export default function AIScan() {
                   { n: 4, t: t("aiscan.hybrid.4.t", "Final Report"), b: t("aiscan.hybrid.4.b", "Premium report delivered to you.") },
                 ].map((s) => (
                   <li key={s.n} className="flex gap-3 rounded-md border border-white/10 bg-black/30 p-3">
-                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-orange-400/30 bg-orange-500/10 text-[11px] font-semibold text-orange-300">{s.n}</div>
+                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[11px] font-semibold text-[#F58A1F]">{s.n}</div>
                     <div>
                       <div className="text-sm font-semibold text-white">{s.t}</div>
                       <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">{s.b}</p>
@@ -768,8 +768,8 @@ export default function AIScan() {
                   </li>
                 ))}
               </ol>
-              <div className="mt-4 rounded-md border border-orange-400/30 bg-orange-500/5 p-3">
-                <div className="text-[10px] font-semibold tracking-widest text-orange-300">{t("aiscan.hybrid.why.eyebrow", "WHY HYBRID IS BEST")}</div>
+              <div className="mt-4 rounded-md border border-[#F58A1F]/30 bg-[#F58A1F]/5 p-3">
+                <div className="text-[10px] font-semibold tracking-widest text-[#F58A1F]">{t("aiscan.hybrid.why.eyebrow", "WHY HYBRID IS BEST")}</div>
                 <p className="mt-1 text-xs text-neutral-300 leading-relaxed">
                   {t("aiscan.hybrid.why.b", "Combines the speed of AI with the insight of human experts. More accurate. More strategic. More valuable.")}
                 </p>
@@ -782,9 +782,9 @@ export default function AIScan() {
         <section id="unlock" className="mt-10 md:mt-14 grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Hidden form lives inside <Dialog> further down */}
           <Dialog open={unlockOpen} onOpenChange={setUnlockOpen}>
-            <DialogContent className="max-w-md border border-white/10 bg-[#0E1422]/95 text-white backdrop-blur">
+            <DialogContent className="max-w-md border border-white/10 bg-[#103438]/95 text-white backdrop-blur">
               <DialogHeader>
-                <DialogTitle className="text-xs font-semibold tracking-[0.18em] text-orange-300">
+                <DialogTitle className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">
                   {selectedTier === "free"
                     ? t("aiscan.unlock.eyebrow.free", "UNLOCK FREE AI SCAN")
                     : selectedTier === "growth"
@@ -885,18 +885,18 @@ export default function AIScan() {
                   type="checkbox"
                   checked={acceptedDisclaimer}
                   onChange={(e) => setAcceptedDisclaimer(e.target.checked)}
-                  className="mt-0.5 h-3.5 w-3.5 accent-orange-500"
+                  className="mt-0.5 h-3.5 w-3.5 accent-[#F58A1F]"
                 />
                 <span className="text-[11px] leading-[1.55] text-neutral-400">
                   {t(
                     "aiscan.unlock.disclaimerLeader",
                     "I understand this is an AI-assisted assessment with inherent limitations and accept the",
                   )}{" "}
-                  <Link href="/ai-disclaimer" className="text-orange-400 hover:underline">
+                  <Link href="/ai-disclaimer" className="text-[#F58A1F] hover:underline">
                     {t("aiscan.unlock.aiDisclaimer", "AI Disclaimer")}
                   </Link>{" "}
                   &amp;{" "}
-                  <Link href="/privacy" className="text-orange-400 hover:underline">
+                  <Link href="/privacy" className="text-[#F58A1F] hover:underline">
                     {t("aiscan.unlock.privacyNotice", "Privacy Notice")}
                   </Link>
                   .
@@ -910,7 +910,7 @@ export default function AIScan() {
               <button
                 type="submit"
                 disabled={!acceptedDisclaimer || submitLead.isPending}
-                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#F58A1F] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#F58A1F] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Lock className="h-4 w-4" />
                 {submitLead.isPending
@@ -928,8 +928,8 @@ export default function AIScan() {
           </Dialog>
 
           {/* What happens next */}
-          <div className="rounded-2xl border border-white/10 bg-[#0E1422]/70 p-6 backdrop-blur">
-            <div className="text-xs font-semibold tracking-[0.18em] text-orange-300">{t("aiscan.next.eyebrow", "WHAT HAPPENS NEXT")}</div>
+          <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-6 backdrop-blur">
+            <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.next.eyebrow", "WHAT HAPPENS NEXT")}</div>
             <ol className="mt-5 space-y-3">
               {[
                 { n: 1, icon: Lock, t: t("aiscan.next.1.t", "Instant Access"), b: t("aiscan.next.1.b", "Get immediate access to your full report and roadmap.") },
@@ -938,7 +938,7 @@ export default function AIScan() {
                 { n: 4, icon: Rocket, t: t("aiscan.next.4.t", "Implementation Support"), b: t("aiscan.next.4.b", "We help you execute and scale.") },
               ].map((s) => (
                 <li key={s.n} className="flex gap-3 rounded-md border border-white/10 bg-black/30 p-3">
-                  <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-orange-400/30 bg-orange-500/10 text-[11px] font-semibold text-orange-300">
+                  <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[11px] font-semibold text-[#F58A1F]">
                     {s.n}
                   </div>
                   <div>
@@ -964,15 +964,15 @@ export default function AIScan() {
                 </div>
                 <div className="rounded-md border border-white/10 p-2">
                   <div className="text-neutral-500">Potential Impact</div>
-                  <div className="text-base font-semibold text-orange-300">€120K+</div>
+                  <div className="text-base font-semibold text-[#F58A1F]">€120K+</div>
                 </div>
               </div>
               <div className="mt-3 text-[10px] text-neutral-400">{t("aiscan.next.roadmap", "Your Roadmap")}: Phase 1 (0–30 days) → Phase 2 (30–60 days) → Phase 3 (60–90 days)</div>
               <div className="mt-3 flex items-center gap-2">
-                <button className="rounded-md border border-white/15 px-2.5 py-1 text-[10px] text-white hover:border-orange-400 hover:text-orange-300">
+                <button className="rounded-md border border-white/15 px-2.5 py-1 text-[10px] text-white hover:border-[#F58A1F] hover:text-[#F58A1F]">
                   {t("aiscan.next.download", "Download Full Report")}
                 </button>
-                <button className="rounded-md bg-orange-500 px-2.5 py-1 text-[10px] font-medium text-white hover:bg-orange-400">
+                <button className="rounded-md bg-[#F58A1F] px-2.5 py-1 text-[10px] font-medium text-white hover:bg-[#F58A1F]">
                   <Calendar className="mr-1 inline h-3 w-3" />
                   {t("aiscan.next.book", "Book Discovery Call")}
                 </button>
@@ -981,8 +981,8 @@ export default function AIScan() {
           </div>
 
           {/* Trust & Security */}
-          <div className="rounded-2xl border border-white/10 bg-[#0E1422]/70 p-6 backdrop-blur">
-            <div className="text-xs font-semibold tracking-[0.18em] text-orange-300">{t("aiscan.trust.eyebrow", "TRUST & SECURITY")}</div>
+          <div className="rounded-2xl border border-white/10 bg-[#103438]/70 p-6 backdrop-blur">
+            <div className="text-xs font-semibold tracking-[0.18em] text-[#F58A1F]">{t("aiscan.trust.eyebrow", "TRUST & SECURITY")}</div>
             <p className="mt-3 text-xs text-neutral-400">{t("aiscan.trust.sub", "Your data is safe with us.")}</p>
             <ul className="mt-5 space-y-3">
               {[
@@ -993,13 +993,13 @@ export default function AIScan() {
                 { icon: CheckCheck, t: t("aiscan.trust.5", "Used only to deliver your results") },
               ].map((s, i) => (
                 <li key={i} className="flex items-start gap-3 rounded-md border border-white/10 bg-black/30 p-3">
-                  <s.icon className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
+                  <s.icon className="mt-0.5 h-4 w-4 shrink-0 text-[#F58A1F]" />
                   <div className="text-xs text-neutral-200">{s.t}</div>
                 </li>
               ))}
             </ul>
             <div className="mt-5 grid place-items-center rounded-xl border border-white/10 bg-black/40 py-6">
-              <div className="grid h-16 w-16 place-items-center rounded-xl border border-orange-400/30 bg-orange-500/10 text-orange-300">
+              <div className="grid h-16 w-16 place-items-center rounded-xl border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
                 <ShieldCheck className="h-8 w-8" />
               </div>
               <div className="mt-3 text-[10px] uppercase tracking-widest text-neutral-500">{t("aiscan.trust.iso", "ISO-aligned · Enterprise-grade")}</div>
@@ -1008,7 +1008,7 @@ export default function AIScan() {
         </section>
 
         {/* ─── 7. Bottom value strip ─────────────────────────────────────── */}
-        <section className="mt-10 md:mt-14 rounded-2xl border border-white/10 bg-[#0E1422]/60 p-6 backdrop-blur">
+        <section className="mt-10 md:mt-14 rounded-2xl border border-white/10 bg-[#103438]/60 p-6 backdrop-blur">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
             {[
               { icon: Sparkles, t: t("aiscan.strip.1.t", "AI-Powered"), b: t("aiscan.strip.1.b", "Advanced models analyze your operations in real-time.") },
@@ -1017,7 +1017,7 @@ export default function AIScan() {
               { icon: TrendingUp, t: t("aiscan.strip.4.t", "Measurable Results"), b: t("aiscan.strip.4.b", "Track performance and see the impact on real business outcomes.") },
             ].map((s, i) => (
               <div key={i} className="flex items-start gap-3">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-orange-400/30 bg-orange-500/10 text-orange-300">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
                   <s.icon className="h-5 w-5" />
                 </div>
                 <div>

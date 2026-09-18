@@ -93,7 +93,7 @@ export default function Infrastructure() {
             className="pointer-events-none absolute inset-0 -z-[1]"
             style={{
               background:
-                "radial-gradient(40% 50% at 18% 28%, rgba(255, 122, 0,0.10), transparent 70%), radial-gradient(35% 45% at 82% 22%, rgba(255, 122, 0,0.08), transparent 70%)",
+                "radial-gradient(40% 50% at 18% 28%, rgba(245,138,31,0.10), transparent 70%), radial-gradient(35% 45% at 82% 22%, rgba(245,138,31,0.08), transparent 70%)",
             }}
           />
           <div className="container">
@@ -296,7 +296,7 @@ function CommandCenter({
           {t("infra.viz.badge")}
         </span>
         <span className="flex items-center gap-1.5 text-[11px] text-[oklch(0.7_0.014_250)]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)]" style={{ boxShadow: "0 0 8px rgba(255,122,0,0.7)" }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-orange)]" style={{ boxShadow: "0 0 8px rgba(245,138,31,0.7)" }} />
           live
         </span>
       </div>
@@ -320,9 +320,9 @@ function CommandCenter({
           <div
             className="rounded-xl px-3 py-4 text-center w-[112px]"
             style={{
-              background: "linear-gradient(180deg, rgba(255, 122, 0,0.16), rgba(255, 122, 0,0.04))",
-              border: "1px solid rgba(255, 122, 0,0.35)",
-              boxShadow: "0 0 30px rgba(255, 122, 0,0.16)",
+              background: "linear-gradient(180deg, rgba(245,138,31,0.16), rgba(245,138,31,0.04))",
+              border: "1px solid rgba(245,138,31,0.35)",
+              boxShadow: "0 0 30px rgba(245,138,31,0.16)",
             }}
           >
             <Cpu className="w-5 h-5 text-[var(--color-orange)] mx-auto" strokeWidth={1.6} />

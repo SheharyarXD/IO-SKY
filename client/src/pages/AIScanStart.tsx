@@ -174,7 +174,7 @@ export default function AIScanStart() {
 
       <main className="container max-w-3xl py-12 md:py-16">
         <header className="mb-8">
-          <p className="text-xs font-mono tracking-[0.3em] text-orange-400/80 uppercase">
+          <p className="text-xs font-mono tracking-[0.3em] text-[#F58A1F]/80 uppercase">
             {t("aiscan.start.eyebrow") || "AI SCAN"} · {tier.toUpperCase()}
           </p>
           <h1 className="mt-3 text-3xl md:text-4xl font-semibold tracking-tight">
@@ -251,7 +251,7 @@ export default function AIScanStart() {
                     type="button"
                     onClick={handleNext}
                     disabled={!canAdvance}
-                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                    className="bg-[#F58A1F] hover:bg-[#D9740C] text-white"
                   >
                     {t("aiscan.start.next") || "Next"}
                   </Button>
@@ -260,7 +260,7 @@ export default function AIScanStart() {
                     type="button"
                     onClick={handleSubmit}
                     disabled={!canAdvance || submit.isPending}
-                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                    className="bg-[#F58A1F] hover:bg-[#D9740C] text-white"
                   >
                     {submit.isPending
                       ? t("aiscan.start.submitting") || "Generating report…"
@@ -314,8 +314,8 @@ function QuestionStep({
               htmlFor={id}
               className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
                 selected
-                  ? "border-orange-500/70 bg-orange-500/10"
-                  : "border-border/60 hover:border-orange-500/40 hover:bg-muted/40"
+                  ? "border-[#F58A1F]/70 bg-[#F58A1F]/10"
+                  : "border-border/60 hover:border-[#F58A1F]/40 hover:bg-muted/40"
               }`}
             >
               <RadioGroupItem id={id} value={opt.value} />

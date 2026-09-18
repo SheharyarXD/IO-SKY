@@ -1633,5 +1633,6 @@ export const ja: Record<string, string> = {
   "contact2.success.cta": "IO SKY のトップへ戻る",
   "contact2.failure.title": "メッセージはまだ送信されていません。",
   "contact2.failure.body": "送信中に問題が発生しました。入力いただいた情報は保持されています。もう一度お試しください。",
+  "contact2.failure.fallbackBody": "複数回お試しいただきましたが、メッセージがまだ届いていません。入力内容は保持されています — 下記まで直接ご連絡ください：",
   "contact2.failure.cta": "もう一度試す",
 };

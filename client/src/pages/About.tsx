@@ -60,7 +60,7 @@ import Footer from "@/components/Footer";
 /* ------------------------------------------------------------------ */
 function Eyebrow({ label }: { label: string }) {
   return (
-    <div className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] text-orange-400 uppercase">
+    <div className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] text-[#F58A1F] uppercase">
       <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
       {label}
     </div>
@@ -82,8 +82,8 @@ function Hero() {
           imgClassName="object-left"
           loading="eager"
         />
-        <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-[#0a0e1a] via-[#0a0e1a]/70 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-[#0a0e1a] to-transparent" />
+        <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-[#0D2D2E] via-[#0D2D2E]/70 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-[#0D2D2E] to-transparent" />
       </div>
 
       {/* Mobile globe (cropped) */}
@@ -94,7 +94,7 @@ function Hero() {
           imgClassName="opacity-50"
           loading="eager"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e1a]/40 via-[#0a0e1a]/85 to-[#0a0e1a]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0D2D2E]/40 via-[#0D2D2E]/85 to-[#0D2D2E]" />
       </div>
 
       <div className="container relative z-10 grid items-center gap-12 pb-24 pt-44 lg:grid-cols-12 lg:pb-32 lg:pt-52">
@@ -102,7 +102,7 @@ function Hero() {
           <Eyebrow label={t("about.hero.eyebrow")} />
           <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-[58px]">
             {t("about.hero.title.a")}{" "}
-            <span className="text-orange-400">
+            <span className="text-[#F58A1F]">
               {t("about.hero.title.b")}
             </span>
           </h1>
@@ -112,14 +112,14 @@ function Hero() {
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Link
               href="/book-strategy"
-              className="group inline-flex items-center gap-2 rounded-md bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-18px_rgba(255,122,26,0.85)] transition hover:bg-orange-400"
+              className="group inline-flex items-center gap-2 rounded-md bg-[#F58A1F] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-18px_rgba(245,138,31,0.85)] transition hover:bg-[#F58A1F]"
             >
               {t("about.hero.cta.primary")}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <a
               href="#philosophy"
-              className="group inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-white transition hover:border-orange-400/60 hover:bg-orange-500/10 hover:text-orange-300"
+              className="group inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-white transition hover:border-[#F58A1F]/60 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F]"
             >
               {t("about.hero.cta.secondary")}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -154,7 +154,7 @@ function TrustStrip() {
           {partners.map((p) => (
             <div
               key={p.name}
-              className="text-center text-white/45 transition hover:text-orange-300"
+              className="text-center text-white/45 transition hover:text-[#F58A1F]"
             >
               <div className="text-sm font-semibold tracking-[0.22em]">
                 {p.name}
@@ -204,10 +204,10 @@ function Triad() {
             className="feature-card group relative overflow-hidden rounded-2xl border border-white/8 bg-white/[0.02] p-7"
           >
             <div className="flex items-start justify-between gap-4">
-              <div className="text-[10px] font-semibold tracking-[0.28em] text-orange-400 uppercase">
+              <div className="text-[10px] font-semibold tracking-[0.28em] text-[#F58A1F] uppercase">
                 {c.eyebrow}
               </div>
-              <div className="icon-chip flex h-10 w-10 items-center justify-center rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-400">
+              <div className="icon-chip flex h-10 w-10 items-center justify-center rounded-lg border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
                 <c.Icon className="h-4.5 w-4.5" strokeWidth={1.7} />
               </div>
             </div>
@@ -275,7 +275,7 @@ function WhyExists() {
               key={r.title}
               className="feature-card group rounded-xl border border-white/8 bg-white/[0.02] p-5 text-center"
             >
-              <div className="icon-chip mx-auto flex h-11 w-11 items-center justify-center rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-400">
+              <div className="icon-chip mx-auto flex h-11 w-11 items-center justify-center rounded-lg border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
                 <r.Icon className="h-5 w-5" strokeWidth={1.7} />
               </div>
               <h3 className="mt-4 text-sm font-semibold text-white">
@@ -345,7 +345,7 @@ function Philosophy() {
               key={p.n}
               className="feature-card group rounded-xl border border-white/8 bg-white/[0.02] p-5"
             >
-              <div className="text-2xl font-semibold tracking-tight text-orange-400">
+              <div className="text-2xl font-semibold tracking-tight text-[#F58A1F]">
                 {p.n}
               </div>
               <h3 className="mt-4 text-sm font-semibold text-white">
@@ -400,7 +400,7 @@ function Impact() {
         <div className="grid grid-cols-2 gap-6 lg:col-span-7 lg:grid-cols-4">
           {stats.map((s) => (
             <div key={s.label} className="text-left">
-              <div className="text-3xl font-semibold tracking-tight text-orange-400 sm:text-[34px]">
+              <div className="text-3xl font-semibold tracking-tight text-[#F58A1F] sm:text-[34px]">
                 {s.value}
               </div>
               <div className="mt-2 text-[12.5px] font-medium leading-snug text-white/65">
@@ -454,7 +454,7 @@ function TrustSecurity() {
           </p>
           <Link
             href="/legal/security"
-            className="mt-7 inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-orange-400/60 hover:bg-orange-500/10 hover:text-orange-300"
+            className="mt-7 inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-[#F58A1F]/60 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F]"
           >
             {t("about.sec.cta")}
             <ArrowRight className="h-4 w-4" />
@@ -466,7 +466,7 @@ function TrustSecurity() {
               key={b.title}
               className="feature-card group rounded-xl border border-white/8 bg-white/[0.02] p-5 text-center"
             >
-              <div className="icon-chip mx-auto flex h-11 w-11 items-center justify-center rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-400">
+              <div className="icon-chip mx-auto flex h-11 w-11 items-center justify-center rounded-lg border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
                 <b.Icon className="h-5 w-5" strokeWidth={1.7} />
               </div>
               <h3 className="mt-4 text-sm font-semibold leading-snug text-white">
@@ -531,7 +531,7 @@ function People() {
           <div className="mt-8 grid gap-5 sm:grid-cols-2">
             {attrs.map((a) => (
               <div key={a.title} className="flex gap-3">
-                <div className="icon-chip flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-400">
+                <div className="icon-chip flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]">
                   <a.Icon className="h-4.5 w-4.5" strokeWidth={1.7} />
                 </div>
                 <div>
@@ -561,7 +561,7 @@ function CTABand() {
       <div
         className="pointer-events-none absolute inset-0 opacity-30"
         style={{
-          backgroundImage: `radial-gradient(60% 80% at 80% 50%, rgba(255,122,26,0.18), transparent 60%)`,
+          backgroundImage: `radial-gradient(60% 80% at 80% 50%, rgba(245,138,31,0.18), transparent 60%)`,
         }}
       />
       <div className="container relative grid items-center gap-8 py-12 lg:grid-cols-12">
@@ -576,14 +576,14 @@ function CTABand() {
         <div className="flex flex-wrap items-center gap-3 lg:col-span-5 lg:justify-end">
           <Link
             href="/book-strategy"
-            className="group inline-flex items-center gap-2 rounded-md bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-18px_rgba(255,122,26,0.85)] transition hover:bg-orange-400"
+            className="group inline-flex items-center gap-2 rounded-md bg-[#F58A1F] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-18px_rgba(245,138,31,0.85)] transition hover:bg-[#F58A1F]"
           >
             {t("about.cta.primary")}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link
             href="/ai-scan"
-            className="group inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-white transition hover:border-orange-400/60 hover:bg-orange-500/10 hover:text-orange-300"
+            className="group inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-white transition hover:border-[#F58A1F]/60 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F]"
           >
             {t("about.cta.secondary")}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -599,7 +599,7 @@ function CTABand() {
 /* ------------------------------------------------------------------ */
 export default function About() {
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-white">
+    <div className="min-h-screen bg-[#0D2D2E] text-white">
       <Navbar />
       <main className="page-enter">
         <Hero />

@@ -88,7 +88,7 @@ export default function Intelligence() {
             className="pointer-events-none absolute inset-0 -z-[1]"
             style={{
               background:
-                "radial-gradient(40% 50% at 18% 28%, rgba(255, 122, 0,0.10), transparent 70%), radial-gradient(35% 45% at 82% 22%, rgba(255, 122, 0,0.08), transparent 70%)",
+                "radial-gradient(40% 50% at 18% 28%, rgba(245,138,31,0.10), transparent 70%), radial-gradient(35% 45% at 82% 22%, rgba(245,138,31,0.08), transparent 70%)",
             }}
           />
           <div className="container">

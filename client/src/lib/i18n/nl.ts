@@ -1656,5 +1656,6 @@ export const nl: Record<string, string> = {
   "contact2.success.cta": "Terug naar IO SKY",
   "contact2.failure.title": "Uw bericht is nog niet verzonden.",
   "contact2.failure.body": "Er is iets misgegaan tijdens het verzenden. Uw gegevens zijn bewaard. Probeer het opnieuw.",
+  "contact2.failure.fallbackBody": "Uw bericht is ook na herhaalde pogingen nog niet ontvangen. Uw gegevens zijn bewaard — neem rechtstreeks contact met ons op via",
   "contact2.failure.cta": "Opnieuw proberen",
 };

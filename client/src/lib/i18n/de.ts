@@ -1634,5 +1634,6 @@ export const de: Record<string, string> = {
   "contact2.success.cta": "Zurück zu IO SKY",
   "contact2.failure.title": "Ihre Nachricht wurde noch nicht gesendet.",
   "contact2.failure.body": "Beim Senden ist etwas schiefgelaufen. Ihre Angaben wurden gespeichert. Bitte versuchen Sie es erneut.",
+  "contact2.failure.fallbackBody": "Ihre Nachricht ist auch nach mehreren Versuchen noch nicht eingegangen. Ihre Angaben wurden gespeichert — bitte kontaktieren Sie uns direkt unter",
   "contact2.failure.cta": "Erneut versuchen",
 };

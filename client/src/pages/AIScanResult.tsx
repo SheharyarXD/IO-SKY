@@ -51,7 +51,7 @@ const HORIZON_LABEL: Record<string, string> = {
 const IMPACT_TONE: Record<string, string> = {
   low: "bg-muted text-muted-foreground",
   medium: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  high: "bg-orange-500/15 text-orange-300 border-orange-500/40",
+  high: "bg-[#F58A1F]/15 text-[#F58A1F] border-[#F58A1F]/40",
   transformational: "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/40",
 };
 
@@ -174,7 +174,7 @@ function NotFoundView() {
         {t("aiscan.result.notFoundBody") ||
           "This link may have expired. Start a new AI Scan to generate a fresh report."}
       </p>
-      <Button asChild className="mt-6 bg-orange-500 hover:bg-orange-600 text-white">
+      <Button asChild className="mt-6 bg-[#F58A1F] hover:bg-[#D9740C] text-white">
         <Link href="/ai-scan">{t("aiscan.result.startNew") || "Start a new scan"}</Link>
       </Button>
     </div>
@@ -185,7 +185,7 @@ function ScoringView({ company }: { company: string }) {
   const { t } = useT();
   return (
     <div className="rounded-xl border border-border/60 bg-card/40 p-10 text-center">
-      <p className="text-xs font-mono tracking-[0.3em] text-orange-400/80 uppercase">
+      <p className="text-xs font-mono tracking-[0.3em] text-[#F58A1F]/80 uppercase">
         {t("aiscan.result.workingEyebrow") || "Generating report"}
       </p>
       <h1 className="mt-3 text-2xl md:text-3xl font-semibold">
@@ -196,7 +196,7 @@ function ScoringView({ company }: { company: string }) {
           "We're scoring your responses and writing the rationale. This page will update automatically — usually within a minute."}
       </p>
       <div className="mt-6 inline-flex items-center gap-2 text-sm text-muted-foreground">
-        <span className="size-2 rounded-full bg-orange-400 animate-pulse" />
+        <span className="size-2 rounded-full bg-[#F58A1F] animate-pulse" />
         {t("aiscan.result.polling") || "Listening for results…"}
       </div>
     </div>
@@ -250,7 +250,7 @@ function Report({
   return (
     <div className="space-y-12">
       <header>
-        <p className="text-xs font-mono tracking-[0.3em] text-orange-400/80 uppercase">
+        <p className="text-xs font-mono tracking-[0.3em] text-[#F58A1F]/80 uppercase">
           {t("aiscan.result.eyebrow") || "AI Scan Report"} ·{" "}
           {report.tier.toUpperCase()}
         </p>
@@ -329,7 +329,7 @@ function Report({
                     d.dimension}
                 </h3>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="border-orange-500/40 text-orange-300">
+                  <Badge variant="outline" className="border-[#F58A1F]/40 text-[#F58A1F]">
                     {d.grade}
                   </Badge>
                   <span className="text-sm font-semibold">{d.score}/100</span>
@@ -337,7 +337,7 @@ function Report({
               </div>
               <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-orange-400 to-orange-600"
+                  className="h-full bg-gradient-to-r from-[#F58A1F] to-[#D9740C]"
                   style={{ width: `${Math.max(0, Math.min(100, d.score))}%` }}
                 />
               </div>
@@ -362,7 +362,7 @@ function Report({
                 className="rounded-xl border border-border/60 bg-card/40 p-5"
               >
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="inline-flex size-6 items-center justify-center rounded-full bg-orange-500/15 text-orange-300 text-xs font-mono">
+                  <span className="inline-flex size-6 items-center justify-center rounded-full bg-[#F58A1F]/15 text-[#F58A1F] text-xs font-mono">
                     {idx + 1}
                   </span>
                   <h3 className="text-sm font-semibold flex-1">{op.title}</h3>
@@ -398,13 +398,13 @@ function Report({
                   key={h}
                   className="rounded-xl border border-border/60 bg-card/40 p-5"
                 >
-                  <p className="text-xs font-mono tracking-[0.2em] text-orange-400/80 uppercase">
+                  <p className="text-xs font-mono tracking-[0.2em] text-[#F58A1F]/80 uppercase">
                     {HORIZON_LABEL[h]}
                   </p>
                   <ul className="mt-3 space-y-2 text-sm">
                     {row.items.map((it, i) => (
                       <li key={i} className="flex gap-2">
-                        <span className="text-orange-400">›</span>
+                        <span className="text-[#F58A1F]">›</span>
                         <span className="leading-snug">{it}</span>
                       </li>
                     ))}
@@ -430,7 +430,7 @@ function Report({
           <Button
             onClick={handleDownloadPdf}
             disabled={pdfMutation.isPending}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
+            className="bg-[#F58A1F] hover:bg-[#D9740C] text-white"
           >
             {pdfMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -1617,5 +1617,6 @@ export const zh: Record<string, string> = {
   "contact2.success.cta": "返回 IO SKY",
   "contact2.failure.title": "您的留言尚未发送成功。",
   "contact2.failure.body": "发送过程中出现问题。您填写的信息已被保留，请重试。",
+  "contact2.failure.fallbackBody": "多次尝试后，您的消息仍未送达。您的信息已被保留 — 请直接通过以下方式联系我们：",
   "contact2.failure.cta": "重试",
 };

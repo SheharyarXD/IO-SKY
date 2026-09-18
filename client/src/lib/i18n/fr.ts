@@ -1640,5 +1640,6 @@ export const fr: Record<string, string> = {
   "contact2.success.cta": "Retour à IO SKY",
   "contact2.failure.title": "Votre message n'a pas encore été envoyé.",
   "contact2.failure.body": "Une erreur s'est produite lors de l'envoi. Vos informations ont été conservées. Veuillez réessayer.",
+  "contact2.failure.fallbackBody": "Votre message n'a toujours pas été reçu après plusieurs tentatives. Vos informations ont été conservées — veuillez nous contacter directement à",
   "contact2.failure.cta": "Réessayer",
 };

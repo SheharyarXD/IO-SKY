@@ -1586,5 +1586,6 @@ export const it: Record<string, string> = {
   "contact2.success.cta": "Torna a IO SKY",
   "contact2.failure.title": "Il tuo messaggio non è ancora stato inviato.",
   "contact2.failure.body": "Qualcosa è andato storto durante l'invio. Le tue informazioni sono state conservate. Riprova.",
+  "contact2.failure.fallbackBody": "Il messaggio non è ancora stato ricevuto dopo diversi tentativi. Le tue informazioni sono state conservate — contattaci direttamente a",
   "contact2.failure.cta": "Riprova",
 };
