@@ -19,10 +19,15 @@
  *       fonts.googleapis.com   stylesheet
  *       fonts.gstatic.com      font files
  *       *.supabase.co          branding assets, storage objects, auth/REST API
- *       d2xsxph8kpxj0f.cloudfront.net  preconnected asset host
  *     plus the analytics endpoint, which is configurable rather than
  *     hardcoded (Milestone 2 §2.2 repointed the beacon off Manus
  *     infrastructure, so the host is deployment-specific).
+ *
+ *     The decommissioned Manus/Forge CDN (`d2xsxph8kpxj0f.cloudfront.net`,
+ *     see RM-105-c) was allowlisted here until this pass — nothing in the
+ *     bundle has requested it since `siteImages.ts` moved off it, and the
+ *     host itself now 403s everything, so keeping it allowed only widened
+ *     the policy for no reason.
  *
  * `styleSrc` keeps 'unsafe-inline' in production: the app ships inline style
  * attributes from Tailwind/Radix/framer-motion, and there is no nonce plumbing
@@ -37,7 +42,6 @@ import type { Express } from "express";
 const SUPABASE_WILDCARD = "https://*.supabase.co";
 const GOOGLE_FONTS_CSS = "https://fonts.googleapis.com";
 const GOOGLE_FONTS_FILES = "https://fonts.gstatic.com";
-const CLOUDFRONT_ASSETS = "https://d2xsxph8kpxj0f.cloudfront.net";
 
 /**
  * The analytics beacon host, read fresh from the environment.
@@ -94,7 +98,7 @@ export function registerSecurityHeaders(app: Express) {
               // See header note — inline styles are load-bearing here.
               styleSrc: ["'self'", "'unsafe-inline'", GOOGLE_FONTS_CSS],
               fontSrc: ["'self'", GOOGLE_FONTS_FILES, "data:"],
-              imgSrc: ["'self'", "data:", "blob:", SUPABASE_WILDCARD, CLOUDFRONT_ASSETS],
+              imgSrc: ["'self'", "data:", "blob:", SUPABASE_WILDCARD],
               connectSrc: [
                 "'self'",
                 SUPABASE_WILDCARD,
