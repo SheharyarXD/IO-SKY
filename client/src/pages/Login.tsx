@@ -873,7 +873,7 @@ export default function Login() {
                     {ssoOpen && (
                       <div
                         role="menu"
-                        className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 rounded-md border border-white/10 bg-[#0F1521]/95 backdrop-blur-md shadow-[0_24px_48px_-20px_rgba(0,0,0,0.7)] overflow-hidden"
+                        className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 rounded-md border border-white/10 bg-[#103438]/95 backdrop-blur-md shadow-[0_24px_48px_-20px_rgba(0,0,0,0.7)] overflow-hidden"
                         style={{
                           transform: "scale(0.98)",
                           animation: "iosky-menu-in 180ms cubic-bezier(0.23,1,0.32,1) forwards",
@@ -1097,7 +1097,7 @@ export default function Login() {
       {/* ----- Forgot Password modal ----- */}
       {forgotOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#04060C]/72 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0D2D2E]/72 backdrop-blur-sm"
           onClick={() => setForgotOpen(false)}
         >
           <div

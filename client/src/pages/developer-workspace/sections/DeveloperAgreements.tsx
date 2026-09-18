@@ -185,7 +185,7 @@ export default function DeveloperAgreements() {
                           <span className="ml-2">Review & sign</span>
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-[#0a1020] border-white/10">
+                      <AlertDialogContent className="bg-[#103438] border-white/10">
                         <AlertDialogHeader>
                           <AlertDialogTitle className="text-white">
                             {AGREEMENT_COPY[row.type as AgreementType]?.title ?? row.type} <span className="text-white/45 text-sm font-normal">v{row.version}</span>

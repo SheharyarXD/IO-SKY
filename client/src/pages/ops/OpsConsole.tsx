@@ -134,7 +134,7 @@ export default function OpsConsole() {
 
   return (
     <div className="min-h-screen bg-[#0D2D2E] text-[#E6EAF0]">
-      <header className="border-b border-white/[0.06] bg-[#080C18]/90 backdrop-blur-xl px-5 lg:px-7 py-4 flex items-center gap-3">
+      <header className="border-b border-white/[0.06] bg-[#103438]/90 backdrop-blur-xl px-5 lg:px-7 py-4 flex items-center gap-3">
         <ServerCog className="w-5 h-5 text-[#F58A1F]" />
         <div>
           <h1 className="font-display font-semibold text-[18px]">Technical Operator Console</h1>

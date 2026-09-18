@@ -88,7 +88,7 @@ export default function AdminBookings({ embedded = false }: AdminBookingsProps =
           )}
 
           {!authLoading && !isAuthenticated && (
-            <div className="mt-12 p-6 rounded-[16px] border border-white/[0.07] bg-[#0E121B]/85 max-w-[520px]">
+            <div className="mt-12 p-6 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 max-w-[520px]">
               <div className="flex items-center gap-2 text-[#F58A1F]">
                 <ShieldAlert className="w-4 h-4" />
                 <span className="font-mono text-[11px] uppercase tracking-[0.2em]">
@@ -159,7 +159,7 @@ export default function AdminBookings({ embedded = false }: AdminBookingsProps =
               )}
 
               {rows.length > 0 && (
-                <div className="overflow-x-auto rounded-[16px] border border-white/[0.07] bg-[#0E121B]/85">
+                <div className="overflow-x-auto rounded-[16px] border border-white/[0.07] bg-[#103438]/85">
                   <table className="w-full text-left text-[13px]">
                     <thead className="bg-white/[0.03] text-[11px] font-mono uppercase tracking-[0.16em] text-white/55">
                       <tr>

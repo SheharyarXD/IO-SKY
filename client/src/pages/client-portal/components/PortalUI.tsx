@@ -51,7 +51,7 @@ export function GlassCard({
   return (
     <Card
       className={cn(
-        "border-white/8 bg-gradient-to-br from-[#0c1424]/70 to-[#0a1020]/70 backdrop-blur-md text-white",
+        "border-white/8 bg-gradient-to-br from-[#103438]/70 to-[#103438]/70 backdrop-blur-md text-white",
         "shadow-[0_18px_60px_-30px_rgba(0,0,0,0.7)]",
         interactive &&
           "transition-all duration-200 hover:border-[#F58A1F]/30 hover:shadow-[0_0_30px_-10px_rgba(255,134,46,0.4)]",

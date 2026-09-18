@@ -153,7 +153,7 @@ export default function DeveloperSubmissions() {
                   <SelectTrigger className="mt-1 bg-white/[0.02] border-white/10 text-white/85">
                     <SelectValue placeholder="Select an assignment" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0a1020] border-white/10">
+                  <SelectContent className="bg-[#103438] border-white/10">
                     {projectOptions.map((p) => (
                       <SelectItem key={p.id} value={String(p.id)} className="text-white/85">
                         {p.code} · {p.name}
@@ -279,7 +279,7 @@ export default function DeveloperSubmissions() {
                   <SelectTrigger className="mt-1 bg-white/[0.02] border-white/10 text-white/85">
                     <SelectValue placeholder="Select an assignment" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0a1020] border-white/10">
+                  <SelectContent className="bg-[#103438] border-white/10">
                     {projectOptions.map((p) => (
                       <SelectItem key={p.id} value={String(p.id)} className="text-white/85">
                         {p.code} · {p.name}

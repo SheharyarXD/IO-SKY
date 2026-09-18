@@ -14,7 +14,7 @@ interface Props {
 
 export default function ClientPortalLockedCard({ role, email }: Props) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-gradient-to-br from-[#0c1424]/80 to-[#0a1020]/80 p-10 md:p-14 max-w-3xl mx-auto">
+    <div className="rounded-2xl border border-white/8 bg-gradient-to-br from-[#103438]/80 to-[#103438]/80 p-10 md:p-14 max-w-3xl mx-auto">
       <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/30">
         <ShieldAlert className="h-5 w-5 text-[#F58A1F]" />
       </div>

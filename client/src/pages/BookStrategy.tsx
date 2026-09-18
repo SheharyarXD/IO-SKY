@@ -287,7 +287,7 @@ function GlassCard({
   return (
     <div
       className={cn(
-        "relative rounded-[20px] border border-white/[0.07] bg-[#0B0E16]/85 backdrop-blur-sm",
+        "relative rounded-[20px] border border-white/[0.07] bg-[#103438]/85 backdrop-blur-sm",
         "shadow-[0_30px_80px_-50px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.04)]",
         className,
       )}
@@ -687,14 +687,14 @@ export default function BookStrategy() {
   /* Render                                                              */
   /* ------------------------------------------------------------------ */
   return (
-    <div className="relative min-h-screen bg-[#040508] text-[#E6EAF0] overflow-x-hidden">
+    <div className="relative min-h-screen bg-[#0D2D2E] text-[#E6EAF0] overflow-x-hidden">
       {/* Atmospheric backdrop */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(900px 600px at 12% 92%, rgba(245,138,31,0.07), transparent 60%), radial-gradient(700px 500px at 88% 18%, rgba(0,180,255,0.04), transparent 65%), #040508",
+            "radial-gradient(900px 600px at 12% 92%, rgba(245,138,31,0.07), transparent 60%), radial-gradient(700px 500px at 88% 18%, rgba(20,120,120,0.05), transparent 65%), #0D2D2E",
         }}
       />
       <Navbar />
@@ -767,7 +767,7 @@ export default function BookStrategy() {
                 </div>
 
                 {/* Quote */}
-                <div className="mt-10 rounded-[16px] border border-white/[0.07] bg-[#0B0E16]/85 backdrop-blur-sm p-5 max-w-[460px]">
+                <div className="mt-10 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 backdrop-blur-sm p-5 max-w-[460px]">
                   <Quote className="w-4 h-4 text-[#F58A1F]" />
                   <p className="mt-2 font-display text-[17px] leading-snug text-white/90">
                     {t(
@@ -844,7 +844,7 @@ export default function BookStrategy() {
                               }
                               className={cn(
                                 "relative text-left rounded-[18px] border p-5 transition-all duration-200",
-                                "bg-[#0E121B]/85 hover:-translate-y-0.5",
+                                "bg-[#103438]/85 hover:-translate-y-0.5",
                                 active
                                   ? "border-[#F58A1F]/80 shadow-[0_24px_80px_-30px_rgba(245,138,31,0.55),0_0_0_1px_rgba(245,138,31,0.45)_inset]"
                                   : "border-white/[0.07] hover:border-[#F58A1F]/35",
@@ -912,7 +912,7 @@ export default function BookStrategy() {
 
                       <div className="mt-6 grid md:grid-cols-[1.4fr_1fr] gap-5">
                         {/* Calendar */}
-                        <div className="rounded-[18px] border border-white/[0.07] bg-[#0E121B]/85 p-4">
+                        <div className="rounded-[18px] border border-white/[0.07] bg-[#103438]/85 p-4">
                           <div className="flex items-center justify-between mb-3">
                             <div className="font-display text-[16px]">
                               {monthLabel}
@@ -996,7 +996,7 @@ export default function BookStrategy() {
                         </div>
 
                         {/* Time slots */}
-                        <div className="rounded-[18px] border border-white/[0.07] bg-[#0E121B]/85 p-4">
+                        <div className="rounded-[18px] border border-white/[0.07] bg-[#103438]/85 p-4">
                           <div className="font-mono text-[10px] tracking-[0.24em] uppercase text-white/45 mb-3">
                             Available slots
                           </div>
@@ -1333,7 +1333,7 @@ export default function BookStrategy() {
                       )}
 
                       {/* Summary card */}
-                      <div className="mt-7 inline-flex flex-col gap-3 p-5 rounded-[18px] border border-white/[0.07] bg-[#0E121B]/85 text-left max-w-[520px] w-full">
+                      <div className="mt-7 inline-flex flex-col gap-3 p-5 rounded-[18px] border border-white/[0.07] bg-[#103438]/85 text-left max-w-[520px] w-full">
                         <SummaryRow
                           icon={Compass}
                           label="Consultation"
@@ -1645,7 +1645,7 @@ function Select({
         className="w-full h-11 rounded-xl border border-white/10 bg-white/[0.02] px-4 text-[14px] text-white/90 focus:outline-none focus:border-[#F58A1F]/55 focus:bg-white/[0.04] transition-colors"
       >
         {options.map((o) => (
-          <option key={o.value} value={o.value} className="bg-[#0B0E16] text-white">
+          <option key={o.value} value={o.value} className="bg-[#103438] text-white">
             {o.label}
           </option>
         ))}

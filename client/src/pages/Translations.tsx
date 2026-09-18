@@ -189,7 +189,7 @@ export default function Translations() {
           <table className="w-full text-[13px] border-collapse">
             <thead>
               <tr className="bg-white/[0.02] border-b border-white/[0.08]">
-                <th className="text-left sticky left-0 z-[2] bg-[#0F1626] border-r border-white/[0.06] px-4 py-3 text-[10.5px] font-mono uppercase tracking-[0.16em] text-[#E6EAF0]/55 min-w-[220px]">
+                <th className="text-left sticky left-0 z-[2] bg-[#103438] border-r border-white/[0.06] px-4 py-3 text-[10.5px] font-mono uppercase tracking-[0.16em] text-[#E6EAF0]/55 min-w-[220px]">
                   Key
                 </th>
                 {LANGUAGES.map((l) => (
@@ -226,7 +226,7 @@ export default function Translations() {
                     idx % 2 === 1 ? "bg-white/[0.008]" : "",
                   ].join(" ")}
                 >
-                  <td className="sticky left-0 z-[1] bg-[#0F1626] border-r border-white/[0.06] px-4 py-2.5 font-mono text-[11.5px] text-[#E6EAF0]/85 align-top">
+                  <td className="sticky left-0 z-[1] bg-[#103438] border-r border-white/[0.06] px-4 py-2.5 font-mono text-[11.5px] text-[#E6EAF0]/85 align-top">
                     {key}
                   </td>
                   {LANGUAGES.map((l) => {

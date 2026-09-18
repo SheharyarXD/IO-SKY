@@ -245,7 +245,7 @@ export function DefaultToolbar({
         <input
           type="search"
           placeholder={searchPlaceholder}
-          className="w-full pl-8 pr-3 py-2 rounded-[10px] bg-[#070A14] border border-white/[0.08] text-[12.5px] text-white placeholder:text-white/35 focus:outline-none focus:border-[#F58A1F]/40"
+          className="w-full pl-8 pr-3 py-2 rounded-[10px] bg-[#103438] border border-white/[0.08] text-[12.5px] text-white placeholder:text-white/35 focus:outline-none focus:border-[#F58A1F]/40"
         />
       </div>
       {filters?.map((f) => (

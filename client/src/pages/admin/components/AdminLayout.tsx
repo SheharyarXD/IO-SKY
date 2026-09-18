@@ -244,7 +244,7 @@ export function AdminLayout({
       {/* Layout grid */}
       <div className="relative z-[1] flex min-h-screen">
         {/* ─── Sidebar (desktop) ───────────────────────────────────────── */}
-        <aside className="hidden lg:flex flex-col w-[244px] shrink-0 border-r border-white/[0.06] bg-[#080C18]/90 backdrop-blur-xl">
+        <aside className="hidden lg:flex flex-col w-[244px] shrink-0 border-r border-white/[0.06] bg-[#103438]/90 backdrop-blur-xl">
           <div className="px-5 pt-5 pb-4 flex items-center gap-3 border-b border-white/[0.06]">
             <IOSkyLogo variant="mark" height={36} />
             <div className="flex flex-col leading-none">
@@ -334,7 +334,7 @@ export function AdminLayout({
                 </SheetTrigger>
                 <SheetContent
                   side="left"
-                  className="w-[260px] p-0 bg-[#080C18] border-r border-white/[0.06] text-[#E6EAF0]"
+                  className="w-[260px] p-0 bg-[#103438] border-r border-white/[0.06] text-[#E6EAF0]"
                 >
                   <SheetTitle className="sr-only">IO SKY Admin Navigation</SheetTitle>
                   <SheetDescription className="sr-only">Mobile navigation drawer for the IO SKY administrator portal.</SheetDescription>
@@ -493,7 +493,7 @@ export function AdminLayout({
           </main>
 
           {/* Bottom feed strip */}
-          <footer className="border-t border-white/[0.06] bg-[#080C18]/80 backdrop-blur-xl">
+          <footer className="border-t border-white/[0.06] bg-[#103438]/80 backdrop-blur-xl">
             <div className="px-5 lg:px-7 py-3 flex items-center gap-4 text-[11.5px] text-white/55 overflow-x-auto">
               <span className="inline-flex items-center gap-1.5 font-mono uppercase tracking-[0.18em] text-emerald-300/80 shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)] animate-pulse" />

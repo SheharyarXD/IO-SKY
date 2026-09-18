@@ -197,11 +197,11 @@ export default function ClientPortalLayout({
   );
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-[#e6edf7]">
+    <div className="min-h-screen bg-[#0D2D2E] text-[#e6edf7]">
       <ImpersonationBanner />
       <div className="flex">
         {/* Persistent sidebar (lg+) */}
-        <aside className="hidden lg:flex lg:flex-col w-[260px] shrink-0 min-h-screen border-r border-white/5 bg-[#0a1020]/80 backdrop-blur">
+        <aside className="hidden lg:flex lg:flex-col w-[260px] shrink-0 min-h-screen border-r border-white/5 bg-[#103438]/80 backdrop-blur">
           <div className="px-5 py-6 flex items-center gap-3">
             <IOSkyLogo variant="primary" className="h-8" />
           </div>
@@ -213,7 +213,7 @@ export default function ClientPortalLayout({
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetContent
             side="left"
-            className="w-[280px] p-0 border-r border-white/10 bg-[#0a1020]/95 backdrop-blur"
+            className="w-[280px] p-0 border-r border-white/10 bg-[#103438]/95 backdrop-blur"
           >
             <SheetTitle className="sr-only">IO SKY Client Portal Navigation</SheetTitle>
             <SheetDescription className="sr-only">Mobile navigation drawer for the IO SKY client portal.</SheetDescription>
@@ -228,7 +228,7 @@ export default function ClientPortalLayout({
 
           {/* Main */}
           <main className="flex-1 min-w-0">
-            <header className="sticky top-0 z-30 border-b border-white/5 bg-[#070b14]/85 backdrop-blur">
+            <header className="sticky top-0 z-30 border-b border-white/5 bg-[#0D2D2E]/85 backdrop-blur">
               <div className="flex h-16 items-center gap-4 px-4 sm:px-5">
                 <SheetTrigger asChild>
                   <button

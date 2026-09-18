@@ -60,7 +60,7 @@ function ToggleRow({
         aria-label={`${title} consent toggle`}
       >
         <span
-          className={`block h-5 w-5 rounded-full bg-[#0a0f1e] shadow transition-transform duration-200 ease-out ${
+          className={`block h-5 w-5 rounded-full bg-[#103438] shadow transition-transform duration-200 ease-out ${
             enabled ? "translate-x-[18px]" : "translate-x-[2px]"
           }`}
         />
@@ -132,7 +132,7 @@ export function CookieConsentBanner() {
       className="fixed left-0 right-0 bottom-0 z-50 px-3 pb-3 sm:px-4 sm:pb-4 pointer-events-none"
     >
       <div className="container max-w-2xl pointer-events-auto">
-        <div className="rounded-xl border border-[#E6EAF0]/[0.08] bg-[#0a0f1e]/[0.94] backdrop-blur-xl shadow-[0_18px_48px_-22px_rgba(0,0,0,0.7)] p-4 sm:p-5">
+        <div className="rounded-xl border border-[#E6EAF0]/[0.08] bg-[#103438]/[0.94] backdrop-blur-xl shadow-[0_18px_48px_-22px_rgba(0,0,0,0.7)] p-4 sm:p-5">
           <div className="flex items-start justify-between gap-4 mb-3">
             <div>
               <p className="text-[10.5px] font-mono uppercase tracking-[0.2em] text-[#FF7A1A]/90">
@@ -170,7 +170,7 @@ export function CookieConsentBanner() {
                   type="button"
                   disabled={consent.isSaving}
                   onClick={() => consent.acceptAll()}
-                  className="rounded-lg bg-[#FF7A1A] hover:bg-[#FFA64D] active:scale-[0.97] text-[#0a0f1e] text-[12.5px] font-medium py-2.5 px-4 transition-all duration-150 ease-out disabled:opacity-60"
+                  className="rounded-lg bg-[#FF7A1A] hover:bg-[#FFA64D] active:scale-[0.97] text-[#103438] text-[12.5px] font-medium py-2.5 px-4 transition-all duration-150 ease-out disabled:opacity-60"
                 >
                   {L.acceptAll}
                 </button>
@@ -240,7 +240,7 @@ export function CookieConsentBanner() {
                   type="button"
                   disabled={consent.isSaving}
                   onClick={() => consent.saveCustom(draft)}
-                  className="rounded-lg bg-[#FF7A1A] hover:bg-[#FFA64D] active:scale-[0.97] text-[#0a0f1e] text-[12.5px] font-medium py-2.5 px-4 transition-all duration-150 ease-out disabled:opacity-60"
+                  className="rounded-lg bg-[#FF7A1A] hover:bg-[#FFA64D] active:scale-[0.97] text-[#103438] text-[12.5px] font-medium py-2.5 px-4 transition-all duration-150 ease-out disabled:opacity-60"
                 >
                   {L.save}
                 </button>

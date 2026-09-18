@@ -203,7 +203,7 @@ export default function ClientStrategyCalls() {
           }
         }}
       >
-        <AlertDialogContent className="bg-[#070b14] border border-white/10 text-white">
+        <AlertDialogContent className="bg-[#0D2D2E] border border-white/10 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">
               Cancel this discovery call?

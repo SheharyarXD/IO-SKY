@@ -242,7 +242,7 @@ export default function DeveloperTasks() {
                       <SelectTrigger className="w-full bg-white/[0.02] border-white/10 text-white/85 text-xs">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#0a1020] border-white/10">
+                      <SelectContent className="bg-[#103438] border-white/10">
                         {STATUS_OPTIONS.map((opt) => (
                           <SelectItem
                             key={opt.value}

@@ -124,7 +124,7 @@ export default function ClientSupport() {
               <SelectTrigger className="bg-white/[0.02] border-white/10 text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#0a1020] border-white/10 text-white">
+              <SelectContent className="bg-[#103438] border-white/10 text-white">
                 {PRIORITIES.map(p => (
                   <SelectItem key={p.value} value={p.value}>
                     {p.label}

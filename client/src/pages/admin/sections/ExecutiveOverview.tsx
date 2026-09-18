@@ -211,7 +211,7 @@ interface KpiProps {
 function KpiTile({ label, value, delta, caption, Icon, trend, trendColor, trendFill, status }: KpiProps) {
   const positive = delta >= 0;
   return (
-    <div className="relative overflow-hidden rounded-[14px] border border-white/[0.07] bg-[#0E1320]/80 backdrop-blur-md p-4 hover:border-[#F58A1F]/25 transition-colors">
+    <div className="relative overflow-hidden rounded-[14px] border border-white/[0.07] bg-[#103438]/80 backdrop-blur-md p-4 hover:border-[#F58A1F]/25 transition-colors">
       <div className="flex items-start justify-between">
         <div className="text-[10.5px] font-mono uppercase tracking-[0.2em] text-white/55">{label}</div>
         <div className="w-7 h-7 rounded-[8px] bg-[#F58A1F]/10 border border-[#F58A1F]/20 flex items-center justify-center text-[#F58A1F]">
@@ -375,7 +375,7 @@ export default function ExecutiveOverview() {
       {/* Row 2 — AI Agent · Command Center · Critical Alerts */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* AI Operations Agent */}
-        <div className="lg:col-span-4 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4 flex flex-col">
+        <div className="lg:col-span-4 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4 flex flex-col">
           <div className="flex items-center justify-between">
             <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
               AI Operations Agent
@@ -387,10 +387,10 @@ export default function ExecutiveOverview() {
           <div className="mt-4 flex items-start gap-3">
             <div className="relative shrink-0">
               <div className="absolute inset-0 -m-2 rounded-full bg-[radial-gradient(circle,rgba(245,138,31,0.45)_0%,rgba(245,138,31,0)_70%)] blur-md animate-pulse" />
-              <div className="relative w-[88px] h-[88px] rounded-[18px] border border-[#F58A1F]/25 bg-gradient-to-b from-[#0D2D2E] to-[#070A14] flex items-center justify-center shadow-[inset_0_0_20px_rgba(245,138,31,0.18)]">
+              <div className="relative w-[88px] h-[88px] rounded-[18px] border border-[#F58A1F]/25 bg-gradient-to-b from-[#0D2D2E] to-[#103438] flex items-center justify-center shadow-[inset_0_0_20px_rgba(245,138,31,0.18)]">
                 <IOSkyLogo variant="mark" height={56} />
               </div>
-              <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-[#F58A1F] border-2 border-[#0E1320] shadow-[0_0_8px_#F58A1F]" />
+              <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-[#F58A1F] border-2 border-[#103438] shadow-[0_0_8px_#F58A1F]" />
             </div>
             <div className="min-w-0">
               <div className="font-display font-semibold text-[18px] tracking-tight leading-tight text-[#E6EAF0]">
@@ -444,7 +444,7 @@ export default function ExecutiveOverview() {
         </div>
 
         {/* Operational Command Center */}
-        <div className="lg:col-span-5 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4 flex flex-col">
+        <div className="lg:col-span-5 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4 flex flex-col">
           <div className="flex items-center justify-between">
             <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
               Operational Command Center
@@ -516,7 +516,7 @@ export default function ExecutiveOverview() {
         </div>
 
         {/* Critical Alerts */}
-        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4 flex flex-col">
+        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4 flex flex-col">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
@@ -560,7 +560,7 @@ export default function ExecutiveOverview() {
       {/* Row 3 — Revenue / Automation / Agents / Activity */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Revenue Intelligence */}
-        <div className="lg:col-span-4 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
+        <div className="lg:col-span-4 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
           <div className="flex items-center justify-between">
             <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Revenue Intelligence</div>
             <button className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-white/[0.08] text-[11px] text-white/75">
@@ -595,7 +595,7 @@ export default function ExecutiveOverview() {
         </div>
 
         {/* Automation Center */}
-        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
+        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Automation Center</div>
@@ -646,7 +646,7 @@ export default function ExecutiveOverview() {
         </div>
 
         {/* AI Agents & IVR */}
-        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
+        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">AI Agents & IVR</div>
@@ -677,7 +677,7 @@ export default function ExecutiveOverview() {
         </div>
 
         {/* Recent Activity */}
-        <div className="lg:col-span-2 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
+        <div className="lg:col-span-2 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
           <div className="flex items-center justify-between">
             <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Recent Activity</div>
             <button className="text-[11px] text-[#F58A1F] hover:underline">View all</button>
@@ -709,7 +709,7 @@ export default function ExecutiveOverview() {
       {/* Row 4 — Temp Access · Email & SMS · System Health · Upcoming */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Temporary Access Control */}
-        <div className="lg:col-span-4 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
+        <div className="lg:col-span-4 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Temporary Access Control</div>
@@ -774,7 +774,7 @@ export default function ExecutiveOverview() {
         </div>
 
         {/* Email & SMS Campaigns */}
-        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
+        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Email & SMS Campaigns</div>
@@ -812,7 +812,7 @@ export default function ExecutiveOverview() {
         </div>
 
         {/* System Health Overview */}
-        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
+        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">System Health Overview</div>
@@ -844,7 +844,7 @@ export default function ExecutiveOverview() {
         </div>
 
         {/* Upcoming & Pending */}
-        <div className="lg:col-span-2 rounded-[16px] border border-white/[0.07] bg-[#0E1320]/85 p-4">
+        <div className="lg:col-span-2 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Upcoming & Pending</div>

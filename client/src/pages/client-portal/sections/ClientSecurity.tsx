@@ -335,7 +335,7 @@ export default function ClientSecurity() {
         open={!!confirmRevoke}
         onOpenChange={open => !open && setConfirmRevoke(null)}
       >
-        <AlertDialogContent className="bg-[#0a0f1d] border border-white/10 text-white">
+        <AlertDialogContent className="bg-[#103438] border border-white/10 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {confirmRevoke?.everywhere

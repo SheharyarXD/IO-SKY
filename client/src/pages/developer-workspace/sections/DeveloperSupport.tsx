@@ -78,7 +78,7 @@ export default function DeveloperSupport() {
                 <SelectTrigger className="mt-1 bg-white/[0.02] border-white/10 text-white/85">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0a1020] border-white/10">
+                <SelectContent className="bg-[#103438] border-white/10">
                   <SelectItem value="technical" className="text-white/85">Technical</SelectItem>
                   <SelectItem value="access" className="text-white/85">Access</SelectItem>
                   <SelectItem value="agreements" className="text-white/85">Agreements</SelectItem>
@@ -95,7 +95,7 @@ export default function DeveloperSupport() {
                 <SelectTrigger className="mt-1 bg-white/[0.02] border-white/10 text-white/85">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0a1020] border-white/10">
+                <SelectContent className="bg-[#103438] border-white/10">
                   <SelectItem value="low" className="text-white/85">Low</SelectItem>
                   <SelectItem value="normal" className="text-white/85">Normal</SelectItem>
                   <SelectItem value="high" className="text-white/85">High</SelectItem>

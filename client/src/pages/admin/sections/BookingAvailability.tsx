@@ -50,7 +50,7 @@ function formatLocal(ms: number): string {
 
 function Section({ title, eyebrow, children }: { title: string; eyebrow: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[16px] border border-white/[0.07] bg-[#0E121B]/85 p-6">
+    <section className="rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-6">
       <div className="font-mono text-[10.5px] tracking-[0.22em] uppercase text-[#F58A1F] mb-2">
         {eyebrow}
       </div>
@@ -163,7 +163,7 @@ export default function BookingAvailability() {
           <select
             value={ruleDraft.consultationType}
             onChange={(e) => setRuleDraft({ ...ruleDraft, consultationType: e.target.value as typeof ruleDraft.consultationType })}
-            className="lg:col-span-2 h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]"
+            className="lg:col-span-2 h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]"
           >
             {TIERS.map((t) => (
               <option key={t.id} value={t.id}>{t.label}</option>
@@ -172,7 +172,7 @@ export default function BookingAvailability() {
           <select
             value={ruleDraft.weekday}
             onChange={(e) => setRuleDraft({ ...ruleDraft, weekday: Number(e.target.value) })}
-            className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]"
+            className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]"
           >
             {WEEKDAYS.map((w) => (
               <option key={w.id} value={w.id}>{w.label}</option>
@@ -182,13 +182,13 @@ export default function BookingAvailability() {
             type="time"
             value={ruleDraft.startHHMM}
             onChange={(e) => setRuleDraft({ ...ruleDraft, startHHMM: e.target.value })}
-            className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]"
+            className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]"
           />
           <input
             type="time"
             value={ruleDraft.endHHMM}
             onChange={(e) => setRuleDraft({ ...ruleDraft, endHHMM: e.target.value })}
-            className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]"
+            className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]"
           />
           <button
             type="button"
@@ -238,7 +238,7 @@ export default function BookingAvailability() {
           <select
             value={windowDraft.kind}
             onChange={(e) => setWindowDraft({ ...windowDraft, kind: e.target.value as "open" | "close" })}
-            className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]"
+            className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]"
           >
             <option value="open">Open (add)</option>
             <option value="close">Close (block)</option>
@@ -246,14 +246,14 @@ export default function BookingAvailability() {
           <select
             value={windowDraft.consultationType}
             onChange={(e) => setWindowDraft({ ...windowDraft, consultationType: e.target.value as typeof windowDraft.consultationType })}
-            className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]"
+            className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]"
           >
             <option value="">All tiers</option>
             {TIERS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
           </select>
-          <input type="datetime-local" value={windowDraft.startLocal} onChange={(e) => setWindowDraft({ ...windowDraft, startLocal: e.target.value })} className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]" />
-          <input type="datetime-local" value={windowDraft.endLocal} onChange={(e) => setWindowDraft({ ...windowDraft, endLocal: e.target.value })} className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]" />
-          <input placeholder="Reason (optional)" value={windowDraft.reason} onChange={(e) => setWindowDraft({ ...windowDraft, reason: e.target.value })} className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]" />
+          <input type="datetime-local" value={windowDraft.startLocal} onChange={(e) => setWindowDraft({ ...windowDraft, startLocal: e.target.value })} className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]" />
+          <input type="datetime-local" value={windowDraft.endLocal} onChange={(e) => setWindowDraft({ ...windowDraft, endLocal: e.target.value })} className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]" />
+          <input placeholder="Reason (optional)" value={windowDraft.reason} onChange={(e) => setWindowDraft({ ...windowDraft, reason: e.target.value })} className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]" />
           <button
             type="button"
             disabled={!windowDraft.startLocal || !windowDraft.endLocal || addWindow.isPending}
@@ -304,9 +304,9 @@ export default function BookingAvailability() {
       {/* Calendar blocks */}
       <Section eyebrow="Vacation & holidays" title="Calendar blocks">
         <div className="grid gap-3 grid-cols-1 lg:grid-cols-4">
-          <input type="datetime-local" value={blockDraft.startLocal} onChange={(e) => setBlockDraft({ ...blockDraft, startLocal: e.target.value })} className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]" />
-          <input type="datetime-local" value={blockDraft.endLocal} onChange={(e) => setBlockDraft({ ...blockDraft, endLocal: e.target.value })} className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]" />
-          <input placeholder="Label (e.g. Summer break)" value={blockDraft.label} onChange={(e) => setBlockDraft({ ...blockDraft, label: e.target.value })} className="h-10 px-3 rounded-md bg-[#0A0E14] border border-white/10 text-white/90 text-[13px]" />
+          <input type="datetime-local" value={blockDraft.startLocal} onChange={(e) => setBlockDraft({ ...blockDraft, startLocal: e.target.value })} className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]" />
+          <input type="datetime-local" value={blockDraft.endLocal} onChange={(e) => setBlockDraft({ ...blockDraft, endLocal: e.target.value })} className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]" />
+          <input placeholder="Label (e.g. Summer break)" value={blockDraft.label} onChange={(e) => setBlockDraft({ ...blockDraft, label: e.target.value })} className="h-10 px-3 rounded-md bg-[#103438] border border-white/10 text-white/90 text-[13px]" />
           <button
             type="button"
             disabled={!blockDraft.startLocal || !blockDraft.endLocal || !blockDraft.label || addBlock.isPending}

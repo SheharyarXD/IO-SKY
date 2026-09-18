@@ -99,7 +99,7 @@ export default function ClientDashboard() {
             <PortalSkeleton rows={3} />
           ) : latestReport ? (
             <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-5">
-              <div className="rounded-xl border border-white/8 bg-gradient-to-br from-[#0e162a] to-[#0a1020] p-4 aspect-[3/4] flex flex-col">
+              <div className="rounded-xl border border-white/8 bg-gradient-to-br from-[#103438] to-[#103438] p-4 aspect-[3/4] flex flex-col">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-[#F58A1F]/80">IO SKY</div>
                 <div className="mt-auto">
                   <p className="text-[11px] text-white/55">Operational Intelligence</p>

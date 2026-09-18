@@ -124,7 +124,7 @@ export function TOTPEnrollDialog(props: {
     QRCode.toCanvas(canvas, otpauthUri, {
       width: 220,
       margin: 1,
-      color: { dark: "#FFFFFFFF", light: "#0B0F1AFF" },
+      color: { dark: "#FFFFFFFF", light: "#103438FF" },
     })
       .then(() => {
         if (!cancelled) setQrFailed(false);
@@ -169,7 +169,7 @@ export function TOTPEnrollDialog(props: {
               <canvas
                 ref={qrCanvas}
                 hidden={qrFailed}
-                className="rounded-md border border-white/10 bg-[#0B0F1A] p-2"
+                className="rounded-md border border-white/10 bg-[#103438] p-2"
                 aria-label="TOTP QR code"
               />
               {qrFailed && (

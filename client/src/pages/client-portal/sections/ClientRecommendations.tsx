@@ -267,7 +267,7 @@ export default function ClientRecommendations() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-xl bg-[#070b14] border-l border-white/10 text-white p-0"
+          className="w-full sm:max-w-xl bg-[#0D2D2E] border-l border-white/10 text-white p-0"
         >
           {active ? (
             <div className="flex h-full flex-col">

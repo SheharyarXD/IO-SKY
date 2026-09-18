@@ -187,7 +187,7 @@ export default function CustomIntelligence() {
   }, [step, form]);
 
   return (
-    <div className="min-h-screen bg-[#070B14] text-white">
+    <div className="min-h-screen bg-[#0D2D2E] text-white">
       <Navbar />
 
       <div className="container pt-24 pb-2">

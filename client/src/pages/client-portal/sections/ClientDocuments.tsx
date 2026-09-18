@@ -222,7 +222,7 @@ export default function ClientDocuments() {
               <SelectTrigger className="w-[160px] bg-white/[0.03] border-white/10 text-white/85">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#0b1422] border-white/10 text-white">
+              <SelectContent className="bg-[#103438] border-white/10 text-white">
                 {CATEGORIES.map(c => (
                   <SelectItem key={c.value} value={c.value}>
                     {c.label}

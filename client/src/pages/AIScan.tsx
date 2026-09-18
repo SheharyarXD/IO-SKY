@@ -2,7 +2,7 @@
  * IO SKY — AI SCAN (flagship operational intelligence funnel)
  *
  * Design language locked from master spec & mockup:
- *   - deep navy-black atmosphere (#0A0F1A)
+ *   - deep navy-black atmosphere (#103438)
  *   - restrained orange interaction language (#F97316 / #FB923C)
  *   - premium glass surfaces, cinematic spacing
  *   - executive typography hierarchy
