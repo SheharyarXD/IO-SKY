@@ -227,7 +227,7 @@ export function Security() {
               r.acknowledgedAt ? null : (
                 <button
                   onClick={() => acknowledge.mutate({ eventId: r.id })}
-                  className="text-[11px] text-[#FF7A00] hover:underline"
+                  className="text-[11px] text-[#F58A1F] hover:underline"
                 >
                   Acknowledge
                 </button>

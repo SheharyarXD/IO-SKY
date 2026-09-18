@@ -96,7 +96,7 @@ export default function ClientSupport() {
                     </div>
                   </div>
                   <p className="mt-2 text-sm text-white/70 leading-relaxed">{t.body}</p>
-                  <p className="mt-2 text-[10px] text-orange-200/70 font-mono">{t.publicRef}</p>
+                  <p className="mt-2 text-[10px] text-[#F58A1F]/70 font-mono">{t.publicRef}</p>
                 </GlassCard>
               ))}
             </ul>
@@ -143,7 +143,7 @@ export default function ClientSupport() {
               create.mutate({ subject: subject.trim(), body: body.trim(), priority });
             }}
             disabled={create.isPending}
-            className="mt-4 w-full bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+            className="mt-4 w-full bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
           >
             <Send className="h-4 w-4 mr-2" />
             {create.isPending ? "Opening ticket…" : "Open ticket"}

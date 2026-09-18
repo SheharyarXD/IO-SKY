@@ -112,7 +112,7 @@ export default function ClientAccount() {
             <Button
               onClick={() => update.mutate({ name: trimmedName })}
               disabled={!dirty || update.isPending}
-              className="w-full bg-orange-500 hover:bg-orange-400 text-black font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {update.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -202,7 +202,7 @@ function ReadOnlyRow({
 }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3.5 py-2.5">
-      <div className="h-8 w-8 rounded-md bg-orange-500/10 ring-1 ring-orange-500/30 flex items-center justify-center text-orange-300 shrink-0">
+      <div className="h-8 w-8 rounded-md bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/30 flex items-center justify-center text-[#F58A1F] shrink-0">
         {icon}
       </div>
       <div className="min-w-0 flex-1">

@@ -3,7 +3,7 @@
  *
  * Review page surfacing every UI string across all seven supported locales in
  * one auditable table. Built in the official IO SKY design language: dark navy
- * #0B1020 background, glass panels, ivory text, controlled orange interaction
+ * #0D2D2E background, glass panels, ivory text, controlled orange interaction
  * states, mono eyebrow row.
  *
  * Capabilities:
@@ -144,7 +144,7 @@ export default function Translations() {
                   background:
                     c.pct === 100
                       ? "linear-gradient(90deg,#34D399,#10B981)"
-                      : "linear-gradient(90deg,#FF7A00,#FFB347)",
+                      : "linear-gradient(90deg,#F58A1F,#FFA64D)",
                 }}
               />
             </div>
@@ -164,7 +164,7 @@ export default function Translations() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("translations.search")}
-            className="w-full bg-[#0B1020]/60 border border-white/[0.08] focus:border-[var(--color-orange)]/50 focus:outline-none rounded-lg pl-10 pr-3 py-2.5 text-[13.5px] text-[#E6EAF0] placeholder:text-[#E6EAF0]/35 transition-colors"
+            className="w-full bg-[#0D2D2E]/60 border border-white/[0.08] focus:border-[var(--color-orange)]/50 focus:outline-none rounded-lg pl-10 pr-3 py-2.5 text-[13.5px] text-[#E6EAF0] placeholder:text-[#E6EAF0]/35 transition-colors"
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -253,7 +253,7 @@ export default function Translations() {
                             ].join(" ")}
                           />
                           {isMissing && (
-                            <span className="absolute -top-1.5 right-1 text-[9px] font-mono uppercase tracking-[0.14em] text-rose-300/80 bg-[#0B1020] px-1 rounded">
+                            <span className="absolute -top-1.5 right-1 text-[9px] font-mono uppercase tracking-[0.14em] text-rose-300/80 bg-[#0D2D2E] px-1 rounded">
                               missing
                             </span>
                           )}

@@ -182,7 +182,7 @@ export default function ClientRecommendations() {
         emptyBody="After your next AI Scan, prioritized recommendations will appear here."
         emptyAction={
           <Link href="/ai-scan">
-            <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+            <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
               Run AI Scan
             </Button>
           </Link>
@@ -204,14 +204,14 @@ export default function ClientRecommendations() {
                   return (
                     <GlassCard key={r.id} className="p-5" interactive>
                       <div className="flex items-start gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-orange-500/10 ring-1 ring-orange-500/30 flex items-center justify-center text-orange-300 shrink-0">
+                        <div className="h-10 w-10 rounded-xl bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/30 flex items-center justify-center text-[#F58A1F] shrink-0">
                           <Sparkles className="h-4 w-4" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-3 flex-wrap">
                             <button
                               type="button"
-                              className="text-left text-base font-semibold text-white hover:text-orange-200 transition-colors"
+                              className="text-left text-base font-semibold text-white hover:text-[#F58A1F] transition-colors"
                               onClick={() => openDetail(r.id)}
                             >
                               {r.title}
@@ -247,7 +247,7 @@ export default function ClientRecommendations() {
                               variant="outline"
                               disabled={isClosed || action.isPending}
                               onClick={() => runAction(r, "discuss")}
-                              className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+                              className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
                             >
                               <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
                               Discuss on Discovery Call
@@ -272,7 +272,7 @@ export default function ClientRecommendations() {
           {active ? (
             <div className="flex h-full flex-col">
               <SheetHeader className="px-6 pt-6 pb-4 border-b border-white/8">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300/90">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#F58A1F]/90">
                   {active.category}
                 </p>
                 <SheetTitle className="text-white text-xl tracking-tight">
@@ -329,7 +329,7 @@ export default function ClientRecommendations() {
                 <div className="grid w-full grid-cols-1 sm:grid-cols-2 gap-2">
                   <Button
                     variant="outline"
-                    className="border-white/15 bg-white/[0.03] text-white/85 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+                    className="border-white/15 bg-white/[0.03] text-white/85 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
                     disabled={
                       action.isPending ||
                       active.status === "completed" ||
@@ -342,7 +342,7 @@ export default function ClientRecommendations() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="border-white/15 bg-white/[0.03] text-white/85 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+                    className="border-white/15 bg-white/[0.03] text-white/85 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
                     disabled={
                       action.isPending ||
                       active.status === "in_progress" ||
@@ -355,7 +355,7 @@ export default function ClientRecommendations() {
                     {isBusy("proposal") ? "Sending request…" : "Request Proposal"}
                   </Button>
                   <Button
-                    className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+                    className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
                     disabled={
                       action.isPending ||
                       active.status === "in_progress" ||

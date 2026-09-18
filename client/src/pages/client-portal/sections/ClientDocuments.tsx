@@ -185,7 +185,7 @@ export default function ClientDocuments() {
         description="Contracts, NDAs, deliverables and architecture artefacts shared between you and IO SKY. All access events are logged."
         action={
           <Button
-            className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+            className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
             onClick={() => fileRef.current?.click()}
           >
             <UploadCloud className="h-4 w-4 mr-2" />
@@ -204,7 +204,7 @@ export default function ClientDocuments() {
       {pendingFile && (
         <GlassCard className="p-5 mb-6">
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="h-10 w-10 rounded-xl bg-orange-500/10 ring-1 ring-orange-500/30 flex items-center justify-center text-orange-300 shrink-0">
+            <div className="h-10 w-10 rounded-xl bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/30 flex items-center justify-center text-[#F58A1F] shrink-0">
               <UploadCloud className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
@@ -242,7 +242,7 @@ export default function ClientDocuments() {
               Cancel
             </Button>
             <Button
-              className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+              className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
               onClick={submitUpload}
               disabled={upload.isPending}
             >
@@ -263,7 +263,7 @@ export default function ClientDocuments() {
         emptyBody="Once IO SKY uploads documents for your organization they will appear here, encrypted at rest."
         emptyAction={
           <Button
-            className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+            className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
             onClick={() => fileRef.current?.click()}
           >
             <UploadCloud className="h-4 w-4 mr-2" />
@@ -286,7 +286,7 @@ export default function ClientDocuments() {
                   return (
                     <GlassCard key={d.id} className="p-5" interactive>
                       <div className="flex items-start gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-orange-500/10 ring-1 ring-orange-500/30 flex items-center justify-center text-orange-300 shrink-0">
+                        <div className="h-10 w-10 rounded-xl bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/30 flex items-center justify-center text-[#F58A1F] shrink-0">
                           <FolderLock className="h-4 w-4" />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -312,7 +312,7 @@ export default function ClientDocuments() {
                                 variant="outline"
                                 disabled={isOpenPending(d.id)}
                                 onClick={() => openDoc.mutate({ id: d.id })}
-                                className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+                                className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
                               >
                                 {isOpenPending(d.id) ? (
                                   "Opening…"

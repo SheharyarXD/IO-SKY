@@ -87,7 +87,7 @@ export default function DeveloperAccessScope() {
             <div className="flex items-center gap-2 flex-wrap">
               <Badge
                 variant="outline"
-                className="border-orange-500/40 bg-orange-500/10 text-orange-200 text-[10px] uppercase tracking-wider"
+                className="border-[#F58A1F]/40 bg-[#F58A1F]/10 text-[#F58A1F] text-[10px] uppercase tracking-wider"
               >
                 {scope.level}
               </Badge>
@@ -189,7 +189,7 @@ export default function DeveloperAccessScope() {
                 onClick={() =>
                   requestExtension.mutate({ reason: reason.trim() })
                 }
-                className="bg-orange-500 hover:bg-orange-400 text-black font-semibold shadow-[0_0_18px_-8px_rgba(255,134,46,0.7)]"
+                className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold shadow-[0_0_18px_-8px_rgba(255,134,46,0.7)]"
               >
                 {requestExtension.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

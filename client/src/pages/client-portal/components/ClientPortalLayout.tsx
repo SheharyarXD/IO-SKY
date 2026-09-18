@@ -145,19 +145,19 @@ export default function ClientPortalLayout({
             className={cn(
               "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
               active
-                ? "bg-orange-500/10 text-orange-200 ring-1 ring-orange-500/30 shadow-[0_0_24px_-12px_rgba(255,134,46,0.6)]"
+                ? "bg-[#F58A1F]/10 text-[#F58A1F] ring-1 ring-[#F58A1F]/30 shadow-[0_0_24px_-12px_rgba(255,134,46,0.6)]"
                 : "text-white/65 hover:text-white hover:bg-white/[0.04]",
             )}
           >
             <Icon
               className={cn(
                 "h-4 w-4 transition-colors",
-                active ? "text-orange-300" : "text-white/45 group-hover:text-orange-300/80",
+                active ? "text-[#F58A1F]" : "text-white/45 group-hover:text-[#F58A1F]/80",
               )}
             />
             <span className="truncate">{item.label}</span>
             {badgeCount > 0 && (
-              <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-orange-500/20 px-1.5 text-[11px] font-semibold text-orange-200 ring-1 ring-orange-500/40">
+              <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#F58A1F]/20 px-1.5 text-[11px] font-semibold text-[#F58A1F] ring-1 ring-[#F58A1F]/40">
                 {badgeCount}
               </span>
             )}
@@ -178,7 +178,7 @@ export default function ClientPortalLayout({
           <Button
             size="sm"
             variant="outline"
-            className="mt-3 w-full border-white/15 bg-white/[0.03] text-white/80 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+            className="mt-3 w-full border-white/15 bg-white/[0.03] text-white/80 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
           >
             Contact Support
           </Button>
@@ -233,7 +233,7 @@ export default function ClientPortalLayout({
                 <SheetTrigger asChild>
                   <button
                     type="button"
-                    className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.02] text-white/70 hover:text-orange-200 hover:border-orange-500/40 transition-colors"
+                    className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.02] text-white/70 hover:text-[#F58A1F] hover:border-[#F58A1F]/40 transition-colors"
                     aria-label="Open navigation"
                   >
                     <Menu className="h-4 w-4" />
@@ -245,7 +245,7 @@ export default function ClientPortalLayout({
                     Client Portal
                   </h1>
                   <p className="mt-0.5 text-[11px] text-white/55 truncate">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-400 mr-1.5 align-middle animate-pulse" />
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#F58A1F] mr-1.5 align-middle animate-pulse" />
                     Welcome back, {userDisplayName.split(" ")[0]}
                   </p>
                 </div>
@@ -271,7 +271,7 @@ export default function ClientPortalLayout({
                   <Link href="/book-strategy">
                     <Button
                       size="sm"
-                      className="hidden sm:inline-flex bg-orange-500 hover:bg-orange-400 text-black font-semibold shadow-[0_0_28px_-10px_rgba(255,134,46,0.7)]"
+                      className="hidden sm:inline-flex bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold shadow-[0_0_28px_-10px_rgba(255,134,46,0.7)]"
                     >
                       <CalendarClock className="h-4 w-4 mr-1.5" />
                       Book Discovery Call
@@ -285,8 +285,8 @@ export default function ClientPortalLayout({
                   />
 
                   <div className="flex items-center gap-2 pl-3 border-l border-white/10">
-                    <Avatar className="h-8 w-8 bg-orange-500/15 ring-1 ring-orange-500/25">
-                      <AvatarFallback className="bg-transparent text-orange-200 text-xs font-semibold">
+                    <Avatar className="h-8 w-8 bg-[#F58A1F]/15 ring-1 ring-[#F58A1F]/25">
+                      <AvatarFallback className="bg-transparent text-[#F58A1F] text-xs font-semibold">
                         {initials}
                       </AvatarFallback>
                     </Avatar>

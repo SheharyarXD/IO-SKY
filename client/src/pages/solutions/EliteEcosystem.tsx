@@ -73,7 +73,7 @@ export default function EliteEcosystem() {
             <Link
               href="/book-strategy?source=elite"
               onClick={() => fire("elite_book_strategy")}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--orange)] text-[#0B1020] text-[13.5px] font-semibold hover:bg-[var(--orange-hover)] transition-colors active:scale-[0.98]"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--orange)] text-[#0D2D2E] text-[13.5px] font-semibold hover:bg-[var(--orange-hover)] transition-colors active:scale-[0.98]"
             >
               <CalendarDays className="size-4" />
               Book Discovery Call
@@ -97,7 +97,7 @@ export default function EliteEcosystem() {
           </div>
         </div>
 
-        <aside className="rounded-2xl glass-soft p-7 ring-2 ring-[var(--orange)]/55 shadow-[0_24px_72px_-26px_rgba(255,122,0,0.55)]">
+        <aside className="rounded-2xl glass-soft p-7 ring-2 ring-[var(--orange)]/55 shadow-[0_24px_72px_-26px_rgba(245,138,31,0.55)]">
           <p className="text-[11px] uppercase tracking-[0.20em] text-white/45">
             Investment
           </p>
@@ -204,7 +204,7 @@ export default function EliteEcosystem() {
           <Link
             href="/book-strategy?source=elite_footer"
             onClick={() => fire("elite_footer_cta")}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--orange)] text-[#0B1020] text-[13.5px] font-semibold hover:bg-[var(--orange-hover)] transition-colors active:scale-[0.98]"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--orange)] text-[#0D2D2E] text-[13.5px] font-semibold hover:bg-[var(--orange-hover)] transition-colors active:scale-[0.98]"
           >
             <CalendarDays className="size-4" />
             Book Discovery Call

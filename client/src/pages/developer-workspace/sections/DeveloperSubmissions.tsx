@@ -128,11 +128,11 @@ export default function DeveloperSubmissions() {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         <TabsList className="bg-white/[0.04] border border-white/10">
-          <TabsTrigger value="submissions" className="data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-200">
+          <TabsTrigger value="submissions" className="data-[state=active]:bg-[#F58A1F]/15 data-[state=active]:text-[#F58A1F]">
             <ClipboardList className="h-3.5 w-3.5 mr-2" />
             Submissions
           </TabsTrigger>
-          <TabsTrigger value="commits" className="data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-200">
+          <TabsTrigger value="commits" className="data-[state=active]:bg-[#F58A1F]/15 data-[state=active]:text-[#F58A1F]">
             <GitCommit className="h-3.5 w-3.5 mr-2" />
             Commits
           </TabsTrigger>
@@ -212,7 +212,7 @@ export default function DeveloperSubmissions() {
                     fileKey: subFileKey.trim() || undefined,
                   })
                 }
-                className="bg-orange-500 hover:bg-orange-400 text-black font-semibold shadow-[0_0_28px_-10px_rgba(255,134,46,0.7)]"
+                className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold shadow-[0_0_28px_-10px_rgba(255,134,46,0.7)]"
               >
                 {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 <span className={create.isPending ? "ml-2" : ""}>Submit</span>
@@ -364,7 +364,7 @@ export default function DeveloperSubmissions() {
                     branch: comBranch.trim() || undefined,
                   })
                 }
-                className="bg-orange-500 hover:bg-orange-400 text-black font-semibold shadow-[0_0_28px_-10px_rgba(255,134,46,0.7)]"
+                className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold shadow-[0_0_28px_-10px_rgba(255,134,46,0.7)]"
               >
                 {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 <span className={create.isPending ? "ml-2" : ""}>Record commit</span>
@@ -402,7 +402,7 @@ export default function DeveloperSubmissions() {
                           href={row.repository.startsWith("http") ? row.repository : `https://github.com/${row.repository}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] text-orange-200 hover:text-orange-100"
+                          className="inline-flex items-center gap-1 text-[11px] text-[#F58A1F] hover:text-[#F58A1F]"
                         >
                           {row.repository}
                           <ArrowUpRight className="h-3 w-3" />

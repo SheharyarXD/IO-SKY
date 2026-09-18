@@ -21,8 +21,8 @@
  *   primary 1473×414 px (≈ 3.558:1)  ·  mark 840×781 px (≈ 1.076:1)
  *
  * Assets are fully transparent PNGs and render correctly on BOTH light and
- * dark surfaces. They contain the orange #FF7A00 swoosh + white ink —
- * #FF7A00 is the real brand orange sampled directly from this logo file
+ * dark surfaces. They contain the orange #F58A1F swoosh + white ink —
+ * #F58A1F is the real brand orange sampled directly from this logo file
  * (see client/src/index.css's `--orange` token and
  * server/designLanguage.test.ts for where that value is pinned).
  */

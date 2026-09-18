@@ -175,7 +175,7 @@ export default function DeveloperAgreements() {
                         <Button
                           size="sm"
                           disabled={isPending}
-                          className="bg-orange-500 hover:bg-orange-400 text-black font-semibold shadow-[0_0_18px_-8px_rgba(255,134,46,0.7)]"
+                          className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold shadow-[0_0_18px_-8px_rgba(255,134,46,0.7)]"
                         >
                           {isPending ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -212,7 +212,7 @@ export default function DeveloperAgreements() {
                                 version: row.version,
                               });
                             }}
-                            className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+                            className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
                           >
                             I agree
                           </AlertDialogAction>

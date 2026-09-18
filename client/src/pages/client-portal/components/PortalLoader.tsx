@@ -8,7 +8,7 @@ export default function PortalLoader() {
       <div className="flex flex-col items-center gap-4">
         <div className="relative h-10 w-10">
           <span className="absolute inset-0 rounded-full border border-white/10" />
-          <span className="absolute inset-0 rounded-full border-t border-orange-400 animate-spin" />
+          <span className="absolute inset-0 rounded-full border-t border-[#F58A1F] animate-spin" />
         </div>
         <p className="text-xs uppercase tracking-[0.2em] text-white/45">
           Loading operational intelligence

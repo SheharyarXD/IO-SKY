@@ -64,7 +64,7 @@ export default function DeveloperProjects() {
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge
                   variant="outline"
-                  className="border-orange-500/30 bg-orange-500/10 text-orange-200 text-[10px] uppercase tracking-wider font-semibold"
+                  className="border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F] text-[10px] uppercase tracking-wider font-semibold"
                 >
                   {project.code}
                 </Badge>

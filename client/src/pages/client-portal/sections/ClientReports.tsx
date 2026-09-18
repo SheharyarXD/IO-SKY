@@ -71,7 +71,7 @@ export default function ClientReports() {
         description="Every report we generate for your organization is stored here, encrypted and access-controlled. Downloads are signed and audit-logged."
         action={
           <Link href="/ai-scan">
-            <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+            <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
               <ScanSearch className="h-4 w-4 mr-2" />
               Run new AI Scan
             </Button>
@@ -89,7 +89,7 @@ export default function ClientReports() {
             placeholder="Search by title, summary or reference"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="pl-9 bg-white/[0.03] border-white/10 text-white placeholder:text-white/40 focus-visible:ring-orange-400/40"
+            className="pl-9 bg-white/[0.03] border-white/10 text-white placeholder:text-white/40 focus-visible:ring-[#F58A1F]/40"
           />
         </div>
       </div>
@@ -107,7 +107,7 @@ export default function ClientReports() {
             emptyBody="When you finish your first AI Scan, a branded PDF report will appear in this vault."
             emptyAction={
               <Link href="/ai-scan">
-                <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+                <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
                   Start AI Scan
                 </Button>
               </Link>
@@ -127,7 +127,7 @@ export default function ClientReports() {
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="mt-3 text-xs font-medium text-orange-300 hover:text-orange-200"
+                className="mt-3 text-xs font-medium text-[#F58A1F] hover:text-[#F58A1F]"
               >
                 Clear filter
               </button>
@@ -156,7 +156,7 @@ export default function ClientReports() {
                 <div className="mt-4 flex items-center gap-2">
                   <Button
                     size="sm"
-                    className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+                    className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
                     disabled={!r.pdfKey || downloadingId === r.id}
                     onClick={() => handleDownload(r.id, r.title)}
                   >
@@ -167,7 +167,7 @@ export default function ClientReports() {
                     )}
                     {r.pdfKey ? "Download PDF" : "Awaiting upload"}
                   </Button>
-                  <span className="ml-auto text-xs font-mono text-orange-200">
+                  <span className="ml-auto text-xs font-mono text-[#F58A1F]">
                     {r.score}/100
                   </span>
                 </div>

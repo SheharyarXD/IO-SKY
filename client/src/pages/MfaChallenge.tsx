@@ -167,7 +167,7 @@ export default function MfaChallenge() {
                       onClick={() => setFactorId(f.id)}
                       className={`text-left rounded-md border px-3 py-2 text-sm transition ${
                         f.id === factorId
-                          ? "border-orange-500 bg-orange-500/10"
+                          ? "border-[#F58A1F] bg-[#F58A1F]/10"
                           : "border-border bg-card/40 hover:bg-card/70"
                       }`}
                     >

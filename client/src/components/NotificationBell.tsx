@@ -50,24 +50,24 @@ export function NotificationBell({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.02] text-white/70 hover:text-orange-200 hover:border-orange-500/40 transition-colors"
+          className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.02] text-white/70 hover:text-[#F58A1F] hover:border-[#F58A1F]/40 transition-colors"
           aria-label="Notifications"
         >
           <Bell className="h-4 w-4" />
           {unread.length > 0 && (
-            <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-black">
+            <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#F58A1F] px-1 text-[10px] font-bold text-black">
               {unread.length}
             </span>
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[340px] p-0 bg-[#0B1020] border-white/10 text-white">
+      <DropdownMenuContent align="end" className="w-[340px] p-0 bg-[#0D2D2E] border-white/10 text-white">
         <div className="px-3.5 py-2.5 border-b border-white/10 flex items-center justify-between">
           <span className="text-[12.5px] font-semibold">Notifications</span>
           {unread.length > 0 && (
             <button
               onClick={() => unread.forEach((n) => onMarkRead(n.id))}
-              className="text-[11px] text-orange-300 hover:text-orange-200"
+              className="text-[11px] text-[#F58A1F] hover:text-[#F58A1F]"
             >
               Mark all read
             </button>

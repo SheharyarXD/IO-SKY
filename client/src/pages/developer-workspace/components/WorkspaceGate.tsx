@@ -74,10 +74,10 @@ function GateCard({
 }) {
   return (
     <GlassCard className="p-10 max-w-2xl mx-auto text-center">
-      <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10 ring-1 ring-orange-500/25 text-orange-300">
+      <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/25 text-[#F58A1F]">
         {icon}
       </div>
-      <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300/90">
+      <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#F58A1F]/90">
         {eyebrow}
       </p>
       <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">{title}</h2>
@@ -87,7 +87,7 @@ function GateCard({
       <div className="mt-6 inline-flex items-center gap-3">
         {primaryHref && primaryLabel && (
           <Link href={primaryHref}>
-            <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold shadow-[0_0_28px_-10px_rgba(255,134,46,0.7)]">
+            <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold shadow-[0_0_28px_-10px_rgba(255,134,46,0.7)]">
               {primaryLabel}
             </Button>
           </Link>
@@ -96,7 +96,7 @@ function GateCard({
           <Link href={secondaryHref}>
             <Button
               variant="outline"
-              className="border-white/15 bg-white/[0.03] text-white/80 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+              className="border-white/15 bg-white/[0.03] text-white/80 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
             >
               {secondaryLabel}
             </Button>

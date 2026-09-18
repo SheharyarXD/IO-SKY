@@ -68,7 +68,7 @@ function StatCard({
 const SEVERITY_TONE: Record<string, string> = {
   info: "text-white/60 border-white/[0.12]",
   warn: "text-amber-300 border-amber-400/30",
-  high: "text-orange-300 border-orange-400/30",
+  high: "text-[#F58A1F] border-[#F58A1F]/30",
   critical: "text-red-300 border-red-400/40",
 };
 
@@ -108,7 +108,7 @@ export default function OpsConsole() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B1020] text-white/70">
+      <div className="min-h-screen flex items-center justify-center bg-[#0D2D2E] text-white/70">
         <Loader2 className="w-5 h-5 animate-spin mr-3" /> Verifying session…
       </div>
     );
@@ -119,7 +119,7 @@ export default function OpsConsole() {
   }
   if (!isOpsRole(user?.role)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B1020] text-white/70 px-6 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#0D2D2E] text-white/70 px-6 text-center">
         <div>
           <ShieldAlert className="w-8 h-8 mx-auto mb-3 text-red-300" />
           <p className="text-[15px]">This console is restricted to Technical Operator and admin accounts.</p>
@@ -133,9 +133,9 @@ export default function OpsConsole() {
     h && h.email.sent24h > 0 ? Math.round((h.email.failed24h / h.email.sent24h) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-[#0B1020] text-[#E6EAF0]">
+    <div className="min-h-screen bg-[#0D2D2E] text-[#E6EAF0]">
       <header className="border-b border-white/[0.06] bg-[#080C18]/90 backdrop-blur-xl px-5 lg:px-7 py-4 flex items-center gap-3">
-        <ServerCog className="w-5 h-5 text-[#FF7A00]" />
+        <ServerCog className="w-5 h-5 text-[#F58A1F]" />
         <div>
           <h1 className="font-display font-semibold text-[18px]">Technical Operator Console</h1>
           <p className="text-[11.5px] text-white/50">
@@ -148,7 +148,7 @@ export default function OpsConsole() {
             emailLog.refetch();
             securityEvents.refetch();
           }}
-          className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-white/[0.08] text-[12px] text-white/75 hover:text-white hover:border-[#FF7A00]/40 transition-colors"
+          className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-white/[0.08] text-[12px] text-white/75 hover:text-white hover:border-[#F58A1F]/40 transition-colors"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${health.isFetching ? "animate-spin" : ""}`} /> Refresh
         </button>
@@ -267,7 +267,7 @@ export default function OpsConsole() {
                                 setAckBusy(null);
                               }
                             }}
-                            className="text-[11.5px] px-2.5 py-1 rounded-md border border-white/[0.1] text-white/75 hover:text-white hover:border-[#FF7A00]/40 disabled:opacity-50 transition-colors"
+                            className="text-[11.5px] px-2.5 py-1 rounded-md border border-white/[0.1] text-white/75 hover:text-white hover:border-[#F58A1F]/40 disabled:opacity-50 transition-colors"
                           >
                             {ackBusy === ev.id ? "Acknowledging…" : "Acknowledge"}
                           </button>

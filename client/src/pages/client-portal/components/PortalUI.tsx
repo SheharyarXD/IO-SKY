@@ -21,7 +21,7 @@ export function SectionHeader({
     <div className="mb-7 md:mb-9 flex items-start justify-between gap-4 flex-wrap">
       <div className="min-w-0">
         {eyebrow && (
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300/90">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#F58A1F]/90">
             {eyebrow}
           </p>
         )}
@@ -54,7 +54,7 @@ export function GlassCard({
         "border-white/8 bg-gradient-to-br from-[#0c1424]/70 to-[#0a1020]/70 backdrop-blur-md text-white",
         "shadow-[0_18px_60px_-30px_rgba(0,0,0,0.7)]",
         interactive &&
-          "transition-all duration-200 hover:border-orange-500/30 hover:shadow-[0_0_30px_-10px_rgba(255,134,46,0.4)]",
+          "transition-all duration-200 hover:border-[#F58A1F]/30 hover:shadow-[0_0_30px_-10px_rgba(255,134,46,0.4)]",
         className,
       )}
     >
@@ -76,7 +76,7 @@ export function EmptyState({
 }) {
   return (
     <GlassCard className="p-10 text-center">
-      <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10 ring-1 ring-orange-500/25 text-orange-300">
+      <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/25 text-[#F58A1F]">
         {icon}
       </div>
       <h3 className="mt-4 text-lg font-semibold text-white">{title}</h3>
@@ -109,7 +109,7 @@ export function StatusPill({
   const map: Record<string, string> = {
     neutral: "border-white/15 bg-white/[0.04] text-white/70",
     good: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
-    warn: "border-orange-400/40 bg-orange-500/10 text-orange-200",
+    warn: "border-[#F58A1F]/40 bg-[#F58A1F]/10 text-[#F58A1F]",
     info: "border-sky-400/30 bg-sky-500/10 text-sky-200",
     danger: "border-rose-400/30 bg-rose-500/10 text-rose-200",
   };
@@ -162,7 +162,7 @@ export function ErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-5 inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-sm font-medium text-white/85 hover:border-orange-400/40 hover:text-orange-200 transition-colors"
+          className="mt-5 inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-sm font-medium text-white/85 hover:border-[#F58A1F]/40 hover:text-[#F58A1F] transition-colors"
         >
           {retryLabel}
         </button>

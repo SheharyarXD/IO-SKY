@@ -82,7 +82,7 @@ export default function DeveloperFiles() {
                 className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:gap-5 gap-3"
               >
                 <div className="flex items-start gap-3 min-w-0 flex-1">
-                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10 ring-1 ring-orange-500/25 text-orange-300 shrink-0">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/25 text-[#F58A1F] shrink-0">
                     <FileText className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
@@ -128,7 +128,7 @@ export default function DeveloperFiles() {
                       setPendingFileId(file.id);
                       requestSignedUrl.mutate({ fileId: file.id });
                     }}
-                    className="border-white/15 bg-white/[0.03] text-white/85 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+                    className="border-white/15 bg-white/[0.03] text-white/85 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
                   >
                     {pending ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />

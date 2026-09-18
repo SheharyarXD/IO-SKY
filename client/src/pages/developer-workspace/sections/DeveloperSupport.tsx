@@ -143,7 +143,7 @@ export default function DeveloperSupport() {
                   priority,
                 })
               }
-              className="bg-orange-500 hover:bg-orange-400 text-black font-semibold shadow-[0_0_18px_-8px_rgba(255,134,46,0.7)]"
+              className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold shadow-[0_0_18px_-8px_rgba(255,134,46,0.7)]"
             >
               {create.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -156,7 +156,7 @@ export default function DeveloperSupport() {
         </GlassCard>
 
         <GlassCard className="p-5">
-          <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10 ring-1 ring-orange-500/25 text-orange-300">
+          <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/25 text-[#F58A1F]">
             <LifeBuoy className="h-4 w-4" />
           </div>
           <h3 className="mt-3 text-sm font-semibold tracking-tight text-white">

@@ -147,13 +147,13 @@
     font-feature-settings: "cv11", "ss01", "ss03";
   }
   body {
-    /* Atmospheric backdrop — soft orange ember + cool navy haze, with subtle vertical haze for depth */
+    /* Atmospheric backdrop — soft orange ember + cool teal haze, with subtle vertical haze for depth */
     background-color: var(--background);
     background-image:
       radial-gradient(60% 38% at 18% 18%, oklch(0.72 0.205 45 / 0.10), transparent 70%),
-      radial-gradient(46% 32% at 92% 0%, oklch(0.55 0.18 255 / 0.08), transparent 70%),
+      radial-gradient(46% 32% at 92% 0%, oklch(0.55 0.1 194 / 0.08), transparent 70%),
       radial-gradient(80% 50% at 50% 100%, oklch(0.72 0.205 45 / 0.06), transparent 70%),
-      linear-gradient(180deg, transparent 0%, oklch(0.12 0.025 260 / 0.18) 100%);
+      linear-gradient(180deg, transparent 0%, oklch(0.12 0.025 194 / 0.18) 100%);
     background-attachment: fixed;
   }
 
@@ -432,7 +432,7 @@
     transform: translateY(-3px);
     border-color: oklch(0.72 0.205 45 / 0.32);
     background:
-      linear-gradient(180deg, oklch(0.2 0.022 260 / 0.6) 0%, oklch(0.13 0.022 260 / 0.6) 100%);
+      linear-gradient(180deg, oklch(0.2 0.022 194 / 0.6) 0%, oklch(0.13 0.022 194 / 0.6) 100%);
     box-shadow:
       inset 0 1px 0 oklch(1 0 0 / 0.06),
       0 36px 70px -28px oklch(0 0 0 / 0.7),
@@ -616,7 +616,7 @@
   }
   .io-spinner::after {
     inset: 5px;
-    border-bottom-color: var(--orange-hover, #FFB347);
+    border-bottom-color: var(--orange-hover, #FFA64D);
     border-left-color: oklch(0.85 0.18 60 / 0.3);
     animation: ioSpin 1400ms linear infinite reverse;
   }
@@ -841,8 +841,8 @@
 }
 
 @keyframes iosky-loader-glow {
-  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 122, 0, 0)); }
-  50%      { filter: drop-shadow(0 0 8px rgba(255, 122, 0, 0.45)); }
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(245, 138, 31, 0)); }
+  50%      { filter: drop-shadow(0 0 8px rgba(245, 138, 31, 0.45)); }
 }
 
 .iosky-loader-base {

@@ -44,10 +44,10 @@ function KpiCard({
         className="p-5 cursor-pointer group h-full transition-transform duration-200 hover:-translate-y-0.5"
       >
         <div className="flex items-center justify-between">
-          <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500/10 ring-1 ring-orange-500/25 text-orange-300">
+          <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/25 text-[#F58A1F]">
             <Icon className="h-4 w-4" />
           </div>
-          <ArrowRight className="h-4 w-4 text-white/30 group-hover:text-orange-300 transition-colors" />
+          <ArrowRight className="h-4 w-4 text-white/30 group-hover:text-[#F58A1F] transition-colors" />
         </div>
         <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
           {label}
@@ -141,7 +141,7 @@ export default function DeveloperOverview({
         {/* Agreements card */}
         <GlassCard className="p-6 lg:col-span-1">
           <div className="flex items-center gap-3">
-            <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500/10 ring-1 ring-orange-500/25 text-orange-300">
+            <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/25 text-[#F58A1F]">
               <ScrollText className="h-4 w-4" />
             </div>
             <h3 className="text-sm font-semibold tracking-tight text-white">
@@ -160,7 +160,7 @@ export default function DeveloperOverview({
             </span>
             <Link
               href="/developer-workspace/agreements"
-              className="text-xs font-medium text-orange-300 hover:text-orange-200"
+              className="text-xs font-medium text-[#F58A1F] hover:text-[#F58A1F]"
             >
               {agreementsComplete ? "Review" : "Sign now"} →
             </Link>
@@ -175,7 +175,7 @@ export default function DeveloperOverview({
             </h3>
             <Link
               href="/developer-workspace/messages"
-              className="text-xs font-medium text-orange-300 hover:text-orange-200"
+              className="text-xs font-medium text-[#F58A1F] hover:text-[#F58A1F]"
             >
               Open inbox →
             </Link>
@@ -211,7 +211,7 @@ export default function DeveloperOverview({
             </h3>
             <Link
               href="/developer-workspace/submissions"
-              className="text-xs font-medium text-orange-300 hover:text-orange-200"
+              className="text-xs font-medium text-[#F58A1F] hover:text-[#F58A1F]"
             >
               View all →
             </Link>

@@ -125,7 +125,7 @@ export default function DeveloperTasks() {
       className={[
         "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
         filter === key
-          ? "border-orange-400/40 bg-orange-500/10 text-orange-200"
+          ? "border-[#F58A1F]/40 bg-[#F58A1F]/10 text-[#F58A1F]"
           : "border-white/10 bg-white/[0.02] text-white/60 hover:border-white/20 hover:text-white/85",
       ].join(" ")}
     >

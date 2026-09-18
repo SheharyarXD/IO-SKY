@@ -82,7 +82,7 @@ export default function GrowthEcosystem() {
             <Link
               href="/book-strategy?source=growth"
               onClick={() => fire("growth_book_strategy")}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--orange)] text-[#0B1020] text-[13.5px] font-semibold hover:bg-[var(--orange-hover)] transition-colors active:scale-[0.98]"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--orange)] text-[#0D2D2E] text-[13.5px] font-semibold hover:bg-[var(--orange-hover)] transition-colors active:scale-[0.98]"
             >
               <CalendarDays className="size-4" />
               Book Discovery Call
@@ -274,7 +274,7 @@ export default function GrowthEcosystem() {
           <Link
             href="/book-strategy?source=growth_footer"
             onClick={() => fire("growth_footer_cta")}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--orange)] text-[#0B1020] text-[13.5px] font-semibold hover:bg-[var(--orange-hover)] transition-colors active:scale-[0.98]"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--orange)] text-[#0D2D2E] text-[13.5px] font-semibold hover:bg-[var(--orange-hover)] transition-colors active:scale-[0.98]"
           >
             <CalendarDays className="size-4" />
             Book Discovery Call

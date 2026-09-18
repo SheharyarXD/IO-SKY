@@ -170,7 +170,7 @@ export function CookieConsentBanner() {
                   type="button"
                   disabled={consent.isSaving}
                   onClick={() => consent.acceptAll()}
-                  className="rounded-lg bg-[#FF7A1A] hover:bg-[#FF8A33] active:scale-[0.97] text-[#0a0f1e] text-[12.5px] font-medium py-2.5 px-4 transition-all duration-150 ease-out disabled:opacity-60"
+                  className="rounded-lg bg-[#FF7A1A] hover:bg-[#FFA64D] active:scale-[0.97] text-[#0a0f1e] text-[12.5px] font-medium py-2.5 px-4 transition-all duration-150 ease-out disabled:opacity-60"
                 >
                   {L.acceptAll}
                 </button>
@@ -240,7 +240,7 @@ export function CookieConsentBanner() {
                   type="button"
                   disabled={consent.isSaving}
                   onClick={() => consent.saveCustom(draft)}
-                  className="rounded-lg bg-[#FF7A1A] hover:bg-[#FF8A33] active:scale-[0.97] text-[#0a0f1e] text-[12.5px] font-medium py-2.5 px-4 transition-all duration-150 ease-out disabled:opacity-60"
+                  className="rounded-lg bg-[#FF7A1A] hover:bg-[#FFA64D] active:scale-[0.97] text-[#0a0f1e] text-[12.5px] font-medium py-2.5 px-4 transition-all duration-150 ease-out disabled:opacity-60"
                 >
                   {L.save}
                 </button>

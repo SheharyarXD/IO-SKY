@@ -127,7 +127,7 @@ export default function DeveloperMessages() {
                       "max-w-[80%] rounded-xl px-4 py-3 border",
                       inbound
                         ? "border-white/10 bg-white/[0.04] text-white/85"
-                        : "border-orange-500/30 bg-orange-500/10 text-orange-50",
+                        : "border-[#F58A1F]/30 bg-[#F58A1F]/10 text-[#F58A1F]",
                     ].join(" ")}
                   >
                     {msg.subject && (
@@ -198,7 +198,7 @@ export default function DeveloperMessages() {
                   body: body.trim(),
                 })
               }
-              className="bg-orange-500 hover:bg-orange-400 text-black font-semibold shadow-[0_0_28px_-10px_rgba(255,134,46,0.7)]"
+              className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold shadow-[0_0_28px_-10px_rgba(255,134,46,0.7)]"
             >
               {sendMessage.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

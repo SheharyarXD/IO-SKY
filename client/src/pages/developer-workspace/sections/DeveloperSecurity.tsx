@@ -278,7 +278,7 @@ export default function DeveloperSecurity() {
 
           {/* ── Session ── */}
           <GlassCard className="p-5 flex flex-col gap-4">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10 ring-1 ring-orange-500/25 text-orange-300">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/25 text-[#F58A1F]">
               <Lock className="h-4 w-4" />
             </div>
             <div>

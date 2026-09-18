@@ -78,7 +78,7 @@ export default function ClientAIScan() {
         description="Every operational scan run against your environment, with a tracked score over time. New scans automatically appear here."
         action={
           <Link href="/ai-scan">
-            <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+            <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
               <ScanSearch className="h-4 w-4 mr-2" />
               Run new scan
             </Button>
@@ -152,7 +152,7 @@ export default function ClientAIScan() {
         emptyBody="Run your first AI Scan to baseline your operational health and unlock trended scoring."
         emptyAction={
           <Link href="/ai-scan">
-            <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+            <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
               Start AI Scan
             </Button>
           </Link>
@@ -176,8 +176,8 @@ export default function ClientAIScan() {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {scans.map(r => (
-                    <tr key={r.id} className="hover:bg-orange-500/[0.04] transition-colors">
-                      <td className="px-5 py-3 text-orange-200 font-mono text-xs">{r.publicRef}</td>
+                    <tr key={r.id} className="hover:bg-[#F58A1F]/[0.04] transition-colors">
+                      <td className="px-5 py-3 text-[#F58A1F] font-mono text-xs">{r.publicRef}</td>
                       <td className="px-5 py-3 text-white/80">
                         {new Date(r.createdAt as unknown as string).toLocaleString()}
                       </td>
@@ -206,7 +206,7 @@ export default function ClientAIScan() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-white/10 bg-white/[0.04] hover:bg-orange-500/10 hover:border-orange-500/30 text-white"
+                          className="border-white/10 bg-white/[0.04] hover:bg-[#F58A1F]/10 hover:border-[#F58A1F]/30 text-white"
                           disabled={!r.pdfKey || openingId === r.id}
                           onClick={() => handleView(r.id, r.publicRef)}
                         >

@@ -15,8 +15,8 @@ interface Props {
 export default function ClientPortalLockedCard({ role, email }: Props) {
   return (
     <div className="rounded-2xl border border-white/8 bg-gradient-to-br from-[#0c1424]/80 to-[#0a1020]/80 p-10 md:p-14 max-w-3xl mx-auto">
-      <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10 ring-1 ring-orange-500/30">
-        <ShieldAlert className="h-5 w-5 text-orange-300" />
+      <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/30">
+        <ShieldAlert className="h-5 w-5 text-[#F58A1F]" />
       </div>
       <h2 className="mt-6 text-2xl font-semibold tracking-tight text-white">
         Your client workspace isn’t provisioned yet
@@ -30,12 +30,12 @@ export default function ClientPortalLockedCard({ role, email }: Props) {
 
       <div className="mt-6 rounded-xl border border-white/8 bg-white/[0.02] px-5 py-4">
         <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">Detected role</p>
-        <p className="mt-1 font-mono text-sm text-orange-200">{role}</p>
+        <p className="mt-1 font-mono text-sm text-[#F58A1F]">{role}</p>
       </div>
 
       <div className="mt-8 flex flex-col sm:flex-row gap-3">
         <Link href="/contact">
-          <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+          <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
             <Mail className="h-4 w-4 mr-2" />
             Contact onboarding desk
           </Button>
@@ -43,7 +43,7 @@ export default function ClientPortalLockedCard({ role, email }: Props) {
         <Link href="/book-strategy">
           <Button
             variant="outline"
-            className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+            className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
           >
             <Building2 className="h-4 w-4 mr-2" />
             Book Discovery Call

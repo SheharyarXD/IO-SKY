@@ -167,7 +167,7 @@ export default function ProposalRequest() {
                 type="button"
                 onClick={submit}
                 disabled={!valid || m.isPending}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--orange)] text-[#0B1020] text-[13.5px] font-semibold disabled:opacity-40 hover:bg-[var(--orange-hover)] transition-colors active:scale-[0.98]"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--orange)] text-[#0D2D2E] text-[13.5px] font-semibold disabled:opacity-40 hover:bg-[var(--orange-hover)] transition-colors active:scale-[0.98]"
               >
                 {m.isPending ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -189,7 +189,7 @@ export default function ProposalRequest() {
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link
                 href="/book-strategy?source=proposal_received"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--orange)] text-[#0B1020] text-[13px] font-semibold hover:bg-[var(--orange-hover)] transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--orange)] text-[#0D2D2E] text-[13px] font-semibold hover:bg-[var(--orange-hover)] transition-colors"
               >
                 Book Discovery Call
               </Link>

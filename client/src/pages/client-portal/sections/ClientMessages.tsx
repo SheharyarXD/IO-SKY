@@ -144,7 +144,7 @@ export default function ClientMessages() {
                   <GlassCard
                     key={m.id}
                     className={`p-5 ${
-                      unread ? "ring-1 ring-orange-400/40" : ""
+                      unread ? "ring-1 ring-[#F58A1F]/40" : ""
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -152,7 +152,7 @@ export default function ClientMessages() {
                         className={`h-9 w-9 rounded-full text-[11px] font-semibold flex items-center justify-center shrink-0 ring-1 ${
                           isClient
                             ? "bg-white/[0.04] ring-white/15 text-white/70"
-                            : "bg-orange-500/15 ring-orange-500/30 text-orange-200"
+                            : "bg-[#F58A1F]/15 ring-[#F58A1F]/30 text-[#F58A1F]"
                         }`}
                       >
                         {(m.senderName ?? (isClient ? "Y" : "IO"))
@@ -173,7 +173,7 @@ export default function ClientMessages() {
                           </span>
                         </div>
                         {m.subject && (
-                          <p className="text-[12px] text-orange-300/80 font-medium mt-0.5">
+                          <p className="text-[12px] text-[#F58A1F]/80 font-medium mt-0.5">
                             {m.subject}
                           </p>
                         )}
@@ -231,7 +231,7 @@ export default function ClientMessages() {
             // makes the existing guard visible instead of punitive, and matches
             // the Login form, which likewise disables submit until valid.
             disabled={send.isPending || body.trim().length < 2}
-            className="mt-3 w-full bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+            className="mt-3 w-full bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
           >
             <Send className="h-4 w-4 mr-2" />
             {send.isPending ? "Sending…" : "Send message"}

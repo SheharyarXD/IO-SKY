@@ -1,6 +1,6 @@
 /*
  * IO SKY — Shared layout for every secondary route.
- * Enforces the homepage design language: navy #0B1020 background, controlled
+ * Enforces the homepage design language: navy #0D2D2E background, controlled
  * orange eyebrow, Manrope display H1, ivory body, soft atmospheric glow.
  */
 import { useEffect, type ReactNode } from "react";
@@ -27,16 +27,16 @@ export function PageShell({ eyebrowIndex, eyebrowLabel, title, intro, aside, chi
   }, []);
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-[#0B1020] text-[#E6EAF0]">
+    <div className="relative min-h-screen flex flex-col bg-[#0D2D2E] text-[#E6EAF0]">
       {/* Atmospheric backdrop — same recipe as Home so every page sits in the same air */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-0"
         style={{
           backgroundImage: `
-            radial-gradient(58% 36% at 16% 14%, rgba(255, 122, 0,0.10), transparent 70%),
+            radial-gradient(58% 36% at 16% 14%, rgba(245,138,31,0.10), transparent 70%),
             radial-gradient(46% 32% at 92% 0%, rgba(80,140,255,0.08), transparent 70%),
-            radial-gradient(80% 50% at 50% 100%, rgba(255, 122, 0,0.06), transparent 70%)
+            radial-gradient(80% 50% at 50% 100%, rgba(245,138,31,0.06), transparent 70%)
           `,
         }}
       />

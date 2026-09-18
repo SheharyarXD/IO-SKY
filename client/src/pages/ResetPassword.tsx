@@ -86,7 +86,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0B1020] text-[#E6EAF0] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#0D2D2E] text-[#E6EAF0] px-4">
       <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-8">
         <h1 className="text-xl font-semibold mb-2">Reset your password</h1>
 
@@ -97,7 +97,7 @@ export default function ResetPassword() {
         {status === "invalid" && (
           <p className="text-sm text-white/60">
             This reset link is invalid or has expired. Request a new one from the{" "}
-            <button className="text-[#FF7A00] underline" onClick={() => setLocation("/login")}>
+            <button className="text-[#F58A1F] underline" onClick={() => setLocation("/login")}>
               sign-in page
             </button>
             .

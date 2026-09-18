@@ -100,7 +100,7 @@ export default function ClientDashboard() {
           ) : latestReport ? (
             <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-5">
               <div className="rounded-xl border border-white/8 bg-gradient-to-br from-[#0e162a] to-[#0a1020] p-4 aspect-[3/4] flex flex-col">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-orange-300/80">IO SKY</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-[#F58A1F]/80">IO SKY</div>
                 <div className="mt-auto">
                   <p className="text-[11px] text-white/55">Operational Intelligence</p>
                   <p className="text-sm font-semibold text-white mt-0.5">Report</p>
@@ -122,14 +122,14 @@ export default function ClientDashboard() {
                 </div>
                 <div className="mt-auto pt-5 flex flex-wrap gap-3">
                   <Link href={`/client-portal/reports`}>
-                    <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+                    <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
                       View Report
                       <ArrowRight className="h-4 w-4 ml-1.5" />
                     </Button>
                   </Link>
                   <Button
                     variant="outline"
-                    className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+                    className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
                   >
                     <Download className="h-4 w-4 mr-1.5" />
                     Download PDF
@@ -144,7 +144,7 @@ export default function ClientDashboard() {
               body="Get a baseline reading of your operational health. We’ll generate a report inside your vault automatically."
               action={
                 <Link href="/ai-scan">
-                  <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+                  <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
                     Start AI Scan
                   </Button>
                 </Link>
@@ -159,7 +159,7 @@ export default function ClientDashboard() {
               <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">AI Recommendations</p>
               <h3 className="text-lg font-semibold text-white mt-1">Highest impact</h3>
             </div>
-            <Link href="/client-portal/recommendations" className="text-xs text-orange-300/90 hover:text-orange-200">
+            <Link href="/client-portal/recommendations" className="text-xs text-[#F58A1F]/90 hover:text-[#F58A1F]">
               View all →
             </Link>
           </div>
@@ -175,9 +175,9 @@ export default function ClientDashboard() {
               {recommendations.map(r => (
                 <li
                   key={r.id}
-                  className="flex items-start gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-3.5 py-3 hover:border-orange-500/30 hover:bg-orange-500/[0.04] transition-all"
+                  className="flex items-start gap-3 rounded-xl border border-white/6 bg-white/[0.02] px-3.5 py-3 hover:border-[#F58A1F]/30 hover:bg-[#F58A1F]/[0.04] transition-all"
                 >
-                  <div className="h-8 w-8 rounded-lg bg-orange-500/10 ring-1 ring-orange-500/30 flex items-center justify-center shrink-0 text-orange-300">
+                  <div className="h-8 w-8 rounded-lg bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/30 flex items-center justify-center shrink-0 text-[#F58A1F]">
                     <Sparkles className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -198,19 +198,19 @@ export default function ClientDashboard() {
           <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">Upcoming Discovery Call</p>
           {nextCall.booking ? (
             <>
-              <p className="text-orange-300 mt-1 text-sm font-semibold">{nextCall.booking.serviceLabel}</p>
+              <p className="text-[#F58A1F] mt-1 text-sm font-semibold">{nextCall.booking.serviceLabel}</p>
               <p className="mt-2 text-lg font-semibold text-white">
                 {nextCall.formatted}
               </p>
               <p className="text-xs text-white/55 mt-0.5">{nextCall.booking.timezone}</p>
               <Countdown ms={nextCall.booking.slotStartMs} />
               <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+                <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
                   Join Call
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+                  className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
                 >
                   Reschedule
                 </Button>
@@ -220,7 +220,7 @@ export default function ClientDashboard() {
             <div className="mt-4 text-sm text-white/55">
               <p>No call scheduled yet.</p>
               <Link href="/book-strategy">
-                <Button className="mt-4 bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+                <Button className="mt-4 bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
                   Book Discovery Call
                 </Button>
               </Link>
@@ -231,7 +231,7 @@ export default function ClientDashboard() {
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">Recent Activity</p>
-            <Link href="/client-portal/messages" className="text-xs text-orange-300/90 hover:text-orange-200">
+            <Link href="/client-portal/messages" className="text-xs text-[#F58A1F]/90 hover:text-[#F58A1F]">
               View all →
             </Link>
           </div>
@@ -260,7 +260,7 @@ export default function ClientDashboard() {
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">Messages</p>
-            <Link href="/client-portal/messages" className="text-xs text-orange-300/90 hover:text-orange-200">
+            <Link href="/client-portal/messages" className="text-xs text-[#F58A1F]/90 hover:text-[#F58A1F]">
               View all →
             </Link>
           </div>
@@ -274,7 +274,7 @@ export default function ClientDashboard() {
             <ul className="space-y-3">
               {messages.map(m => (
                 <li key={m.id} className="flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-full bg-orange-500/15 ring-1 ring-orange-500/30 text-orange-200 text-[11px] font-semibold flex items-center justify-center shrink-0">
+                  <div className="h-8 w-8 rounded-full bg-[#F58A1F]/15 ring-1 ring-[#F58A1F]/30 text-[#F58A1F] text-[11px] font-semibold flex items-center justify-center shrink-0">
                     {(m.senderName ?? "IO").slice(0, 2).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -304,7 +304,7 @@ export default function ClientDashboard() {
               <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">Project Progress</p>
               <h3 className="text-lg font-semibold text-white mt-1">Active engagements</h3>
             </div>
-            <Link href="/client-portal/projects" className="text-xs text-orange-300/90 hover:text-orange-200">
+            <Link href="/client-portal/projects" className="text-xs text-[#F58A1F]/90 hover:text-[#F58A1F]">
               Full view →
             </Link>
           </div>
@@ -312,7 +312,7 @@ export default function ClientDashboard() {
             {projects.slice(0, 4).map(p => (
               <div
                 key={p.id}
-                className="rounded-xl border border-white/6 bg-white/[0.02] p-4 hover:border-orange-500/30 transition-colors"
+                className="rounded-xl border border-white/6 bg-white/[0.02] p-4 hover:border-[#F58A1F]/30 transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-white truncate">{p.name}</p>
@@ -324,7 +324,7 @@ export default function ClientDashboard() {
                 <p className="text-[11px] text-white/50 mt-0.5">{p.phase}</p>
                 <Progress
                   value={p.progress}
-                  className="mt-3 h-1.5 bg-white/8 [&>div]:bg-orange-400"
+                  className="mt-3 h-1.5 bg-white/8 [&>div]:bg-[#F58A1F]"
                 />
                 <div className="mt-1 flex items-center justify-between text-[11px] text-white/45">
                   <span>{p.progress}% complete</span>
@@ -346,7 +346,7 @@ export default function ClientDashboard() {
               <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">Recent Invoices</p>
               <h3 className="text-lg font-semibold text-white mt-1">Billing summary</h3>
             </div>
-            <Link href="/client-portal/billing" className="text-xs text-orange-300/90 hover:text-orange-200">
+            <Link href="/client-portal/billing" className="text-xs text-[#F58A1F]/90 hover:text-[#F58A1F]">
               Open billing →
             </Link>
           </div>
@@ -388,7 +388,7 @@ export default function ClientDashboard() {
         <GlassCard className="p-6">
           <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">Your Data is Secure</p>
           <div className="mt-3 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-orange-500/10 ring-1 ring-orange-500/25 flex items-center justify-center text-orange-300">
+            <div className="h-10 w-10 rounded-lg bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/25 flex items-center justify-center text-[#F58A1F]">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <p className="text-sm text-white/65 leading-relaxed">
@@ -421,7 +421,7 @@ function KPI({
   accent: "orange" | "amber" | "sky" | "violet";
 }) {
   const accentMap: Record<string, string> = {
-    orange: "from-orange-500/15 to-orange-500/[0.02] text-orange-200 ring-orange-500/25",
+    orange: "from-[#F58A1F]/15 to-[#F58A1F]/[0.02] text-[#F58A1F] ring-[#F58A1F]/25",
     amber: "from-amber-500/15 to-amber-500/[0.02] text-amber-200 ring-amber-500/25",
     sky: "from-sky-500/15 to-sky-500/[0.02] text-sky-200 ring-sky-500/25",
     violet: "from-violet-500/15 to-violet-500/[0.02] text-violet-200 ring-violet-500/25",
@@ -451,7 +451,7 @@ function ImpactBadge({ impact }: { impact: "low" | "medium" | "high" }) {
   const map = {
     low: "bg-white/[0.05] text-white/60 border-white/15",
     medium: "bg-amber-500/10 text-amber-200 border-amber-500/30",
-    high: "bg-orange-500/15 text-orange-200 border-orange-500/40",
+    high: "bg-[#F58A1F]/15 text-[#F58A1F] border-[#F58A1F]/40",
   } as const;
   return (
     <span
@@ -484,7 +484,7 @@ function ComplianceItem({ label }: { label: string }) {
 
 function ActivityIcon({ kind }: { kind: string }) {
   const map: Record<string, { icon: React.ElementType; color: string }> = {
-    report: { icon: FileText, color: "text-orange-300 bg-orange-500/10 ring-orange-500/30" },
+    report: { icon: FileText, color: "text-[#F58A1F] bg-[#F58A1F]/10 ring-[#F58A1F]/30" },
     booking: { icon: Clock, color: "text-violet-300 bg-violet-500/10 ring-violet-500/30" },
     payment: { icon: Receipt, color: "text-emerald-300 bg-emerald-500/10 ring-emerald-500/30" },
     document: { icon: FileText, color: "text-sky-300 bg-sky-500/10 ring-sky-500/30" },
@@ -529,7 +529,7 @@ function Countdown({ ms }: { ms: number }) {
         { label: "Sec", value: seconds },
       ].map(({ label, value }) => (
         <div key={label} className="rounded-lg border border-white/10 bg-white/[0.02] px-2 py-2 text-center">
-          <p className="text-lg font-mono text-orange-200">{String(value).padStart(2, "0")}</p>
+          <p className="text-lg font-mono text-[#F58A1F]">{String(value).padStart(2, "0")}</p>
           <p className="text-[9px] uppercase tracking-wider text-white/45 mt-0.5">{label}</p>
         </div>
       ))}

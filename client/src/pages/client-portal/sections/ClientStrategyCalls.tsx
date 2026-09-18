@@ -126,7 +126,7 @@ export default function ClientStrategyCalls() {
         description="Past and upcoming discovery calls with your IO SKY team. Bookings sync automatically from /book-strategy."
         action={
           <Link href="/book-strategy">
-            <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+            <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
               <CalendarClock className="h-4 w-4 mr-2" />
               Book new call
             </Button>
@@ -145,7 +145,7 @@ export default function ClientStrategyCalls() {
         emptyBody="Once you book your first call it will appear here, complete with rescheduling and cancellation controls."
         emptyAction={
           <Link href="/book-strategy">
-            <Button className="bg-orange-500 hover:bg-orange-400 text-black font-semibold">
+            <Button className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold">
               Book Discovery Call
             </Button>
           </Link>
@@ -286,7 +286,7 @@ function BookingRow({
             {new Date(getMs(c.slotStart)).toLocaleString()} · {c.durationMin} min ·{" "}
             {c.timezone}
           </p>
-          <p className="text-[11px] text-orange-200/80 font-mono mt-1">
+          <p className="text-[11px] text-[#F58A1F]/80 font-mono mt-1">
             {c.publicRef}
           </p>
         </div>
@@ -295,7 +295,7 @@ function BookingRow({
             {canJoin ? (
               <Button
                 size="sm"
-                className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+                className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
                 onClick={() => {
                   if (c.meetingUrl) {
                     window.open(c.meetingUrl, "_blank", "noopener,noreferrer");
@@ -329,7 +329,7 @@ function BookingRow({
               <Button
                 size="sm"
                 variant="outline"
-                className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+                className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
               >
                 Reschedule
               </Button>
@@ -351,7 +351,7 @@ function BookingRow({
             href={c.meetingUrl}
             target="_blank"
             rel="noreferrer"
-            className="text-xs text-orange-300/90 hover:text-orange-200 inline-flex items-center gap-1"
+            className="text-xs text-[#F58A1F]/90 hover:text-[#F58A1F] inline-flex items-center gap-1"
           >
             Replay <ExternalLink className="h-3 w-3" />
           </a>

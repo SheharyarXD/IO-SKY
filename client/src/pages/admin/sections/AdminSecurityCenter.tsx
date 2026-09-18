@@ -318,7 +318,7 @@ export default function AdminSecurityCenter() {
             </SideCard>
             <SideCard title="Why this matters">
               <div className="flex items-start gap-2 text-[12px] text-white/65 leading-relaxed">
-                <Lock className="h-3.5 w-3.5 mt-0.5 text-orange-300 shrink-0" />
+                <Lock className="h-3.5 w-3.5 mt-0.5 text-[#F58A1F] shrink-0" />
                 <span>
                   Administrator accounts hold the highest privileges in the
                   platform. A second factor blocks account takeover even if a

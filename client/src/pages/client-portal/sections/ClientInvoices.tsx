@@ -130,7 +130,7 @@ export default function ClientInvoices() {
           <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">
             Outstanding
           </p>
-          <p className="mt-2 text-2xl font-semibold text-orange-200">
+          <p className="mt-2 text-2xl font-semibold text-[#F58A1F]">
             {fmtMoney(outstanding, currency)}
           </p>
         </GlassCard>
@@ -178,9 +178,9 @@ export default function ClientInvoices() {
                   return (
                     <tr
                       key={inv.id}
-                      className="hover:bg-orange-500/[0.04] transition-colors"
+                      className="hover:bg-[#F58A1F]/[0.04] transition-colors"
                     >
-                      <td className="px-5 py-3 text-orange-200 font-mono text-xs">
+                      <td className="px-5 py-3 text-[#F58A1F] font-mono text-xs">
                         {inv.number}
                       </td>
                       <td className="px-5 py-3 text-white/80">
@@ -215,7 +215,7 @@ export default function ClientInvoices() {
                               onClick={() =>
                                 downloadPdf.mutate({ id: inv.id })
                               }
-                              className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-orange-500/10 hover:text-orange-200 hover:border-orange-500/40"
+                              className="border-white/15 bg-white/[0.02] text-white/80 hover:bg-[#F58A1F]/10 hover:text-[#F58A1F] hover:border-[#F58A1F]/40"
                             >
                               {isPdfPending(inv.id) ? (
                                 "Opening…"
@@ -236,7 +236,7 @@ export default function ClientInvoices() {
                               onClick={() =>
                                 startCheckout.mutate({ id: inv.id })
                               }
-                              className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+                              className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
                             >
                               {isCheckoutPending(inv.id) ? (
                                 "Routing…"

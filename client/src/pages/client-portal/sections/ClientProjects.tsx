@@ -45,7 +45,7 @@ export default function ClientProjects() {
 
               <Progress
                 value={p.progress}
-                className="mt-4 h-1.5 bg-white/8 [&>div]:bg-orange-400"
+                className="mt-4 h-1.5 bg-white/8 [&>div]:bg-[#F58A1F]"
               />
               <div className="mt-1 flex items-center justify-between text-[11px] text-white/45">
                 <span>{p.progress}% complete</span>

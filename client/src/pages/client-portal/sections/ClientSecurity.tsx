@@ -110,7 +110,7 @@ export default function ClientSecurity() {
             Authentication
           </p>
           <div className="mt-3 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-orange-500/10 ring-1 ring-orange-500/30 flex items-center justify-center text-orange-300">
+            <div className="h-10 w-10 rounded-lg bg-[#F58A1F]/10 ring-1 ring-[#F58A1F]/30 flex items-center justify-center text-[#F58A1F]">
               <KeyRound className="h-4 w-4" />
             </div>
             <div>
@@ -158,7 +158,7 @@ export default function ClientSecurity() {
               <Button
                 size="sm"
                 variant="outline"
-                className="border-white/15 text-white/80 hover:text-white hover:border-orange-400/40"
+                className="border-white/15 text-white/80 hover:text-white hover:border-[#F58A1F]/40"
                 disabled={setMfa.isPending}
                 onClick={() => setMfa.mutate({ method: "none" })}
               >
@@ -172,7 +172,7 @@ export default function ClientSecurity() {
             ) : (
               <Button
                 size="sm"
-                className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+                className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
                 disabled={setMfa.isPending}
                 onClick={() => setMfa.mutate({ method: "email" })}
               >
@@ -222,7 +222,7 @@ export default function ClientSecurity() {
             <Button
               variant="outline"
               size="sm"
-              className="border-white/15 text-white/80 hover:text-white hover:border-orange-400/40"
+              className="border-white/15 text-white/80 hover:text-white hover:border-[#F58A1F]/40"
               onClick={() => setConfirmRevoke({ everywhere: false })}
               disabled={revoke.isPending}
             >
@@ -231,7 +231,7 @@ export default function ClientSecurity() {
             </Button>
             <Button
               size="sm"
-              className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+              className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
               onClick={() => setConfirmRevoke({ everywhere: true })}
               disabled={revoke.isPending}
             >
@@ -287,7 +287,7 @@ export default function ClientSecurity() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {(data?.recentLogins ?? []).map(ev => (
-                <tr key={ev.id} className="hover:bg-orange-500/[0.04]">
+                <tr key={ev.id} className="hover:bg-[#F58A1F]/[0.04]">
                   <td className="px-5 py-3 text-white/80">
                     {new Date(ev.createdAt as unknown as string).toLocaleString()}
                   </td>
@@ -353,7 +353,7 @@ export default function ClientSecurity() {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-orange-500 hover:bg-orange-400 text-black font-semibold"
+              className="bg-[#F58A1F] hover:bg-[#F58A1F] text-black font-semibold"
               onClick={() => {
                 const everywhere = !!confirmRevoke?.everywhere;
                 setConfirmRevoke(null);
