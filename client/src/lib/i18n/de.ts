@@ -25,13 +25,13 @@ export const de: Record<string, string> = {
   "nav.cta": "Discovery Call buchen",
   "nav.langLabel": "Sprache",
 
-  "hero.title.part1": "Operatives Wachstum wird",
-  "hero.title.accent": "unausweichlich",
-  "hero.title.part2": "sobald Intelligenz in die Ausführung eingebettet ist.",
+  "hero.title.part1": "Technologie sollte nicht bestimmen, wie Ihr",
+  "hero.title.accent": "Unternehmen arbeitet.",
+  "hero.title.part2": "Sie sollte danach gestaltet werden.",
   "hero.body":
-    "IO SKY entwickelt Systeme, die Prozesse automatisieren, Entscheidungen beschleunigen und operatives Wachstum skalierbar machen.",
+    "IO SKY entwirft und baut die operative Infrastruktur wachsender Unternehmen — ausgerichtet daran, wie die Organisation tatsächlich funktionieren muss.",
   "hero.cta.book": "Discovery Call buchen",
-  "hero.cta.scan": "Kostenlosen AI-Scan starten",
+  "hero.cta.scan": "AI Scan starten",
   "hero.trust.security": "Enterprise-Sicherheit",
   "hero.trust.security.note": "Security-First-Architektur",
   "hero.trust.ai": "AI-gesteuert",

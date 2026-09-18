@@ -25,13 +25,13 @@ export const ar: Record<string, string> = {
   "nav.cta": "احجز Discovery Call",
   "nav.langLabel": "اللغة",
 
-  "hero.title.part1": "يصبح النمو التشغيلي",
-  "hero.title.accent": "حتميًا",
-  "hero.title.part2": "حين يُضمَّن الذكاء في صميم التنفيذ.",
+  "hero.title.part1": "لا ينبغي للتقنية أن تحدد كيف",
+  "hero.title.accent": "يعمل نشاطك التجاري.",
+  "hero.title.part2": "بل يجب أن تُصمَّم بناءً عليه.",
   "hero.body":
-    "تُصمّم IO SKY وتُشغّل بنية تحتية ذكية تُؤتمت التنفيذ، وتُمركز العمليات، وتُوسّع نطاق أعمالك بوضوح وتحكّم.",
+    "تصمم IO SKY وتبني البنية التحتية التشغيلية للشركات النامية — بما يتوافق مع الطريقة الفعلية التي تحتاج بها المؤسسة إلى العمل.",
   "hero.cta.book": "احجز Discovery Call",
-  "hero.cta.scan": "ابدأ فحص الذكاء الاصطناعي المجاني",
+  "hero.cta.scan": "ابدأ فحص الذكاء الاصطناعي",
   "hero.trust.security": "أمان للمؤسسات",
   "hero.trust.security.note": "بنية تركز على الأمان",
   "hero.trust.ai": "مدعوم بالذكاء الاصطناعي",

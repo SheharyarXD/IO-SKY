@@ -27,11 +27,11 @@ export const nl: Record<string, string> = {
   "nav.langLabel": "Taal",
 
   // Hero
-  "hero.title.part1": "Intelligente infrastructuur die groei",
-  "hero.title.accent": "voorspelbaar",
-  "hero.title.part2": "maakt. Zonder afhankelijk te zijn van meer mensen.",
+  "hero.title.part1": "Technologie zou niet moeten bepalen hoe uw",
+  "hero.title.accent": "bedrijf werkt.",
+  "hero.title.part2": "Het zou daaromheen ontworpen moeten worden.",
   "hero.body":
-    "IO SKY bouwt systemen die processen automatiseren, beslissingen versnellen en operationele groei schaalbaar maken.",
+    "IO SKY ontwerpt en bouwt de operationele infrastructuur achter groeiende bedrijven — vormgegeven rond hoe de organisatie daadwerkelijk moet functioneren.",
   "hero.cta.book": "Plan discovery call",
   "hero.cta.scan": "Start AI-Scan",
   "hero.trust.security": "Enterprise-beveiliging",

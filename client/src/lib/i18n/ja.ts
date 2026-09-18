@@ -25,13 +25,13 @@ export const ja: Record<string, string> = {
   "nav.cta": "Discovery Callを予約",
   "nav.langLabel": "言語",
 
-  "hero.title.part1": "実行にインテリジェンスを組み込むと、",
-  "hero.title.accent": "必然になる",
-  "hero.title.part2": "それが事業のオペレーショナルな成長です。",
+  "hero.title.part1": "テクノロジーが貴社の",
+  "hero.title.accent": "働き方を決めるべきではありません。",
+  "hero.title.part2": "テクノロジーは、それに合わせて設計されるべきです。",
   "hero.body":
-    "IO SKY は、実行を自動化し、業務を一元化し、明確さと制御性をもって事業をスケールさせるインテリジェントなインフラを構築・運用します。",
+    "IO SKYは、成長企業を支える業務基盤を設計・構築します——組織が実際にどのように機能する必要があるかに基づいて。",
   "hero.cta.book": "Discovery Callを予約",
-  "hero.cta.scan": "無料のAIスキャンを開始",
+  "hero.cta.scan": "AIスキャンを開始",
   "hero.trust.security": "エンタープライズ・セキュリティ",
   "hero.trust.security.note": "セキュリティ・ファースト設計",
   "hero.trust.ai": "AI 駆動",
