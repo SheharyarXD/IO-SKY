@@ -418,29 +418,37 @@ work, supplied directly rather than through a priced change order.
 - `server/designLanguage.test.ts` updated to pin the new authoritative hex values (superseding the
   earlier pixel-sampled `#FF7A00` "ground truth" guess) plus the new background token.
 
-### Per-page status against the new specs
+### Per-page status against the new specs (updated 18 September)
 
 | Page | Status | Notes |
 |---|---|---|
-| Homepage | ✅ | Section structure and body copy already matched the spec exactly from earlier work. Hero rewritten: removed a dashboard mockup/trust-strip/globe graphic not present in the spec, fixed CTA order (Book a Discovery Call primary/orange, Start AI Scan secondary/outline — was reversed), wired the previously-unused `hero.title.accent` key for the "business works." emphasis. |
-| Foundation | ✅ | Content already matched the spec word-for-word across all 9 sections. Fixed leftover `#FF7A00`/navy-hued color literals that bypassed the new tokens. |
-| Intelligence | ✅ | Content already matched the spec word-for-word across all 9 sections (verified against the `intelligence2.*` keys). Fixed leftover legacy-orange/navy literals. Note: `en.ts` still carries a large block of unrelated, unused `intel.*` keys from an earlier page version — dead weight, not a defect, worth deleting in a cleanup pass. |
-| Solutions | ✅ | Content matches the spec (hero, three ecosystems, delivery, final CTA all confirmed against `sol2.*` keys). No legacy color literals found. |
-| Contact | ✅ | Fields, the exact 5-option subject dropdown, anti-spam guards, glass container and success/failure copy already matched. Added the one missing requirement: a configurable fallback support email shown only after repeated (2nd+) send failures, via `VITE_CONTACT_FALLBACK_EMAIL` (default `support@iosky.nl`) — not covered by a dedicated test yet. |
-| About | ⏭ Not started | Current page is pre-redesign marketing content (fake partner logos, stat tiles, team photos) — none of it exists in the new 7-section spec. Needs a full rewrite. Paused pending the source PDF being added to the repo so its body copy can be read verbatim rather than transcribed from chat, per the specs' own "do not rewrite, shorten or paraphrase locked copy" rule. |
-| Discovery Call | 🔶 Partial | Design tokens fixed (every literal `#FF7A00`/`rgba(255,122,0,...)` on this page replaced with the approved `#F58A1F`). The spec's functional requirements — E.164 phone validation with an editable country/calling-code selector, alias-aware industry search, the exact Dutch/English AI scheduling assistant scripts, PHONE/VIDEO call-type handling — are substantial new features, not yet built. |
-| AI Scan | ⏭ Not started | Same blocker as About: needs the source PDF added to the repo before rewriting. Also requires a genuinely new purchase/checkout flow (backend-verified Scan payment gating public account creation) — a feature, not a restyle. |
+| Homepage | ✅ | Content matched the spec from earlier work; hero rewritten (dropped a dashboard mockup/trust-strip/globe not in the spec, fixed CTA order, wired the "business works." accent). All 9 non-English locales were still showing the *pre-redesign* hero text under the same keys (`i18n.completeness.test.ts` only checks key existence, not content currency) — retranslated to the new copy in all 9, and fixed a factual regression this uncovered: 8 of 9 locales' Start-Scan CTA still said "free", no longer true now that AI Scan is priced. |
+| Foundation | ✅ | Content matched the spec word-for-word across all 9 sections already. Color literals fixed. |
+| Intelligence | ✅ | Content matched the spec word-for-word across all 9 sections already. Color literals fixed. |
+| Solutions | ✅ | Content matches the spec. No legacy color literals found. |
+| Contact | ✅ | Fields/dropdown/anti-spam/copy already matched. Added the configurable fallback-email requirement (`VITE_CONTACT_FALLBACK_EMAIL`, shown only after repeated send failures). |
+| Enterprise | ✅ | Not one of the original nine documents, but reported by the client as still visibly unthemed — literal `#FF7A00` and multiple navy-hued (`#03060d` and others) backgrounds fixed. |
+| About | ⛔ Blocked | Current page is still pre-redesign marketing content (fake partner logos, stat tiles, team photos) — none of it exists in the new 7-section spec. Colors were brought onto the shared tokens, but the content rewrite itself is genuinely blocked: the source PDF has never been added to the repo (only pasted into chat), and its body paragraphs are long enough that verbatim-recall risk is real against the specs' own "do not rewrite, shorten or paraphrase locked copy" rule. Asked the user twice to drop the file in; still outstanding. |
+| Discovery Call | 🔶 Partial | Colors fixed (this page needed a second pass — it used several distinct legacy hex values, e.g. `#040508`/`#0B0E16`/`#0E121B`, that the first color sweep's pattern list didn't cover, which is why the client still saw it unthemed after the first round; a follow-up sweep found and fixed 19 more legacy hex variants across ~20 files site-wide, not just this page). Built for real: E.164 phone validation with country selector (`libphonenumber-js`), alias-aware industry search (38-category canonical list + required Dutch/English aliases), admin-only PHONE/VIDEO call-type toggle with a branded "Join Meeting" email button. **Not built:** the AI scheduling assistant (qualification calls, Dutch/English scripts) — superseded by the dedicated Scheduling Agent specification now in `MILESTONE4_CHECKLIST.md`, so building a lightweight version here would duplicate that work rather than complete it. |
+| AI Scan | ✅ | Full rewrite to the approved landing page structure (hero → why a Scan → right question first → expert review → what you receive + preview → decision value → three Signature Glass Scan cards with exact pricing/questions/add-ons → what happens next → help me choose), in all 10 locales. Old Free/Growth/Elite lead-gen funnel (setup+monthly pricing, dashboard mockup, "unlock results" gate) removed. **Backend reality, not overclaimed:** no Stripe integration exists in this codebase and none is available here, so the spec's payment-gated account creation is not built — "Start X Scan" continues into the existing, tested lead-capture flow instead of a payment wall that can't be built yet. |
 
-### Other locales left behind
+### A genuine defect found while building the above (not a restyle item)
 
-English was the only locale updated when the homepage was migrated to its new copy. The other 9
-(`zh`, `ar`, `es`, `ja`, `de`, `nl`, `it`, `pt`, `fr`) still render the pre-redesign hero ("Operational
-growth becomes inevitable when intelligence is embedded into execution..."). Re-translating them to the
-new copy is a separate, sizable follow-up — flagged here rather than left silently inconsistent.
+`scheduleBookingReminders` has inserted confirmation/24h/1h reminder rows at booking time all along, but
+nothing ever consumed `listDueBookingReminders` to send them — `bookingAdmin.ts`'s own header comment
+describes a "reminders.tick" endpoint and a "Heartbeat" process, and neither existed anywhere in the
+codebase. Every 24h/1h Discovery Call reminder has been sitting unsent in the database. Built the actual
+dispatcher (`server/_core/bookingReminders.ts`), wired to a 5-minute in-process interval (no cron
+infrastructure exists in this project) plus a manual `bookingAdmin.remindersTick` trigger. 7 new tests.
+
+### Other locales
+
+All 10 locales are now current for Homepage, Foundation, Intelligence, Solutions, Contact, and AI Scan.
+Discovery Call and About still carry whatever locale content existed before this round, unchanged.
 
 ### Verification for this round
 
-`pnpm run check` clean. `pnpm run build` clean. Full suite green except one documented pre-existing
-test-isolation flake in `viewAs.test.ts` (fails only when run after `sessionRevocation.test.ts` in the
-same worker, per the flake already recorded in this document's Summary section; passes in isolation) —
-unrelated to any change in this round.
+`pnpm run check` clean. `pnpm run build` clean. Full suite green (**764 passed**, up from 739 before this
+round — +25 new tests: industry search, booking-reminder dispatch), aside from one documented
+pre-existing test-isolation flake in `viewAs.test.ts` (passes in isolation; recorded in this document's
+Summary section already), unrelated to any change in this round.
