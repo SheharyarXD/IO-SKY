@@ -201,6 +201,14 @@ export const bookingsStatusEnum = pgEnum("bookings_status", [
   "completed",
 ]);
 
+/**
+ * Discovery Call spec §11: "PHONE is the authoritative default... Authorised
+ * IO SKY users must be able to decide internally, per Discovery Call, whether
+ * the meeting remains PHONE or is changed to VIDEO." Customer-facing flow
+ * never exposes this — it is set only by an admin, after booking.
+ */
+export const bookingCallTypeEnum = pgEnum("booking_call_type", ["phone", "video"]);
+
 export const bookings = pgTable(
   "bookings",
   {
@@ -225,6 +233,21 @@ export const bookings = pgTable(
     utmCampaign: varchar("utmCampaign", { length: 120 }),
 
     status: bookingsStatusEnum("status").default("confirmed").notNull(),
+
+    /** Discovery Call spec §11 — PHONE/VIDEO. Never customer-set; admin-only. */
+    callType: bookingCallTypeEnum("callType").default("phone").notNull(),
+    /**
+     * Only meaningful when callType = 'video'. Server-validated HTTPS,
+     * booking-specific — never exposed in a customer-facing form field, and
+     * never rendered into a confirmation email when callType = 'phone' (spec
+     * §11: "If VIDEO changes back to PHONE, future communications remove the
+     * meeting URL and Join Meeting CTA").
+     */
+    meetingUrl: text("meetingUrl"),
+    /** Recipient locale at booking time (e.g. "NL"), so a later reminder
+     * email can be sent in the same language as the original confirmation
+     * without the visitor's session/request context still being available. */
+    locale: varchar("locale", { length: 16 }),
 
     emailSent: integer("emailSent").default(0).notNull(),
     ownerNotified: integer("ownerNotified").default(0).notNull(),

@@ -29,8 +29,10 @@ import {
   listBookingEvents,
   listCalendarBlocks,
   listRecentBookings,
+  setBookingCallType,
 } from "../db";
 import { notifyOwner } from "../_core/notification";
+import { dispatchDueBookingReminders } from "../_core/bookingReminders";
 
 const weekdaySchema = z.number().int().min(0).max(6);
 
@@ -207,6 +209,56 @@ export const bookingAdminRouter = router({
       });
       return { ok: true as const };
     }),
+
+  /**
+   * Discovery Call spec §11 — internal PHONE/VIDEO switch, never exposed to
+   * the customer-facing flow. VIDEO requires a trusted HTTPS meeting URL;
+   * switching back to PHONE always drops any stored URL (enforced in
+   * setBookingCallType, not just here, so the CTA can't survive a reversion
+   * through any other call site).
+   */
+  setCallType: adminProcedure
+    .input(
+      z.discriminatedUnion("callType", [
+        z.object({ publicRef: z.string().min(8).max(32), callType: z.literal("phone") }),
+        z.object({
+          publicRef: z.string().min(8).max(32),
+          callType: z.literal("video"),
+          meetingUrl: z
+            .string()
+            .url()
+            .max(2048)
+            .refine((u) => u.startsWith("https://"), {
+              message: "Meeting URL must be a trusted HTTPS link.",
+            }),
+        }),
+      ]),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const booking = await getBookingByPublicRef(input.publicRef);
+      if (!booking) throw new TRPCError({ code: "NOT_FOUND" });
+      await setBookingCallType(
+        booking.id,
+        input.callType,
+        input.callType === "video" ? input.meetingUrl : null,
+      );
+      await appendBookingEvent({
+        bookingId: booking.id,
+        event: "call_type_changed",
+        actorOpenId: ctx.user?.openId ?? null,
+        detail: input.callType,
+      });
+      return { ok: true as const };
+    }),
+
+  /**
+   * Manual trigger for the same dispatch the in-process interval in
+   * server/_core/index.ts runs automatically — useful to force a run without
+   * waiting, and to inspect the result while debugging delivery.
+   */
+  remindersTick: adminProcedure.mutation(async () => {
+    return dispatchDueBookingReminders();
+  }),
 });
 
 export type BookingAdminRouter = typeof bookingAdminRouter;

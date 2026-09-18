@@ -245,6 +245,7 @@ export const bookingsRouter = router({
         utmSource: input.utmSource?.trim() || null,
         utmCampaign: input.utmCampaign?.trim() || null,
         status: "confirmed",
+        locale: input.locale ?? null,
         ip,
         userAgent,
       });

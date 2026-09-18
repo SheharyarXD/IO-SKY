@@ -40,7 +40,7 @@ describe("transactional email branding", () => {
     // A hex literal anywhere in the template strings means one template can
     // drift away from the others.
     const literals = CODE.match(/#[0-9A-Fa-f]{6}/g) ?? [];
-    const allowed = new Set(["#0D2D2E", "#123A3B", "#F58A1F", "#E6EAF0"]);
+    const allowed = new Set(["#0D2D2E", "#123A3B", "#F58A1F", "#E6EAF0", "#17110A"]);
     const stray = literals.filter((h) => !allowed.has(h.toUpperCase()));
     expect(stray, `unexpected hex literals: ${stray.join(", ")}`).toEqual([]);
   });

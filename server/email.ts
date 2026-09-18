@@ -209,6 +209,10 @@ const BRAND = {
   text: "#E6EAF0",
   /** De-emphasised text and secondary link colour. */
   textMuted: "rgba(230,234,240,0.7)",
+  /** Text sitting directly on the accent fill (the Join Meeting button) —
+   * dark enough for contrast against #F58A1F, matching the site's own
+   * .btn-primary text colour (client/src/index.css) for the same reason. */
+  onAccent: "#17110A",
 } as const;
 
 function renderHtml(input: BookingEmailInput): string {
@@ -247,6 +251,13 @@ function renderHtml(input: BookingEmailInput): string {
             ${escapeHtml(t.operatorNote)}
           </p>
 
+          ${input.meetingUrl ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px"><tr><td align="${align}">
+            <a href="${escapeHtml(input.meetingUrl)}" style="display:inline-block;padding:12px 22px;background:${BRAND.accent};border-radius:8px;color:${BRAND.onAccent};font-size:14px;font-weight:600;text-decoration:none">${escapeHtml(t.joinMeeting)}</a>
+            <div style="margin-top:8px;font-size:11px;color:rgba(230,234,240,0.5);word-break:break-all">
+              <a href="${escapeHtml(input.meetingUrl)}" style="color:${BRAND.accent};text-decoration:underline">${escapeHtml(input.meetingUrl)}</a>
+            </div>
+          </td></tr></table>` : ''}
+
           ${(input.cancelToken || input.rescheduleToken) ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px"><tr><td align="${align}">${input.rescheduleToken ? `<a href="${getPublicBase()}/booking/reschedule?token=${encodeURIComponent(input.rescheduleToken)}" style="display:inline-block;padding:10px 16px;border:1px solid ${BRAND.accentBorder};border-radius:8px;color:${BRAND.accent};font-size:13px;text-decoration:none;margin-right:8px">${escapeHtml(t.reschedule)}</a>` : ''}${input.cancelToken ? `<a href="${getPublicBase()}/booking/cancel?token=${encodeURIComponent(input.cancelToken)}" style="display:inline-block;padding:10px 16px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:${BRAND.textMuted};font-size:13px;text-decoration:none">${escapeHtml(t.cancel)}</a>` : ''}</td></tr></table>` : ''}
           <p style="margin:18px 0 0;font-size:12px;color:rgba(230,234,240,0.5)">
             ${escapeHtml(t.footerNote)}<br/>
@@ -272,6 +283,8 @@ function renderText(input: BookingEmailInput): string {
     ``,
     t.operatorNote,
     ``,
+    input.meetingUrl ? `${t.joinMeeting}: ${input.meetingUrl}` : null,
+    input.meetingUrl ? `` : null,
     input.rescheduleToken ? `${t.reschedule}: ${getPublicBase()}/booking/reschedule?token=${input.rescheduleToken}` : null,
     input.cancelToken ? `${t.cancel}: ${getPublicBase()}/booking/cancel?token=${input.cancelToken}` : null,
     t.footerNote,

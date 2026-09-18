@@ -17,6 +17,7 @@ import { registerResendWebhookRoutes } from "./resendWebhookRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./staticServer";
+import { dispatchDueBookingReminders } from "./bookingReminders";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -163,6 +164,18 @@ async function startServer() {
   server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on port ${port} (NODE_ENV=${process.env.NODE_ENV ?? "development"})`);
   });
+
+  // Discovery Call spec §12 — 24h/1h reminder dispatch. There is no
+  // external cron in this project, so a single-instance in-process interval
+  // is the whole mechanism; dispatchDueBookingReminders() is idempotent
+  // (each reminder row is claimed via markBookingReminderSent) and a no-op
+  // when no database is configured, so this is safe to always start.
+  const REMINDER_INTERVAL_MS = 5 * 60_000;
+  setInterval(() => {
+    dispatchDueBookingReminders().catch((err) =>
+      console.warn("[bookingReminders] dispatch tick failed:", err),
+    );
+  }, REMINDER_INTERVAL_MS).unref();
 }
 
 startServer().catch(console.error);

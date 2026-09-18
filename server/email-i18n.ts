@@ -71,6 +71,8 @@ export interface BookingStrings {
   durationTz: string;
   refLabel: string;
   operatorNote: string;
+  /** Video-call CTA label. Only rendered when the booking has a meeting URL. */
+  joinMeeting: string;
   reschedule: string;
   cancel: string;
   footerNote: string;
@@ -88,6 +90,7 @@ const BOOKING_EN: BookingStrings = {
   refLabel: "Confirmation reference",
   operatorNote:
     "A senior operator from IO SKY will reach out 24 hours before the call with a secure meeting link and a short pre-read tailored to your context.",
+  joinMeeting: "Join Meeting",
   reschedule: "Reschedule",
   cancel: "Cancel",
   footerNote:
@@ -108,6 +111,7 @@ const BOOKING: Record<EmailLocale, BookingStrings> = {
     refLabel: "Bevestigingsreferentie",
     operatorNote:
       "Een senior operator van IO SKY neemt 24 uur voor het gesprek contact op met een beveiligde vergaderlink en een korte voorbereiding op maat.",
+    joinMeeting: "Deelnemen aan gesprek",
     reschedule: "Verzetten",
     cancel: "Annuleren",
     footerNote:
@@ -125,6 +129,7 @@ const BOOKING: Record<EmailLocale, BookingStrings> = {
     refLabel: "Bestätigungsreferenz",
     operatorNote:
       "Ein leitender Mitarbeiter von IO SKY meldet sich 24 Stunden vor dem Gespräch mit einem sicheren Meeting-Link und einer kurzen, auf Ihren Kontext zugeschnittenen Vorbereitung.",
+    joinMeeting: "Am Meeting teilnehmen",
     reschedule: "Verschieben",
     cancel: "Stornieren",
     footerNote:
@@ -142,6 +147,7 @@ const BOOKING: Record<EmailLocale, BookingStrings> = {
     refLabel: "Référence de confirmation",
     operatorNote:
       "Un opérateur senior d'IO SKY vous contactera 24 heures avant l'appel avec un lien de réunion sécurisé et une courte préparation adaptée à votre contexte.",
+    joinMeeting: "Rejoindre la réunion",
     reschedule: "Reprogrammer",
     cancel: "Annuler",
     footerNote:
@@ -159,6 +165,7 @@ const BOOKING: Record<EmailLocale, BookingStrings> = {
     refLabel: "Referencia de confirmación",
     operatorNote:
       "Un operador sénior de IO SKY se pondrá en contacto 24 horas antes de la llamada con un enlace de reunión seguro y una breve preparación adaptada a tu contexto.",
+    joinMeeting: "Unirse a la reunión",
     reschedule: "Reprogramar",
     cancel: "Cancelar",
     footerNote:
@@ -176,6 +183,7 @@ const BOOKING: Record<EmailLocale, BookingStrings> = {
     refLabel: "Riferimento di conferma",
     operatorNote:
       "Un operatore senior di IO SKY ti contatterà 24 ore prima della call con un link sicuro alla riunione e una breve preparazione su misura per il tuo contesto.",
+    joinMeeting: "Partecipa alla riunione",
     reschedule: "Riprogramma",
     cancel: "Annulla",
     footerNote:
@@ -193,6 +201,7 @@ const BOOKING: Record<EmailLocale, BookingStrings> = {
     refLabel: "مرجع التأكيد",
     operatorNote:
       "سيتواصل معك أحد كبار المختصين في IO SKY قبل المكالمة بـ 24 ساعة مع رابط اجتماع آمن وملخص قصير مخصّص لسياقك.",
+    joinMeeting: "الانضمام إلى الاجتماع",
     reschedule: "إعادة الجدولة",
     cancel: "إلغاء",
     footerNote:
@@ -210,6 +219,7 @@ const BOOKING: Record<EmailLocale, BookingStrings> = {
     refLabel: "确认编号",
     operatorNote:
       "IO SKY 的资深顾问将在通话前 24 小时与您联系，提供安全的会议链接以及针对您情况的简要预读材料。",
+    joinMeeting: "加入会议",
     reschedule: "改期",
     cancel: "取消",
     footerNote:
@@ -227,6 +237,7 @@ const BOOKING: Record<EmailLocale, BookingStrings> = {
     refLabel: "確認番号",
     operatorNote:
       "IO SKY のシニア担当者が、コールの24時間前に安全なミーティングリンクと、お客様の状況に合わせた簡単な事前資料をお送りします。",
+    joinMeeting: "会議に参加する",
     reschedule: "日程変更",
     cancel: "キャンセル",
     footerNote:

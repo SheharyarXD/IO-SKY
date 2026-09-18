@@ -110,6 +110,25 @@ export async function updateBookingStatus(
   await db.update(bookings).set({ status }).where(eq(bookings.id, id));
 }
 
+/**
+ * Discovery Call spec §11 — admin-only PHONE/VIDEO toggle. Reverting to
+ * PHONE always clears meetingUrl in the same write: "If VIDEO changes back
+ * to PHONE, future communications remove the meeting URL and Join Meeting
+ * CTA" only holds if the URL cannot outlive the switch on this row.
+ */
+export async function setBookingCallType(
+  id: number,
+  callType: "phone" | "video",
+  meetingUrl: string | null,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(bookings)
+    .set({ callType, meetingUrl: callType === "video" ? meetingUrl : null })
+    .where(eq(bookings.id, id));
+}
+
 // ---------------------------------------------------------------------------
 // Native IO SKY Booking System — availability rules
 // ---------------------------------------------------------------------------
