@@ -51,6 +51,10 @@ import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 import { useT as useLanguageContext } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
+import { PhoneField } from "@/components/PhoneField";
+import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
+import { IndustryField } from "@/components/IndustryField";
+import type { IndustryOption } from "@/lib/industries";
 
 /* ------------------------------------------------------------------ */
 /* Static asset URLs                                                  */
@@ -243,6 +247,9 @@ interface DraftState {
    * there would be more data than the purpose justifies.
    */
   phone: string;
+  /** ISO 3166-1 alpha-2 country for the phone control (Discovery Call spec §2). */
+  phoneCountry: CountryCode;
+  industry: IndustryOption | "";
   challenge: string;
   maturity: string;
   goals: string;
@@ -263,6 +270,8 @@ const DEFAULT_DRAFT: DraftState = {
   organisation: "",
   role: "",
   phone: "",
+  phoneCountry: "NL",
+  industry: "",
   challenge: "",
   maturity: "",
   goals: "",
@@ -518,20 +527,32 @@ export default function BookStrategy() {
     if (step === 2) return Boolean(draft.selectedISO && draft.selectedTime);
     if (step === 3) {
       const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.workEmail);
+      const phoneRaw = draft.phone.trim();
+      const parsedPhone = phoneRaw
+        ? phoneRaw.startsWith("+")
+          ? parsePhoneNumberFromString(phoneRaw)
+          : parsePhoneNumberFromString(phoneRaw, draft.phoneCountry)
+        : null;
       return (
         draft.fullName.trim().length >= 2 &&
         validEmail &&
         draft.organisation.trim().length >= 2 &&
         draft.role.trim().length >= 2 &&
-        // Digits only, so "+31 6 1234 5678" and "0031612345678" both pass but
-        // a placeholder like "n/a" does not.
-        draft.phone.replace(/[^0-9]/g, "").length >= 7 &&
+        Boolean(parsedPhone?.isValid()) &&
+        Boolean(draft.industry) &&
         draft.challenge.trim().length >= 8 &&
         draft.consent
       );
     }
     return false;
   }, [step, draft, service]);
+
+  const phoneParsed = draft.phone.trim()
+    ? draft.phone.trim().startsWith("+")
+      ? parsePhoneNumberFromString(draft.phone.trim())
+      : parsePhoneNumberFromString(draft.phone.trim(), draft.phoneCountry)
+    : null;
+  const phoneTouchedInvalid = draft.phone.trim().length > 0 && !phoneParsed?.isValid();
 
   /* ---------- Confirm ---------- */
   const createBooking = trpc.bookings.create.useMutation();
@@ -588,7 +609,7 @@ export default function BookStrategy() {
           workEmail: draft.workEmail.trim(),
           organisation: draft.organisation.trim(),
           role: draft.role.trim(),
-          phone: draft.phone.trim(),
+          phone: phoneParsed?.number ?? draft.phone.trim(),
         },
         preparation: {
           challenge: draft.challenge.trim(),
@@ -599,6 +620,7 @@ export default function BookStrategy() {
           companySize: draft.companySize,
           systems: draft.systems.trim(),
           bottlenecks: draft.bottlenecks.trim(),
+          industry: draft.industry,
         },
         source: "io-sky.web.book-strategy",
       };
@@ -612,7 +634,7 @@ export default function BookStrategy() {
           email: draft.workEmail.trim(),
           company: draft.organisation.trim() || null,
           role: draft.role.trim() || null,
-          phone: draft.phone.trim(),
+          phone: phoneParsed?.number ?? draft.phone.trim(),
           preparation: {
             challenge: draft.challenge.trim(),
             maturity: draft.maturity,
@@ -622,6 +644,7 @@ export default function BookStrategy() {
             companySize: draft.companySize,
             systems: draft.systems.trim(),
             bottlenecks: draft.bottlenecks.trim(),
+            industry: draft.industry,
           },
           locale: lang,
         });
@@ -1128,13 +1151,35 @@ export default function BookStrategy() {
                           value={draft.role}
                           onChange={(v) => setDraft((p) => ({ ...p, role: v }))}
                         />
-                        <Field
-                          label="Telephone *"
-                          type="tel"
-                          placeholder="+31 6 12 34 56 78"
-                          value={draft.phone}
-                          onChange={(v) => setDraft((p) => ({ ...p, phone: v }))}
-                        />
+                        <div>
+                          <label className="text-[11px] font-medium text-white/60 mb-1.5 block">
+                            Telephone *
+                          </label>
+                          <PhoneField
+                            value={{ national: draft.phone, country: draft.phoneCountry }}
+                            onChange={(v) =>
+                              setDraft((p) => ({ ...p, phone: v.national, phoneCountry: v.country }))
+                            }
+                            invalid={phoneTouchedInvalid}
+                          />
+                          {phoneTouchedInvalid && (
+                            <p className="mt-1 text-[11px] text-rose-300">
+                              This phone number doesn't look right. Check the country code and number.
+                            </p>
+                          )}
+                          <p className="mt-1 text-[10.5px] text-white/40">
+                            Used for scheduling and your Discovery Call.
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-medium text-white/60 mb-1.5 block">
+                            Industry *
+                          </label>
+                          <IndustryField
+                            value={draft.industry}
+                            onChange={(v) => setDraft((p) => ({ ...p, industry: v }))}
+                          />
+                        </div>
                       </div>
 
                       {/* Adaptive preparation questions */}
