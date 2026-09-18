@@ -394,3 +394,53 @@ sample data in the interface).
 Live checks against the deployed EU container: Admin and Super Admin both clear the MFA gate and load
 their consoles, `privacy.list` refuses a Super Admin holding no grant with `privacy_officer_required`,
 and `/health/ready` reports the database healthy at 22-24 ms.
+
+---
+
+## Addendum — Signature High Glass redesign, 17 September 2026
+
+Work done against nine client design-specification documents (Homepage, Foundation, Intelligence,
+Solutions, About, Contact, Discovery Call, AI Scan, and the global Signature High Glass system).
+Recorded here rather than folded into the RM-64..119 table above because **none of it carries a task
+reference** — `docs/client/IO_SKY_Scope_Position.pdf` (14 September) explicitly named "Redesign of
+existing screens" as **not in the agreed plan**: *"The Milestone 2 specification was explicit that the
+existing portals were to be carried across as they were. Any restyling of them is new work, and we are
+happy to quote it."* These nine documents are treated as the client's brief for that separately-scoped
+work, supplied directly rather than through a priced change order.
+
+### Global design system
+
+- Replaced the navy-black (`#0B1020`) + `#FF7A00` token set in `client/src/index.css` with the approved
+  Deep Teal (`#0D2D2E`) + IO SKY Orange (`#F58A1F`) system, and added the exact `.io-signature-glass`
+  material (base + upper-left/lower-right refraction + `--card`/`--panel`/`--form`/`--surface` geometry
+  variants) verbatim from the Signature High Glass spec. `.glass`/`.glass-soft`/`.glass-strong` — already
+  in use across ~20 files — were realigned to the same tokens rather than requiring a per-file rewrite.
+- `server/designLanguage.test.ts` updated to pin the new authoritative hex values (superseding the
+  earlier pixel-sampled `#FF7A00` "ground truth" guess) plus the new background token.
+
+### Per-page status against the new specs
+
+| Page | Status | Notes |
+|---|---|---|
+| Homepage | ✅ | Section structure and body copy already matched the spec exactly from earlier work. Hero rewritten: removed a dashboard mockup/trust-strip/globe graphic not present in the spec, fixed CTA order (Book a Discovery Call primary/orange, Start AI Scan secondary/outline — was reversed), wired the previously-unused `hero.title.accent` key for the "business works." emphasis. |
+| Foundation | ✅ | Content already matched the spec word-for-word across all 9 sections. Fixed leftover `#FF7A00`/navy-hued color literals that bypassed the new tokens. |
+| Intelligence | ✅ | Content already matched the spec word-for-word across all 9 sections (verified against the `intelligence2.*` keys). Fixed leftover legacy-orange/navy literals. Note: `en.ts` still carries a large block of unrelated, unused `intel.*` keys from an earlier page version — dead weight, not a defect, worth deleting in a cleanup pass. |
+| Solutions | ✅ | Content matches the spec (hero, three ecosystems, delivery, final CTA all confirmed against `sol2.*` keys). No legacy color literals found. |
+| Contact | ✅ | Fields, the exact 5-option subject dropdown, anti-spam guards, glass container and success/failure copy already matched. Added the one missing requirement: a configurable fallback support email shown only after repeated (2nd+) send failures, via `VITE_CONTACT_FALLBACK_EMAIL` (default `support@iosky.nl`) — not covered by a dedicated test yet. |
+| About | ⏭ Not started | Current page is pre-redesign marketing content (fake partner logos, stat tiles, team photos) — none of it exists in the new 7-section spec. Needs a full rewrite. Paused pending the source PDF being added to the repo so its body copy can be read verbatim rather than transcribed from chat, per the specs' own "do not rewrite, shorten or paraphrase locked copy" rule. |
+| Discovery Call | 🔶 Partial | Design tokens fixed (every literal `#FF7A00`/`rgba(255,122,0,...)` on this page replaced with the approved `#F58A1F`). The spec's functional requirements — E.164 phone validation with an editable country/calling-code selector, alias-aware industry search, the exact Dutch/English AI scheduling assistant scripts, PHONE/VIDEO call-type handling — are substantial new features, not yet built. |
+| AI Scan | ⏭ Not started | Same blocker as About: needs the source PDF added to the repo before rewriting. Also requires a genuinely new purchase/checkout flow (backend-verified Scan payment gating public account creation) — a feature, not a restyle. |
+
+### Other locales left behind
+
+English was the only locale updated when the homepage was migrated to its new copy. The other 9
+(`zh`, `ar`, `es`, `ja`, `de`, `nl`, `it`, `pt`, `fr`) still render the pre-redesign hero ("Operational
+growth becomes inevitable when intelligence is embedded into execution..."). Re-translating them to the
+new copy is a separate, sizable follow-up — flagged here rather than left silently inconsistent.
+
+### Verification for this round
+
+`pnpm run check` clean. `pnpm run build` clean. Full suite green except one documented pre-existing
+test-isolation flake in `viewAs.test.ts` (fails only when run after `sessionRevocation.test.ts` in the
+same worker, per the flake already recorded in this document's Summary section; passes in isolation) —
+unrelated to any change in this round.
