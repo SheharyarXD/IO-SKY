@@ -29,6 +29,17 @@ import {
 
 const MAX_MESSAGE = 2000;
 
+/**
+ * Contact spec §06: "If repeated submission attempts fail... show only the
+ * approved fallback route... The fallback address must be configurable and
+ * easy to change without a code change; do not hardcode it."
+ */
+const CONTACT_FALLBACK_EMAIL =
+  (import.meta.env.VITE_CONTACT_FALLBACK_EMAIL as string | undefined) || "support@iosky.nl";
+
+/** Spec: show the fallback only after *repeated* failure, not the first one. */
+const REPEATED_FAILURE_THRESHOLD = 2;
+
 const SUBJECT_OPTIONS = [
   "contact2.subject.general",
   "contact2.subject.partnership",
@@ -52,6 +63,7 @@ export default function Contact() {
   const [message, setMessage] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [failureCount, setFailureCount] = useState(0);
 
   const nameValid = name.trim().length >= 2;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -81,9 +93,11 @@ export default function Contact() {
         website: honeypot,
       });
       setStatus("success");
+      setFailureCount(0);
     } catch (error) {
       console.warn("[contact.submit] failed:", error);
       setStatus("error");
+      setFailureCount((n) => n + 1);
     }
   };
 
@@ -145,7 +159,16 @@ export default function Contact() {
                       {status === "error" && (
                         <div className="mb-5 rounded-lg border border-rose-400/30 bg-rose-400/[0.06] px-4 py-3">
                           <p className="text-[13.5px] font-medium text-rose-300">{t("contact2.failure.title")}</p>
-                          <p className="mt-1 text-[12.5px] text-rose-200/80">{t("contact2.failure.body")}</p>
+                          {failureCount >= REPEATED_FAILURE_THRESHOLD ? (
+                            <p className="mt-1 text-[12.5px] text-rose-200/80">
+                              {t("contact2.failure.fallbackBody")}{" "}
+                              <a href={`mailto:${CONTACT_FALLBACK_EMAIL}`} className="text-[var(--color-orange)] hover:underline">
+                                {CONTACT_FALLBACK_EMAIL}
+                              </a>
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-[12.5px] text-rose-200/80">{t("contact2.failure.body")}</p>
+                          )}
                         </div>
                       )}
 

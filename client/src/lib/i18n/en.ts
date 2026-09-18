@@ -1792,5 +1792,6 @@ export const en: Record<string, string> = {
   "contact2.success.cta": "Back to IO SKY",
   "contact2.failure.title": "Your message has not been sent yet.",
   "contact2.failure.body": "Something went wrong while sending. Your information has been retained. Please try again.",
+  "contact2.failure.fallbackBody": "Your message still has not been received after repeated attempts. Your information has been retained — please reach us directly at",
   "contact2.failure.cta": "Try again",
 };
