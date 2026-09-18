@@ -293,7 +293,7 @@ function TagShell({
         className={`glass-soft rounded-[12px] backdrop-blur-md px-3.5 py-3 ${width ?? "min-w-[170px]"}`}
         style={{
           background:
-            "linear-gradient(180deg, oklch(0.2 0.022 260 / 0.78) 0%, oklch(0.13 0.022 260 / 0.78) 100%)",
+            "linear-gradient(180deg, oklch(0.2 0.022 194 / 0.78) 0%, oklch(0.13 0.022 194 / 0.78) 100%)",
           border: "1px solid oklch(1 0 0 / 0.10)",
           boxShadow:
             "inset 0 1px 0 oklch(1 0 0 / 0.06), 0 24px 60px -28px oklch(0 0 0 / 0.7)",
