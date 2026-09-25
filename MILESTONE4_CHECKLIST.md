@@ -17,12 +17,12 @@ The AI Scan Engine specification has been announced but not yet received. Sectio
 for it and is deliberately empty rather than guessed at.
 
 Task IDs continue the `RM-` numbering. Milestone 1 ran RM-01..RM-63, Milestone 3 ran RM-64..RM-119, so
-this milestone starts at **RM-120**.
+this milestone runs **RM-120 to RM-421**.
 
 Legend: ✅ Done and verified · 🔶 Partial · ⛔ Blocked (external decision, credential or access) ·
 ⏭ Not started
 
-**Status: not started. 0 of 216 tasks complete.** None of this exists today. What is in the product now
+**Status: not started. 0 of 302 tasks complete.** None of this exists today. What is in the product now
 is a design preview screen labelled as sample data, with no telephony, speech, or agent implementation
 behind it.
 
@@ -412,12 +412,14 @@ optional and they cannot be produced retrospectively.
 
 ## Workstream 4.7 — AI Scan Engine
 
-⛔ **Specification not yet received.** Announced as following. Intentionally left empty rather than
-guessed at, per the covering email's instruction not to reinterpret or assume a requirement while
-another specification is still being finalised.
+✅ **Specifications received 26 September 2026.** Three documents totalling 52 pages. Fully expanded as
+Appendix B at the end of this document, running RM-336 to RM-421 (86 tasks).
 
-Expected to resolve C-1, since the Receptionist and Scheduling specifications both reference Operations,
-Cyber and Elite Scans as paid products while the platform implements free, growth and elite.
+C-1 is resolved, and the answer is larger than expected: this is a replacement of the existing AI Scan,
+not a re-tiering of it. Two acceptance tests in the Master Specification are written as FAIL conditions
+that the current implementation meets exactly (TST-001 Form Test and TST-004 Fixed Sequence Test, the
+latter naming a "hidden fixed 35-question sequence" where `shared/aiScanQuestionnaire.ts` holds exactly
+35). See Appendix B for the four further contradictions verified against the live database.
 
 ---
 
@@ -457,8 +459,8 @@ the four products buildable rather than four parallel rebuilds of the same groun
 | 4.4 Scheduling Agent | 40 |
 | 4.5 AI Sales Outbound | 51 |
 | 4.6 Acceptance and evidence | 18 |
-| 4.7 AI Scan Engine | awaiting specification |
-| **Total** | **216** |
+| 4.7 AI Scan Engine (Appendix B) | 86 |
+| **Total** | **302** |
 
 Nothing in this document is marked complete, because nothing in it has been built. The same
 verification bar used in Milestones 1, 2 and 3 applies: no task is marked ✅ without a typecheck, tests
@@ -753,3 +755,209 @@ chat message, and the AI Receptionist is specified to be available 24 hours a da
 Sales Outbound §63 already requires budget controls and abnormal usage alerts. Set those before the
 first production call rather than after the first invoice, and agree an expected monthly call volume
 with IO SKY so capacity and budget are provisioned against a real number.
+
+---
+
+# Appendix B — Workstream 4.7, AI Scan Engine and Universal Assessment System
+
+**Received 26 September 2026.** Three documents, which supersede the placeholder that previously sat here:
+
+| Document | Version | Pages | Requirement IDs |
+|---|---|---|---|
+| AI Scan Engine & Universal Assessment System, Master Specification | Freeze Candidate 1.0 | 31 | ~294 |
+| AI Scan Operational, Administration & Implementation Clarification Addendum | 1.0 | 12 | ~127 |
+| AI Scan Report Design System, Template Architecture & Visual Consistency | 1.0 | 9 | 23 acceptance criteria plus 31 prose sections |
+
+Plus four approved visual references: Cover, Report Information, Report Contents, Key Findings, and an
+Executive Summary two-page spread. These are design authority, not inspiration (Design System §2).
+
+Task IDs continue from RM-335, so this workstream runs **RM-336 to RM-421**.
+
+## This is a replacement of the existing AI Scan, not an extension of it
+
+C-1 in this document previously asked whether the Scan re-model was in scope. The answer is now
+unambiguous, and it is larger than the tier rename we expected. Two acceptance tests in the Master
+Specification are written as explicit FAIL conditions that the current implementation meets exactly.
+
+> **TST-001 Form Test.** "If experience is effectively customer fills long form → AI generates PDF" —
+> **FAIL**
+
+> **TST-004 Fixed Sequence Test.** "Hidden fixed 35-question sequence with cosmetic variation" —
+> **FAIL**
+
+The AI Scan shipped today is a fixed 35-question form that generates a PDF. `shared/aiScanQuestionnaire.ts`
+holds exactly 35 questions. Both tests are graded FAIL, not "needs improvement", so the existing engine
+cannot be evolved into compliance. It has to be replaced by an adaptive engine.
+
+Four further direct contradictions with the live code, each verified rather than assumed:
+
+| Spec requirement | Live implementation | Nature |
+|---|---|---|
+| COM-001: "There is no free AI Scan product." Operations €795, Cyber €1,595, Elite €3,295 | `pgEnum("ai_scans_tier", ["free","growth","elite"])` at `drizzle/schema.ts:1920`, free tier live and unpaid | Commercial model replacement |
+| PRD-006 and ADD-EVAL-003: no overall scores, maturity scores, readiness percentages or confidence percentages | `overallScore: integer` column plus per-dimension scores constrained `0..100` in `aiScanScoring.ts` | Scoring model must be removed, not adjusted |
+| PRD-007 / CNF-001: confidence is qualitative, High / Moderate / Low / Insufficient | Numeric confidence in the LLM response schema | Data model change |
+| 21-section canonical report architecture | 5 sections in `aiScanReportPdf.ts` | Report system replacement |
+
+The only parts of the current AI Scan that survive are the Stripe-shaped purchase intent, the lead
+creation on submit, and the storage plumbing. Everything from the questionnaire inward is new.
+
+## Sub-workstream 4.7.1 — Commercial, purchase and account binding
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| RM-336 | Replace the tier model with Operations, Cyber and Elite as paid products | ⏭ | COM-001. Includes migrating existing `ai_scans` rows and retiring the free tier. |
+| RM-337 | Add-on configuration: Live Expert Review, Executive Briefing, bundled | ⏭ | COM-002. Never preselected. Elite may select only Executive Briefing. |
+| RM-338 | Stripe integration for the scan purchase | ⏭ | Named explicitly in the §5 journey. Resolves the payment question in C-4. |
+| RM-339 | Server-authoritative payment verification | ⏭ | PAY-001. A browser success redirect is never proof. |
+| RM-340 | Idempotent payment and webhook processing | ⏭ | PAY-002, ADD-REC-005. |
+| RM-341 | Public account creation restricted to a paid scan or invitation | ⏭ | ACC-001 to ACC-005. Enforced server-side, not hidden in the interface. |
+| RM-342 | Payment Confirmed, Account Activation Pending recovery state | ⏭ | ACC-011 to ACC-013. A paid purchase survives browser closure. |
+| RM-343 | Account collision and duplicate-organisation protection | ⏭ | ACC-024, ACC-025, ADD-ORG-006 to ADD-ORG-008. Email string alone never binds a purchase. |
+| RM-344 | Existing-client journey with prefill and snapshot separation | ⏭ | ACC-014 to ACC-023. Editing a prefilled value must not rewrite master data. |
+| RM-345 | Shared Intake, seven fields with conditional validation | ⏭ | INTK-001 to INTK-006. |
+| RM-346 | Country-aware company registration and VAT validation | ⏭ | ADD-TAX-001 to ADD-TAX-009. See the proposal requested by IO SKY. |
+| RM-347 | Pre-payment structured review screen | ⏭ | PUR-001, PUR-002. |
+| RM-348 | Billing and tax snapshot, separate from organisation master data | ⏭ | ADD-TAX-009. Later master changes never rewrite a completed transaction. |
+| RM-349 | Automatic operational and financial administration | ⏭ | ADD-ADM-001 to ADD-ADM-007. No duplicate manual entry; statuses never collapsed into one Completed. |
+
+## Sub-workstream 4.7.2 — Adaptive assessment engine
+
+This replaces the current questionnaire entirely.
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| RM-350 | Hybrid adaptive engine: controlled base objectives plus bounded dynamic formulation | ⏭ | AI-004. Not a fixed tree, not an open chatbot. |
+| RM-351 | Per-answer intelligence cycle | ⏭ | AI-001. Understand, contextualise, check consistency, assess relevance, materiality and uncertainty, decide depth. |
+| RM-352 | Follow-up purpose gate | ⏭ | AI-002, AI-003. No question asked merely because one exists. |
+| RM-353 | Assumption challenge without assuming the customer is wrong | ⏭ | AI-006, TST-008. |
+| RM-354 | Strength recognition as an investigation trigger | ⏭ | AI-007, TST-009. |
+| RM-355 | "I don't know" accepted as valid information | ⏭ | AI-008, TST-006. No forced guessing. |
+| RM-356 | Persistent structured assessment memory | ⏭ | MEM-001 to MEM-006. Explicitly not a rolling model context window. |
+| RM-357 | Observable state semantics | ⏭ | MEM-006. Eleven named events, so behaviour is validatable without exposing chain of thought. |
+| RM-358 | Depth engine with triggers and stop conditions | ⏭ | DEP-001 to DEP-006. No arbitrary follow-up cap, and no purposeless continuation. |
+| RM-359 | Evidence state model, six states | ⏭ | EVD-001. Reported, Corroborated, Derived, Inference, Conflicting, Unknown. |
+| RM-360 | Qualitative confidence only | ⏭ | CNF-001 to CNF-003. Removes the current numeric confidence. |
+| RM-361 | Contradiction detection and neutral clarification | ⏭ | CTR-001 to CTR-003, TST-007. Six contradiction categories. |
+| RM-362 | Finding lifecycle, candidate through to end state | ⏭ | FND-001 to FND-004. A signal is not automatically a finding. |
+| RM-363 | Cross-finding relationships and clusters | ⏭ | REL-001, REL-002. Symptoms of one cause must not present as unrelated problems. |
+| RM-364 | Priority model without numeric scoring | ⏭ | PRI-001, PRI-002, ADD-EVAL-001 to ADD-EVAL-004. |
+| RM-365 | Proportionate recommendation engine | ⏭ | REC-001 to REC-004, TST-010. Must be able to conclude no material intervention. |
+| RM-366 | Roadmap: Now, Next, Then, Later or Monitor | ⏭ | RDM-001, RDM-002. |
+| RM-367 | Assessment UX in the IO SKY design family | ⏭ | UX-001 to UX-006. Deep Teal ground, controlled Orange, truthful progress indicator. |
+| RM-368 | Auto-advance that never bypasses validation or persistence | ⏭ | UX-007, UX-008, UX-011, TST-029. |
+| RM-369 | Back navigation with downstream state invalidation | ⏭ | UX-009, UX-010, SAV-004, TST-030. Superseded data must not stay authoritative. |
+| RM-370 | Autosave with honest Saving, Saved and Save failed states | ⏭ | SAV-001 to SAV-003. Never falsely display Saved. |
+| RM-371 | Submission creating an immutable snapshot | ⏭ | SUB-001 to SUB-003. |
+| RM-372 | Methodology and configuration versioning | ⏭ | DATA-001 to DATA-004. Historical assessments never change retroactively. |
+
+## Sub-workstream 4.7.3 — Expert Review workflow
+
+Entirely new. No human review layer exists in the platform today.
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| RM-373 | Dutch and English review renderings from one canonical source | ⏭ | REV-001, REV-002. Not independent analyses. |
+| RM-374 | Reviewer assignment by Super Admin, permission and scope gated | ⏭ | REV-003 to REV-007. Role alone grants nothing. |
+| RM-375 | Expert Review workspace, Report View and Intelligence Panel | ⏭ | REV-008, REV-009. |
+| RM-376 | Expert Review Brief, thirteen attention categories | ⏭ | REV-010, REV-011. Directs attention, never replaces review. |
+| RM-377 | Finding Inspector with full assessment basis | ⏭ | REV-012, TST-012. |
+| RM-378 | Reviewer actions with change control | ⏭ | REV-013 to REV-017. Source answers immutable; no destructive overwrite. |
+| RM-379 | Targeted regeneration preserving approved content | ⏭ | REV-018, REV-019. Regeneration must not restore rejected content. |
+| RM-380 | Review completion gate | ⏭ | REV-020 to REV-022. Critical blockers cannot be bypassed. |
+| RM-381 | Approve and Send to Super Admin handoff | ⏭ | ADD-REV-001 to ADD-REV-006. Reviewer cannot publish. |
+| RM-382 | Version sequence: Draft, Revision, Approved, Published | ⏭ | VER-001 to VER-003. |
+
+## Sub-workstream 4.7.4 — Publication
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| RM-383 | Super Admin publication package and inspection actions | ⏭ | PUB-001, PUB-002, ADD-PUB-001. |
+| RM-384 | Pre-publish gate | ⏭ | PUB-003. Review complete, zero critical flags, QA passed, bindings correct. |
+| RM-385 | Return to reviewer with mandatory note | ⏭ | PUB-004, ADD-PUB-003. |
+| RM-386 | Four-eyes separation; self-review never auto-publishes | ⏭ | PUB-005. |
+| RM-387 | Server-side publication binding | ⏭ | PUB-006, PUB-007. Frontend never determines destination. Wrong portal is a critical failure. |
+| RM-388 | Atomic publication | ⏭ | PUB-008, PUB-009. No partial deliverable, no premature Ready notification. |
+| RM-389 | Delivered date derived from successful publish only | ⏭ | PUB-010, PUB-011. Not editable, not the purchase or approval date. |
+| RM-390 | Entitlement-bound deliverables | ⏭ | ADD-PUB-004 to ADD-PUB-006. Never expose an unpurchased deliverable. |
+
+## Sub-workstream 4.7.5 — Report system
+
+Design authority is the four approved reference compositions plus the Design System specification.
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| RM-391 | 21-section canonical report architecture | ⏭ | Design System §4. Order system-controlled; AI may not rename, reorder, merge or omit. |
+| RM-392 | Template-driven rendering architecture | ⏭ | Design System §14, ACC-RPT-022. No path where AI freely designs a customer PDF. |
+| RM-393 | Approved colour system and Orange restraint rule | ⏭ | Design System §8, §9, ACC-RPT-007, ACC-RPT-008. |
+| RM-394 | Header and footer components | ⏭ | Design System §12, §13. Supplied logo asset only, never regenerated. |
+| RM-395 | Deterministic layout with content-driven pagination | ⏭ | Design System §6, §18, ADD-RPT-001 to ADD-RPT-006. 21 sections is not 21 pages. |
+| RM-396 | Continuation page behaviour | ⏭ | ACC-RPT-006. Header, footer, typography and hierarchy preserved. |
+| RM-397 | Contents resolved against final pagination, no self-reference | ⏭ | Design System §20, ADD-RPT-007. Navigation runs 02 to 04. |
+| RM-398 | Internal cross-references and hyperlinks | ⏭ | Design System §21, ACC-RPT-014. Finding to Recommendation, and so on. |
+| RM-399 | PDF bookmarks and document outline | ⏭ | Design System §22, ACC-RPT-015, ADD-RPT-008. |
+| RM-400 | Report Information section from configured issuer data | ⏭ | ADD-INFO-001 to ADD-INFO-008. Customer VAT ID not printed. Issuer values never invented by AI. |
+| RM-401 | Executive Summary composition with dynamic priorities | ⏭ | Reference spread. Priority count, titles and ordering all derived, never hard-coded. |
+| RM-402 | Assessment Landscape as qualitative states | ⏭ | No percentages, gauges, star ratings or progress bars. |
+| RM-403 | Audience rendering that never changes conclusions | ⏭ | AUD-001 to AUD-003. Emphasis and depth only. |
+| RM-404 | Chart and data integrity gate | ⏭ | DSN-008, ACC-RPT-018. No quantitative visual without supporting data. |
+| RM-405 | Portal Book Viewer | ⏭ | VIEW-003 to VIEW-007. A digital publication, not a vertical PDF embed. Responsive one or two page logic. |
+| RM-406 | Rendering QA gate blocking publication | ⏭ | ADD-RPT-010, ACC-RPT-017. Broken links or clipped content block publication. |
+| RM-407 | Report design system versioning | ⏭ | Design System §28, ACC-RPT-019. A future redesign never alters a published report. |
+| RM-408 | Production-rendered reference for IO SKY typography approval | ⏭ | Design System §11, §29, ACC-RPT-012. Gate before token freeze. |
+
+## Sub-workstream 4.7.6 — Translation and language
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| RM-409 | Customer publication language pipeline | ⏭ | LNG-003 to LNG-008. Rendering performs no new reasoning. |
+| RM-410 | Semantic equivalence validation with protected terminology | ⏭ | LNG-006, TST-022. "Likely" must not become certain; "investigate" must not become implement. |
+| RM-411 | Stale rendering detection | ⏭ | LNG-007. A canonical change blocks dependent renderings from publication. |
+
+## Sub-workstream 4.7.7 — Executive Briefing
+
+A premium audiovisual deliverable. New capability with no precedent in the platform.
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| RM-412 | Entitlement gate before any generation | ⏭ | ADD-EB-001 to ADD-EB-008. No provider call for an unentitled assessment. |
+| RM-413 | Briefing production pipeline | ⏭ | EB-003. Content selection, narrative, storyboard, motion, voice-over, captions, QA. |
+| RM-414 | Source binding and invalidation on report change | ⏭ | EB-009, ADD-EB-009, TST-025. |
+| RM-415 | Configurable production parameters | ⏭ | EB-010. Defaults proposed to IO SKY, never hard-coded. |
+
+## Sub-workstream 4.7.8 — Platform, security and operations
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| RM-416 | Authoritative state machine, 30 named states | ⏭ | §35, STATE-001. Every transition defines actor, permission, validations, audit and failure state. |
+| RM-417 | Logical data model, roughly 35 distinct concepts | ⏭ | DATA-010. May not be collapsed where collapsing loses behaviour. |
+| RM-418 | Privileged search restricted to Super Admin and permitted Admin | ⏭ | ADD-SEARCH-001 to ADD-SEARCH-010. No discovery through autocomplete, counts or error messages. |
+| RM-419 | Tenant isolation and cross-tenant negative suite | ⏭ | SEC-003 to SEC-008, ADD-SEC-001 to ADD-SEC-007, TST-026. Wrong report in wrong portal is a release blocker. |
+| RM-420 | Audit event catalogue and notification matrix | ⏭ | §44, §45, AUDIT-001, AUDIT-002. |
+| RM-421 | Concurrency, idempotency, stale state and failure recovery | ⏭ | OPS-001 to OPS-005, FAIL-001, §38 failure matrix, TST-027, TST-028. |
+
+## Acceptance for this workstream
+
+The Master Specification carries 30 numbered acceptance tests (TST-001 to TST-030), the Addendum adds
+24 (ADD-TST-001 to ADD-TST-024), and the Design System adds 23 acceptance criteria (ACC-RPT-001 to
+ACC-RPT-023). **77 acceptance conditions**, several of which are negative tests that must fail rather
+than pass.
+
+DONE-001 states plainly that the system is not done merely because screens exist, Stripe works, AI asks
+questions, a PDF generates, a reviewer can click Approve or a report appears in the portal. TRACE-002
+adds that Implemented does not equal Validated.
+
+## Counts for Workstream 4.7
+
+| Sub-workstream | Tasks |
+|---|---|
+| 4.7.1 Commercial, purchase and account binding | 14 |
+| 4.7.2 Adaptive assessment engine | 23 |
+| 4.7.3 Expert Review workflow | 10 |
+| 4.7.4 Publication | 8 |
+| 4.7.5 Report system | 18 |
+| 4.7.6 Translation and language | 3 |
+| 4.7.7 Executive Briefing | 4 |
+| 4.7.8 Platform, security and operations | 6 |
+| **Total** | **86** |
+
+Milestone 4 total rises from 216 to **302 tasks**, RM-120 to RM-421.
