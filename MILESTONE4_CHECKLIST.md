@@ -17,12 +17,12 @@ The AI Scan Engine specification has been announced but not yet received. Sectio
 for it and is deliberately empty rather than guessed at.
 
 Task IDs continue the `RM-` numbering. Milestone 1 ran RM-01..RM-63, Milestone 3 ran RM-64..RM-119, so
-this milestone runs **RM-120 to RM-421**.
+this milestone runs **RM-120 to RM-437**.
 
 Legend: ✅ Done and verified · 🔶 Partial · ⛔ Blocked (external decision, credential or access) ·
 ⏭ Not started
 
-**Status: not started. 0 of 302 tasks complete.** None of this exists today. What is in the product now
+**Status: not started. 0 of 318 tasks complete.** None of this exists today. What is in the product now
 is a design preview screen labelled as sample data, with no telephony, speech, or agent implementation
 behind it.
 
@@ -129,7 +129,7 @@ five specifications received, and the Milestone 2 specification was explicit in 
 existing portals were to be carried over as they were, described in the tracker as "port without
 redesign".
 
-**Question: please confirm the redesign in writing, with its scope.** It is legitimate work and we are
+**Resolved 26 September: IO SKY has confirmed the redesign is in Phase 4.** Sized as Workstream 4.8 in Appendix C. Five scoping questions there still gate a real estimate. Original question retained for the record: It is legitimate work and we are
 willing to do it, but it is a separate body of work from these five specifications and it needs to be
 scoped, sequenced and priced as such rather than assumed inside them.
 
@@ -460,7 +460,8 @@ the four products buildable rather than four parallel rebuilds of the same groun
 | 4.5 AI Sales Outbound | 51 |
 | 4.6 Acceptance and evidence | 18 |
 | 4.7 AI Scan Engine (Appendix B) | 86 |
-| **Total** | **302** |
+| 4.8 Website and platform redesign (Appendix C) | 16 |
+| **Total** | **318** |
 
 Nothing in this document is marked complete, because nothing in it has been built. The same
 verification bar used in Milestones 1, 2 and 3 applies: no task is marked ✅ without a typecheck, tests
@@ -961,3 +962,54 @@ adds that Implemented does not equal Validated.
 | **Total** | **86** |
 
 Milestone 4 total rises from 216 to **302 tasks**, RM-120 to RM-421.
+
+---
+
+# Appendix C — Workstream 4.8, Website and platform redesign
+
+Added to Phase 4 by IO SKY. It appears in none of the eight specifications and the Milestone 2
+specification pointed the other way, requiring existing portals to be carried across as they were
+("port without redesign"). It is therefore new work rather than a correction, and it is sized here so it
+can be scoped and sequenced properly rather than absorbed.
+
+Task IDs run RM-422 to RM-437.
+
+## What can be planned now
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| RM-422 | Design system audit of the current platform | ⏭ | What exists, what is inconsistent, what the AI Scan Report Design System already fixes. |
+| RM-423 | Token architecture: colour, type, spacing, radius, elevation | ⏭ | One source of truth shared by website, portals and the report system. |
+| RM-424 | Align with the approved AI Scan report design language | ⏭ | Deep Teal #0D2D2E, IO SKY Orange #F58A1F and the Orange restraint rule already approved for reports. |
+| RM-425 | Component library rebuild | ⏭ | Buttons, forms, tables, cards, navigation, modals, empty and error states. |
+| RM-426 | Public website redesign | ⏭ | Home, solutions, about, contact, discovery, AI Scan purchase journey. |
+| RM-427 | Client Portal redesign | ⏭ | Including the Book Viewer surface from RM-405. |
+| RM-428 | Developer Workspace redesign | ⏭ | |
+| RM-429 | Admin and Super Admin console redesign | ⏭ | The largest surface, and the one carrying the sample-data screens. |
+| RM-430 | Ops Console redesign | ⏭ | |
+| RM-431 | Assessment experience surface | ⏭ | UX-001 to UX-003 already constrain this: same design family, never a generic survey tool. |
+| RM-432 | Responsive behaviour across every surface | ⏭ | Phone width upward, verified rather than assumed. |
+| RM-433 | Accessibility pass | ⏭ | A11Y-001 to A11Y-003. Keyboard, focus states, contrast, reduced motion. |
+| RM-434 | Dark and light handling where applicable | ⏭ | Decide once, apply everywhere. |
+| RM-435 | Re-localisation of redesigned copy across supported languages | ⏭ | Scheduling §25 requires professional localisation, not machine translation. Ten languages ship today. |
+| RM-436 | Visual regression coverage | ⏭ | A redesign without it silently breaks surfaces nobody opened during QA. |
+| RM-437 | Migration plan for live surfaces | ⏭ | The portals are in use. Redesign cannot be a single cutover without a rollback path. |
+
+## What we need before this can be estimated properly
+
+A redesign is the one workstream where the task list is not the hard part. These decide the size:
+
+- **Is there a design direction, or do we create one?** The AI Scan report references establish a
+  visual language for documents. Whether the website and portals adopt that same language, or a
+  separate direction is wanted, changes this workstream substantially.
+- **Is a designer involved on the IO SKY side, or is the design ours to produce?**
+- **Does redesign mean restyling the existing surfaces, or rethinking the flows?** Restyling is
+  bounded. Rethinking navigation and information architecture is a different exercise.
+- **Which surfaces are in scope?** The public website alone is a fraction of the work. Including four
+  portals and the admin console multiplies it.
+- **Does it apply to surfaces being rebuilt anyway?** The AI Scan assessment experience and the report
+  system are already being built new under Workstream 4.7 and will arrive in the approved design
+  language. Redesigning them twice would be waste.
+
+Until those five are answered this workstream is sized as a placeholder. The task list above is the
+shape of the work, not an estimate.
