@@ -42,12 +42,9 @@ import {
   Settings,
   LifeBuoy,
   Menu,
-  Bell,
   Search,
   ChevronDown,
   Plus,
-  Shield,
-  Mail as MailIcon,
   ShieldCheckIcon,
   KeyRound,
   Loader2,
@@ -398,35 +395,14 @@ export function AdminLayout({
                 </span>
               </div>
 
-              {/* Notification cluster */}
-              <div className="flex items-center gap-1.5">
-                {[
-                  { icon: Shield, count: 7, tone: "alert" as const },
-                  { icon: MailIcon, count: 23, tone: "info" as const },
-                  { icon: Bell, count: 12, tone: "warn" as const },
-                ].map(({ icon: Icon, count, tone }, idx) => (
-                  <button
-                    key={idx}
-                    aria-label="Notifications"
-                    className="relative w-9 h-9 rounded-[10px] border border-white/[0.07] hover:border-[#F58A1F]/40 text-white/70 hover:text-white transition-colors"
-                  >
-                    <Icon className="w-4 h-4 mx-auto" />
-                    <span
-                      className={cn(
-                        "absolute -top-1.5 -right-1.5 px-1 min-w-[18px] h-[18px] rounded-full text-[9.5px] font-mono leading-[18px] text-center",
-                        tone === "alert"
-                          ? "bg-red-500/90 text-white"
-                          : tone === "warn"
-                          ? "bg-[#F58A1F]/90 text-[#0D2D2E]"
-                          : "bg-white/15 text-white",
-                      )}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
+              {/*
+               * The header previously rendered three icon buttons carrying
+               * hardcoded counts (7 / 23 / 12) with no click handler and no
+               * backing data. There is no admin-scoped notification source in
+               * the platform yet, so rather than present invented figures as
+               * live operational data the cluster is removed. It returns when
+               * an admin notification feed exists to drive it.
+               */}
               {/* System status pill */}
               <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-[10px] bg-emerald-400/[0.05] border border-emerald-400/25 text-emerald-200">
                 <ShieldCheckIcon className="w-3.5 h-3.5" />

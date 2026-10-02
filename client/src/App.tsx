@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import MfaChallenge from "@/pages/MfaChallenge";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Redirect, Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PortalErrorBoundary from "./components/PortalErrorBoundary";
 import RouteTransition from "./components/RouteTransition";
@@ -28,7 +28,6 @@ import AIScanResult from "./pages/AIScanResult";
 import BookStrategy from "./pages/BookStrategy";
 import Contact from "./pages/Contact";
 import EngineeringAccess from "./pages/EngineeringAccess";
-import Portal from "./pages/Portal";
 import Security from "./pages/Security";
 import Legal from "./pages/Legal";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
@@ -73,9 +72,14 @@ function Router() {
       <Route path="/booking/reschedule" component={BookingAction} />
       <Route path="/contact" component={Contact} />
       <Route path="/engineering-access" component={EngineeringAccess} />
-      <Route path="/portal/client">{() => <Portal role="client" />}</Route>
-      <Route path="/portal/admin">{() => <Portal role="admin" />}</Route>
-      <Route path="/portal/developer">{() => <Portal role="developer" />}</Route>
+      {/*
+       * The /portal/* paths used to serve a deliberately non-functional
+       * "Coming soon" stub. Those surfaces are now built, so the old paths
+       * redirect into the real portals rather than showing a dead page.
+       */}
+      <Route path="/portal/client">{() => <Redirect to="/client-portal" />}</Route>
+      <Route path="/portal/admin">{() => <Redirect to="/admin" />}</Route>
+      <Route path="/portal/developer">{() => <Redirect to="/developer-workspace" />}</Route>
       <Route path="/admin" component={() => <PortalErrorBoundary><AdminPortal /></PortalErrorBoundary>} />
       <Route path="/admin/bookings" component={() => <PortalErrorBoundary><AdminPortal /></PortalErrorBoundary>} />
       <Route path="/admin/:section*" component={() => <PortalErrorBoundary><AdminPortal /></PortalErrorBoundary>} />

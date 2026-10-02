@@ -42,7 +42,6 @@ import {
   Plus,
   RefreshCw,
   Play,
-  Stethoscope,
   CircleDot,
   CheckCircle2,
   ChevronRight,
@@ -430,17 +429,13 @@ export default function ExecutiveOverview() {
             ))}
           </ul>
 
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] bg-gradient-to-b from-[#FFA64D] to-[#F58A1F] text-[#0D2D2E] text-[11.5px] font-semibold shadow-[0_6px_18px_-6px_rgba(245,138,31,0.55)]">
-              <Plus className="w-3.5 h-3.5" /> Ask Agent
-            </button>
-            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] border border-white/[0.08] text-[11.5px] text-white/80 hover:border-[#F58A1F]/35 transition-colors">
-              <Activity className="w-3.5 h-3.5" /> Operational Brief
-            </button>
-            <button className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-[10px] border border-white/[0.08] text-[11.5px] text-white/80 hover:border-[#F58A1F]/35 transition-colors">
-              <Stethoscope className="w-3.5 h-3.5" /> Run Diagnostics
-            </button>
-          </div>
+          {/*
+           * "Ask Agent", "Operational Brief" and "Run Diagnostics" were
+           * rendered here with no click handler and no backing capability.
+           * No AI agent, briefing generator or diagnostics runner exists in
+           * the platform yet, so the controls are removed rather than shown
+           * as working features. They return with Workstream 4.2 and 4.7.
+           */}
         </div>
 
         {/* Operational Command Center */}
