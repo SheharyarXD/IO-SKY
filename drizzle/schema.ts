@@ -1,6 +1,8 @@
 import {
   uniqueIndex,
   bigint,
+  boolean,
+  date,
   index,
   integer,
   pgEnum,
@@ -666,6 +668,8 @@ export const clientProjects = pgTable(
     targetMs: bigint("targetMs", { mode: "number" }),
     status: clientProjectsStatusEnum("status").default("active").notNull(),
     summary: text("summary"),
+    /** SRS 15.17: archived projects leave active views but are never deleted. */
+    archivedAt: timestamp("archivedAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   (table) => [index("client_projects_organization_id_idx").on(table.organizationId)],
@@ -2236,3 +2240,310 @@ export const privacyRequestEvents = pgTable(
 );
 export type PrivacyRequestEvent = typeof privacyRequestEvents.$inferSelect;
 export type InsertPrivacyRequestEvent = typeof privacyRequestEvents.$inferInsert;
+
+
+// ===========================================================================
+// SRS completion (migration 0023). Status columns are varchar so a new state
+// never needs ALTER TYPE; the allowed values are documented per column and
+// enforced by the zod inputs on the routers that write them.
+// ===========================================================================
+
+export const developerTimeEntries = pgTable(
+  "developer_time_entries",
+  {
+    id: serial("id").primaryKey(),
+    developerId: integer("developerId").notNull().references(() => developerProfiles.id, { onDelete: "cascade" }),
+    projectId: integer("projectId").notNull().references(() => developerProjects.id, { onDelete: "cascade" }),
+    taskId: integer("taskId").references(() => developerTasks.id, { onDelete: "set null" }),
+    workDate: date("workDate").notNull(),
+    minutes: integer("minutes").notNull(),
+    note: text("note"),
+    /** submitted | approved | rejected */
+    status: varchar("status", { length: 24 }).default("submitted").notNull(),
+    reviewedByUserId: integer("reviewedByUserId").references(() => users.id),
+    reviewedAt: timestamp("reviewedAt"),
+    reviewNote: text("reviewNote"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [
+    index("developer_time_entries_dev_idx").on(t.developerId, t.workDate),
+    index("developer_time_entries_project_idx").on(t.projectId),
+  ],
+);
+export type DeveloperTimeEntry = typeof developerTimeEntries.$inferSelect;
+
+export const crmOpportunities = pgTable(
+  "crm_opportunities",
+  {
+    id: serial("id").primaryKey(),
+    title: varchar("title", { length: 200 }).notNull(),
+    leadId: integer("leadId").references(() => leads.id, { onDelete: "set null" }),
+    organizationId: integer("organizationId").references(() => organizations.id, { onDelete: "set null" }),
+    /** qualification | discovery | proposal | negotiation | won | lost */
+    stage: varchar("stage", { length: 24 }).default("qualification").notNull(),
+    valueCents: bigint("valueCents", { mode: "number" }).default(0).notNull(),
+    currency: varchar("currency", { length: 3 }).default("EUR").notNull(),
+    ownerUserId: integer("ownerUserId").references(() => users.id),
+    expectedCloseDate: date("expectedCloseDate"),
+    lostReason: text("lostReason"),
+    handoverClientProjectId: integer("handoverClientProjectId").references(() => clientProjects.id, { onDelete: "set null" }),
+    closedAt: timestamp("closedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (t) => [index("crm_opportunities_stage_idx").on(t.stage)],
+);
+export type CrmOpportunity = typeof crmOpportunities.$inferSelect;
+
+export const crmProposals = pgTable(
+  "crm_proposals",
+  {
+    id: serial("id").primaryKey(),
+    opportunityId: integer("opportunityId").notNull().references(() => crmOpportunities.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 200 }).notNull(),
+    /** draft | sent | accepted | rejected | expired */
+    status: varchar("status", { length: 24 }).default("draft").notNull(),
+    amountCents: bigint("amountCents", { mode: "number" }).default(0).notNull(),
+    currency: varchar("currency", { length: 3 }).default("EUR").notNull(),
+    validUntil: date("validUntil"),
+    body: text("body"),
+    sentAt: timestamp("sentAt"),
+    decidedAt: timestamp("decidedAt"),
+    createdByUserId: integer("createdByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (t) => [index("crm_proposals_opp_idx").on(t.opportunityId)],
+);
+export type CrmProposal = typeof crmProposals.$inferSelect;
+
+export const crmActivities = pgTable(
+  "crm_activities",
+  {
+    id: serial("id").primaryKey(),
+    /** call | email | meeting | note | follow_up */
+    kind: varchar("kind", { length: 24 }).notNull(),
+    subject: varchar("subject", { length: 200 }).notNull(),
+    body: text("body"),
+    leadId: integer("leadId").references(() => leads.id, { onDelete: "cascade" }),
+    opportunityId: integer("opportunityId").references(() => crmOpportunities.id, { onDelete: "cascade" }),
+    organizationId: integer("organizationId").references(() => organizations.id, { onDelete: "cascade" }),
+    dueAt: timestamp("dueAt"),
+    completedAt: timestamp("completedAt"),
+    createdByUserId: integer("createdByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("crm_activities_lead_idx").on(t.leadId), index("crm_activities_opp_idx").on(t.opportunityId)],
+);
+export type CrmActivity = typeof crmActivities.$inferSelect;
+
+export const quotes = pgTable("quotes", {
+  id: serial("id").primaryKey(),
+  publicRef: varchar("publicRef", { length: 32 }).notNull().unique(),
+  organizationId: integer("organizationId").references(() => organizations.id, { onDelete: "set null" }),
+  opportunityId: integer("opportunityId").references(() => crmOpportunities.id, { onDelete: "set null" }),
+  title: varchar("title", { length: 200 }).notNull(),
+  /** JSON text: [{description, quantity, unitCents}] */
+  linesJson: text("linesJson").default("[]").notNull(),
+  totalCents: bigint("totalCents", { mode: "number" }).default(0).notNull(),
+  currency: varchar("currency", { length: 3 }).default("EUR").notNull(),
+  /** draft | sent | accepted | rejected | expired */
+  status: varchar("status", { length: 24 }).default("draft").notNull(),
+  validUntil: date("validUntil"),
+  createdByUserId: integer("createdByUserId").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type Quote = typeof quotes.$inferSelect;
+
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    id: serial("id").primaryKey(),
+    organizationId: integer("organizationId").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    plan: varchar("plan", { length: 96 }).notNull(),
+    /** active | paused | past_due | cancelled */
+    status: varchar("status", { length: 24 }).default("active").notNull(),
+    amountCents: bigint("amountCents", { mode: "number" }).default(0).notNull(),
+    currency: varchar("currency", { length: 3 }).default("EUR").notNull(),
+    /** monthly | quarterly | yearly */
+    billingInterval: varchar("billingInterval", { length: 16 }).default("monthly").notNull(),
+    startedAt: timestamp("startedAt").defaultNow().notNull(),
+    renewsAt: timestamp("renewsAt"),
+    cancelledAt: timestamp("cancelledAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (t) => [index("subscriptions_org_idx").on(t.organizationId)],
+);
+export type Subscription = typeof subscriptions.$inferSelect;
+
+export const notificationPreferences = pgTable(
+  "notification_preferences",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+    /** account | project | billing | support | marketing | security */
+    category: varchar("category", { length: 32 }).notNull(),
+    /** email | in_app */
+    channel: varchar("channel", { length: 16 }).notNull(),
+    enabled: boolean("enabled").default(true).notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("notification_preferences_unique_idx").on(t.userId, t.category, t.channel)],
+);
+export type NotificationPreference = typeof notificationPreferences.$inferSelect;
+
+export const adminNotifications = pgTable("admin_notifications", {
+  id: serial("id").primaryKey(),
+  kind: varchar("kind", { length: 64 }).notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  body: text("body"),
+  href: varchar("href", { length: 256 }),
+  /** low | normal | high | critical */
+  priority: varchar("priority", { length: 16 }).default("normal").notNull(),
+  readAt: timestamp("readAt"),
+  readByUserId: integer("readByUserId").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AdminNotification = typeof adminNotifications.$inferSelect;
+
+export const projectApprovals = pgTable(
+  "project_approvals",
+  {
+    id: serial("id").primaryKey(),
+    projectId: integer("projectId").notNull().references(() => clientProjects.id, { onDelete: "cascade" }),
+    milestoneId: integer("milestoneId").references(() => clientProjectMilestones.id, { onDelete: "set null" }),
+    title: varchar("title", { length: 200 }).notNull(),
+    description: text("description"),
+    /** pending | approved | rejected */
+    status: varchar("status", { length: 16 }).default("pending").notNull(),
+    requestedByUserId: integer("requestedByUserId").references(() => users.id),
+    decidedByUserId: integer("decidedByUserId").references(() => users.id),
+    decisionNote: text("decisionNote"),
+    decidedAt: timestamp("decidedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("project_approvals_project_idx").on(t.projectId, t.status)],
+);
+export type ProjectApproval = typeof projectApprovals.$inferSelect;
+
+export const aiAgents = pgTable("ai_agents", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 120 }).notNull(),
+  purpose: text("purpose"),
+  /** active | disabled */
+  status: varchar("status", { length: 16 }).default("active").notNull(),
+  permissionsJson: text("permissionsJson").default("[]").notNull(),
+  requiresHumanApproval: boolean("requiresHumanApproval").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type AiAgent = typeof aiAgents.$inferSelect;
+
+export const aiPromptVersions = pgTable(
+  "ai_prompt_versions",
+  {
+    id: serial("id").primaryKey(),
+    agentKey: varchar("agentKey", { length: 64 }).notNull().references(() => aiAgents.key, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    body: text("body").notNull(),
+    changeNote: text("changeNote"),
+    isActive: boolean("isActive").default(false).notNull(),
+    createdByUserId: integer("createdByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("ai_prompt_versions_unique_idx").on(t.agentKey, t.version)],
+);
+export type AiPromptVersion = typeof aiPromptVersions.$inferSelect;
+
+export const aiExecutions = pgTable(
+  "ai_executions",
+  {
+    id: serial("id").primaryKey(),
+    agentKey: varchar("agentKey", { length: 64 }).notNull(),
+    promptVersion: integer("promptVersion"),
+    action: varchar("action", { length: 96 }).notNull(),
+    subjectRef: varchar("subjectRef", { length: 128 }),
+    /** completed | failed | blocked_by_permission | awaiting_approval | approved | rejected */
+    outcome: varchar("outcome", { length: 32 }).notNull(),
+    detail: text("detail"),
+    approvedByUserId: integer("approvedByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("ai_executions_agent_idx").on(t.agentKey, t.createdAt)],
+);
+export type AiExecution = typeof aiExecutions.$inferSelect;
+
+export const configHistory = pgTable(
+  "config_history",
+  {
+    id: serial("id").primaryKey(),
+    settingKey: varchar("settingKey", { length: 128 }).notNull(),
+    oldValue: text("oldValue"),
+    newValue: text("newValue").notNull(),
+    /** applied | rejected */
+    outcome: varchar("outcome", { length: 16 }).notNull(),
+    reason: text("reason"),
+    changedByUserId: integer("changedByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("config_history_key_idx").on(t.settingKey, t.createdAt)],
+);
+export type ConfigHistoryRow = typeof configHistory.$inferSelect;
+
+export const incidents = pgTable(
+  "incidents",
+  {
+    id: serial("id").primaryKey(),
+    /** security | operational */
+    category: varchar("category", { length: 16 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    description: text("description"),
+    /** low | medium | high | critical */
+    severity: varchar("severity", { length: 16 }).default("medium").notNull(),
+    /** open | investigating | resolved | closed */
+    status: varchar("status", { length: 16 }).default("open").notNull(),
+    assignedToUserId: integer("assignedToUserId").references(() => users.id),
+    resolution: text("resolution"),
+    reportedByUserId: integer("reportedByUserId").references(() => users.id),
+    closedAt: timestamp("closedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (t) => [index("incidents_open_idx").on(t.category, t.status)],
+);
+export type Incident = typeof incidents.$inferSelect;
+
+export const alertRules = pgTable("alert_rules", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 64 }).notNull().unique(),
+  title: varchar("title", { length: 200 }).notNull(),
+  /** failed_logins | webhook_failures | email_failures | open_critical_incidents */
+  metric: varchar("metric", { length: 48 }).notNull(),
+  threshold: integer("threshold").notNull(),
+  windowMinutes: integer("windowMinutes").default(60).notNull(),
+  severity: varchar("severity", { length: 16 }).default("high").notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  lastFiredAt: timestamp("lastFiredAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AlertRule = typeof alertRules.$inferSelect;
+
+export const scheduledReports = pgTable("scheduled_reports", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 160 }).notNull(),
+  /** pipeline | billing | delivery | security */
+  reportKind: varchar("reportKind", { length: 32 }).notNull(),
+  /** daily | weekly | monthly */
+  cadence: varchar("cadence", { length: 16 }).notNull(),
+  recipientsJson: text("recipientsJson").default("[]").notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  nextRunAt: timestamp("nextRunAt").notNull(),
+  lastRunAt: timestamp("lastRunAt"),
+  lastStatus: varchar("lastStatus", { length: 16 }),
+  createdByUserId: integer("createdByUserId").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ScheduledReport = typeof scheduledReports.$inferSelect;

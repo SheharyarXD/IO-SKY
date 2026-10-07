@@ -110,11 +110,27 @@ function withDerivedRows(rows: PlatformSetting[]): PlatformSetting[] {
   );
 }
 
+const MAINTENANCE_SETTING = {
+  section: "operations",
+  key: "operations.maintenance_mode",
+  title: "Maintenance mode",
+  description: 'Set to "on" to return a maintenance response to everyone except administrators and sign in.',
+  value: "off",
+};
+
 export async function listPlatformSettings(): Promise<PlatformSetting[]> {
   const db = await getDb();
   if (!db) return [];
   const existing = await db.select().from(platformSettings).orderBy(asc(platformSettings.section));
-  if (existing.length > 0) return withDerivedRows(existing);
+  if (existing.length > 0) {
+    // Settings added after the first seed (the maintenance toggle) would
+    // otherwise never exist on a database that was seeded earlier.
+    if (!existing.some((r) => r.key === "operations.maintenance_mode")) {
+      await db.insert(platformSettings).values(MAINTENANCE_SETTING).onConflictDoNothing();
+      return withDerivedRows(await db.select().from(platformSettings).orderBy(asc(platformSettings.section)));
+    }
+    return withDerivedRows(existing);
+  }
 
   // First-ever read: seed the default rows so the page has real persisted
   // state from day one instead of silently staying empty forever.

@@ -38,6 +38,7 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { notifyOwner } from "../_core/notification";
 import { storageDelete, storageGetSignedUrl, storagePut } from "../storage";
 import { clientProcedure, router } from "../_core/trpc";
+import { createAdminNotification, decideProjectApproval, listApprovalsForOrganization } from "../db";
 import { generatePublicRef } from "../_core/publicRef";
 
 const supportTicketSchema = z.object({
@@ -844,6 +845,33 @@ export const clientPortalRouter = router({
         /* notification is best-effort */
       }
       return { publicRef };
+    }),
+
+  /**
+   * Customer approval gates (BR-019, SRS 15.13). Scoped to the caller's
+   * organization by a join through client_projects, so one tenant can never
+   * see or decide another's approval.
+   */
+  approvals: clientProcedure.query(async ({ ctx }) => listApprovalsForOrganization(ctx.organizationId)),
+
+  decideApproval: clientProcedure
+    .input(z.object({ id: z.number().int().positive(), decision: z.enum(["approved", "rejected"]), note: z.string().trim().max(1000).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      if (input.decision === "rejected" && !input.note) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Please say what needs to change." });
+      }
+      const res = await decideProjectApproval({ id: input.id, organizationId: ctx.organizationId, userId: ctx.user.id, decision: input.decision, note: input.note ?? null });
+      if (res === "not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Approval not found." });
+      if (res === "already_decided") throw new TRPCError({ code: "CONFLICT", message: "This approval has already been decided." });
+      if (!res) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not record the decision." });
+      await createAdminNotification({
+        kind: "project_approval",
+        title: `Customer ${input.decision} an approval: ${res.title}`,
+        body: input.note ?? null,
+        href: "/admin/projects",
+        priority: input.decision === "rejected" ? "high" : "normal",
+      });
+      return res;
     }),
 });
 

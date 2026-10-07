@@ -118,7 +118,7 @@ import {
 // Audit helper
 // ---------------------------------------------------------------------------
 
-async function recordAdminEvent(opts: {
+export async function recordAdminEvent(opts: {
   ctx: any;
   reason: string;
   outcome?: "success" | "failed";

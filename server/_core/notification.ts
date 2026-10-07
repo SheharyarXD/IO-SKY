@@ -117,6 +117,19 @@ export async function notifyOwner(
   payload: NotificationPayload
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
+
+  // SRS 12.15: an admin had no in-app notification source, so a new lead or a
+  // failed delivery only ever reached the owner mailbox. Every owner alert is
+  // now also a row in the admin bell. Written first and independently of the
+  // email, so a missing OWNER_NOTIFY_EMAIL cannot hide it. Imported lazily to
+  // keep this module free of a static dependency on the db layer.
+  try {
+    const { createAdminNotification } = await import("../db");
+    await createAdminNotification({ kind: "owner_alert", title: title.slice(0, 200), body: content.slice(0, 2000), priority: "normal" });
+  } catch (err) {
+    console.error("[Notification] Could not record the admin notification:", err);
+  }
+
   const { email: ownerNotifyEmail, slackWebhookUrl } = getOwnerNotifyConfig();
 
   if (!ownerNotifyEmail) {

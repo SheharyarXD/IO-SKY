@@ -18,6 +18,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./staticServer";
 import { dispatchDueBookingReminders } from "./bookingReminders";
+import { registerMaintenanceMode, startOperationsJobs } from "./operations";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -93,6 +94,9 @@ async function startServer() {
   // or load balancer can probe them without holding the staging password. They
   // expose no data beyond liveness, readiness and the build commit.
   registerHealthRoutes(app);
+  // SRS 25.8: maintenance mode. After health so probes still pass, before the
+  // gate and routers so it covers everything except sign in and the admin surfaces.
+  registerMaintenanceMode(app);
 
   // Private staging / pre-launch gate (no-op unless STAGING_MODE=on).
   registerStagingGate(app);
@@ -170,6 +174,7 @@ async function startServer() {
   // is the whole mechanism; dispatchDueBookingReminders() is idempotent
   // (each reminder row is claimed via markBookingReminderSent) and a no-op
   // when no database is configured, so this is safe to always start.
+  startOperationsJobs();
   const REMINDER_INTERVAL_MS = 5 * 60_000;
   setInterval(() => {
     dispatchDueBookingReminders().catch((err) =>

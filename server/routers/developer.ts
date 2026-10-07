@@ -15,6 +15,8 @@ import {
   appendDeveloperNotification,
   appendDeveloperSecurityEvent,
   createDeveloperAccessRequest,
+  createTimeEntry,
+  listTimeEntriesForDeveloper,
   createDeveloperSubmission,
   createDeveloperSupportTicket,
   evaluateDeveloperGate,
@@ -38,6 +40,7 @@ import {
   updateUserMfaMethod,
 } from "../db";
 import { storageGetSignedUrl } from "../storage";
+import { checkTimeEntry } from "../../shared/srsRules";
 import { getRequestMeta } from "../_core/requestMeta";
 
 /**
@@ -671,6 +674,57 @@ export const developerRouter = router({
   getProfileForEdit: developerSelfProcedure.query(async ({ ctx }) => {
     return getDeveloperProfileByUserId(ctx.user.id);
   }),
+
+  /**
+   * Time registration (SRS 11.8). A developer logs hours only against a
+   * project they hold an ACTIVE assignment on (BR-018), enforced in the same
+   * transaction as the insert. Dates are bounded by shared/srsRules.
+   */
+  myTimeEntries: developerSelfProcedure.query(async ({ ctx }) => listTimeEntriesForDeveloper(ctx.developer.id)),
+
+  logTime: developerSelfProcedure
+    .input(
+      z.object({
+        projectId: z.number().int().positive(),
+        taskId: z.number().int().positive().optional(),
+        workDate: z.string(),
+        minutes: z.number().int(),
+        note: z.string().trim().max(1000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const verdict = checkTimeEntry({ workDate: input.workDate, minutes: input.minutes, now: new Date() });
+      if (!verdict.ok) throw new TRPCError({ code: "BAD_REQUEST", message: verdict.reason });
+      const entry = await createTimeEntry({
+        developerId: ctx.developer.id,
+        projectId: input.projectId,
+        taskId: input.taskId ?? null,
+        workDate: input.workDate,
+        minutes: input.minutes,
+        note: input.note ?? null,
+      });
+      if (entry === "not_on_project") {
+        await appendDeveloperSecurityEvent({
+          developerId: ctx.developer.id,
+          kind: "unauthorized_route",
+          severity: "warn",
+          message: "Attempt to log time on an unassigned project",
+          detail: `projectId=${input.projectId}`,
+          ...callerMeta(ctx.req),
+        });
+        throw new TRPCError({ code: "FORBIDDEN", message: "You are not assigned to that project." });
+      }
+      if (!entry) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not record the time." });
+      const meta = callerMeta(ctx.req);
+      await appendDeveloperAudit({
+        developerId: ctx.developer.id,
+        event: "time.logged",
+        detail: `entry=${entry.id} project=${input.projectId} minutes=${input.minutes}`,
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+      });
+      return entry;
+    }),
 });
 
 export type DeveloperRouter = typeof developerRouter;

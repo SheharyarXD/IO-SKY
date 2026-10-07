@@ -13,6 +13,7 @@ import { mfaRouter } from "./routers/mfa";
 import { privacyRouter } from "./routers/privacy";
 import { profileRouter } from "./routers/profile";
 import { adminRouter } from "./routers/admin";
+import { adminOpsRouter } from "./routers/adminOps";
 import { opsRouter } from "./routers/ops";
 import { bookingAdminRouter } from "./routers/bookingAdmin";
 import { solutionsRouter } from "./routers/solutions";
@@ -102,6 +103,7 @@ export const appRouter = router({
   privacy: privacyRouter,
   profile: profileRouter,
   admin: adminRouter,
+  adminOps: adminOpsRouter,
   ops: opsRouter,
   bookingAdmin: bookingAdminRouter,
   solutions: solutionsRouter,

@@ -39,6 +39,8 @@ const WORKFLOW_COVERAGE: Record<string, string> = {
   "Admin action / audited buttons": "server/admin.modules.test.ts",
   "Developer access granting": "server/admin.grantDeveloperAccess.test.ts",
   "Developer project, task and message delivery": "server/admin.developerDelivery.test.ts",
+  "SRS completion (CRM, quotes, governance, incidents, alerts)": "server/admin.srsOps.test.ts",
+  "SRS business rules (lifecycles, policy, validation)": "server/srsRules.test.ts",
   "AI Scan retrigger": "server/admin.retriggerAiScan.test.ts",
 
   // --- §2.5 enterprise governance ---

@@ -16,6 +16,8 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { NOTIFICATION_CATEGORIES, NOTIFICATION_CHANNELS, shouldDeliver } from "../../shared/srsRules";
+import { listNotificationPreferences, setNotificationPreference } from "../db";
 import {
   appendLoginAudit,
   getUserById,
@@ -253,4 +255,31 @@ export const profileRouter = router({
 
     return { ok: true as const };
   }),
+
+  /**
+   * Notification preferences (SRS 17.11). The caller's own rows only. The
+   * security category is returned as locked: it is always delivered
+   * (SRS 17.13) and the UI must not offer a switch that does nothing.
+   */
+  notificationPreferences: protectedProcedure.query(async ({ ctx }) => {
+    const stored = await listNotificationPreferences(ctx.user.id);
+    return NOTIFICATION_CATEGORIES.flatMap((category) =>
+      NOTIFICATION_CHANNELS.map((channel) => ({
+        category,
+        channel,
+        locked: category === "security",
+        enabled: shouldDeliver({ category, channel, prefs: stored }),
+      })),
+    );
+  }),
+
+  setNotificationPreference: protectedProcedure
+    .input(z.object({ category: z.enum(NOTIFICATION_CATEGORIES), channel: z.enum(NOTIFICATION_CHANNELS), enabled: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      if (input.category === "security") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Security notifications are always delivered." });
+      }
+      await setNotificationPreference({ userId: ctx.user.id, ...input });
+      return { ok: true as const };
+    }),
 });

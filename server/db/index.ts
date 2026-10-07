@@ -41,3 +41,6 @@ export * from "./platformSettings";
 export * from "./workflows";
 export * from "./webhooks";
 export * from "./privacy";
+export * from "./srsDelivery";
+export * from "./srsSales";
+export * from "./srsGovernance";
