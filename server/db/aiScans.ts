@@ -4,7 +4,7 @@
  * Database helpers for the AI Scan feature.
  * Covers: create, lookup by token/id, status update, list, PDF key cache.
  */
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   aiScans,
   aiScanStatusEvents,
@@ -170,4 +170,22 @@ export async function setAiScanReportPdfKey(
   const db = await getDb();
   if (!db) return;
   await db.update(aiScans).set({ reportPdfKey }).where(eq(aiScans.id, id));
+}
+
+/**
+ * Progress of the caller's own scans for the Client Portal (SRS 9.6, 10.9).
+ * Matched by the signed in account's email, case insensitively. The report
+ * token, which is the key to the report itself, is returned only once the
+ * report is Published, so progress never leaks access to an unreleased report.
+ */
+export async function listAiScanProgressForEmail(email: string) {
+  const db = await getDb();
+  if (!db || !email) return [];
+  const rows = await db
+    .select({ id: aiScans.id, tier: aiScans.tier, reportStatus: aiScans.reportStatus, createdAt: aiScans.createdAt, publishedAt: aiScans.publishedAt, reportToken: aiScans.reportToken })
+    .from(aiScans)
+    .where(sql`lower(${aiScans.email}) = lower(${email})`)
+    .orderBy(desc(aiScans.createdAt))
+    .limit(20);
+  return rows.map(({ reportToken, ...r }) => ({ ...r, reportToken: r.reportStatus === "published" ? reportToken : null }));
 }

@@ -112,6 +112,7 @@ function Tasks() {
   const devOptions = useDevOptions();
   const createTask = trpc.admin.createDeveloperTask.useMutation({ onSuccess: () => utils.admin.developerTasks.invalidate() });
   const assignTask = trpc.admin.assignDeveloperTask.useMutation({ onSuccess: () => utils.admin.developerTasks.invalidate() });
+  const comment = trpc.adminOps.commentOnTask.useMutation();
   const cols: DataColumn<NonNullable<typeof tasks.data>[number]>[] = [
     { key: "id", header: "Ref", width: "64px", render: (r) => <span className="font-mono text-white/55">T-{r.id}</span> },
     { key: "projectCode", header: "Project" },
@@ -145,6 +146,17 @@ function Tasks() {
           { name: "developerId", label: "Developer", type: "select", required: true, options: devOptions, hint: "The developer must already be on the task's project." },
         ]}
         onSubmit={(v) => assignTask.mutateAsync({ taskId: Number(v.taskId), developerId: Number(v.developerId) })}
+      />
+      <FormCard
+        title="Answer or comment on a task"
+        submitLabel="Post comment"
+        successMessage="Comment posted. The assigned developers can read it on the task."
+        columns={1}
+        fields={[
+          { name: "taskId", label: "Task", type: "select", required: true, options: (tasks.data ?? []).map((t) => ({ value: String(t.id), label: `T-${t.id} ${t.projectCode}: ${t.title}` })) },
+          { name: "body", label: "Comment", type: "textarea", required: true },
+        ]}
+        onSubmit={(v) => comment.mutateAsync({ taskId: Number(v.taskId), body: v.body })}
       />
     </>
   );

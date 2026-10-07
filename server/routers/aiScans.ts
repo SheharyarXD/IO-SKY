@@ -23,7 +23,10 @@ import { z } from "zod";
 import {
   createAiScan,
   createLead,
+  deleteAiScanDraft,
   getAiScanByToken,
+  loadAiScanDraft,
+  saveAiScanDraft,
   setAiScanReportPdfKey,
   updateAiScanStatus,
 } from "../db";
@@ -48,6 +51,8 @@ export type AiScanTier = (typeof AI_SCAN_TIERS)[number];
 const SUBMISSION_LIMIT_PER_MIN = 6;
 
 export const isAiScanRateLimited = createRateLimiter(SUBMISSION_LIMIT_PER_MIN);
+// Autosaving a draft happens once per answered step, so it gets a roomier limit.
+const isDraftRateLimited = createRateLimiter(60);
 
 // ── Inputs ──────────────────────────────────────────────────────────────────
 const submitLeadInput = z.object({
@@ -87,6 +92,17 @@ const submitQuestionnaireInput = z.object({
   contextNote: z.string().max(2000).optional(),
   utmSource: z.string().max(120).optional().nullable(),
   utmCampaign: z.string().max(120).optional().nullable(),
+  website: z.string().max(0).optional().nullable(),
+  /** Present when the visitor resumed a saved draft; the draft is deleted once the scan is saved. */
+  resumeToken: z.string().min(16).max(96).optional(),
+});
+
+const saveDraftInput = z.object({
+  resumeToken: z.string().min(16).max(96).optional(),
+  tier: z.enum(AI_SCAN_TIERS),
+  email: z.string().email().max(320).optional(),
+  answers: z.record(z.string().max(64), z.string().max(500)).refine((a) => Object.keys(a).length <= 120, "Too many answers"),
+  stepIndex: z.number().int().min(0).max(200),
   website: z.string().max(0).optional().nullable(),
 });
 
@@ -258,6 +274,32 @@ export const aiScansRouter = router({
    * order returned. The bank itself lives in shared/ so the same source
    * powers both server validation and the React intake form.
    */
+  /**
+   * Resumable questionnaire (SRS 9.7). The resume token is the only way back to
+   * a draft: unguessable, 14 day expiry, and deleted when the scan is submitted.
+   */
+  saveDraft: publicProcedure.input(saveDraftInput).mutation(async ({ ctx, input }) => {
+    if (input.website && input.website.length > 0) return { resumeToken: null, expiresAt: null };
+    const { ip } = getRequestMeta(ctx.req);
+    if (await isDraftRateLimited(ip)) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Saving too quickly. Please wait a moment." });
+    }
+    const known = new Set(AI_SCAN_QUESTION_BANK.map((q) => q.id));
+    const answers = Object.fromEntries(Object.entries(input.answers).filter(([k]) => known.has(k)));
+    const saved = await saveAiScanDraft({ resumeToken: input.resumeToken, tier: input.tier, email: input.email?.trim().toLowerCase() ?? null, answers, stepIndex: input.stepIndex });
+    if (saved === "expired") {
+      throw new TRPCError({ code: "NOT_FOUND", message: "That saved questionnaire has expired. Please start again." });
+    }
+    if (!saved) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not save your progress." });
+    return { resumeToken: saved.resumeToken, expiresAt: saved.expiresAt };
+  }),
+
+  loadDraft: publicProcedure.input(z.object({ resumeToken: z.string().min(16).max(96) })).query(async ({ input }) => {
+    const draft = await loadAiScanDraft(input.resumeToken);
+    if (!draft) throw new TRPCError({ code: "NOT_FOUND", message: "That saved questionnaire was not found or has expired." });
+    return { tier: draft.tier as AiScanTier, answers: draft.answers, stepIndex: draft.stepIndex, expiresAt: draft.expiresAt };
+  }),
+
   getQuestionnaire: publicProcedure
     .input(getQuestionnaireInput)
     .query(({ input }) => {
@@ -360,6 +402,12 @@ export const aiScansRouter = router({
           message:
             "Your scan could not be saved. Please try again in a few minutes.",
         });
+      }
+
+      // The draft has served its purpose. Removed best effort: it holds personal
+      // data, but a leftover row also expires on its own.
+      if (input.resumeToken) {
+        deleteAiScanDraft(input.resumeToken).catch((e) => console.warn("[aiScans] could not delete draft:", e));
       }
 
       // 3) Run scoring. Free tier blocks (small ~7q payload); paid tiers run

@@ -45,3 +45,4 @@ export * from "./srsDelivery";
 export * from "./srsSales";
 export * from "./srsGovernance";
 export * from "./srsOps";
+export * from "./srsExtras";

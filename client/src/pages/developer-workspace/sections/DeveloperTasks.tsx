@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import TaskThread from "../components/TaskThread";
 import { ListTodo, ChevronRight } from "lucide-react";
 
 const STATUS_OPTIONS = [
@@ -172,8 +173,8 @@ export default function DeveloperTasks() {
           {filtered.map((task) => {
             const isMine = !!task.mine;
             return (
+              <div key={task.id}>
               <GlassCard
-                key={task.id}
                 className="p-4 md:p-5 flex flex-col md:flex-row md:items-center md:gap-5 gap-3"
               >
                 <div className="min-w-0 flex-1">
@@ -261,6 +262,8 @@ export default function DeveloperTasks() {
                   )}
                 </div>
               </GlassCard>
+              {isMine ? <TaskThread taskId={task.id} canWrite /> : null}
+              </div>
             );
           })}
         </div>

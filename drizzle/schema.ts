@@ -2572,3 +2572,58 @@ export const aiScanStatusEvents = pgTable(
   (t) => [index("ai_scan_status_events_scan_idx").on(t.scanId, t.createdAt), index("ai_scan_status_events_actor_idx").on(t.actorUserId)],
 );
 export type AiScanStatusEvent = typeof aiScanStatusEvents.$inferSelect;
+
+// Migration 0026: call outcomes, developer task comments, questionnaire drafts.
+
+export const bookingOutcomes = pgTable(
+  "booking_outcomes",
+  {
+    id: serial("id").primaryKey(),
+    bookingId: integer("bookingId").notNull().unique().references(() => bookings.id, { onDelete: "cascade" }),
+    /** qualified | not_a_fit | needs_follow_up | proposal_requested */
+    outcome: varchar("outcome", { length: 32 }).notNull(),
+    notes: text("notes"),
+    followUpAt: timestamp("followUpAt"),
+    recordedByUserId: integer("recordedByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("booking_outcomes_recorded_by_idx").on(t.recordedByUserId)],
+);
+export type BookingOutcome = typeof bookingOutcomes.$inferSelect;
+
+export const developerTaskComments = pgTable(
+  "developer_task_comments",
+  {
+    id: serial("id").primaryKey(),
+    taskId: integer("taskId").notNull().references(() => developerTasks.id, { onDelete: "cascade" }),
+    developerId: integer("developerId").references(() => developerProfiles.id, { onDelete: "cascade" }),
+    authorUserId: integer("authorUserId").references(() => users.id),
+    /** progress_note | comment | clarification_request */
+    kind: varchar("kind", { length: 24 }).notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [
+    index("developer_task_comments_task_idx").on(t.taskId, t.createdAt),
+    index("developer_task_comments_developer_idx").on(t.developerId),
+    index("developer_task_comments_author_idx").on(t.authorUserId),
+  ],
+);
+export type DeveloperTaskComment = typeof developerTaskComments.$inferSelect;
+
+export const aiScanDrafts = pgTable(
+  "ai_scan_drafts",
+  {
+    id: serial("id").primaryKey(),
+    resumeToken: varchar("resumeToken", { length: 64 }).notNull().unique(),
+    tier: varchar("tier", { length: 16 }).notNull(),
+    email: varchar("email", { length: 320 }),
+    answersJson: text("answersJson").default("{}").notNull(),
+    stepIndex: integer("stepIndex").default(0).notNull(),
+    expiresAt: timestamp("expiresAt").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (t) => [index("ai_scan_drafts_expires_idx").on(t.expiresAt)],
+);
+export type AiScanDraft = typeof aiScanDrafts.$inferSelect;

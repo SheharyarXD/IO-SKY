@@ -25,6 +25,8 @@ const m = vi.hoisted(() => ({
   archiveClientProject: vi.fn(),
   createScheduledReport: vi.fn(),
   exportAuditLog: vi.fn(),
+  recordCallOutcome: vi.fn(),
+  addTaskCommentByStaff: vi.fn(),
   transitionAiScanReport: vi.fn(),
   getAiScanById: vi.fn(),
   assignAiScanReviewer: vi.fn(),
@@ -260,5 +262,29 @@ describe("AI Scan expert review", () => {
   it("only regenerates a report that was sent back", async () => {
     m.getAiScanById.mockResolvedValueOnce({ id: 7, reportStatus: "awaiting_expert_review" });
     await expect(as("admin").adminOps.regenerateAiScanReport({ scanId: 7 })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+});
+
+describe("Discovery Call outcomes and task comments", () => {
+  it("demands a follow up date for a follow up outcome before touching the database", async () => {
+    await expect(as("admin").adminOps.recordCallOutcome({ bookingId: 3, outcome: "needs_follow_up" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(m.recordCallOutcome).not.toHaveBeenCalled();
+  });
+  it("records an outcome with the follow up and audits it", async () => {
+    m.recordCallOutcome.mockResolvedValueOnce({ outcome: { id: 1 }, leadId: 5 });
+    await as("admin").adminOps.recordCallOutcome({ bookingId: 3, outcome: "needs_follow_up", followUpAt: Date.now() + 86_400_000, notes: "Send pricing" });
+    expect(m.recordCallOutcome).toHaveBeenCalledWith(expect.objectContaining({ bookingId: 3, userId: 99, notes: "Send pricing" }));
+    expect(m.appendLoginAudit).toHaveBeenCalledWith(expect.objectContaining({ reason: expect.stringContaining("admin.call_outcome(3:needs_follow_up)") }));
+  });
+  it("refuses an outcome on a cancelled call", async () => {
+    m.recordCallOutcome.mockResolvedValueOnce("booking_cancelled");
+    await expect(as("admin").adminOps.recordCallOutcome({ bookingId: 3, outcome: "qualified" })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+  it("will not comment on a task nobody holds", async () => {
+    m.addTaskCommentByStaff.mockResolvedValueOnce("task_not_found");
+    await expect(as("admin").adminOps.commentOnTask({ taskId: 9, body: "hi" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+  it("keeps a technical operator out of call outcomes", async () => {
+    await expect(as("technical_operator").adminOps.recordCallOutcome({ bookingId: 3, outcome: "qualified" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

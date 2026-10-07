@@ -72,7 +72,8 @@ import {
   type OpportunityStage,
 } from "../../shared/srsRules";
 import { recordAdminEvent } from "./admin";
-import { REPORT_STATUSES, toCsv, type ReportStatus } from "../../shared/srsRules";
+import { CALL_OUTCOMES, REPORT_STATUSES, checkCallOutcome, toCsv, type ReportStatus } from "../../shared/srsRules";
+import { addTaskCommentByStaff, getCallOutcome, listTaskCommentsForStaff, recordCallOutcome } from "../db";
 import { dispatchSimpleEmail, escapeHtml } from "../email";
 import {
   assignAiScanReviewer,
@@ -667,4 +668,42 @@ export const adminOpsRouter = router({
     await recordAdminEvent({ ctx, reason: `admin.ai_scan.regenerate(${scan.id})` });
     return { ok: true as const };
   }),
+
+  // =========================================================================
+  // Discovery Call outcomes (SRS 14.7) and developer task comments (SRS 11.7)
+  // =========================================================================
+  callOutcome: adminProcedure.input(z.object({ bookingId: z.number().int().positive() })).query(async ({ input }) => getCallOutcome(input.bookingId)),
+
+  recordCallOutcome: adminProcedure
+    .input(
+      z.object({
+        bookingId: z.number().int().positive(),
+        outcome: z.enum(CALL_OUTCOMES),
+        notes: z.string().trim().max(4000).optional(),
+        followUpAt: z.number().int().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const followUpAt = input.followUpAt ? new Date(input.followUpAt) : null;
+      const verdict = checkCallOutcome({ outcome: input.outcome, followUpAt, now: new Date() });
+      if (!verdict.ok) fail("BAD_REQUEST", verdict.reason);
+      const res = await recordCallOutcome({ bookingId: input.bookingId, outcome: input.outcome, notes: input.notes ?? null, followUpAt, userId: ctx.user.id });
+      if (res === "booking_not_found") fail("NOT_FOUND", "Booking not found.");
+      if (res === "booking_cancelled") fail("PRECONDITION_FAILED", "A cancelled call cannot have an outcome.");
+      if (!res) fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
+      await recordAdminEvent({ ctx, reason: `admin.call_outcome(${input.bookingId}:${input.outcome})` });
+      return res;
+    }),
+
+  taskComments: adminProcedure.input(z.object({ taskId: z.number().int().positive() })).query(async ({ input }) => listTaskCommentsForStaff(input.taskId)),
+
+  commentOnTask: adminProcedure
+    .input(z.object({ taskId: z.number().int().positive(), body: z.string().trim().min(1).max(4000) }))
+    .mutation(async ({ ctx, input }) => {
+      const c = await addTaskCommentByStaff({ taskId: input.taskId, userId: ctx.user.id, body: input.body });
+      if (c === "task_not_found") fail("NOT_FOUND", "That task is not assigned to anyone yet.");
+      if (!c) fail("INTERNAL_SERVER_ERROR", "Could not save the comment.");
+      await recordAdminEvent({ ctx, reason: `admin.task_comment(${input.taskId})` });
+      return c;
+    }),
 });

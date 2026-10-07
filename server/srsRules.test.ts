@@ -227,3 +227,32 @@ describe("AI Scan report lifecycle (SRS 9.6)", () => {
     expect(isHumanOnlyReportStep("ai_processing")).toBe(false);
   });
 });
+
+import { checkCallOutcome, draftExpiry, isDraftExpired, DRAFT_TTL_DAYS } from "../shared/srsRules";
+
+describe("Discovery Call outcomes", () => {
+  const now = new Date("2026-10-07T12:00:00Z");
+  const later = new Date("2026-10-10T09:00:00Z");
+  it("needs a follow up date when work is left to do", () => {
+    expect(checkCallOutcome({ outcome: "needs_follow_up", followUpAt: null, now }).ok).toBe(false);
+    expect(checkCallOutcome({ outcome: "proposal_requested", followUpAt: null, now }).ok).toBe(false);
+    expect(checkCallOutcome({ outcome: "needs_follow_up", followUpAt: later, now }).ok).toBe(true);
+  });
+  it("does not require one when the matter is closed", () => {
+    expect(checkCallOutcome({ outcome: "qualified", followUpAt: null, now }).ok).toBe(true);
+    expect(checkCallOutcome({ outcome: "not_a_fit", followUpAt: null, now }).ok).toBe(true);
+  });
+  it("rejects a follow up date in the past", () => {
+    expect(checkCallOutcome({ outcome: "qualified", followUpAt: new Date("2026-10-01T00:00:00Z"), now }).ok).toBe(false);
+  });
+});
+
+describe("questionnaire drafts", () => {
+  it("expires after the retention window", () => {
+    const now = new Date("2026-10-07T00:00:00Z");
+    const exp = draftExpiry(now);
+    expect(exp.getTime() - now.getTime()).toBe(DRAFT_TTL_DAYS * 86_400_000);
+    expect(isDraftExpired(exp, new Date(exp.getTime() - 1))).toBe(false);
+    expect(isDraftExpired(exp, exp)).toBe(true);
+  });
+});

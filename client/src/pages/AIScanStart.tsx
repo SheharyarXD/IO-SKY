@@ -67,6 +67,52 @@ export default function AIScanStart() {
 
   const submit = trpc.aiScans.submitQuestionnaire.useMutation();
 
+  // Server side draft (SRS 9.7): lets a visitor leave and come back on another
+  // device through a link, which the browser-only copy below cannot do.
+  const saveDraft = trpc.aiScans.saveDraft.useMutation();
+  const [resumeToken, setResumeToken] = useState<string | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    return new URLSearchParams(window.location.search).get("resume") ?? undefined;
+  });
+  const [resumeLink, setResumeLink] = useState<string | null>(null);
+  const [draftNote, setDraftNote] = useState<string | null>(null);
+  const loadedDraft = trpc.aiScans.loadDraft.useQuery(
+    { resumeToken: resumeToken ?? "" },
+    { enabled: Boolean(resumeToken) && resumeToken!.length >= 16, retry: false, staleTime: Infinity },
+  );
+  useEffect(() => {
+    const d = loadedDraft.data;
+    if (!d) return;
+    setAnswers(d.answers);
+    setStep(d.stepIndex);
+    setDraftNote("Your saved progress was restored.");
+  }, [loadedDraft.data]);
+  useEffect(() => {
+    if (loadedDraft.error) {
+      setResumeToken(undefined);
+      setDraftNote("That saved link has expired, so you are starting fresh.");
+    }
+  }, [loadedDraft.error]);
+
+  async function handleSaveForLater() {
+    setSubmitError(null);
+    try {
+      const res = await saveDraft.mutateAsync({
+        resumeToken,
+        tier,
+        email: /\S+@\S+\.\S+/.test(identity.email) ? identity.email.trim().toLowerCase() : undefined,
+        answers,
+        stepIndex: step,
+      });
+      if (res.resumeToken) {
+        setResumeToken(res.resumeToken);
+        setResumeLink(`${window.location.origin}/ai-scan/start?tier=${tier}&resume=${res.resumeToken}`);
+      }
+    } catch (e) {
+      setSubmitError((e as Error).message);
+    }
+  }
+
   const progressValue = useMemo(() => {
     if (totalSteps <= 1) return 0;
     return Math.round((step / (totalSteps - 1)) * 100);
@@ -146,6 +192,7 @@ export default function AIScanStart() {
         contextNote: identity.contextNote.trim() || undefined,
         website: identity.website || undefined,
         answers,
+        resumeToken,
       });
       if (res.reportToken) {
         try {
@@ -236,6 +283,21 @@ export default function AIScanStart() {
                 </Alert>
               ) : null}
 
+              {draftNote ? (
+                <Alert className="mt-6">
+                  <AlertDescription>{draftNote}</AlertDescription>
+                </Alert>
+              ) : null}
+              {resumeLink ? (
+                <Alert className="mt-6">
+                  <AlertDescription>
+                    Progress saved for 14 days. Use this link to continue on any device:
+                    <br />
+                    <a className="break-all underline" href={resumeLink}>{resumeLink}</a>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+
               <div className="mt-8 flex items-center justify-between gap-3">
                 <Button
                   type="button"
@@ -244,6 +306,10 @@ export default function AIScanStart() {
                   disabled={step === 0 || submit.isPending}
                 >
                   {t("aiscan.start.back") || "Back"}
+                </Button>
+
+                <Button type="button" variant="outline" onClick={handleSaveForLater} disabled={saveDraft.isPending || Object.keys(answers).length === 0}>
+                  {saveDraft.isPending ? "Saving…" : "Save and continue later"}
                 </Button>
 
                 {isQuestionStep ? (

@@ -15,7 +15,10 @@ import {
   appendDeveloperNotification,
   appendDeveloperSecurityEvent,
   createDeveloperAccessRequest,
+  addTaskCommentByDeveloper,
+  createAdminNotification,
   createTimeEntry,
+  listTaskCommentsForDeveloper,
   listTimeEntriesForDeveloper,
   createDeveloperSubmission,
   createDeveloperSupportTicket,
@@ -40,7 +43,7 @@ import {
   updateUserMfaMethod,
 } from "../db";
 import { storageGetSignedUrl } from "../storage";
-import { checkTimeEntry } from "../../shared/srsRules";
+import { TASK_COMMENT_KINDS, checkTimeEntry } from "../../shared/srsRules";
 import { getRequestMeta } from "../_core/requestMeta";
 
 /**
@@ -680,6 +683,46 @@ export const developerRouter = router({
    * project they hold an ACTIVE assignment on (BR-018), enforced in the same
    * transaction as the insert. Dates are bounded by shared/srsRules.
    */
+/** Progress notes, comments and clarification requests on a task the developer holds (SRS 11.7). */
+  taskComments: developerProcedure
+    .input(z.object({ taskId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      const rows = await listTaskCommentsForDeveloper(input.taskId, ctx.developer.id);
+      if (rows === "not_assigned") throw new TRPCError({ code: "FORBIDDEN", message: "task_not_assigned" });
+      return rows;
+    }),
+
+  addTaskComment: developerSelfProcedure
+    .input(z.object({ taskId: z.number().int().positive(), kind: z.enum(TASK_COMMENT_KINDS), body: z.string().trim().min(1).max(4000) }))
+    .mutation(async ({ ctx, input }) => {
+      const row = await addTaskCommentByDeveloper({ taskId: input.taskId, developerId: ctx.developer.id, kind: input.kind, body: input.body });
+      if (row === "not_assigned") {
+        await appendDeveloperSecurityEvent({
+          developerId: ctx.developer.id,
+          kind: "unauthorized_route",
+          severity: "warn",
+          message: "Attempt to comment on an unassigned task",
+          detail: `taskId=${input.taskId}`,
+          ...callerMeta(ctx.req),
+        });
+        throw new TRPCError({ code: "FORBIDDEN", message: "task_not_assigned" });
+      }
+      if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not save the comment." });
+      // A clarification request is a question for staff: it must reach them, not sit in a thread.
+      if (input.kind === "clarification_request") {
+        await createAdminNotification({
+          kind: "clarification_request",
+          title: `${ctx.developer.profile.fullName} needs clarification on task #${input.taskId}`,
+          body: input.body.slice(0, 400),
+          href: "/admin/delivery",
+          priority: "high",
+        });
+      }
+      const meta = callerMeta(ctx.req);
+      await appendDeveloperAudit({ developerId: ctx.developer.id, event: "task.comment", detail: `task=${input.taskId} kind=${input.kind}`, ip: meta.ip, userAgent: meta.userAgent });
+      return row;
+    }),
+
   myTimeEntries: developerSelfProcedure.query(async ({ ctx }) => listTimeEntriesForDeveloper(ctx.developer.id)),
 
   logTime: developerSelfProcedure

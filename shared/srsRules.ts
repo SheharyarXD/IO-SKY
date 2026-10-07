@@ -338,3 +338,32 @@ export function isReportVisibleToCustomer(status: string | null | undefined): bo
 export function isHumanOnlyReportStep(to: ReportStatus): boolean {
   return to === "approved" || to === "revision_required" || to === "published" || to === "archived";
 }
+
+// ---------------------------------------------------------------------------
+// Discovery Call outcomes, task comments, questionnaire drafts
+// ---------------------------------------------------------------------------
+
+export const CALL_OUTCOMES = ["qualified", "not_a_fit", "needs_follow_up", "proposal_requested"] as const;
+export type CallOutcome = (typeof CALL_OUTCOMES)[number];
+
+/** An outcome that leaves work to do must say when, or the follow up silently never happens. */
+export function checkCallOutcome(args: { outcome: CallOutcome; followUpAt: Date | null; now: Date }): CloseCheck {
+  if ((args.outcome === "needs_follow_up" || args.outcome === "proposal_requested") && !args.followUpAt) {
+    return { ok: false, reason: "Set a follow up date for this outcome." };
+  }
+  if (args.followUpAt && args.followUpAt.getTime() < args.now.getTime() - 60_000) {
+    return { ok: false, reason: "The follow up date is in the past." };
+  }
+  return { ok: true };
+}
+
+export const TASK_COMMENT_KINDS = ["progress_note", "comment", "clarification_request"] as const;
+export type TaskCommentKind = (typeof TASK_COMMENT_KINDS)[number];
+
+export const DRAFT_TTL_DAYS = 14;
+export function draftExpiry(now: Date): Date {
+  return new Date(now.getTime() + DRAFT_TTL_DAYS * 86_400_000);
+}
+export function isDraftExpired(expiresAt: Date, now: Date): boolean {
+  return expiresAt.getTime() <= now.getTime();
+}

@@ -16,9 +16,21 @@ import {
  * Timeline of every AI Scan run against this organization. Each entry shows
  * score, delta vs. previous, status, and a signed-URL "View Report" action.
  */
+const REVIEW_LABEL: Record<string, string> = {
+  draft: "Draft",
+  questionnaire_in_progress: "Questionnaire in progress",
+  submitted: "Submitted",
+  ai_processing: "Analysing",
+  awaiting_expert_review: "With an expert",
+  revision_required: "Being refined",
+  approved: "Approved, releasing soon",
+};
+
 export default function ClientAIScan() {
   const reports = trpc.clientPortal.reports.useQuery();
   const requestUrl = trpc.clientPortal.requestReportSignedUrl.useMutation();
+  const progress = trpc.clientPortal.aiScanProgress.useQuery();
+  const inFlight = (progress.data ?? []).filter(p => p.reportStatus !== "published" && p.reportStatus !== "archived");
   const [openingId, setOpeningId] = useState<number | null>(null);
 
   // Filter reports down to AI Scan rows only. We sort by createdAt asc for the
@@ -85,6 +97,23 @@ export default function ClientAIScan() {
           </Link>
         }
       />
+
+      {inFlight.length > 0 && (
+        <GlassCard className="p-5 mb-5" aria-live="polite">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">In progress</p>
+          <ul className="mt-3 space-y-2">
+            {inFlight.map(p => (
+              <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="text-white/85">
+                  {p.tier.toUpperCase()} scan started {new Date(p.createdAt as unknown as string).toLocaleDateString()}
+                </span>
+                <StatusPill status={REVIEW_LABEL[p.reportStatus] ?? p.reportStatus} variant={p.reportStatus === "revision_required" ? "warn" : "info"} />
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[11px] text-white/45">Every report is reviewed by an IO SKY expert before it is released to you.</p>
+        </GlassCard>
+      )}
 
       {/* Score-over-time pane: collapses into the SectionStateSwitch on first load */}
       {!reports.isLoading && scans.length > 1 && sparkline && (

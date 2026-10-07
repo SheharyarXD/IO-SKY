@@ -38,7 +38,7 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { notifyOwner } from "../_core/notification";
 import { storageDelete, storageGetSignedUrl, storagePut } from "../storage";
 import { clientProcedure, router } from "../_core/trpc";
-import { createAdminNotification, decideProjectApproval, listApprovalsForOrganization, searchDocuments } from "../db";
+import { createAdminNotification, decideProjectApproval, listApprovalsForOrganization, listAiScanProgressForEmail, searchDocuments } from "../db";
 import { generatePublicRef } from "../_core/publicRef";
 
 const supportTicketSchema = z.object({
@@ -856,6 +856,9 @@ export const clientPortalRouter = router({
   searchDocuments: clientProcedure
     .input(z.object({ q: z.string().trim().min(2).max(100), category: z.string().max(96).optional() }))
     .query(async ({ ctx, input }) => searchDocuments({ organizationId: ctx.organizationId, q: input.q, category: input.category })),
+
+  /** Where each of this account's AI Scans is in the review workflow. */
+  aiScanProgress: clientProcedure.query(async ({ ctx }) => (ctx.user.email ? listAiScanProgressForEmail(ctx.user.email) : [])),
 
   approvals: clientProcedure.query(async ({ ctx }) => listApprovalsForOrganization(ctx.organizationId)),
 

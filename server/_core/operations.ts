@@ -13,6 +13,7 @@ import {
   evaluateAlertRules,
   isMaintenanceModeOn,
   listIncidents,
+  purgeExpiredAiScanDrafts,
   readFinancialSummary,
   readPipelineSummary,
   recordScheduledReportResult,
@@ -158,5 +159,6 @@ export function startOperationsJobs(): void {
   setInterval(() => {
     evaluateAlertRules().catch((err) => console.warn("[alerts] evaluation tick failed:", err));
     runDueScheduledReports().catch((err) => console.warn("[scheduledReports] tick failed:", err));
+    purgeExpiredAiScanDrafts().catch((err) => console.warn("[aiScanDrafts] purge failed:", err));
   }, TICK_MS).unref();
 }

@@ -181,6 +181,7 @@ function Activities() {
   const follow = trpc.adminOps.followUps.useQuery();
   const create = trpc.adminOps.createActivity.useMutation({ onSuccess: () => utils.adminOps.followUps.invalidate() });
   const complete = trpc.adminOps.completeActivity.useMutation({ onSuccess: () => utils.adminOps.followUps.invalidate() });
+  const outcome = trpc.adminOps.recordCallOutcome.useMutation({ onSuccess: () => utils.adminOps.followUps.invalidate() });
   const [lookup, setLookup] = useState<{ leadId?: number; organizationId?: number } | null>(null);
   const timeline = trpc.adminOps.customerTimeline.useQuery(lookup ?? { leadId: 1 }, { enabled: lookup !== null });
   const now = Date.now();
@@ -218,6 +219,25 @@ function Activities() {
             opportunityId: optInt(v.opportunityId),
             organizationId: optInt(v.organizationId),
             dueAt: v.dueAt ? new Date(v.dueAt).getTime() : undefined,
+          })
+        }
+      />
+      <FormCard
+        title="Record a Discovery Call outcome"
+        submitLabel="Record outcome"
+        successMessage="Outcome recorded. The call is marked completed and added to the customer timeline."
+        fields={[
+          { name: "bookingId", label: "Booking id", type: "number", required: true, hint: "From Discovery Calls." },
+          { name: "outcome", label: "Outcome", type: "select", required: true, initial: "qualified", options: [{ value: "qualified", label: "Qualified" }, { value: "not_a_fit", label: "Not a fit" }, { value: "needs_follow_up", label: "Needs follow up" }, { value: "proposal_requested", label: "Proposal requested" }] },
+          { name: "followUpAt", label: "Follow up on", type: "datetime-local", hint: "Required for follow up and proposal outcomes." },
+          { name: "notes", label: "Notes", type: "textarea" },
+        ]}
+        onSubmit={(v) =>
+          outcome.mutateAsync({
+            bookingId: Number(v.bookingId),
+            outcome: v.outcome as "qualified",
+            notes: v.notes || undefined,
+            followUpAt: v.followUpAt ? new Date(v.followUpAt).getTime() : undefined,
           })
         }
       />
