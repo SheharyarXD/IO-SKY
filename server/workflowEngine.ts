@@ -18,10 +18,13 @@
  * itself never needs to change for that.
  */
 import {
+  claimDueScheduledWorkflows,
   listEnabledWorkflowDefinitionsForTrigger,
   recordWorkflowRun,
   appendLoginAudit,
 } from "./db";
+import { nextRunAfter, type Cadence } from "../shared/srsRules";
+import { dispatchWebhooksForTrigger } from "./webhookDispatcher";
 import { notifyOwner } from "./_core/notification";
 import type { WorkflowDefinition } from "../drizzle/schema";
 
@@ -36,7 +39,26 @@ export async function runWorkflowsForTrigger(
   triggerEntityRef?: string | null,
 ): Promise<void> {
   const definitions = await listEnabledWorkflowDefinitionsForTrigger(triggerType);
+  await executeDefinitions(definitions, triggerType, context, triggerEntityRef);
+}
 
+/**
+ * Run the scheduled workflows that are due (SRS 23.10). Each definition is
+ * claimed before it runs, so a second instance cannot run it again.
+ */
+export async function runDueScheduledWorkflows(now = new Date()): Promise<number> {
+  const due = await claimDueScheduledWorkflows(now, (cadence, from) => nextRunAfter(cadence as Cadence, from));
+  if (due.length === 0) return 0;
+  await executeDefinitions(due, "schedule", { at: now.toISOString() }, `schedule:${now.toISOString()}`);
+  return due.length;
+}
+
+async function executeDefinitions(
+  definitions: WorkflowDefinition[],
+  triggerType: WorkflowDefinition["triggerType"],
+  context: Record<string, string>,
+  triggerEntityRef?: string | null,
+): Promise<void> {
   for (const def of definitions) {
     try {
       if (def.actionType === "notify_owner") {
@@ -78,5 +100,27 @@ export async function runWorkflowsForTrigger(
         resultMessage: err instanceof Error ? err.message.slice(0, 500) : "Unknown error",
       });
     }
+  }
+}
+
+/**
+ * Fire everything listening for an event: the workflow definitions and the
+ * registered webhooks. Never throws; the caller's business action has already
+ * succeeded and must not be undone by an automation.
+ */
+export async function fireTrigger(
+  triggerType: Exclude<WorkflowDefinition["triggerType"], "schedule">,
+  context: Record<string, string>,
+  ref: string,
+): Promise<void> {
+  try {
+    await runWorkflowsForTrigger(triggerType, context, ref);
+  } catch (err) {
+    console.error("[fireTrigger] workflows failed:", err);
+  }
+  try {
+    await dispatchWebhooksForTrigger(triggerType, context, ref);
+  } catch (err) {
+    console.error("[fireTrigger] webhooks failed:", err);
   }
 }

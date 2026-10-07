@@ -19,6 +19,7 @@ import {
   recordScheduledReportResult,
 } from "../db";
 import type { ScheduledReport } from "../../drizzle/schema";
+import { runDueScheduledWorkflows } from "../workflowEngine";
 
 /**
  * Paths that must keep working while maintenance is on. Health must, or the
@@ -159,6 +160,7 @@ export function startOperationsJobs(): void {
   setInterval(() => {
     evaluateAlertRules().catch((err) => console.warn("[alerts] evaluation tick failed:", err));
     runDueScheduledReports().catch((err) => console.warn("[scheduledReports] tick failed:", err));
+    runDueScheduledWorkflows().catch((err) => console.warn("[scheduledWorkflows] tick failed:", err));
     purgeExpiredAiScanDrafts().catch((err) => console.warn("[aiScanDrafts] purge failed:", err));
   }, TICK_MS).unref();
 }

@@ -44,8 +44,14 @@ describe("View-As impersonation token", () => {
 
   it("rejects a tampered payload", async () => {
     const token = await signImpersonationToken("admin-1", "developer", "preview");
-    // Flip a character mid-payload to corrupt the signature.
-    const tampered = token.replace(/.$/, (c) => (c === "A" ? "B" : "A"));
+    // Corrupt the signature with a change that always alters the decoded bytes.
+    // The old version flipped the LAST character, but that character carries two
+    // padding bits, so swapping it for a neighbour (A to B) left the signature
+    // valid about one run in sixteen and made this test flaky.
+    const [header, payload, signature] = token.split(".");
+    const i = 10;
+    const flipped = signature[i] === "A" ? "Q" : "A";
+    const tampered = [header, payload, signature.slice(0, i) + flipped + signature.slice(i + 1)].join(".");
     expect(await verifyImpersonationToken(tampered)).toBeNull();
   });
 

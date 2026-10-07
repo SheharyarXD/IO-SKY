@@ -219,3 +219,31 @@ export function CommunicationHistory() {
     </>
   );
 }
+
+export function Compliance() {
+  const q = trpc.adminOps.compliance.useQuery(undefined, { refetchInterval: 60_000 });
+  if (!q.data) return <div className="text-[12.5px] text-white/55">{q.isLoading ? "Checking…" : "Compliance data is unavailable."}</div>;
+  const { checks, summary } = q.data;
+  const tone = (s: string) => (s === "pass" ? "ok" : s === "warn" ? "warn" : "err");
+  return (
+    <Panel title={`Compliance checks: ${summary.pass} passing, ${summary.warn} warning, ${summary.fail} failing`}>
+      <ul className="divide-y divide-white/[0.06]">
+        {checks.map((c) => (
+          <li key={c.key} className="py-3 flex items-start justify-between gap-3">
+            <div>
+              <div className="text-[13px] text-white/90">{c.title}</div>
+              <div className="text-[12px] text-white/55 mt-0.5">{c.detail}</div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <StatusPill tone={tone(c.status) as never} label={c.status} />
+              {c.status !== "pass" ? (
+                <a href={c.href} className="text-[12px] text-[#F58A1F] underline">Review</a>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-[11.5px] text-white/45">These are live checks against current data. Lawful basis, consent and breach notification duties depend on the Security and Compliance Specification, which has not been supplied, so they are not assessed here.</p>
+    </Panel>
+  );
+}

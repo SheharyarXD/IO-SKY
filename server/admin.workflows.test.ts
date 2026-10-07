@@ -118,11 +118,32 @@ describe("admin.createWorkflowDefinition", () => {
       triggerType: "document_approved",
       actionType: "notify_owner",
       actionConfig: "{{documentName}} approved",
+      scheduleCadence: null,
+      nextRunAt: null,
       createdByUserId: 4,
     });
     expect(appendLoginAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({ reason: expect.stringContaining("admin.workflow.create(7)") }),
     );
+  });
+
+  it("requires a cadence and first run for a scheduled workflow", async () => {
+    const caller = appRouter.createCaller(makeCtx("super_admin", 4));
+    await expect(
+      caller.admin.createWorkflowDefinition({ name: "Digest", triggerType: "schedule", actionType: "notify_owner" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      caller.admin.createWorkflowDefinition({ name: "Digest", triggerType: "schedule", actionType: "notify_owner", scheduleCadence: "daily", firstRunAt: Date.now() - 86_400_000 }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(createWorkflowDefinitionMock).not.toHaveBeenCalled();
+  });
+
+  it("stores the cadence and first run for a scheduled workflow", async () => {
+    createWorkflowDefinitionMock.mockResolvedValueOnce({ id: 8 });
+    const caller = appRouter.createCaller(makeCtx("super_admin", 4));
+    const first = Date.now() + 3_600_000;
+    await caller.admin.createWorkflowDefinition({ name: "Digest", triggerType: "schedule", actionType: "audit_log", scheduleCadence: "weekly", firstRunAt: first });
+    expect(createWorkflowDefinitionMock).toHaveBeenCalledWith(expect.objectContaining({ triggerType: "schedule", scheduleCadence: "weekly", nextRunAt: new Date(first) }));
   });
 
   it("rejects an invalid triggerType via zod", async () => {

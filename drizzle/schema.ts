@@ -2050,6 +2050,12 @@ export const workflowDefinitionsTriggerTypeEnum = pgEnum("workflow_definitions_t
   "booking_completed",
   "lead_won",
   "ai_scan_completed",
+  // Added in migration 0028.
+  "schedule",
+  "opportunity_won",
+  "invoice_created",
+  "incident_created",
+  "approval_decided",
 ]);
 export const workflowDefinitionsActionTypeEnum = pgEnum("workflow_definitions_action_type", [
   "notify_owner",
@@ -2065,6 +2071,9 @@ export const workflowDefinitions = pgTable(
     actionType: workflowDefinitionsActionTypeEnum("actionType").notNull(),
     /** Optional template for the notify_owner action; {{field}} tokens are substituted from the trigger context. Ignored by audit_log. */
     actionConfig: text("actionConfig"),
+    /** daily | weekly | monthly. Only meaningful for the schedule trigger (migration 0028). */
+    scheduleCadence: varchar("scheduleCadence", { length: 16 }),
+    nextRunAt: timestamp("nextRunAt"),
     /** 0/1, matching this schema's existing boolean-as-integer convention (see the MySQL-migration translation notes at the top of this file). */
     enabled: integer("enabled").default(1).notNull(),
     createdByUserId: integer("createdByUserId").references(() => users.id),

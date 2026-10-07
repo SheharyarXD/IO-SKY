@@ -4,7 +4,7 @@
  * the deliberate scope boundary (closed trigger/action enums, not an
  * open-ended automation system).
  */
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNotNull, lte } from "drizzle-orm";
 import {
   workflowDefinitions,
   workflowRuns,
@@ -37,6 +37,8 @@ export async function createWorkflowDefinition(input: {
   triggerType: WorkflowDefinition["triggerType"];
   actionType: WorkflowDefinition["actionType"];
   actionConfig: string | null;
+  scheduleCadence?: string | null;
+  nextRunAt?: Date | null;
   createdByUserId: number;
 }): Promise<WorkflowDefinition | null> {
   const db = await getDb();
@@ -69,4 +71,27 @@ export async function listWorkflowRuns(limit = 100): Promise<WorkflowRun[]> {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(workflowRuns).orderBy(desc(workflowRuns.ranAt)).limit(limit);
+}
+
+/**
+ * Claim every scheduled workflow that is due and move its next run forward in
+ * the same conditional update, so two app instances cannot both run it.
+ */
+export async function claimDueScheduledWorkflows(now: Date, nextAfter: (cadence: string, from: Date) => Date): Promise<WorkflowDefinition[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const due = await db
+    .select()
+    .from(workflowDefinitions)
+    .where(and(eq(workflowDefinitions.triggerType, "schedule"), eq(workflowDefinitions.enabled, 1), isNotNull(workflowDefinitions.nextRunAt), lte(workflowDefinitions.nextRunAt, now)));
+  const won: WorkflowDefinition[] = [];
+  for (const d of due) {
+    const claimed = await db
+      .update(workflowDefinitions)
+      .set({ nextRunAt: nextAfter(d.scheduleCadence ?? "daily", now) })
+      .where(and(eq(workflowDefinitions.id, d.id), eq(workflowDefinitions.nextRunAt, d.nextRunAt!)))
+      .returning({ id: workflowDefinitions.id });
+    if (claimed.length > 0) won.push(d);
+  }
+  return won;
 }

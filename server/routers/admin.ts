@@ -92,7 +92,7 @@ import {
   ensureOperationsSettings,
   resetMaintenanceCache,
 } from "../db";
-import { runWorkflowsForTrigger } from "../workflowEngine";
+import { fireTrigger, runWorkflowsForTrigger } from "../workflowEngine";
 import { emitNotification } from "../notificationDispatcher";
 import { notifyDeveloper } from "../notifications";
 
@@ -1499,6 +1499,7 @@ export const adminRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create invoice." });
       }
       await recordAdminEvent({ ctx, reason: `admin.invoice.create(org=${input.organizationId})` });
+      void fireTrigger("invoice_created", { number: String(invoice.number), organizationId: String(input.organizationId) }, String(invoice.id));
       await emitNotification({ event: "INVOICE_CREATED_ACTION_REQUIRED", audience: { type: "client", organizationId: input.organizationId }, dedupeRef: `invoice:${invoice.id}`, title: `New invoice ${invoice.number}`, href: "/client-portal/billing" });
       return invoice;
     }),
@@ -1522,17 +1523,35 @@ export const adminRouter = router({
           "booking_completed",
           "lead_won",
           "ai_scan_completed",
+          "schedule",
+          "opportunity_won",
+          "invoice_created",
+          "incident_created",
+          "approval_decided",
         ]),
         actionType: z.enum(["notify_owner", "audit_log"]),
         actionConfig: z.string().max(2000).optional(),
+        /** Required, with a first run, when the trigger is "schedule". */
+        scheduleCadence: z.enum(["daily", "weekly", "monthly"]).optional(),
+        firstRunAt: z.number().int().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      if (input.triggerType === "schedule") {
+        if (!input.scheduleCadence || !input.firstRunAt) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "A scheduled workflow needs a cadence and a first run time." });
+        }
+        if (input.firstRunAt < Date.now() - 60_000) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "The first run must be in the future." });
+        }
+      }
       const created = await createWorkflowDefinition({
         name: input.name,
         triggerType: input.triggerType,
         actionType: input.actionType,
         actionConfig: input.actionConfig ?? null,
+        scheduleCadence: input.triggerType === "schedule" ? input.scheduleCadence! : null,
+        nextRunAt: input.triggerType === "schedule" ? new Date(input.firstRunAt!) : null,
         createdByUserId: ctx.user.id,
       });
       if (!created) {
@@ -1574,6 +1593,10 @@ export const adminRouter = router({
           "booking_completed",
           "lead_won",
           "ai_scan_completed",
+          "opportunity_won",
+          "invoice_created",
+          "incident_created",
+          "approval_decided",
         ]),
       }),
     )

@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { fireTrigger } from "../workflowEngine";
 import { z } from "zod";
 import {
   appendClientMessage,
@@ -872,6 +873,7 @@ export const clientPortalRouter = router({
       if (res === "not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Approval not found." });
       if (res === "already_decided") throw new TRPCError({ code: "CONFLICT", message: "This approval has already been decided." });
       if (!res) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not record the decision." });
+      void fireTrigger("approval_decided", { title: res.title, decision: input.decision }, String(res.id));
       await createAdminNotification({
         kind: "project_approval",
         title: `Customer ${input.decision} an approval: ${res.title}`,

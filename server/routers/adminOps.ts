@@ -73,6 +73,9 @@ import {
 } from "../../shared/srsRules";
 import { recordAdminEvent } from "./admin";
 import { emitNotification } from "../notificationDispatcher";
+import { complianceSummary, evaluateCompliance } from "../../shared/srsRules";
+import { readComplianceInputs } from "../db";
+import { fireTrigger } from "../workflowEngine";
 import { CALL_OUTCOMES, REPORT_STATUSES, checkCallOutcome, toCsv, type ReportStatus } from "../../shared/srsRules";
 import { addTaskCommentByStaff, getCallOutcome, listNotificationEvents, listRecentEmailLog, listTaskCommentsForStaff, recordCallOutcome } from "../db";
 import { dispatchSimpleEmail, escapeHtml } from "../email";
@@ -160,6 +163,9 @@ export const adminOpsRouter = router({
       if (!res) fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
       if (!res.ok) fail(res.code, res.reason);
       await recordAdminEvent({ ctx, reason: `admin.opportunity.move(${input.id}->${input.to})` });
+      if (input.to === "won") {
+        void fireTrigger("opportunity_won", { title: res.opportunity.title }, String(input.id));
+      }
       if (input.to === "won") {
         await createAdminNotification({
           kind: "opportunity_won",
@@ -491,6 +497,7 @@ export const adminOpsRouter = router({
         await createAdminNotification({ kind: "incident", title: `High ${i.category} incident: ${i.title}`, href: "/admin/governance", priority: "high" });
       }
       await recordAdminEvent({ ctx, reason: `ops.incident.create(${i.id}:${i.category}:${i.severity})` });
+      void fireTrigger("incident_created", { title: i.title, severity: i.severity, category: i.category }, String(i.id));
       return i;
     }),
 
@@ -733,5 +740,13 @@ export const adminOpsRouter = router({
     await recordAdminEvent({ ctx, reason: "admin.read.communication_history" });
     const [events, emails] = await Promise.all([listNotificationEvents(100), listRecentEmailLog(100)]);
     return { events, emails };
+  }),
+
+  /** Live compliance checks (SRS 20.9): each is a query against current data, not a stored label. */
+  compliance: opsProcedure.query(async () => {
+    // Rules are created on first use; make sure the defaults exist so a fresh install is judged fairly.
+    await listAlertRules();
+    const checks = evaluateCompliance(await readComplianceInputs());
+    return { checks, summary: complianceSummary(checks), generatedAt: Date.now() };
   }),
 });

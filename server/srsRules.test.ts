@@ -256,3 +256,28 @@ describe("questionnaire drafts", () => {
     expect(isDraftExpired(exp, exp)).toBe(true);
   });
 });
+
+import { evaluateCompliance, complianceSummary } from "../shared/srsRules";
+
+describe("compliance evaluation", () => {
+  const clean = { adminsWithoutMfa: 0, overduePrivacyRequests: 0, staleDocumentReviews: 0, scansWaitingTooLong: 0, openCriticalIncidents: 0, expiredActiveDeveloperScopes: 0, enabledAlertRules: 4 };
+  it("passes everything on a clean platform", () => {
+    expect(complianceSummary(evaluateCompliance(clean))).toEqual({ pass: 7, warn: 0, fail: 0 });
+  });
+  it("fails an administrator without a second factor and a missed privacy deadline", () => {
+    const r = evaluateCompliance({ ...clean, adminsWithoutMfa: 2, overduePrivacyRequests: 1 });
+    expect(r.find((c) => c.key === "admin_mfa")).toMatchObject({ status: "fail", count: 2 });
+    expect(r.find((c) => c.key === "privacy_deadlines")?.status).toBe("fail");
+  });
+  it("warns on a slowly growing review backlog and fails it only when large", () => {
+    expect(evaluateCompliance({ ...clean, staleDocumentReviews: 2 }).find((c) => c.key === "document_reviews")?.status).toBe("warn");
+    expect(evaluateCompliance({ ...clean, staleDocumentReviews: 5 }).find((c) => c.key === "document_reviews")?.status).toBe("fail");
+    expect(evaluateCompliance({ ...clean, scansWaitingTooLong: 1 }).find((c) => c.key === "scan_reviews")?.status).toBe("warn");
+  });
+  it("fails when nothing is watching for abuse", () => {
+    expect(evaluateCompliance({ ...clean, enabledAlertRules: 0 }).find((c) => c.key === "alerting")?.status).toBe("fail");
+  });
+  it("names the count in the detail so the figure can be checked", () => {
+    expect(evaluateCompliance({ ...clean, expiredActiveDeveloperScopes: 3 }).find((c) => c.key === "developer_scopes")?.detail).toContain("3");
+  });
+});

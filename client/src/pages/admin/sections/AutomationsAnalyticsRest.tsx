@@ -59,7 +59,8 @@ interface WorkflowRunRow {
   ranAt: string | Date;
 }
 
-const TRIGGER_TYPES = ["document_approved", "document_rejected", "booking_completed", "lead_won", "ai_scan_completed"] as const;
+const TRIGGER_TYPES = ["document_approved", "document_rejected", "booking_completed", "lead_won", "ai_scan_completed", "schedule", "opportunity_won", "invoice_created", "incident_created", "approval_decided"] as const;
+const WEBHOOK_TRIGGERS = TRIGGER_TYPES.filter((t): t is Exclude<(typeof TRIGGER_TYPES)[number], "schedule"> => t !== "schedule");
 const ACTION_TYPES = ["notify_owner", "audit_log"] as const;
 
 function workflowCols(opts: {
@@ -116,16 +117,16 @@ export function Automations() {
     if (!name?.trim()) return;
     const url = window.prompt("Webhook URL (https:// only)?");
     if (!url?.trim()) return;
-    const triggerType = window.prompt(`Trigger type?\n(${TRIGGER_TYPES.join(" / ")})`, TRIGGER_TYPES[0]);
-    if (!triggerType || !(TRIGGER_TYPES as readonly string[]).includes(triggerType)) {
-      window.alert(`Not a valid trigger. Must be one of: ${TRIGGER_TYPES.join(", ")}`);
+    const triggerType = window.prompt(`Trigger type?\n(${WEBHOOK_TRIGGERS.join(" / ")})`, WEBHOOK_TRIGGERS[0]);
+    if (!triggerType || !(WEBHOOK_TRIGGERS as readonly string[]).includes(triggerType)) {
+      window.alert(`Not a valid trigger. Must be one of: ${WEBHOOK_TRIGGERS.join(", ")}`);
       return;
     }
     const secret = window.prompt("Signing secret (min 8 chars, optional — leave blank for none)?") || undefined;
     createWebhook.mutate({
       name: name.trim(),
       url: url.trim(),
-      triggerType: triggerType as (typeof TRIGGER_TYPES)[number],
+      triggerType: triggerType as (typeof WEBHOOK_TRIGGERS)[number],
       secret: secret?.trim() || undefined,
     });
   };
@@ -143,10 +144,29 @@ export function Automations() {
       window.alert(`Not a valid action. Must be one of: ${ACTION_TYPES.join(", ")}`);
       return;
     }
+    let scheduleCadence: "daily" | "weekly" | "monthly" | undefined;
+    let firstRunAt: number | undefined;
+    if (triggerType === "schedule") {
+      const c = window.prompt("How often? daily / weekly / monthly", "daily");
+      if (!c || !["daily", "weekly", "monthly"].includes(c.trim())) {
+        window.alert("Choose daily, weekly or monthly.");
+        return;
+      }
+      scheduleCadence = c.trim() as "daily";
+      const when = window.prompt("First run (YYYY-MM-DD HH:MM, your local time)?");
+      const t = when ? new Date(when.replace(" ", "T")).getTime() : NaN;
+      if (!Number.isFinite(t)) {
+        window.alert("Enter the first run as YYYY-MM-DD HH:MM.");
+        return;
+      }
+      firstRunAt = t;
+    }
     create.mutate({
       name: name.trim(),
       triggerType: triggerType as (typeof TRIGGER_TYPES)[number],
       actionType: actionType as (typeof ACTION_TYPES)[number],
+      scheduleCadence,
+      firstRunAt,
     });
   };
 

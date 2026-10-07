@@ -416,3 +416,42 @@ export function kindForFamily(family: string): string {
 export function buildDedupKey(parts: { eventId: string; audience: string; recipientRef: string; ref: string }): string {
   return [parts.eventId, parts.audience, parts.recipientRef, parts.ref].map((p) => p.trim()).join("|").slice(0, 300);
 }
+
+// ---------------------------------------------------------------------------
+// Compliance monitoring (SRS 20.9)
+// ---------------------------------------------------------------------------
+
+export type ComplianceInputs = {
+  adminsWithoutMfa: number;
+  overduePrivacyRequests: number;
+  staleDocumentReviews: number;
+  scansWaitingTooLong: number;
+  openCriticalIncidents: number;
+  expiredActiveDeveloperScopes: number;
+  enabledAlertRules: number;
+};
+
+export type ComplianceStatus = "pass" | "warn" | "fail";
+export type ComplianceCheck = { key: string; title: string; status: ComplianceStatus; count: number; detail: string; href: string };
+
+/**
+ * Each check turns a count into a verdict with the reason spelled out. A fail is
+ * something that is out of policy now (an admin with no second factor, a
+ * statutory privacy deadline missed); a warn is drifting toward it.
+ */
+export function evaluateCompliance(i: ComplianceInputs): ComplianceCheck[] {
+  const v = (n: number, failAt = 1, warnAt = 1): ComplianceStatus => (n >= failAt ? "fail" : n >= warnAt ? "warn" : "pass");
+  return [
+    { key: "admin_mfa", title: "Administrators have a verified second factor", status: v(i.adminsWithoutMfa), count: i.adminsWithoutMfa, detail: i.adminsWithoutMfa ? `${i.adminsWithoutMfa} administrator account(s) have no verified MFA factor.` : "Every administrator has a verified second factor.", href: "/admin/users" },
+    { key: "privacy_deadlines", title: "Privacy requests answered within their deadline", status: v(i.overduePrivacyRequests), count: i.overduePrivacyRequests, detail: i.overduePrivacyRequests ? `${i.overduePrivacyRequests} data subject request(s) are past their due date.` : "No data subject request is overdue.", href: "/admin/governance" },
+    { key: "critical_incidents", title: "No critical incident left open", status: v(i.openCriticalIncidents), count: i.openCriticalIncidents, detail: i.openCriticalIncidents ? `${i.openCriticalIncidents} critical incident(s) are open or under investigation.` : "No critical incident is open.", href: "/admin/governance" },
+    { key: "developer_scopes", title: "Expired developer access is revoked", status: v(i.expiredActiveDeveloperScopes), count: i.expiredActiveDeveloperScopes, detail: i.expiredActiveDeveloperScopes ? `${i.expiredActiveDeveloperScopes} developer access scope(s) are past their expiry but still marked active.` : "No expired access scope is still active.", href: "/admin/developers" },
+    { key: "document_reviews", title: "Documents reviewed within 7 days", status: v(i.staleDocumentReviews, 5, 1), count: i.staleDocumentReviews, detail: i.staleDocumentReviews ? `${i.staleDocumentReviews} document(s) have waited more than 7 days for review.` : "No document is waiting longer than 7 days.", href: "/admin/documents" },
+    { key: "scan_reviews", title: "AI Scan reports reviewed within 48 hours", status: v(i.scansWaitingTooLong, 3, 1), count: i.scansWaitingTooLong, detail: i.scansWaitingTooLong ? `${i.scansWaitingTooLong} report(s) have waited more than 48 hours for an expert.` : "No report is waiting longer than 48 hours.", href: "/admin/governance" },
+    { key: "alerting", title: "Alert rules are active", status: i.enabledAlertRules > 0 ? "pass" : "fail", count: i.enabledAlertRules, detail: i.enabledAlertRules > 0 ? `${i.enabledAlertRules} alert rule(s) are enabled.` : "No alert rule is enabled, so nothing is watching for abuse.", href: "/admin/governance" },
+  ];
+}
+
+export function complianceSummary(checks: ComplianceCheck[]): { pass: number; warn: number; fail: number } {
+  return { pass: checks.filter((c) => c.status === "pass").length, warn: checks.filter((c) => c.status === "warn").length, fail: checks.filter((c) => c.status === "fail").length };
+}

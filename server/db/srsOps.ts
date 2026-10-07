@@ -220,3 +220,29 @@ export async function listRecentEmailLog(limit = 100) {
     .orderBy(desc(emailDeliveryLog.createdAt))
     .limit(limit);
 }
+
+/** Raw counts behind the compliance checks. Every number is a live query. */
+export async function readComplianceInputs(now = new Date()): Promise<import("../../shared/srsRules").ComplianceInputs> {
+  const empty = { adminsWithoutMfa: 0, overduePrivacyRequests: 0, staleDocumentReviews: 0, scansWaitingTooLong: 0, openCriticalIncidents: 0, expiredActiveDeveloperScopes: 0, enabledAlertRules: 0 };
+  const db = await getDb();
+  if (!db) return empty;
+  const n = async (q: ReturnType<typeof sql>) => {
+    try {
+      const r = (await db.execute(q)) as unknown as Array<{ n: number }> & { rows?: Array<{ n: number }> };
+      return Number((r[0] ?? r.rows?.[0])?.n ?? 0);
+    } catch {
+      return 0;
+    }
+  };
+  const week = new Date(now.getTime() - 7 * 86_400_000);
+  const twoDays = new Date(now.getTime() - 48 * 3_600_000);
+  return {
+    adminsWithoutMfa: await n(sql`select count(*)::int n from users u where u.role in ('admin','super_admin') and not exists (select 1 from mfa_factors f where f."userId" = u.id and f."verifiedAt" is not null)`),
+    overduePrivacyRequests: await n(sql`select count(*)::int n from privacy_requests where "dueAt" is not null and "dueAt" < ${now} and status not in ('completed','rejected','withdrawn')`),
+    staleDocumentReviews: await n(sql`select count(*)::int n from client_documents where status = 'pending_review' and "createdAt" < ${week}`),
+    scansWaitingTooLong: await n(sql`select count(*)::int n from ai_scans where "reportStatus" = 'awaiting_expert_review' and "updatedAt" < ${twoDays}`),
+    openCriticalIncidents: await n(sql`select count(*)::int n from incidents where severity = 'critical' and status in ('open','investigating')`),
+    expiredActiveDeveloperScopes: await n(sql`select count(*)::int n from developer_access_scopes where status = 'active' and "expiresMs" is not null and "expiresMs" < ${now.getTime()}`),
+    enabledAlertRules: await n(sql`select count(*)::int n from alert_rules where enabled`),
+  };
+}
