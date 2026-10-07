@@ -40,6 +40,7 @@ const WORKFLOW_COVERAGE: Record<string, string> = {
   "Developer access granting": "server/admin.grantDeveloperAccess.test.ts",
   "Developer project, task and message delivery": "server/admin.developerDelivery.test.ts",
   "SRS completion (CRM, quotes, governance, incidents, alerts)": "server/admin.srsOps.test.ts",
+  "Account invitation and activation": "server/accounts.test.ts",
   "SRS business rules (lifecycles, policy, validation)": "server/srsRules.test.ts",
   "AI Scan retrigger": "server/admin.retriggerAiScan.test.ts",
 

@@ -2670,3 +2670,28 @@ export const deployments = pgTable(
   (t) => [index("deployments_started_idx").on(t.startedAt)],
 );
 export type Deployment = typeof deployments.$inferSelect;
+
+/** Invitation-only registration (migration 0030). The token itself is never stored, only its hash. */
+export const accountInvitations = pgTable(
+  "account_invitations",
+  {
+    id: serial("id").primaryKey(),
+    tokenHash: varchar("tokenHash", { length: 64 }).notNull().unique(),
+    email: varchar("email", { length: 320 }).notNull(),
+    /** client | developer | technical_operator | admin | super_admin */
+    role: varchar("role", { length: 32 }).notNull(),
+    organizationId: integer("organizationId").references(() => organizations.id, { onDelete: "set null" }),
+    invitedByUserId: integer("invitedByUserId").references(() => users.id),
+    expiresAt: timestamp("expiresAt").notNull(),
+    acceptedAt: timestamp("acceptedAt"),
+    acceptedUserId: integer("acceptedUserId").references(() => users.id),
+    revokedAt: timestamp("revokedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [
+    index("account_invitations_org_idx").on(t.organizationId),
+    index("account_invitations_invited_by_idx").on(t.invitedByUserId),
+    index("account_invitations_accepted_user_idx").on(t.acceptedUserId),
+  ],
+);
+export type AccountInvitation = typeof accountInvitations.$inferSelect;

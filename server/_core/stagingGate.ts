@@ -167,6 +167,8 @@ function isExempt(req: Request): boolean {
   if (url.startsWith("/assets/")) return true;
   if (url === "/favicon.ico" || url === "/robots.txt") return true;
   if (url === "/login") return true;
+  // The emailed activation link must open for an invitee who has no staging password.
+  if (url === "/activate") return true;
   // Static-file extensions
   if (/\.(?:js|mjs|css|map|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|otf|json|txt)$/i.test(url)) {
     return true;

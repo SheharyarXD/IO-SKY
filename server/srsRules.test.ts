@@ -302,3 +302,60 @@ describe("monthly history helpers", () => {
     expect(ALERT_METRICS).toContain("database_mb");
   });
 });
+
+import { canInviteRole, roleRequiresMfa, invitationState, checkPasswordStrength, INVITATION_TTL_DAYS } from "../shared/srsRules";
+
+describe("invitations (SRS 8.7)", () => {
+  it("lets a super admin invite anyone", () => {
+    for (const r of ["client", "developer", "technical_operator", "admin", "super_admin"] as const) expect(canInviteRole("super_admin", r)).toBe(true);
+  });
+  it("lets an admin invite only customers and developers, so a stolen admin cannot mint admins", () => {
+    expect(canInviteRole("admin", "client")).toBe(true);
+    expect(canInviteRole("admin", "developer")).toBe(true);
+    expect(canInviteRole("admin", "admin")).toBe(false);
+    expect(canInviteRole("admin", "super_admin")).toBe(false);
+    expect(canInviteRole("admin", "technical_operator")).toBe(false);
+  });
+  it("lets nobody else invite", () => {
+    for (const r of ["client", "developer", "technical_operator", "user"]) expect(canInviteRole(r, "client")).toBe(false);
+  });
+  it("requires MFA for the privileged roles only", () => {
+    expect(["super_admin", "admin", "technical_operator"].every(roleRequiresMfa)).toBe(true);
+    expect(roleRequiresMfa("client")).toBe(false);
+    expect(roleRequiresMfa("developer")).toBe(false);
+  });
+  it("derives the invitation state, with accepted and revoked beating expiry", () => {
+    const now = new Date("2026-10-07T12:00:00Z");
+    const future = new Date(now.getTime() + 1000);
+    const past = new Date(now.getTime() - 1000);
+    expect(invitationState({ acceptedAt: null, revokedAt: null, expiresAt: future }, now)).toBe("pending");
+    expect(invitationState({ acceptedAt: null, revokedAt: null, expiresAt: past }, now)).toBe("expired");
+    expect(invitationState({ acceptedAt: null, revokedAt: now, expiresAt: future }, now)).toBe("revoked");
+    expect(invitationState({ acceptedAt: now, revokedAt: null, expiresAt: past }, now)).toBe("accepted");
+    expect(INVITATION_TTL_DAYS).toBe(7);
+  });
+});
+
+describe("password strength", () => {
+  const email = "maria.jansen@example.com";
+  it("accepts a long mixed password", () => {
+    expect(checkPasswordStrength("correct7horse9battery", email).ok).toBe(true);
+  });
+  it("refuses short, single letter run, letters only, numbers only", () => {
+    expect(checkPasswordStrength("Short1", email).ok).toBe(false);
+    expect(checkPasswordStrength("aaaaaaaaaaaaaaaa1", email).ok).toBe(false);
+    expect(checkPasswordStrength("onlylettersherenow", email).ok).toBe(false);
+    expect(checkPasswordStrength("123456789012345", email).ok).toBe(false);
+  });
+  it("refuses a password that contains the email name", () => {
+    const r = checkPasswordStrength("maria.jansen2026!x", email);
+    expect(r.ok).toBe(false);
+  });
+  it("refuses an oversized password", () => {
+    expect(checkPasswordStrength("a1".repeat(80), email).ok).toBe(false);
+  });
+  it("explains each refusal in words for the person choosing", () => {
+    const r = checkPasswordStrength("Short1", email);
+    expect(r.ok === false && r.reason).toContain("12");
+  });
+});

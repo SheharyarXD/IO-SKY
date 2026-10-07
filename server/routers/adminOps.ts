@@ -73,8 +73,8 @@ import {
 } from "../../shared/srsRules";
 import { recordAdminEvent } from "./admin";
 import { emitNotification } from "../notificationDispatcher";
-import { EXPORT_DATASETS, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
-import { AI_SCAN_AGENT_KEY, decideLatestAiExecutionForSubject, listDeployments, readComplianceInputs, readExportDataset, readMonthlyHistory } from "../db";
+import { EXPORT_DATASETS, INVITABLE_ROLES, INVITATION_TTL_DAYS, canInviteRole, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
+import { AI_SCAN_AGENT_KEY, createInvitation, decideLatestAiExecutionForSubject, listInvitations, revokeInvitation, listDeployments, readComplianceInputs, readExportDataset, readMonthlyHistory } from "../db";
 import { fireTrigger } from "../workflowEngine";
 import { CALL_OUTCOMES, REPORT_STATUSES, checkCallOutcome, toCsv, type ReportStatus } from "../../shared/srsRules";
 import { addTaskCommentByStaff, getCallOutcome, listNotificationEvents, listRecentEmailLog, listTaskCommentsForStaff, recordCallOutcome } from "../db";
@@ -101,7 +101,7 @@ import { notifyDeveloper } from "../notifications";
 const currency = z.string().length(3).transform((s) => s.toUpperCase());
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD.");
 
-function fail(code: "NOT_FOUND" | "PRECONDITION_FAILED" | "BAD_REQUEST" | "INTERNAL_SERVER_ERROR", message: string): never {
+function fail(code: "NOT_FOUND" | "PRECONDITION_FAILED" | "BAD_REQUEST" | "INTERNAL_SERVER_ERROR" | "FORBIDDEN" | "CONFLICT", message: string): never {
   throw new TRPCError({ code, message });
 }
 
@@ -765,4 +765,49 @@ export const adminOpsRouter = router({
   }),
 
   deployments: opsProcedure.query(async () => listDeployments(20)),
+
+  // =========================================================================
+  // Account invitations (SRS 8.7, BR-004): registration is invitation only
+  // =========================================================================
+  invitations: adminProcedure.query(async () => listInvitations()),
+
+  inviteUser: adminProcedure
+    .input(
+      z.object({
+        email: z.string().trim().toLowerCase().email().max(320),
+        role: z.enum(INVITABLE_ROLES),
+        organizationId: z.number().int().positive().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // A regular admin may invite customers and developers; the privileged roles are a super admin's to hand out.
+      if (!canInviteRole(ctx.user.role, input.role)) {
+        fail("FORBIDDEN", "Only a super admin can invite that role.");
+      }
+      if (input.role === "client" && !input.organizationId) fail("BAD_REQUEST", "A client invitation needs the organization it belongs to.");
+      const res = await createInvitation({ email: input.email, role: input.role, organizationId: input.organizationId ?? null, invitedByUserId: ctx.user.id });
+      if (res === "user_exists") fail("CONFLICT", "An account with that email already exists.");
+      if (!res) fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
+      const base = process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://iosky.com";
+      const link = `${base}/activate?token=${res.token}`;
+      // The link is the secret. It goes to the invitee by email and is never returned to the admin
+      // or written to a log, so the admin cannot activate the account on their behalf.
+      const sent = await dispatchSimpleEmail({
+        to: res.invitation.email,
+        subject: "Your IO SKY invitation",
+        html: `<p>You have been invited to IO SKY as <strong>${escapeHtml(input.role.replace(/_/g, " "))}</strong>.</p><p><a href="${link}">Activate your account</a></p><p>This link works once and expires in ${INVITATION_TTL_DAYS} days. If you were not expecting it, ignore this email.</p>`,
+        text: `You have been invited to IO SKY as ${input.role.replace(/_/g, " ")}.\n\nActivate your account: ${link}\n\nThis link works once and expires in ${INVITATION_TTL_DAYS} days. If you were not expecting it, ignore this email.`,
+        refHeader: `invitation:${res.invitation.id}`,
+        messageType: "notification",
+        relatedRef: `invitation:${res.invitation.id}`,
+      }).catch(() => ({ ok: false }));
+      await recordAdminEvent({ ctx, reason: `admin.invitation.create(${res.invitation.id}:${input.role}:email=${sent.ok ? "sent" : "failed"})` });
+      return { id: res.invitation.id, emailSent: sent.ok === true, expiresAt: res.invitation.expiresAt };
+    }),
+
+  revokeInvitation: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    if (!(await revokeInvitation(input.id))) fail("NOT_FOUND", "No pending invitation with that id.");
+    await recordAdminEvent({ ctx, reason: `admin.invitation.revoke(${input.id})` });
+    return { ok: true as const };
+  }),
 });

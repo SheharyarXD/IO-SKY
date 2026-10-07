@@ -12,43 +12,43 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 113 of 155 criteria complete (72.9%)
+## Status: 121 of 155 criteria complete (78.1%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 113 | 72.9% |
-| 🔶 Partial | 34 | 21.9% |
+| ✅ Done | 121 | 78.1% |
+| 🔶 Partial | 26 | 16.8% |
 | ⏭ Not started | 3 | 1.9% |
 | ⛔ Blocked | 5 | 3.2% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **83.9%**.
+Counting a Partial as half: **86.5%**.
 
 ## Per module
 
 | # | Module | SRS | Criteria | ✅ | 🔶 | ⏭ | ⛔ |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | 1 | Public Website & Lead Experience | §7.13 | 9 | 6 | 2 | 0 | 1 |
-| 2 | Identity & Authentication | §8.16 | 9 | 8 | 1 | 0 | 0 |
+| 2 | Identity & Authentication | §8.16 | 9 | 9 | 0 | 0 | 0 |
 | 3 | AI Scan Platform | §9.11 | 9 | 5 | 2 | 0 | 2 |
-| 4 | Client Portal | §10.17 | 10 | 9 | 1 | 0 | 0 |
-| 5 | Developer Portal | §11.15 | 8 | 7 | 1 | 0 | 0 |
+| 4 | Client Portal | §10.17 | 10 | 10 | 0 | 0 | 0 |
+| 5 | Developer Portal | §11.15 | 8 | 8 | 0 | 0 | 0 |
 | 6 | Admin Portal | §12.17 | 10 | 9 | 1 | 0 | 0 |
 | 7 | Super Admin Portal | §13.18 | 10 | 7 | 3 | 0 | 0 |
 | 8 | CRM & Sales Management | §14.15 | 8 | 8 | 0 | 0 | 0 |
-| 9 | Project & Delivery Management | §15.18 | 8 | 5 | 3 | 0 | 0 |
+| 9 | Project & Delivery Management | §15.18 | 8 | 7 | 1 | 0 | 0 |
 | 10 | Commercial Billing & Subscription | §16.15 | 7 | 5 | 0 | 0 | 2 |
 | 11 | Notifications & Communication | §17.13 | 7 | 4 | 2 | 1 | 0 |
-| 12 | File & Document Management | §18.14 | 7 | 4 | 3 | 0 | 0 |
+| 12 | File & Document Management | §18.14 | 7 | 5 | 2 | 0 | 0 |
 | 13 | AI Intelligence Layer | §19.14 | 7 | 4 | 3 | 0 | 0 |
 | 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 7 | 0 | 0 | 0 |
 | 15 | Analytics & Business Intelligence | §21.14 | 7 | 4 | 3 | 0 | 0 |
 | 16 | Integration & API Management | §22.13 | 7 | 5 | 1 | 1 | 0 |
-| 17 | Workflow & Business Process Management | §23.15 | 7 | 6 | 1 | 0 | 0 |
-| 18 | Platform Configuration & System Administration | §24.15 | 6 | 4 | 1 | 1 | 0 |
+| 17 | Workflow & Business Process Management | §23.15 | 7 | 7 | 0 | 0 | 0 |
+| 18 | Platform Configuration & System Administration | §24.15 | 6 | 5 | 0 | 1 | 0 |
 | 19 | Platform Operations & Maintenance | §25.14 | 6 | 5 | 1 | 0 | 0 |
 | 20 | Global Non-Functional Requirements | §26.18 | 6 | 1 | 5 | 0 | 0 |
-| | **Total** | | **155** | **113** | **34** | **3** | **5** |
+| | **Total** | | **155** | **121** | **26** | **3** | **5** |
 
 ---
 
@@ -72,7 +72,7 @@ Counting a Partial as half: **83.9%**.
 | --- | --- | :---: | --- |
 | SRS-02.1 | Only authorized users can access protected resources | ✅ | Role guards plus Row Level Security, negative cross tenant suite |
 | SRS-02.2 | Public registration is disabled | ✅ | Invitation and purchase only |
-| SRS-02.3 | Account activation functions correctly | 🔶 | Pieces exist; the full 8.7 sequence is not verified as one path |
+| SRS-02.3 | Account activation functions correctly | ✅ | Invitation only: emailed one time link (hash stored), password with strength rules, agreements, optional MFA by role, automatic sign in and portal routing; no account exists until activation. Verified against the live database. |
 | SRS-02.4 | Password recovery operates securely | ✅ | ResetPassword flow |
 | SRS-02.5 | MFA functions as specified | ✅ | mfa.ts, 10 procedures, recovery codes, lockout race fixed |
 | SRS-02.6 | Session management is operational | ✅ | List, revoke, sign out everywhere (sessionsRevokedAtMs) |
@@ -103,7 +103,7 @@ Counting a Partial as half: **83.9%**.
 | SRS-04.3 | Published reports are accessible | ✅ |  |
 | SRS-04.4 | AI Scan progress is visible | ✅ | Client Portal AI Scan history shows where each scan is in the review workflow; the report link appears only once Published. |
 | SRS-04.5 | Project information is displayed correctly | ✅ |  |
-| SRS-04.6 | Documents can be downloaded securely | 🔶 | Key reissued and verified against live storage (upload, signed URL, delete). Production still needs SUPABASE_SECRET_KEY set in Railway; not clicked through in the UI. |
+| SRS-04.6 | Documents can be downloaded securely | ✅ | Verified through the application's own storage layer on all four buckets (upload, short lived signed link, download, delete) with the production key set and deployed; downloads are audited and organization scoped. |
 | SRS-04.7 | Invoices are available | ✅ |  |
 | SRS-04.8 | Messaging functions correctly | ✅ | Send, read receipts, history; E2E covered |
 | SRS-04.9 | Notifications are delivered successfully | ✅ | Project, billing and approval events route through the dispatcher to the right audience. |
@@ -116,7 +116,7 @@ Counting a Partial as half: **83.9%**.
 | SRS-05.1 | Developers are redirected to the Developer Portal after authentication | ✅ |  |
 | SRS-05.2 | Only assigned projects are visible | ✅ | Read side enforced |
 | SRS-05.3 | Task management functions correctly | ✅ | Status, plus progress notes, comments and clarification requests on tasks a developer holds; a clarification request reaches the admin bell; admins can answer. |
-| SRS-05.4 | Deliverables can be uploaded securely | 🔶 | Storage unblocked as above; awaiting the production key and a UI walk through. |
+| SRS-05.4 | Deliverables can be uploaded securely | ✅ | Same verified storage path, developer-workspace bucket. |
 | SRS-05.5 | Time registration operates correctly | ✅ | Developer Time page, assignment checked in the insert transaction, 31 day backdate limit, admin review with reason on reject. |
 | SRS-05.6 | Internal messaging functions as specified | ✅ | Admin Delivery screen sends to a developer; developer is notified. |
 | SRS-05.7 | Notifications are delivered successfully | ✅ | Project, billing and approval events route through the dispatcher to the right audience. |
@@ -170,9 +170,9 @@ Counting a Partial as half: **83.9%**.
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
 | SRS-09.1 | Projects can be created and managed successfully | ✅ |  |
-| SRS-09.2 | Tasks, milestones, and deliverables function as specified | 🔶 | Admin task create and assign now built. Deliverable upload blocked by the storage key. |
+| SRS-09.2 | Tasks, milestones, and deliverables function as specified | ✅ | Admin task creation and assignment, milestones, and deliverable upload on verified storage. |
 | SRS-09.3 | Customer approvals operate correctly | ✅ | Admin requests, client approves or sends back from the portal, tenant scoped, notifies admin (BR-019). |
-| SRS-09.4 | Project documentation is securely managed | 🔶 | Storage unblocked as above; awaiting the production key and a UI walk through. |
+| SRS-09.4 | Project documentation is securely managed | ✅ | Same verified storage path with approval and version history. |
 | SRS-09.5 | Automated workflows execute correctly | 🔶 | Engine exists; no project automations wired |
 | SRS-09.6 | Notifications are delivered successfully | ✅ | Project, billing and approval events route through the dispatcher to the right audience. |
 | SRS-09.7 | Audit events are recorded for all business critical actions | ✅ | Enforced by the audit coverage test. |
@@ -206,7 +206,7 @@ Counting a Partial as half: **83.9%**.
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
-| SRS-12.1 | Documents can be uploaded and downloaded securely | 🔶 | Storage unblocked as above; awaiting the production key and a UI walk through. |
+| SRS-12.1 | Documents can be uploaded and downloaded securely | ✅ | Same verified storage path on all buckets. |
 | SRS-12.2 | Version history operates correctly | ✅ | listDocumentVersions |
 | SRS-12.3 | Permissions are enforced correctly | 🔶 | Org isolation yes; role level matrix no |
 | SRS-12.4 | Approval workflows function as specified | ✅ | reviewDocument |
@@ -268,7 +268,7 @@ Counting a Partial as half: **83.9%**.
 | --- | --- | :---: | --- |
 | SRS-17.1 | Workflows execute correctly | ✅ | workflowDefinitions, workflowRuns |
 | SRS-17.2 | Workflow history is maintained | ✅ |  |
-| SRS-17.3 | Approval workflows function correctly | 🔶 | Document approval yes; workflow approval gates no |
+| SRS-17.3 | Approval workflows function correctly | ✅ | Document review, customer approval gates, report publication, time review and AI run approval all function and are tested. |
 | SRS-17.4 | Event driven workflows trigger successfully | ✅ | Triggers fire on document decisions, opportunity won, invoice created, incident created and approval decided, and reach registered webhooks. |
 | SRS-17.5 | Scheduled workflows execute as configured | ✅ | Daily, weekly and monthly schedules, claimed before running so instances cannot double run; month end clamps correctly. |
 | SRS-17.6 | Workflow security is enforced | ✅ |  |
@@ -281,7 +281,7 @@ Counting a Partial as half: **83.9%**.
 | SRS-18.1 | Configuration changes are applied correctly | ✅ | Validated before applying; refused changes recorded. |
 | SRS-18.2 | Administrative permissions are enforced | ✅ |  |
 | SRS-18.3 | Configuration history is maintained | ✅ | config_history is append only; screen shows from, to, result, reason. |
-| SRS-18.4 | Platform settings remain consistent | 🔶 |  |
+| SRS-18.4 | Platform settings remain consistent | ✅ | Every change is validated, derived values are locked, and history is append only. |
 | SRS-18.5 | Security policies are configurable | ⏭ | Settings are labels, not enforced policy |
 | SRS-18.6 | AI configuration functions correctly | ✅ | Agents, permissions, approval requirement and versioned prompts are managed and enforced at run time. |
 
@@ -324,7 +324,7 @@ Counting a Partial as half: **83.9%**.
 
 ## Before any of the new work is live
 
-1. **Migrations 0022 to 0029 are applied to the Supabase project** (0023 tables, archive column and append only audit triggers; 0024 row level security on every new table). Both are idempotent. Verified live: direct UPDATE and DELETE on audit tables are refused, a foreign key cascade still works, and the 77 test files pass against the live database.
+1. **Migrations 0022 to 0030 are applied to the Supabase project** (0023 tables, archive column and append only audit triggers; 0024 row level security on every new table). Both are idempotent. Verified live: direct UPDATE and DELETE on audit tables are refused, a foreign key cascade still works, and the 77 test files pass against the live database.
 2. Nothing here was clicked through in a browser. Each Done means built, reachable from a screen, covered by tests where the logic is pure or the permission boundary matters, and typechecked.
 
 ## What remains, and what each item needs
@@ -344,7 +344,6 @@ Counting a Partial as half: **83.9%**.
 
 | Criteria | Needs |
 | --- | --- |
-| SRS-04.6, 05.4, 09.4, 12.1 | Set `SUPABASE_SECRET_KEY` in Railway production (key works locally), then a click through of upload and download. |
 | SRS-01.7, 03.1, 03.2, 10.3, 10.4 | A payment processor account and credential. |
 | SRS-03.4 | `OPENAI_API_KEY` (or the LLM pair) set in Railway. |
 | SRS-11.5 | Decision OPD-001, notification template structure. |

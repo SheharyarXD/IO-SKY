@@ -13,8 +13,9 @@ import OperationalPage, { DataTable, StatusPill, type DataColumn } from "./_shar
 import { FormCard, Panel, SmallButton, TabBar, shortDateTime } from "./_shared/Forms";
 import { AuditSearch, CommunicationHistory, Compliance, Health } from "./GovernanceExtras";
 import { AiScanReview } from "./AiScanReview";
+import { Invitations } from "./Invitations";
 
-type Tab = "incidents" | "alerts" | "ai" | "config" | "reports" | "audit" | "health" | "scanreview" | "comms" | "compliance";
+type Tab = "incidents" | "alerts" | "ai" | "config" | "reports" | "audit" | "health" | "scanreview" | "comms" | "compliance" | "invites";
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "scanreview", label: "AI Scan review" },
   { id: "incidents", label: "Incidents" },
@@ -26,6 +27,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "health", label: "Platform health" },
   { id: "comms", label: "Communication history" },
   { id: "compliance", label: "Compliance" },
+  { id: "invites", label: "Invitations" },
 ];
 
 const sevTone = (s: string) => (s === "critical" ? "err" : s === "high" ? "warn" : s === "medium" ? "info" : "muted");
@@ -50,6 +52,7 @@ export function Governance() {
           {tab === "health" && <Health />}
           {tab === "comms" && <CommunicationHistory />}
           {tab === "compliance" && <Compliance />}
+          {tab === "invites" && <Invitations />}
         </div>
       }
     />

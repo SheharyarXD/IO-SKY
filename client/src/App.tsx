@@ -6,6 +6,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import MfaChallenge from "@/pages/MfaChallenge";
+import Activate from "@/pages/Activate";
 import NotFound from "@/pages/NotFound";
 import { Redirect, Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/enterprise" component={Enterprise} />
       <Route path="/custom-software" component={CustomSoftware} />
       <Route path="/login" component={Login} />
+      <Route path="/activate" component={Activate} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/mfa-challenge" component={MfaChallenge} />
       <Route path="/translations" component={Translations} />

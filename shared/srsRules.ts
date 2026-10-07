@@ -508,3 +508,56 @@ export function fillMonthly<T extends { month: string }>(months: string[], rows:
 /** Datasets an admin may export as CSV (SRS 21.9). Fixed, so an export cannot reach a table nobody chose to expose. */
 export const EXPORT_DATASETS = ["leads", "invoices", "opportunities", "time_entries", "incidents"] as const;
 export type ExportDataset = (typeof EXPORT_DATASETS)[number];
+
+// ---------------------------------------------------------------------------
+// Account invitation and activation (SRS 8.7, 8.9, 8.10, BR-004)
+// ---------------------------------------------------------------------------
+
+export const INVITABLE_ROLES = ["client", "developer", "technical_operator", "admin", "super_admin"] as const;
+export type InvitableRole = (typeof INVITABLE_ROLES)[number];
+
+/**
+ * Who may invite whom. A regular admin brings in customers and developers; the
+ * privileged roles can only be handed out by a super admin, so a compromised
+ * admin account cannot mint more admins.
+ */
+export function canInviteRole(inviterRole: string, target: InvitableRole): boolean {
+  if (inviterRole === "super_admin") return true;
+  if (inviterRole === "admin") return target === "client" || target === "developer";
+  return false;
+}
+
+/** SRS 8.10: MFA is mandatory for these roles, so activation sends them to enrolment. */
+export function roleRequiresMfa(role: string): boolean {
+  return role === "super_admin" || role === "admin" || role === "technical_operator";
+}
+
+export const INVITATION_TTL_DAYS = 7;
+
+export type InvitationState = "pending" | "accepted" | "revoked" | "expired";
+
+export function invitationState(inv: { acceptedAt: Date | null; revokedAt: Date | null; expiresAt: Date }, now: Date): InvitationState {
+  if (inv.acceptedAt) return "accepted";
+  if (inv.revokedAt) return "revoked";
+  if (inv.expiresAt.getTime() <= now.getTime()) return "expired";
+  return "pending";
+}
+
+export const MIN_PASSWORD_LENGTH = 12;
+
+/**
+ * Password rules for a new account (SRS 8.9). Length does most of the work; the
+ * other checks only refuse the choices that defeat it. The reasons are written
+ * for the person choosing the password.
+ */
+export function checkPasswordStrength(password: string, email: string, minLength = MIN_PASSWORD_LENGTH): { ok: true } | { ok: false; reason: string } {
+  if (password.length < minLength) return { ok: false, reason: `Use at least ${minLength} characters.` };
+  if (password.length > 128) return { ok: false, reason: "Use at most 128 characters." };
+  if (new Set(password).size < 5) return { ok: false, reason: "Use a password with more variety." };
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) return { ok: false, reason: "Include both letters and numbers." };
+  const local = email.split("@")[0]?.toLowerCase() ?? "";
+  if (local.length >= 4 && password.toLowerCase().includes(local)) return { ok: false, reason: "Do not include your email address in your password." };
+  return { ok: true };
+}
+
+export const ACTIVATION_AGREEMENT_KINDS = ["privacy-policy", "terms-of-service"] as const;
