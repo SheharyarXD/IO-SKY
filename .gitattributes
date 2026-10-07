@@ -1,0 +1,4 @@
+# pnpm hashes patch files byte for byte, so they must keep LF endings on every platform.
+# A Windows checkout converting them to CRLF breaks `pnpm install --frozen-lockfile`.
+*.patch text eol=lf
+pnpm-lock.yaml text eol=lf

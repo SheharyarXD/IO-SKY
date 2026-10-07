@@ -11,3 +11,11 @@ dist
 test-results
 e2e-report
 playwright-report
+
+# Documents and reports are not part of the application image. Excluding them keeps
+# the upload small enough not to time out.
+*.pdf
+docs
+IO Sky project UI documents
+Phase 4 pdfs
+.claude
