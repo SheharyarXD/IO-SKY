@@ -933,3 +933,246 @@ export async function acknowledgeDeveloperSecurityEvent(
     .returning();
   return result[0] ?? null;
 }
+
+// ---------------------------------------------------------------------------
+// Admin-side write paths (SRS 12.9 / 12.10 / 15.7 / 15.10, BR-018)
+//
+// Until now this module only ever READ project assignments, tasks and the
+// admin half of the message thread, so nothing in the app could create the
+// rows the Developer Portal displays. These are the missing writes.
+// ---------------------------------------------------------------------------
+
+/**
+ * Create the developer-facing project. Deliberately separate from the
+ * client project: SRS 15.10 requires admins to be able to give a project a
+ * different name "for client privacy" when assigning it to a developer, and
+ * `brief` is documented as sanitised (never client name, contact, financials).
+ */
+export async function createDeveloperProject(args: {
+  code: string;
+  name: string;
+  brief: string | null;
+  track: string;
+  startMs: number | null;
+  targetMs: number | null;
+  createdByUserId: number;
+}): Promise<DeveloperProject | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .insert(developerProjects)
+    .values({
+      code: args.code,
+      name: args.name,
+      brief: args.brief,
+      track: args.track,
+      startMs: args.startMs,
+      targetMs: args.targetMs,
+      createdByUserId: args.createdByUserId,
+    })
+    .returning();
+  return rows[0] ?? null;
+}
+
+export async function listAllDeveloperProjects(): Promise<DeveloperProject[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(developerProjects).orderBy(desc(developerProjects.createdAt));
+}
+
+/**
+ * Assign a developer to a project. Idempotent: an existing active row is
+ * returned unchanged, and a paused or ended row is reactivated rather than
+ * duplicated. Done in one transaction because the table has no unique
+ * (projectId, developerId) index, so concurrent calls must not double insert.
+ */
+export async function assignDeveloperToProject(args: {
+  projectId: number;
+  developerId: number;
+  assignmentRole: "lead" | "contributor" | "reviewer";
+  createdByUserId: number;
+}): Promise<{ assignment: DeveloperProjectAssignment; created: boolean } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  return db.transaction(async (tx) => {
+    const existing = await tx
+      .select()
+      .from(developerProjectAssignments)
+      .where(
+        and(
+          eq(developerProjectAssignments.projectId, args.projectId),
+          eq(developerProjectAssignments.developerId, args.developerId),
+        ),
+      )
+      .limit(1);
+    const row = existing[0];
+    if (row) {
+      if (row.status === "active" && row.assignmentRole === args.assignmentRole) {
+        return { assignment: row, created: false };
+      }
+      const updated = await tx
+        .update(developerProjectAssignments)
+        .set({
+          status: "active",
+          assignmentRole: args.assignmentRole,
+          endMs: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(developerProjectAssignments.id, row.id))
+        .returning();
+      return { assignment: updated[0]!, created: false };
+    }
+    const inserted = await tx
+      .insert(developerProjectAssignments)
+      .values({
+        projectId: args.projectId,
+        developerId: args.developerId,
+        assignmentRole: args.assignmentRole,
+        startMs: Date.now(),
+        createdByUserId: args.createdByUserId,
+      })
+      .returning();
+    return { assignment: inserted[0]!, created: true };
+  });
+}
+
+/**
+ * End a developer's assignment. Also releases their task assignments on that
+ * project so a removed developer cannot keep seeing the work (BR-018).
+ */
+export async function endDeveloperAssignment(args: {
+  projectId: number;
+  developerId: number;
+}): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  return db.transaction(async (tx) => {
+    const ended = await tx
+      .update(developerProjectAssignments)
+      .set({ status: "ended", endMs: Date.now(), updatedAt: new Date() })
+      .where(
+        and(
+          eq(developerProjectAssignments.projectId, args.projectId),
+          eq(developerProjectAssignments.developerId, args.developerId),
+          eq(developerProjectAssignments.status, "active"),
+        ),
+      )
+      .returning({ id: developerProjectAssignments.id });
+    if (ended.length === 0) return false;
+    const taskIds = await tx
+      .select({ id: developerTasks.id })
+      .from(developerTasks)
+      .where(eq(developerTasks.projectId, args.projectId));
+    for (const t of taskIds) {
+      await tx
+        .update(developerTaskAssignments)
+        .set({ status: "released" })
+        .where(
+          and(
+            eq(developerTaskAssignments.taskId, t.id),
+            eq(developerTaskAssignments.developerId, args.developerId),
+          ),
+        );
+    }
+    return true;
+  });
+}
+
+export async function createDeveloperTask(args: {
+  projectId: number;
+  title: string;
+  body: string | null;
+  priority: "low" | "normal" | "high" | "urgent";
+  dueMs: number | null;
+  createdByUserId: number;
+}): Promise<DeveloperTask | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .insert(developerTasks)
+    .values({
+      projectId: args.projectId,
+      title: args.title,
+      body: args.body,
+      priority: args.priority,
+      dueMs: args.dueMs,
+      createdByUserId: args.createdByUserId,
+    })
+    .returning();
+  return rows[0] ?? null;
+}
+
+/**
+ * Assign a task to a developer. Refuses unless that developer holds an
+ * ACTIVE assignment on the task's project, so a task can never leak work to
+ * someone outside the project (BR-018, SRS 11.6).
+ */
+export async function assignDeveloperTask(args: {
+  taskId: number;
+  developerId: number;
+}): Promise<"assigned" | "already" | "task_not_found" | "not_on_project" | null> {
+  const db = await getDb();
+  if (!db) return null;
+  return db.transaction(async (tx) => {
+    const task = (
+      await tx.select().from(developerTasks).where(eq(developerTasks.id, args.taskId)).limit(1)
+    )[0];
+    if (!task) return "task_not_found" as const;
+    const onProject = await tx
+      .select({ id: developerProjectAssignments.id })
+      .from(developerProjectAssignments)
+      .where(
+        and(
+          eq(developerProjectAssignments.projectId, task.projectId),
+          eq(developerProjectAssignments.developerId, args.developerId),
+          eq(developerProjectAssignments.status, "active"),
+        ),
+      )
+      .limit(1);
+    if (onProject.length === 0) return "not_on_project" as const;
+    const existing = await tx
+      .select()
+      .from(developerTaskAssignments)
+      .where(
+        and(
+          eq(developerTaskAssignments.taskId, args.taskId),
+          eq(developerTaskAssignments.developerId, args.developerId),
+        ),
+      )
+      .limit(1);
+    if (existing[0]) {
+      if (existing[0].status === "active") return "already" as const;
+      await tx
+        .update(developerTaskAssignments)
+        .set({ status: "active" })
+        .where(eq(developerTaskAssignments.id, existing[0].id));
+      return "assigned" as const;
+    }
+    await tx
+      .insert(developerTaskAssignments)
+      .values({ taskId: args.taskId, developerId: args.developerId });
+    return "assigned" as const;
+  });
+}
+
+/** Admin reply into a developer's thread (the missing half of BR-012). */
+export async function appendAdminDeveloperMessage(args: {
+  developerId: number;
+  senderName: string | null;
+  subject: string | null;
+  body: string;
+}): Promise<DeveloperMessage | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .insert(developerMessages)
+    .values({
+      developerId: args.developerId,
+      sender: "admin",
+      senderName: args.senderName,
+      subject: args.subject,
+      body: args.body,
+    })
+    .returning();
+  return rows[0] ?? null;
+}

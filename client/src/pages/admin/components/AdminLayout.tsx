@@ -77,7 +77,7 @@ export const ADMIN_NAV: NavItem[] = [
   { id: "security", label: "Security Monitoring", href: "/admin/security", icon: ShieldAlert },
   { id: "campaigns", label: "Email/SMS Campaigns", href: "/admin/campaigns", icon: Mail },
   { id: "agents", label: "AI Agents & IVR", href: "/admin/agents", icon: Headphones },
-  { id: "automations", label: "Notifications & Automations", href: "/admin/automations", icon: Workflow, badge: 7 },
+  { id: "automations", label: "Notifications & Automations", href: "/admin/automations", icon: Workflow },
   { id: "analytics", label: "Analytics & Insights", href: "/admin/analytics", icon: BarChart3 },
   { id: "users", label: "Users & Permissions", href: "/admin/users", icon: ShieldCheck },
   { id: "audit", label: "Audit Logs", href: "/admin/audit", icon: ScrollText },

@@ -27,7 +27,7 @@ const DEFAULT_SETTINGS: Array<{
   { section: "storage", key: "storage.summary", title: "Cloud storage", description: "S3-compatible bucket, region, encryption and retention.", value: "Configured" },
   { section: "security", key: "security.summary", title: "Security policies", description: "MFA enforcement, session length, IP allowlists, password policy.", value: "Hardened" },
   { section: "i18n", key: "i18n.summary", title: "Localisation", description: "Default timezone (Europe/Amsterdam), languages and currency.", value: "EN · NL" },
-  { section: "integrations", key: "integrations.summary", title: "Integrations", description: "Stripe, Twilio, SendGrid, Postmark, OpenAI, Google Maps, Manus.", value: "Connected" },
+  { section: "integrations", key: "integrations.summary", title: "Integrations", description: "Provider connections, derived from the environment at read time.", value: "Derived at read time" },
   { section: "observability", key: "observability.summary", title: "Observability", description: "Audit retention, error reporting, performance budgets, alerting.", value: "Active" },
 ];
 
@@ -79,11 +79,42 @@ function buildAiGovernanceSeed(): Array<{
   ];
 }
 
+
+/**
+ * The integrations summary is a fact about the running environment, not an
+ * operator-editable label, so it is derived on every read instead of stored.
+ * It used to be seeded as a blanket "Connected" naming seven providers, which
+ * included Manus (removed in Milestone 2) and several (Stripe, SendGrid,
+ * Postmark, Google Maps) that this codebase has never integrated.
+ */
+function describeIntegrations(): { description: string; value: string } {
+  const providers: Array<[string, boolean]> = [
+    ["Email (Resend)", Boolean(process.env.RESEND_API_KEY)],
+    ["SMS (Twilio)", Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN)],
+    ["AI (LLM)", Boolean(process.env.LLM_API_KEY || process.env.OPENAI_API_KEY)],
+    ["Storage and auth (Supabase)", Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY)],
+  ];
+  const on = providers.filter(([, ok]) => ok).map(([n]) => n);
+  const off = providers.filter(([, ok]) => !ok).map(([n]) => n);
+  return {
+    value: `${on.length} of ${providers.length} configured`,
+    description:
+      (on.length ? `Configured: ${on.join(", ")}. ` : "") +
+      (off.length ? `Not configured: ${off.join(", ")}.` : ""),
+  };
+}
+
+function withDerivedRows(rows: PlatformSetting[]): PlatformSetting[] {
+  return rows.map((r) =>
+    r.key === "integrations.summary" ? { ...r, ...describeIntegrations() } : r,
+  );
+}
+
 export async function listPlatformSettings(): Promise<PlatformSetting[]> {
   const db = await getDb();
   if (!db) return [];
   const existing = await db.select().from(platformSettings).orderBy(asc(platformSettings.section));
-  if (existing.length > 0) return existing;
+  if (existing.length > 0) return withDerivedRows(existing);
 
   // First-ever read: seed the default rows so the page has real persisted
   // state from day one instead of silently staying empty forever.
@@ -91,7 +122,7 @@ export async function listPlatformSettings(): Promise<PlatformSetting[]> {
     .insert(platformSettings)
     .values([...DEFAULT_SETTINGS, ...buildAiGovernanceSeed()])
     .onConflictDoNothing();
-  return db.select().from(platformSettings).orderBy(asc(platformSettings.section));
+  return withDerivedRows(await db.select().from(platformSettings).orderBy(asc(platformSettings.section)));
 }
 
 export async function updatePlatformSetting(

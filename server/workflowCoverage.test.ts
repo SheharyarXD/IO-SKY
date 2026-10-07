@@ -38,6 +38,7 @@ const WORKFLOW_COVERAGE: Record<string, string> = {
   "Executive overview summary": "server/admin.summary.test.ts",
   "Admin action / audited buttons": "server/admin.modules.test.ts",
   "Developer access granting": "server/admin.grantDeveloperAccess.test.ts",
+  "Developer project, task and message delivery": "server/admin.developerDelivery.test.ts",
   "AI Scan retrigger": "server/admin.retriggerAiScan.test.ts",
 
   // --- §2.5 enterprise governance ---

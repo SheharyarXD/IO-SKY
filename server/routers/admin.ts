@@ -77,6 +77,15 @@ import {
   listWebhookDeliveries,
   createDeveloperAccessScope,
   getDeveloperProfileById,
+  appendDeveloperNotification,
+  appendDeveloperAudit,
+  createDeveloperProject,
+  listAllDeveloperProjects,
+  assignDeveloperToProject,
+  endDeveloperAssignment,
+  createDeveloperTask,
+  assignDeveloperTask,
+  appendAdminDeveloperMessage,
 } from "../db";
 import { runWorkflowsForTrigger } from "../workflowEngine";
 import { dispatchWebhooksForTrigger } from "../webhookDispatcher";
@@ -1623,6 +1632,232 @@ export const adminRouter = router({
         reason: `admin.developer.grant_access(${input.developerId}:${input.level})`,
       });
       return scope;
+    }),
+
+  // -------------------------------------------------------------------------
+  // Developer delivery write paths. SRS 12.9 / 12.10 / 15.7 / 15.10, BR-018.
+  //
+  // The Developer Portal could only ever READ assignments and tasks; no code
+  // anywhere created them. Every mutation below is admin only, audited, and
+  // refuses to hand work to a developer who is not in good standing.
+  // -------------------------------------------------------------------------
+
+  developerProjects: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.developer_projects" });
+    return listAllDeveloperProjects();
+  }),
+
+  createDeveloperProject: adminProcedure
+    .input(
+      z.object({
+        code: z
+          .string()
+          .trim()
+          .min(2)
+          .max(32)
+          .regex(/^[A-Z0-9][A-Z0-9-]*$/, "Use upper case letters, digits and dashes."),
+        /** SRS 15.10: may differ from the client project name, for client privacy. */
+        name: z.string().trim().min(1).max(200),
+        /** Must be sanitised: never client name, contact or financials. */
+        brief: z.string().max(4000).optional(),
+        track: z.enum(["backend", "frontend", "full-stack", "ai", "infra", "research"]).default("full-stack"),
+        startMs: z.number().int().optional(),
+        targetMs: z.number().int().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      let project;
+      try {
+        project = await createDeveloperProject({
+          code: input.code,
+          name: input.name,
+          brief: input.brief ?? null,
+          track: input.track,
+          startMs: input.startMs ?? null,
+          targetMs: input.targetMs ?? null,
+          createdByUserId: ctx.user.id,
+        });
+      } catch (err) {
+        // The code column is unique. Surface a clean conflict, not a 500.
+        if (/unique|duplicate/i.test(String((err as Error)?.message ?? err))) {
+          throw new TRPCError({ code: "CONFLICT", message: `Project code ${input.code} already exists.` });
+        }
+        throw err;
+      }
+      if (!project) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create the project." });
+      }
+      await recordAdminEvent({ ctx, reason: `admin.developer_project.create(${project.code})` });
+      return project;
+    }),
+
+  assignDeveloperToProject: adminProcedure
+    .input(
+      z.object({
+        projectId: z.number().int().positive(),
+        developerId: z.number().int().positive(),
+        assignmentRole: z.enum(["lead", "contributor", "reviewer"]).default("contributor"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const developer = await getDeveloperProfileById(input.developerId);
+      if (!developer) throw new TRPCError({ code: "NOT_FOUND", message: "Developer not found." });
+      if (developer.status !== "active") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Developer is ${developer.status} and cannot be assigned work.`,
+        });
+      }
+      const projects = await listAllDeveloperProjects();
+      const project = projects.find((p) => p.id === input.projectId);
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
+      if (project.status === "completed") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This project is completed." });
+      }
+      const result = await assignDeveloperToProject({
+        projectId: input.projectId,
+        developerId: input.developerId,
+        assignmentRole: input.assignmentRole,
+        createdByUserId: ctx.user.id,
+      });
+      if (!result) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not assign the developer." });
+      }
+      // Tell the developer only when something actually changed for them.
+      if (result.created) {
+        await appendDeveloperNotification({
+          developerId: input.developerId,
+          kind: "assignment",
+          title: `New project assignment: ${project.name}`,
+          body: `You were assigned to ${project.code} as ${input.assignmentRole}.`,
+          href: "/developer-workspace/projects",
+          priority: "normal",
+        });
+      }
+      await appendDeveloperAudit({
+        developerId: input.developerId,
+        event: result.created ? "assignment.created" : "assignment.updated",
+        detail: `project=${project.code}; role=${input.assignmentRole}; by=${ctx.user.id}`,
+      });
+      await recordAdminEvent({
+        ctx,
+        reason: `admin.developer.assign(${input.developerId}->${project.code}:${input.assignmentRole})`,
+      });
+      return result;
+    }),
+
+  endDeveloperAssignment: adminProcedure
+    .input(z.object({ projectId: z.number().int().positive(), developerId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const ended = await endDeveloperAssignment(input);
+      if (!ended) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No active assignment to end." });
+      }
+      await appendDeveloperAudit({
+        developerId: input.developerId,
+        event: "assignment.ended",
+        detail: `projectId=${input.projectId}; by=${ctx.user.id}`,
+      });
+      await recordAdminEvent({
+        ctx,
+        reason: `admin.developer.unassign(${input.developerId}<-${input.projectId})`,
+      });
+      return { ok: true as const };
+    }),
+
+  createDeveloperTask: adminProcedure
+    .input(
+      z.object({
+        projectId: z.number().int().positive(),
+        title: z.string().trim().min(1).max(200),
+        body: z.string().max(4000).optional(),
+        priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
+        dueMs: z.number().int().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const projects = await listAllDeveloperProjects();
+      if (!projects.some((p) => p.id === input.projectId)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
+      }
+      const task = await createDeveloperTask({
+        projectId: input.projectId,
+        title: input.title,
+        body: input.body ?? null,
+        priority: input.priority,
+        dueMs: input.dueMs ?? null,
+        createdByUserId: ctx.user.id,
+      });
+      if (!task) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create the task." });
+      await recordAdminEvent({ ctx, reason: `admin.developer_task.create(project=${input.projectId})` });
+      return task;
+    }),
+
+  assignDeveloperTask: adminProcedure
+    .input(z.object({ taskId: z.number().int().positive(), developerId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const developer = await getDeveloperProfileById(input.developerId);
+      if (!developer) throw new TRPCError({ code: "NOT_FOUND", message: "Developer not found." });
+      if (developer.status !== "active") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Developer is ${developer.status}.` });
+      }
+      const outcome = await assignDeveloperTask(input);
+      if (outcome === "task_not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Task not found." });
+      if (outcome === "not_on_project") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Assign the developer to the project before assigning them a task.",
+        });
+      }
+      if (outcome === null) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not assign the task." });
+      }
+      if (outcome === "assigned") {
+        await appendDeveloperNotification({
+          developerId: input.developerId,
+          kind: "task",
+          title: "New task assigned",
+          body: null,
+          href: "/developer-workspace/tasks",
+          priority: "normal",
+        });
+      }
+      await recordAdminEvent({
+        ctx,
+        reason: `admin.developer_task.assign(${input.taskId}->${input.developerId}:${outcome})`,
+      });
+      return { outcome };
+    }),
+
+  /** BR-012: admins may speak to developers; this is the half that was missing. */
+  replyToDeveloper: adminProcedure
+    .input(
+      z.object({
+        developerId: z.number().int().positive(),
+        subject: z.string().trim().max(200).optional(),
+        body: z.string().trim().min(1).max(8000),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const developer = await getDeveloperProfileById(input.developerId);
+      if (!developer) throw new TRPCError({ code: "NOT_FOUND", message: "Developer not found." });
+      const message = await appendAdminDeveloperMessage({
+        developerId: input.developerId,
+        senderName: ctx.user.name ?? "IO SKY",
+        subject: input.subject ?? null,
+        body: input.body,
+      });
+      if (!message) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not send the message." });
+      await appendDeveloperNotification({
+        developerId: input.developerId,
+        kind: "message",
+        title: input.subject ? `Message: ${input.subject}` : "New message from IO SKY",
+        body: null,
+        href: "/developer-workspace/messages",
+        priority: "normal",
+      });
+      await recordAdminEvent({ ctx, reason: `admin.developer.message(${input.developerId})` });
+      return message;
     }),
   security: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.security" });
