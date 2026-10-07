@@ -73,3 +73,42 @@ export async function shot(page, id, { full = false, wait = 900, clip } = {}) {
 export async function go(page, route) {
   await page.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded" });
 }
+
+// ---- scene helper with a manifest -------------------------------------------------------------
+const MANIFEST = path.join(OUT, "manifest.json");
+export function readManifest() {
+  try {
+    return JSON.parse(fs.readFileSync(MANIFEST, "utf8"));
+  } catch {
+    return {};
+  }
+}
+function record(id, meta) {
+  const m = readManifest();
+  m[id] = { ...meta, capturedAt: new Date().toISOString() };
+  fs.writeFileSync(MANIFEST, JSON.stringify(m, null, 2));
+}
+
+/**
+ * Capture one named scene. `route` is navigated first (skip with null),
+ * `act` may interact with the page, and failures are logged without stopping
+ * the run so a later pass can fill gaps.
+ */
+export async function scene(page, id, { role, route = null, title, act, full = false, wait = 900, clip } = {}) {
+  try {
+    if (route) await go(page, route);
+    if (act) await act(page);
+    await shot(page, id, { full, wait, clip });
+    record(id, { role, route: route ?? "(interaction)", title, url: page.url().replace(BASE, "") });
+    console.log("ok  ", id);
+    return true;
+  } catch (e) {
+    console.log("FAIL", id, "->", String(e.message).split("\n")[0].slice(0, 140));
+    return false;
+  }
+}
+
+export async function tab(page, name) {
+  await page.getByRole("tab", { name: new RegExp(`^${name}$`, "i") }).first().click();
+  await page.waitForTimeout(700);
+}
