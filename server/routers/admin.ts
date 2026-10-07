@@ -89,6 +89,7 @@ import {
   listAllDeveloperTasks,
   listAllDeveloperAssignments,
   applyConfigChange,
+  listAiAgents,
   ensureOperationsSettings,
   resetMaintenanceCache,
 } from "../db";
@@ -1169,20 +1170,6 @@ function synthesisedCampaigns() {
   };
 }
 
-function synthesisedAgents() {
-  return {
-    rows: [
-      { id: "AG-01", name: "Inbound IVR",   kind: "ivr",      activeCalls: 7, csat: 4.7, escalations: 1 },
-      { id: "AG-02", name: "Outbound AI",   kind: "voice-ai", activeCalls: 12,csat: 4.5, escalations: 3 },
-      { id: "AG-03", name: "Triage Bot",    kind: "chat",     activeCalls: 31,csat: 4.6, escalations: 0 },
-      { id: "AG-04", name: "Renewal Bot",   kind: "voice-ai", activeCalls: 4, csat: 4.4, escalations: 1 },
-    ],
-    total: 4,
-    generatedAtMs: Date.now(),
-    source: "seed" as const,
-  };
-}
-
 function synthesisedAutomations() {
   return {
     rows: [
@@ -1905,7 +1892,9 @@ export const adminRouter = router({
   }),
   agents: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.agents" });
-    return synthesisedAgents();
+    // Real registry rows; the fabricated list that used to be returned here is gone.
+    const rows = await safe(() => listAiAgents(), []);
+    return { rows, total: rows.length, generatedAtMs: Date.now(), source: rows.length > 0 ? ("db" as const) : ("seed" as const) };
   }),
   automations: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.automations" });
@@ -2405,6 +2394,5 @@ export const __testing = {
   readMfa,
   synthesisedAiScans,
   synthesisedCampaigns,
-  synthesisedAgents,
   synthesisedAutomations,
 };

@@ -10,6 +10,7 @@
  * access, campaigns mini, system health matrix, upcoming list) follows
  * the screenshot exactly.
  */
+import { AccessPanel, AiGovernancePanel, AutomationPanel, CompliancePanel, CriticalAlertsPanel, HealthPanel, PendingPanel, PipelinePanel } from "./ExecutivePanels";
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuditedAction } from "./_shared/ModuleState";
@@ -373,183 +374,10 @@ export default function ExecutiveOverview() {
 
       {/* Row 2 — AI Agent · Command Center · Critical Alerts */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* AI Operations Agent */}
-        <div className="lg:col-span-4 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4 flex flex-col">
-          <div className="flex items-center justify-between">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
-              AI Operations Agent
-            </div>
-            <SampleBadge />
-          </div>
+        <AiGovernancePanel />
+        <CompliancePanel />
+        <CriticalAlertsPanel />
 
-          {/* IO SYMBOL replaces robot — neural pulse halo */}
-          <div className="mt-4 flex items-start gap-3">
-            <div className="relative shrink-0">
-              <div className="absolute inset-0 -m-2 rounded-full bg-[radial-gradient(circle,rgba(245,138,31,0.45)_0%,rgba(245,138,31,0)_70%)] blur-md animate-pulse" />
-              <div className="relative w-[88px] h-[88px] rounded-[18px] border border-[#F58A1F]/25 bg-gradient-to-b from-[#0D2D2E] to-[#103438] flex items-center justify-center shadow-[inset_0_0_20px_rgba(245,138,31,0.18)]">
-                <IOSkyLogo variant="mark" height={56} />
-              </div>
-              <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-[#F58A1F] border-2 border-[#103438] shadow-[0_0_8px_#F58A1F]" />
-            </div>
-            <div className="min-w-0">
-              <div className="font-display font-semibold text-[18px] tracking-tight leading-tight text-[#E6EAF0]">
-                Good morning, {(typeof window !== "undefined" && (JSON.parse(localStorage.getItem("iosky-current-user-cache") ?? "null")?.name?.split(" ")[0])) || "Alex"}.
-              </div>
-              <p className="text-[13px] text-white/65 leading-snug mt-1">
-                I've analyzed all systems and prepared your operational brief.
-              </p>
-            </div>
-          </div>
-
-          {/* Insight chips */}
-          <ul className="mt-4 space-y-1.5">
-            {[
-              { n: 2, label: "high priority alerts require action", tone: "amber" as const },
-              { n: 5, label: "automations failed in the last 24h", tone: "red" as const },
-              { n: "€12,430", label: "in failed payments", tone: "red" as const },
-              { n: 3, label: "reports awaiting approval", tone: "neutral" as const },
-              { n: 1, label: "critical security event detected", tone: "red" as const },
-            ].map((row, i) => (
-              <li
-                key={i}
-                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-[10px] bg-white/[0.02] border border-white/[0.05]"
-              >
-                <span
-                  className={cn(
-                    "w-5 h-5 rounded-full text-[10px] font-mono flex items-center justify-center",
-                    row.tone === "amber" && "bg-amber-300/15 text-amber-200 border border-amber-300/30",
-                    row.tone === "red" && "bg-red-500/15 text-red-300 border border-red-400/30",
-                    row.tone === "neutral" && "bg-white/[0.05] text-white/70 border border-white/10",
-                  )}
-                >
-                  {row.n}
-                </span>
-                <span className="text-[12.5px] text-white/75 truncate">{row.label}</span>
-              </li>
-            ))}
-          </ul>
-
-          {/*
-           * "Ask Agent", "Operational Brief" and "Run Diagnostics" were
-           * rendered here with no click handler and no backing capability.
-           * No AI agent, briefing generator or diagnostics runner exists in
-           * the platform yet, so the controls are removed rather than shown
-           * as working features. They return with Workstream 4.2 and 4.7.
-           */}
-        </div>
-
-        {/* Operational Command Center */}
-        <div className="lg:col-span-5 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4 flex flex-col">
-          <div className="flex items-center justify-between">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
-              Operational Command Center
-            </div>
-            <SampleBadge />
-          </div>
-          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="relative h-[220px] rounded-[14px] border border-white/[0.05] bg-[radial-gradient(circle_at_50%_50%,rgba(245,138,31,0.08)_0%,rgba(11,16,32,0.6)_60%)] flex items-center justify-center overflow-hidden">
-              <Globe2 className="w-[160px] h-[160px] text-[#F58A1F]/55" strokeWidth={0.7} />
-              <div className="absolute inset-0 pointer-events-none">
-                {[
-                  { top: "18%", left: "32%" },
-                  { top: "30%", left: "62%" },
-                  { top: "55%", left: "26%" },
-                  { top: "62%", left: "70%" },
-                  { top: "76%", left: "44%" },
-                ].map((p, i) => (
-                  <span
-                    key={i}
-                    className="absolute w-1.5 h-1.5 rounded-full bg-[#F58A1F] shadow-[0_0_8px_#F58A1F] animate-pulse"
-                    style={{ top: p.top, left: p.left, animationDelay: `${i * 0.4}s` }}
-                  />
-                ))}
-              </div>
-            </div>
-            <ul className="space-y-1.5">
-              {[
-                { label: "AI Scan Engine", status: "Operational", tone: "green", Icon: ScanSearch },
-                { label: "Report Pipeline", status: "Healthy", tone: "green", Icon: FileWarning },
-                { label: "Automations", status: "Running", tone: "amber", Icon: Workflow },
-                { label: "Email Service", status: "Healthy", tone: "green", Icon: Mail },
-                { label: "SMS Service", status: "Healthy", tone: "green", Icon: Mail },
-                { label: "AI Agents", status: "Operational", tone: "green", Icon: PhoneCall },
-                { label: "Cloud Infrastructure", status: "Healthy", tone: "green", Icon: Cloud },
-                { label: "Database", status: "Healthy", tone: "green", Icon: Database },
-                { label: "Backup & DR", status: "Protected", tone: "green", Icon: ShieldAlert },
-              ].map((row, i) => (
-                <li
-                  key={i}
-                  className="flex items-center justify-between px-2.5 py-1.5 rounded-[10px] bg-white/[0.02] border border-white/[0.05]"
-                >
-                  <div className="flex items-center gap-2 text-[12px] text-white/85">
-                    <row.Icon className="w-3.5 h-3.5 text-white/55" />
-                    {row.label}
-                  </div>
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 text-[10.5px] font-mono uppercase tracking-[0.16em]",
-                      row.tone === "green" && "text-emerald-300",
-                      row.tone === "amber" && "text-amber-200",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        row.tone === "green" && "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]",
-                        row.tone === "amber" && "bg-amber-300 shadow-[0_0_8px_rgba(252,211,77,0.7)]",
-                      )}
-                    />
-                    {row.status}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <button className="mt-3 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-[10px] border border-white/[0.08] text-[12px] text-white/80 hover:text-white hover:border-[#F58A1F]/35 self-start transition-colors">
-            <Server className="w-3.5 h-3.5" /> Open Infrastructure Monitor
-          </button>
-        </div>
-
-        {/* Critical Alerts */}
-        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4 flex flex-col">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">
-                Critical Alerts
-              </div>
-              <SampleBadge />
-            </div>
-            <button className="text-[11px] text-[#F58A1F] hover:underline">View all</button>
-          </div>
-          <ul className="mt-3 space-y-2">
-            {[
-              { Icon: ShieldAlert, title: "Suspicious Login Detected", body: "IP: 185.234.*.* · Netherlands", sev: "High", color: "#F87171", ago: "2m ago" },
-              { Icon: CreditCard, title: "High Risk Payment Failure", body: "Client: TechVision Enterprises · €4,950", sev: "High", color: "#F87171", ago: "8m ago" },
-              { Icon: Workflow, title: "Automation Workflow Failed", body: "Workflow: Report Generation", sev: "Medium", color: "#FCD34D", ago: "15m ago" },
-              { Icon: Bug, title: "Unusual Data Export", body: "Client: Global Retail Group", sev: "Medium", color: "#FCD34D", ago: "32m ago" },
-            ].map((row, i) => (
-              <li key={i} className="flex items-start gap-2 px-2.5 py-2 rounded-[10px] bg-white/[0.02] border border-white/[0.05]">
-                <div className="w-7 h-7 rounded-[8px] flex items-center justify-center" style={{ background: `${row.color}1A`, border: `1px solid ${row.color}40` }}>
-                  <row.Icon className="w-3.5 h-3.5" style={{ color: row.color }} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-[12.5px] text-[#E6EAF0] truncate font-medium">{row.title}</div>
-                    <span className="text-[10px] font-mono uppercase" style={{ color: row.color }}>{row.sev}</span>
-                  </div>
-                  <div className="text-[11px] text-white/55 truncate">{row.body}</div>
-                  <div className="text-[10px] font-mono text-white/40 mt-0.5">{row.ago}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-[11px] text-[#F58A1F]">3 Unread Alerts</span>
-            <button className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] border border-white/[0.08] text-[11px] text-white/80 hover:border-[#F58A1F]/35">
-              <ShieldAlert className="w-3.5 h-3.5" /> Open Security Center
-            </button>
-          </div>
-        </div>
       </section>
 
       {/* Row 3 — Revenue / Automation / Agents / Activity */}
@@ -589,87 +417,9 @@ export default function ExecutiveOverview() {
           </div>
         </div>
 
-        {/* Automation Center */}
-        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Automation Center</div>
-              <SampleBadge />
-            </div>
-            <button className="text-[11px] text-[#F58A1F] hover:underline">View all</button>
-          </div>
-          <div className="mt-3 flex items-center justify-center relative">
-            <Donut
-              segments={[
-                { label: "Running", value: 96, color: "#34D399" },
-                { label: "Completed", value: 24, color: "#60A5FA" },
-                { label: "Failed", value: 5, color: "#F87171" },
-                { label: "Paused", value: 3, color: "#FCD34D" },
-              ]}
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="font-display font-semibold text-[22px] leading-none">128</div>
-              <div className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/55 mt-1">Total Workflows</div>
-            </div>
-          </div>
-          <ul className="mt-3 space-y-1 text-[12px]">
-            {[
-              { lab: "Running", v: "96 (75%)", c: "#34D399" },
-              { lab: "Completed", v: "24 (19%)", c: "#60A5FA" },
-              { lab: "Failed", v: "5 (4%)", c: "#F87171" },
-              { lab: "Paused", v: "3 (2%)", c: "#FCD34D" },
-            ].map(r => (
-              <li key={r.lab} className="flex items-center justify-between text-white/75">
-                <span className="inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: r.c }} /> {r.lab}</span>
-                <span className="font-mono text-white/55">{r.v}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            {[
-              { v: "5", t: "Failed Workflows", sub: "Needs Attention", color: "text-red-300" },
-              { v: "12", t: "Retries", sub: "In Progress", color: "text-amber-200" },
-              { v: "0", t: "Blocked", sub: "No Issues", color: "text-emerald-300" },
-            ].map(b => (
-              <div key={b.t} className="rounded-[10px] bg-white/[0.02] border border-white/[0.05] p-2">
-                <div className={cn("text-[18px] font-semibold leading-none", b.color)}>{b.v}</div>
-                <div className="text-[9.5px] font-mono uppercase tracking-[0.14em] text-white/55 mt-1">{b.t}</div>
-                <div className="text-[10px] text-white/45">{b.sub}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <AutomationPanel />
 
-        {/* AI Agents & IVR */}
-        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">AI Agents & IVR</div>
-              <SampleBadge />
-            </div>
-            <button className="text-[11px] text-[#F58A1F] hover:underline">View all</button>
-          </div>
-          <ul className="mt-3 space-y-2 text-[12px]">
-            {[
-              { lab: "Outbound AI Calls", v: "24", d: "+18.5%", trend: trendOrange, c: "#F58A1F" },
-              { lab: "Inbound AI (IVR)", v: "37", d: "+11.3%", trend: trendBlue, c: "#60A5FA" },
-              { lab: "Calls Booked", v: "16", d: "+23.1%", trend: trendGreen, c: "#34D399" },
-              { lab: "Avg. Call Duration", v: "04:32", d: "-8.2%", trend: trendRed, c: "#F87171" },
-              { lab: "Escalations", v: "3", d: "+12.5%", trend: trendPurple, c: "#A78BFA" },
-            ].map(r => (
-              <li key={r.lab} className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-white/75 truncate">{r.lab}</span>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-mono">{r.v}</span>
-                  <span className={cn("text-[10.5px] font-mono", r.d.startsWith("-") ? "text-red-300" : "text-emerald-300")}>{r.d}</span>
-                  <Sparkline values={r.trend} stroke={r.c} fill={`${r.c}33`} height={20} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <PipelinePanel />
 
         {/* Recent Activity */}
         <div className="lg:col-span-2 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
@@ -703,70 +453,7 @@ export default function ExecutiveOverview() {
 
       {/* Row 4 — Temp Access · Email & SMS · System Health · Upcoming */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Temporary Access Control */}
-        <div className="lg:col-span-4 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Temporary Access Control</div>
-              <SampleBadge />
-            </div>
-            <button className="text-[11px] text-[#F58A1F] hover:underline">View all</button>
-          </div>
-          <div className="mt-3 overflow-x-auto -mx-2">
-            <table className="min-w-full text-[12px]">
-              <thead>
-                <tr className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/45">
-                  <th className="text-left px-2 py-1">Developer</th>
-                  <th className="text-left px-2 py-1">Purpose</th>
-                  <th className="text-left px-2 py-1">Access Level</th>
-                  <th className="text-left px-2 py-1">Expires In</th>
-                  <th className="text-left px-2 py-1">Status</th>
-                  <th className="text-left px-2 py-1">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.04]">
-                {[
-                  ["John Developer", "Infrastructure Maintenance", "Elevated", "2h 14m"],
-                  ["Sarah Engineer", "Database Optimization", "Elevated", "1h 32m"],
-                  ["Mike DevOps", "Server Deployment", "Elevated", "45m"],
-                  ["Tom Engineer", "Bug Investigation", "Limited", "1h 05m"],
-                ].map(([name, purpose, lvl, exp]) => (
-                  <tr key={name} className="text-white/85">
-                    <td className="px-2 py-2 whitespace-nowrap">{name}</td>
-                    <td className="px-2 py-2 text-white/65">{purpose}</td>
-                    <td className="px-2 py-2">
-                      <span
-                        className={cn(
-                          "inline-flex px-1.5 py-0.5 rounded-md text-[10.5px] font-mono",
-                          lvl === "Elevated" ? "bg-[#F58A1F]/12 text-[#F58A1F] border border-[#F58A1F]/30" : "bg-white/[0.05] text-white/65 border border-white/10",
-                        )}
-                      >
-                        {lvl}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 font-mono text-white/65">{exp}</td>
-                    <td className="px-2 py-2">
-                      <span className="inline-flex items-center gap-1 text-[10.5px] font-mono uppercase tracking-[0.14em] text-emerald-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        Active
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-white/55">
-                      <button className="hover:text-[#F58A1F] mr-1.5"><CheckCircle2 className="w-3.5 h-3.5 inline" /></button>
-                      <button className="hover:text-red-400"><AlertTriangle className="w-3.5 h-3.5 inline" /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button
-            onClick={() => audited.fire("executive-overview", "grant-temp-access")}
-            className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] bg-gradient-to-b from-[#FFA64D] to-[#F58A1F] text-[#0D2D2E] text-[12px] font-semibold"
-          >
-            <Plus className="w-3.5 h-3.5" /> Grant New Access
-          </button>
-        </div>
+        <AccessPanel />
 
         {/* Email & SMS Campaigns */}
         <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
@@ -806,68 +493,9 @@ export default function ExecutiveOverview() {
           </ul>
         </div>
 
-        {/* System Health Overview */}
-        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">System Health Overview</div>
-              <SampleBadge />
-            </div>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[12px]">
-            {[
-              { Icon: Server, lab: "Web Servers", st: "Operational" },
-              { Icon: Zap, lab: "API Services", st: "Operational" },
-              { Icon: Database, lab: "Database Cluster", st: "Operational" },
-              { Icon: Cloud, lab: "Cache Service", st: "Operational" },
-              { Icon: Cloud, lab: "Cloud Storage", st: "Operational" },
-              { Icon: Globe2, lab: "CDN & Edge", st: "Operational" },
-              { Icon: ShieldAlert, lab: "Backup System", st: "Protected" },
-              { Icon: Heart, lab: "Disaster Recovery", st: "Ready" },
-            ].map(r => (
-              <div key={r.lab} className="flex items-start gap-2 px-2.5 py-2 rounded-[10px] bg-white/[0.02] border border-white/[0.05]">
-                <div className="w-7 h-7 rounded-[8px] bg-emerald-400/[0.07] border border-emerald-400/25 text-emerald-300 flex items-center justify-center">
-                  <r.Icon className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-white/85 truncate">{r.lab}</div>
-                  <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-emerald-300">{r.st}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <HealthPanel />
 
-        {/* Upcoming & Pending */}
-        <div className="lg:col-span-2 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Upcoming & Pending</div>
-              <SampleBadge />
-            </div>
-            <button className="text-[11px] text-[#F58A1F] hover:underline">View all</button>
-          </div>
-          <ul className="mt-3 space-y-1.5 text-[12px]">
-            {[
-              { lab: "Reports awaiting approval", v: 3 },
-              { lab: "Invoices awaiting payment", v: 7 },
-              { lab: "Support tickets open", v: 14 },
-              { lab: "Strategy calls today", v: 5 },
-              { lab: "Contracts awaiting signature", v: 2 },
-              { lab: "Developers awaiting onboarding", v: 4 },
-            ].map(r => (
-              <li key={r.lab} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-[10px] hover:bg-white/[0.02]">
-                <span className="text-white/75 truncate flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-white/40" />
-                  {r.lab}
-                </span>
-                <span className="font-mono text-[#F58A1F] bg-[#F58A1F]/10 border border-[#F58A1F]/25 px-1.5 rounded">
-                  {r.v}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <PendingPanel />
       </section>
 
       {/* Footer status row */}

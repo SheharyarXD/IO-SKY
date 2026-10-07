@@ -74,7 +74,7 @@ import {
 import { recordAdminEvent } from "./admin";
 import { emitNotification } from "../notificationDispatcher";
 import { complianceSummary, evaluateCompliance } from "../../shared/srsRules";
-import { readComplianceInputs } from "../db";
+import { AI_SCAN_AGENT_KEY, decideLatestAiExecutionForSubject, readComplianceInputs } from "../db";
 import { fireTrigger } from "../workflowEngine";
 import { CALL_OUTCOMES, REPORT_STATUSES, checkCallOutcome, toCsv, type ReportStatus } from "../../shared/srsRules";
 import { addTaskCommentByStaff, getCallOutcome, listNotificationEvents, listRecentEmailLog, listTaskCommentsForStaff, recordCallOutcome } from "../db";
@@ -634,6 +634,10 @@ export const adminOpsRouter = router({
       if (!res.ok) fail(res.code, res.reason);
       await recordAdminEvent({ ctx, reason: `admin.ai_scan.${input.to}(${input.scanId}:from=${res.from})` });
       const label = res.scan.company || res.scan.fullName;
+      // The reviewer's decision is the human decision on the AI run that drafted this report.
+      if (input.to === "approved" || input.to === "revision_required") {
+        await decideLatestAiExecutionForSubject({ agentKey: AI_SCAN_AGENT_KEY, subjectRef: `scan:${res.scan.id}`, approve: input.to === "approved", userId: ctx.user.id, note: input.note ?? null }).catch((e) => console.error("[aiScan] could not link the decision to the AI run:", e));
+      }
       if (input.to === "published") {
         // SRS 9.9: tell the customer. A mail failure must not undo the publication.
         const base = process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://iosky.com";

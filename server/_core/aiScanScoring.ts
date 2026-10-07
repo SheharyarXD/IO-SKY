@@ -32,6 +32,8 @@ import {
 import { invokeLLM as defaultInvokeLLM, type InvokeParams, type InvokeResult } from "./llm";
 
 export interface AiScanScoringInput {
+  /** Managed prompt text from the AI registry. Falls back to the built in default. */
+  basePrompt?: string;
   tier: "free" | "growth" | "elite";
   locale?: string;
   fullName: string;
@@ -133,13 +135,22 @@ const REPORT_JSON_SCHEMA = {
   },
 };
 
-function buildSystemPrompt(locale: string): string {
+/**
+ * The instruction text a person can manage and version (SRS 19.9). The language
+ * line is NOT part of it and is always appended by code, so editing the managed
+ * prompt can never remove the locale handling.
+ */
+export const DEFAULT_SCAN_BASE_PROMPT = [
+  "You are the IO SKY AI Scan analyst. You produce structured, accurate operational-maturity reports.",
+  "Stay grounded in the answers provided. Never invent numerical evidence not present in the input.",
+  "Rationales must be a single paragraph each, plain prose, no bullet points.",
+  "Executive summary must read like a board memo — 2 short paragraphs, decisive but balanced.",
+].join(" ");
+
+function buildSystemPrompt(locale: string, base?: string): string {
   return [
-    "You are the IO SKY AI Scan analyst. You produce structured, accurate operational-maturity reports.",
+    (base && base.trim()) || DEFAULT_SCAN_BASE_PROMPT,
     `Respond in the language with locale code "${locale}". If unsupported, fall back to English.`,
-    "Stay grounded in the answers provided. Never invent numerical evidence not present in the input.",
-    "Rationales must be a single paragraph each, plain prose, no bullet points.",
-    "Executive summary must read like a board memo — 2 short paragraphs, decisive but balanced.",
   ].join(" ");
 }
 
@@ -294,7 +305,7 @@ export async function scoreAiScan(
   try {
     result = await invoke({
       messages: [
-        { role: "system", content: buildSystemPrompt(locale) },
+        { role: "system", content: buildSystemPrompt(locale, input.basePrompt) },
         { role: "user", content: buildUserPrompt(input, rawScores) },
       ],
       response_format: {

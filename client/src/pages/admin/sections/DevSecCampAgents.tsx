@@ -358,63 +358,42 @@ export function Campaigns() {
 // =============================================================================
 // AI Agents & IVR
 // =============================================================================
-interface Agent {
-  id: string;
-  name: string;
-  type: "Outbound AI" | "Inbound AI / IVR" | "Support" | "Booking";
-  status: "Live" | "Paused" | "Tuning";
-  callsToday: number;
-  csat: number;
-}
-
-const AGENT_KPIS: KpiTile[] = [
-  { id: "calls", label: "Calls (today)", value: "61", delta: { value: "18.5%", positive: true }, icon: PhoneCall, accent: "orange", spark: [22, 28, 36, 44, 51, 56, 61] },
-  { id: "ivr", label: "IVR sessions", value: "37", delta: { value: "11.3%", positive: true }, icon: Headphones, accent: "violet", spark: [18, 22, 27, 30, 33, 35, 37] },
-  { id: "csat", label: "CSAT", value: "4.7 / 5", delta: { value: "0.1", positive: true }, icon: Activity, accent: "green", spark: [4.5, 4.5, 4.6, 4.6, 4.7, 4.7, 4.7] },
-  { id: "esc", label: "Escalations", value: "3", delta: { value: "12.5%", positive: true }, icon: AlertTriangle, accent: "red", spark: [6, 5, 5, 4, 4, 3, 3] },
-];
-
-const AGENTS: Agent[] = [
-  { id: "AG-08", name: "OutboundAI · Strategy", type: "Outbound AI",       status: "Live",   callsToday: 24, csat: 4.7 },
-  { id: "AG-07", name: "InboundAI · Reception", type: "Inbound AI / IVR",  status: "Live",   callsToday: 37, csat: 4.6 },
-  { id: "AG-06", name: "Support Agent · Tier 1",type: "Support",           status: "Live",   callsToday: 18, csat: 4.5 },
-  { id: "AG-05", name: "Booking Agent",         type: "Booking",           status: "Live",   callsToday: 12, csat: 4.8 },
-  { id: "AG-04", name: "OutboundAI · Renewals", type: "Outbound AI",       status: "Tuning", callsToday: 0,  csat: 4.4 },
-];
-
-const AGENT_COLS: DataColumn<Agent>[] = [
-  { key: "id", header: "Ref", width: "70px" },
-  { key: "name", header: "Agent" },
-  { key: "type", header: "Type" },
-  { key: "callsToday", header: "Calls (today)", align: "right" },
-  { key: "csat", header: "CSAT", align: "right", render: (r) => <span className="font-mono text-emerald-400">{r.csat.toFixed(1)}</span> },
-  { key: "status", header: "Status", render: (r) => <StatusPill tone={r.status === "Live" ? "ok" : r.status === "Paused" ? "muted" : "warn"} label={r.status} /> },
-];
-
 export function Agents() {
-  const q = trpc.admin.agents.useQuery(undefined, { staleTime: 30_000 });
-  const audited = useAuditedAction();
+  const agents = trpc.adminOps.aiAgents.useQuery(undefined, { staleTime: 30_000 });
+  const execs = trpc.adminOps.aiExecutions.useQuery({}, { staleTime: 30_000 });
+  type AgentRow = NonNullable<typeof agents.data>[number];
+  const rows = agents.data ?? [];
+  const runs = execs.data ?? [];
+  const awaiting = runs.filter((e) => e.outcome === "awaiting_approval").length;
+  const blocked = runs.filter((e) => e.outcome === "blocked_by_permission").length;
+  const cols: DataColumn<AgentRow>[] = [
+    { key: "key", header: "Agent", render: (r) => <span className="font-mono">{r.key}</span> },
+    { key: "name", header: "Name" },
+    { key: "permissions", header: "Permitted actions", render: (r) => (r.permissions.length ? r.permissions.join(", ") : "none") },
+    { key: "activePromptVersion", header: "Prompt", render: (r) => (r.activePromptVersion ? `v${r.activePromptVersion}` : "none") },
+    { key: "requiresHumanApproval", header: "Human approval", render: (r) => (r.requiresHumanApproval ? "required" : "not required") },
+    { key: "status", header: "Status", render: (r) => <StatusPill tone={r.status === "active" ? "ok" : "muted"} label={r.status} /> },
+  ];
   return (
-    <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
+    <ModuleStateBoundary isLoading={agents.isLoading} error={agents.error as any} data={agents.data} onRetry={() => agents.refetch()}>
       {() => (
-    <OperationalPage
-      eyebrow="Voice & assistive AI"
-      sampleData
-      title="AI Agents & IVR"
-      tagline="Voice agents, IVR routing, appointment scheduling and escalation workflows. Tune scripts, monitor CSAT and route overflow to humans."
-      kpis={AGENT_KPIS}
-      toolbar={<DefaultToolbar searchPlaceholder="Search agents, routes…" filters={["Type", "Status"]} primaryAction={{ label: "New agent", onClick: () => audited.fire("agents", "new-agent") }} />}
-      primary={<DataTable columns={AGENT_COLS} rows={AGENTS} />}
-      aside={
-        <SideCard title="Live escalation queue">
-          <ul className="space-y-2.5 text-[12.5px] text-white/85">
-            <li className="flex items-center justify-between"><span>Brouwer Logistics</span><span className="font-mono text-amber-400">02:14</span></li>
-            <li className="flex items-center justify-between"><span>BlueCedar Capital</span><span className="font-mono text-amber-400">01:42</span></li>
-            <li className="flex items-center justify-between"><span>Khan Capital</span><span className="font-mono text-white/55">00:38</span></li>
-          </ul>
-        </SideCard>
-      }
-    />
+        <OperationalPage
+          eyebrow="AI governance"
+          title="AI Agents & IVR"
+          tagline="The registry of AI agents the platform runs, what each is permitted to do, and every run. Voice agents and IVR are not part of this release."
+          kpis={[
+            { id: "agents", label: "Registered agents", value: String(rows.length), icon: Headphones, accent: "orange" },
+            { id: "active", label: "Active", value: String(rows.filter((r) => r.status === "active").length), icon: CheckCircle2, accent: "green" },
+            { id: "await", label: "Awaiting approval", value: String(awaiting), icon: Clock, accent: awaiting > 0 ? "red" : "green" },
+            { id: "blocked", label: "Runs blocked", value: String(blocked), icon: ShieldAlert, accent: blocked > 0 ? "red" : "blue" },
+          ]}
+          primary={<DataTable columns={cols} rows={rows} emptyLabel="No agent has been registered yet. The AI Scan analyst registers itself the first time a scan runs." />}
+          aside={
+            <SideCard title="Governance">
+              <p className="text-[12.5px] text-white/70">An agent can only do what its permission list allows, and a refusal is recorded. Edit permissions, prompts and approvals under Governance, then AI agents. Disabling an agent stops it immediately.</p>
+            </SideCard>
+          }
+        />
       )}
     </ModuleStateBoundary>
   );

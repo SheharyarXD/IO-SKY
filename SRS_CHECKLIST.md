@@ -12,17 +12,17 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 84 of 155 criteria complete (54.2%)
+## Status: 102 of 155 criteria complete (65.8%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 84 | 54.2% |
-| 🔶 Partial | 61 | 39.4% |
-| ⏭ Not started | 5 | 3.2% |
+| ✅ Done | 102 | 65.8% |
+| 🔶 Partial | 45 | 29.0% |
+| ⏭ Not started | 3 | 1.9% |
 | ⛔ Blocked | 5 | 3.2% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **73.9%**.
+Counting a Partial as half: **80.3%**.
 
 ## Per module
 
@@ -30,25 +30,25 @@ Counting a Partial as half: **73.9%**.
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | 1 | Public Website & Lead Experience | §7.13 | 9 | 6 | 2 | 0 | 1 |
 | 2 | Identity & Authentication | §8.16 | 9 | 8 | 1 | 0 | 0 |
-| 3 | AI Scan Platform | §9.11 | 9 | 4 | 3 | 0 | 2 |
-| 4 | Client Portal | §10.17 | 10 | 6 | 4 | 0 | 0 |
-| 5 | Developer Portal | §11.15 | 8 | 5 | 3 | 0 | 0 |
+| 3 | AI Scan Platform | §9.11 | 9 | 5 | 2 | 0 | 2 |
+| 4 | Client Portal | §10.17 | 10 | 8 | 2 | 0 | 0 |
+| 5 | Developer Portal | §11.15 | 8 | 7 | 1 | 0 | 0 |
 | 6 | Admin Portal | §12.17 | 10 | 8 | 2 | 0 | 0 |
 | 7 | Super Admin Portal | §13.18 | 10 | 7 | 3 | 0 | 0 |
-| 8 | CRM & Sales Management | §14.15 | 8 | 7 | 1 | 0 | 0 |
-| 9 | Project & Delivery Management | §15.18 | 8 | 3 | 5 | 0 | 0 |
+| 8 | CRM & Sales Management | §14.15 | 8 | 8 | 0 | 0 | 0 |
+| 9 | Project & Delivery Management | §15.18 | 8 | 4 | 4 | 0 | 0 |
 | 10 | Commercial Billing & Subscription | §16.15 | 7 | 5 | 0 | 0 | 2 |
-| 11 | Notifications & Communication | §17.13 | 7 | 2 | 4 | 1 | 0 |
+| 11 | Notifications & Communication | §17.13 | 7 | 4 | 2 | 1 | 0 |
 | 12 | File & Document Management | §18.14 | 7 | 3 | 4 | 0 | 0 |
-| 13 | AI Intelligence Layer | §19.14 | 7 | 0 | 7 | 0 | 0 |
-| 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 4 | 2 | 1 | 0 |
+| 13 | AI Intelligence Layer | §19.14 | 7 | 4 | 3 | 0 | 0 |
+| 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 6 | 1 | 0 | 0 |
 | 15 | Analytics & Business Intelligence | §21.14 | 7 | 2 | 5 | 0 | 0 |
 | 16 | Integration & API Management | §22.13 | 7 | 5 | 1 | 1 | 0 |
-| 17 | Workflow & Business Process Management | §23.15 | 7 | 3 | 3 | 1 | 0 |
+| 17 | Workflow & Business Process Management | §23.15 | 7 | 6 | 1 | 0 | 0 |
 | 18 | Platform Configuration & System Administration | §24.15 | 6 | 3 | 2 | 1 | 0 |
 | 19 | Platform Operations & Maintenance | §25.14 | 6 | 2 | 4 | 0 | 0 |
 | 20 | Global Non-Functional Requirements | §26.18 | 6 | 1 | 5 | 0 | 0 |
-| | **Total** | | **155** | **84** | **61** | **5** | **5** |
+| | **Total** | | **155** | **102** | **45** | **3** | **5** |
 
 ---
 
@@ -86,7 +86,7 @@ Counting a Partial as half: **73.9%**.
 | --- | --- | :---: | --- |
 | SRS-03.1 | Customers can successfully purchase an AI Scan | ⛔ | No payment processor credential |
 | SRS-03.2 | Accounts are created and activated correctly | 🔶 | Lead is created; account creation on purchase is not wired |
-| SRS-03.3 | Questionnaires can be completed and resumed | 🔶 | Completion works; no draft save and resume |
+| SRS-03.3 | Questionnaires can be completed and resumed | ✅ | Save and continue later on the questionnaire: a 14 day link restores answers and step on any device; the draft is deleted on submission and purged when expired. |
 | SRS-03.4 | AI analysis is generated successfully | ⛔ | Code complete, no LLM key configured |
 | SRS-03.5 | Expert review is mandatory before publication | ✅ | Nine status model (SRS 9.6) with the engine able only to reach Awaiting Expert Review; approve, revision, publish and archive are human steps. Verified against the live database. |
 | SRS-03.6 | Reports are published only after approval | ✅ | Publish requires Approved. The public report and PDF stay hidden until Published (BR-016); existing ready scans were backfilled as Published. |
@@ -101,12 +101,12 @@ Counting a Partial as half: **73.9%**.
 | SRS-04.1 | Clients are redirected to the portal after authentication | ✅ |  |
 | SRS-04.2 | Dashboards display only authorized information | ✅ | RLS plus org scoping |
 | SRS-04.3 | Published reports are accessible | ✅ |  |
-| SRS-04.4 | AI Scan progress is visible | 🔶 | Section exists; not the 9.6 status model |
+| SRS-04.4 | AI Scan progress is visible | ✅ | Client Portal AI Scan history shows where each scan is in the review workflow; the report link appears only once Published. |
 | SRS-04.5 | Project information is displayed correctly | ✅ |  |
 | SRS-04.6 | Documents can be downloaded securely | 🔶 | Key reissued and verified against live storage (upload, signed URL, delete). Production still needs SUPABASE_SECRET_KEY set in Railway; not clicked through in the UI. |
 | SRS-04.7 | Invoices are available | ✅ |  |
 | SRS-04.8 | Messaging functions correctly | ✅ | Send, read receipts, history; E2E covered |
-| SRS-04.9 | Notifications are delivered successfully | 🔶 | Bell works; catalogue routing not built |
+| SRS-04.9 | Notifications are delivered successfully | ✅ | Project, billing and approval events route through the dispatcher to the right audience. |
 | SRS-04.10 | All activities are recorded in the audit log where required | 🔶 |  |
 
 ## Module 5: Developer Portal (§11.15)
@@ -115,11 +115,11 @@ Counting a Partial as half: **73.9%**.
 | --- | --- | :---: | --- |
 | SRS-05.1 | Developers are redirected to the Developer Portal after authentication | ✅ |  |
 | SRS-05.2 | Only assigned projects are visible | ✅ | Read side enforced |
-| SRS-05.3 | Task management functions correctly | 🔶 | Status only. No progress notes, comments, or clarification requests |
+| SRS-05.3 | Task management functions correctly | ✅ | Status, plus progress notes, comments and clarification requests on tasks a developer holds; a clarification request reaches the admin bell; admins can answer. |
 | SRS-05.4 | Deliverables can be uploaded securely | 🔶 | Storage unblocked as above; awaiting the production key and a UI walk through. |
 | SRS-05.5 | Time registration operates correctly | ✅ | Developer Time page, assignment checked in the insert transaction, 31 day backdate limit, admin review with reason on reject. |
 | SRS-05.6 | Internal messaging functions as specified | ✅ | Admin Delivery screen sends to a developer; developer is notified. |
-| SRS-05.7 | Notifications are delivered successfully | 🔶 |  |
+| SRS-05.7 | Notifications are delivered successfully | ✅ | Project, billing and approval events route through the dispatcher to the right audience. |
 | SRS-05.8 | All business critical actions are recorded in the audit log | ✅ | developerAudit |
 
 ## Module 6: Admin Portal (§12.17)
@@ -133,8 +133,8 @@ Counting a Partial as half: **73.9%**.
 | SRS-06.5 | Projects can be managed successfully | ✅ | create, update, milestones |
 | SRS-06.6 | Developers can be assigned to projects | ✅ | Delivery screen: create project (privacy safe name), assign, end, tasks, notify, audit. Idempotent, active developers only. |
 | SRS-06.7 | Billing information is available | ✅ | billing, createInvoice |
-| SRS-06.8 | Operational dashboards display accurate information | 🔶 | Campaigns and Agents are labelled sample data |
-| SRS-06.9 | Notifications function correctly | ✅ | Admin bell, unread count, mark read; fed by owner alerts, alert rules, won deals, incidents, customer approvals. |
+| SRS-06.8 | Operational dashboards display accurate information | 🔶 | Executive Overview now shows real compliance, AI governance, alerts, automation, pipeline, health and pending work. Only the Campaigns panel and Campaigns page remain labelled sample data; there is no campaign module. |
+| SRS-06.9 | Notifications function correctly | ✅ | Admin bell with unread count, mark read, and catalogue events with de-duplication. |
 | SRS-06.10 | All required audit events are recorded | 🔶 |  |
 
 ## Module 7: Super Admin Portal (§13.18)
@@ -149,7 +149,7 @@ Counting a Partial as half: **73.9%**.
 | SRS-07.6 | Audit logs are searchable | ✅ | Audit search by text, outcome and date, paged, CSV export with formula defusing; the export is itself audited. |
 | SRS-07.7 | Platform configuration changes are validated | ✅ | admin.updateSetting validates (ranges, on/off, derived values locked) and records every attempt in config_history. No second approver step. |
 | SRS-07.8 | Integration settings can be managed | 🔶 | Webhooks yes; provider management no |
-| SRS-07.9 | Executive dashboards display accurate information | 🔶 | Partly seeded |
+| SRS-07.9 | Executive dashboards display accurate information | 🔶 | As above: all panels are live except Campaigns. |
 | SRS-07.10 | All platform wide actions are recorded in the audit log | ✅ | recordAdminEvent |
 
 ## Module 8: CRM & Sales Management (§14.15)
@@ -157,7 +157,7 @@ Counting a Partial as half: **73.9%**.
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
 | SRS-08.1 | Leads can be created and managed | ✅ |  |
-| SRS-08.2 | Discovery Calls can be scheduled and tracked | 🔶 | Cancel, no show, reminders. No outcomes, notes, or follow ups |
+| SRS-08.2 | Discovery Calls can be scheduled and tracked | ✅ | Outcome recording marks the call completed and adds a meeting note and a follow up to the customer timeline. |
 | SRS-08.3 | Opportunities progress through the defined lifecycle | ✅ | crm_opportunities with forward only stages, won or lost terminal, row locked transitions. |
 | SRS-08.4 | Proposals are managed successfully | ✅ | crm_proposals draft to sent to accepted, rejected or expired. |
 | SRS-08.5 | Customer timelines display complete histories | ✅ | customerTimeline merges lead, activities, opportunities and proposals. |
@@ -174,7 +174,7 @@ Counting a Partial as half: **73.9%**.
 | SRS-09.3 | Customer approvals operate correctly | ✅ | Admin requests, client approves or sends back from the portal, tenant scoped, notifies admin (BR-019). |
 | SRS-09.4 | Project documentation is securely managed | 🔶 | Storage unblocked as above; awaiting the production key and a UI walk through. |
 | SRS-09.5 | Automated workflows execute correctly | 🔶 | Engine exists; no project automations wired |
-| SRS-09.6 | Notifications are delivered successfully | 🔶 |  |
+| SRS-09.6 | Notifications are delivered successfully | ✅ | Project, billing and approval events route through the dispatcher to the right audience. |
 | SRS-09.7 | Audit events are recorded for all business critical actions | 🔶 |  |
 | SRS-09.8 | Completed projects are archived according to platform policies | ✅ | Only completed projects with no pending approvals; archived projects leave active views, never deleted. |
 
@@ -194,10 +194,10 @@ Counting a Partial as half: **73.9%**.
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
-| SRS-11.1 | Notifications are generated for all defined business events | 🔶 | 84 event catalogue encoded; emitters partial |
-| SRS-11.2 | Email and in-app notifications are delivered successfully | 🔶 | Email works; in-app for client and developer only |
+| SRS-11.1 | Notifications are generated for all defined business events | 🔶 | Dispatcher built and tested for all 84 events: validation, de-duplication, priority, email policy, preferences. About 20 events are wired to real triggers today; the rest belong to features that do not exist yet (payments, IVR, integrations). |
+| SRS-11.2 | Email and in-app notifications are delivered successfully | ✅ | Admin bell, client and developer in-app feeds, and email per the catalogue policy; delivery failures recorded. |
 | SRS-11.3 | User notification preferences are respected | 🔶 | Per user, per category, per channel; honoured for email and developer in-app. The client in-app feed is shared by the organization, so it is not filtered. |
-| SRS-11.4 | Communication history is maintained | 🔶 | emailDeliveryLog only |
+| SRS-11.4 | Communication history is maintained | ✅ | Append only emission log plus the email delivery log, shown in Governance, Communication history. |
 | SRS-11.5 | Notification templates function correctly | ⏭ | Held by open decision OPD-001 |
 | SRS-11.6 | Delivery failures are recorded | ✅ | emailDeliveryFailures |
 | SRS-11.7 | Security notifications are always delivered according to platform policy | ✅ | shouldDeliver ignores any opt out for the security category; the preference screen shows it locked. |
@@ -218,12 +218,12 @@ Counting a Partial as half: **73.9%**.
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
-| SRS-13.1 | AI Agents operate according to assigned permissions | 🔶 | Registry and permission gate built and tested, refusals recorded. No live agent is routed through it yet. |
+| SRS-13.1 | AI Agents operate according to assigned permissions | ✅ | The AI Scan engine runs only through the registry gate: a disabled agent or missing permission stops the run and is recorded. Verified on the live database. |
 | SRS-13.2 | AI workflows execute successfully | 🔶 | Scan analysis only |
 | SRS-13.3 | AI recommendations are generated correctly | 🔶 | Scan only |
-| SRS-13.4 | AI prompts are centrally managed | 🔶 | Versioned prompt store built. The AI Scan prompts are not yet loaded from it. |
-| SRS-13.5 | AI activities are audited | 🔶 | Append only execution history built. The AI Scan engine does not write to it yet. |
-| SRS-13.6 | Human approval workflows function correctly | 🔶 | Approve or reject held agent output built; reports still use the older promote step. |
+| SRS-13.4 | AI prompts are centrally managed | ✅ | The scan engine reads the active managed prompt; the language instruction is appended by code so an edit cannot remove it. |
+| SRS-13.5 | AI activities are audited | ✅ | Every scan run writes an append only execution record with the prompt version. |
+| SRS-13.6 | Human approval workflows function correctly | ✅ | A reviewer approving or sending back a report is recorded as the human decision on the AI run that drafted it. |
 | SRS-13.7 | AI services integrate successfully with platform modules | 🔶 | One module |
 
 ## Module 14: Audit, Compliance & Security Monitoring (§20.14)
@@ -231,8 +231,8 @@ Counting a Partial as half: **73.9%**.
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
 | SRS-14.1 | Audit records are generated for all business critical activities | 🔶 |  |
-| SRS-14.2 | Security monitoring operates continuously | 🔶 | Security Center is live; no continuous detection |
-| SRS-14.3 | Compliance monitoring functions correctly | ⏭ |  |
+| SRS-14.2 | Security monitoring operates continuously | ✅ | Alert rules are evaluated every five minutes and raise notifications and incidents; the compliance view re-checks live. |
+| SRS-14.3 | Compliance monitoring functions correctly | ✅ | Seven live checks (admin MFA, privacy deadlines, critical incidents, expired access, document and report review backlog, alerting). Lawful basis and breach duties await the Security and Compliance Specification. |
 | SRS-14.4 | Security incidents are managed successfully | ✅ | Incident register: register, classify severity, assign, investigate, resolve and close (resolution required). |
 | SRS-14.5 | Alerts are generated according to platform rules | ✅ | Threshold rules (failed sign ins, webhook and email failures, critical incidents) evaluated every 5 minutes with a cooldown; raises admin notification and a security incident. |
 | SRS-14.6 | Audit history remains immutable | ✅ | BEFORE UPDATE OR DELETE triggers refuse changes on 6 audit tables; cascade deletes still work. |
@@ -269,10 +269,10 @@ Counting a Partial as half: **73.9%**.
 | SRS-17.1 | Workflows execute correctly | ✅ | workflowDefinitions, workflowRuns |
 | SRS-17.2 | Workflow history is maintained | ✅ |  |
 | SRS-17.3 | Approval workflows function correctly | 🔶 | Document approval yes; workflow approval gates no |
-| SRS-17.4 | Event driven workflows trigger successfully | 🔶 | Trigger types exist; few events emit |
-| SRS-17.5 | Scheduled workflows execute as configured | ⏭ |  |
+| SRS-17.4 | Event driven workflows trigger successfully | ✅ | Triggers fire on document decisions, opportunity won, invoice created, incident created and approval decided, and reach registered webhooks. |
+| SRS-17.5 | Scheduled workflows execute as configured | ✅ | Daily, weekly and monthly schedules, claimed before running so instances cannot double run; month end clamps correctly. |
 | SRS-17.6 | Workflow security is enforced | ✅ |  |
-| SRS-17.7 | Workflow monitoring operates successfully | 🔶 | Run list; no metrics |
+| SRS-17.7 | Workflow monitoring operates successfully | ✅ | Run history, failure counts and recent failures on the Executive Overview. |
 
 ## Module 18: Platform Configuration & System Administration (§24.15)
 
@@ -324,7 +324,7 @@ Counting a Partial as half: **73.9%**.
 
 ## Before any of the new work is live
 
-1. **Migrations 0023, 0024 and 0025 (AI Scan report lifecycle) are applied to the Supabase project** (0023 tables, archive column and append only audit triggers; 0024 row level security on every new table). Both are idempotent. Verified live: direct UPDATE and DELETE on audit tables are refused, a foreign key cascade still works, and the 77 test files pass against the live database.
+1. **Migrations 0022 to 0028 are applied to the Supabase project** (0023 tables, archive column and append only audit triggers; 0024 row level security on every new table). Both are idempotent. Verified live: direct UPDATE and DELETE on audit tables are refused, a foreign key cascade still works, and the 77 test files pass against the live database.
 2. Nothing here was clicked through in a browser. Each Done means built, reachable from a screen, covered by tests where the logic is pure or the permission boundary matters, and typechecked.
 
 ## What remains, and what each item needs
@@ -333,14 +333,10 @@ Counting a Partial as half: **73.9%**.
 
 | Criterion | What to build |
 | --- | --- |
-| SRS-04.4 | Show the customer the review status in the Client Portal AI Scan history, not only on the public result page. |
-| SRS-03.3 | Resumable questionnaire: save a draft per step and resume by link. |
-| SRS-03.8, 03.9, 09.6, 11.1, 11.2 | Route the 84 event catalogue through one dispatcher so every event emits to its recipients and channels. Largest remaining item. |
-| SRS-08.2 | Discovery Call outcomes, notes and follow ups on bookings. |
-| SRS-05.3 | Developer task progress notes, comments and clarification requests. |
-| SRS-17.4, 17.5, 09.5, 17.7 | Scheduled workflow trigger, more emitting events, project automations, run metrics. Needs a workflow trigger enum change. |
-| SRS-13.2, 13.3, 13.7 | Route the AI Scan engine and further modules through the agent gate and prompt store. |
-| SRS-06.8, 07.9, 15.1 to 15.4, 15.7 | Replace the sample data on Campaigns and Agents and the seeded executive figures with real queries. |
+| SRS-11.1, 03.9 | Wire the remaining catalogue events as the features behind them are built (payments, IVR, integrations). The dispatcher itself is complete. |
+| SRS-13.2, 13.3, 13.7 | Route further modules through the agent gate and prompt store as they gain AI features. Only the AI Scan uses AI today. |
+| SRS-06.8, 07.9, 15.1 to 15.4, 15.7 | Campaigns is the only sample panel left. It needs a campaign module, which the SRS names but never specifies. |
+| SRS-09.5 | Project specific automations: the engine and triggers exist; which automations to ship needs a business decision. |
 | SRS-07.3, 12.6, 14.1, 14.2, 14.3, 18.5 | Per operator and temporary permissions, document automations, audit coverage sweep, continuous detection, compliance monitoring, enforcing security policy values such as session length. |
 | SRS-01.2, 01.8, 20.1, 20.2, 20.4, 20.6 | Navigation, responsive and non functional sweep once the redesign inputs arrive. |
 

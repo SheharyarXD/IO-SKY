@@ -17,6 +17,7 @@
  */
 
 import { isReportVisibleToCustomer } from "../../shared/srsRules";
+import { guardAiScanRun } from "../aiGovernance";
 import { emitNotification } from "../notificationDispatcher";
 import { TRPCError } from "@trpc/server";
 import { randomBytes } from "crypto";
@@ -141,7 +142,14 @@ export async function runAiScanEngine(params: {
   contextNote?: string;
 }): Promise<void> {
   await updateAiScanStatus(params.scanId, { status: "scoring", reportStatus: "ai_processing" });
+  const guard = await guardAiScanRun(params.scanId);
+  if (!guard.allowed) {
+    await updateAiScanStatus(params.scanId, { status: "failed", reportStatus: "submitted", errorMessage: guard.reason.slice(0, 1000) });
+    await emitNotification({ event: "AI_SERVICE_UNAVAILABLE", audience: { type: "admin" }, dedupeRef: `scan:${params.scanId}:blocked:${Math.floor(Date.now() / 3_600_000)}`, title: "An AI Scan could not run", body: guard.reason, href: "/admin/governance" });
+    return;
+  }
   const result = await scoreAiScan({
+    basePrompt: guard.basePrompt,
     tier: params.tier,
     locale: params.locale,
     fullName: params.fullName,

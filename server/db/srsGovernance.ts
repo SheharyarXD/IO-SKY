@@ -620,3 +620,63 @@ export async function filterEmailsByPreference(emails: string[], category: Notif
   // An address with no matching user has no preferences, so it defaults to delivering.
   return emails.filter((e) => allowed.has(e) || !rows.some((r) => r.email === e));
 }
+
+// ---------------------------------------------------------------------------
+// Default agents, active prompt lookup, and linking human decisions to runs
+// ---------------------------------------------------------------------------
+
+export const AI_SCAN_AGENT_KEY = "ai_scan_analyst";
+
+/**
+ * Registers the agents the platform itself runs, once. Existing rows are left
+ * alone so a super admin's edits (a disabled agent, a changed permission list)
+ * are never reset by a restart.
+ */
+export async function ensureDefaultAiAgents(basePromptForScan: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .insert(aiAgents)
+    .values({
+      key: AI_SCAN_AGENT_KEY,
+      name: "AI Scan analyst",
+      purpose: "Drafts the executive report for a submitted AI Scan. A person must approve it before the customer can see it.",
+      permissionsJson: JSON.stringify(["generate_scan_report"]),
+      requiresHumanApproval: true,
+      status: "active",
+    })
+    .onConflictDoNothing({ target: aiAgents.key });
+  const has = await db.select({ id: aiPromptVersions.id }).from(aiPromptVersions).where(eq(aiPromptVersions.agentKey, AI_SCAN_AGENT_KEY)).limit(1);
+  if (has.length === 0) {
+    await db
+      .insert(aiPromptVersions)
+      .values({ agentKey: AI_SCAN_AGENT_KEY, version: 1, body: basePromptForScan, changeNote: "Initial prompt, copied from the built in default.", isActive: true })
+      .onConflictDoNothing();
+  }
+}
+
+export async function getActivePrompt(agentKey: string): Promise<{ version: number; body: string } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const r = (await db.select().from(aiPromptVersions).where(and(eq(aiPromptVersions.agentKey, agentKey), eq(aiPromptVersions.isActive, true))).limit(1))[0];
+  return r ? { version: r.version, body: r.body } : null;
+}
+
+/**
+ * A reviewer approving or sending back a report is the human decision on the AI
+ * run that produced it (BR-009), so it is recorded against that run. A repeat is
+ * a no-op: ai_executions is append only and a run is decided once.
+ */
+export async function decideLatestAiExecutionForSubject(args: { agentKey: string; subjectRef: string; approve: boolean; userId: number; note: string | null }): Promise<"ok" | "none_awaiting" | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(aiExecutions)
+    .where(and(eq(aiExecutions.agentKey, args.agentKey), eq(aiExecutions.subjectRef, args.subjectRef), eq(aiExecutions.outcome, "awaiting_approval")))
+    .orderBy(desc(aiExecutions.id))
+    .limit(1);
+  if (!rows[0]) return "none_awaiting";
+  const r = await decideAiExecution({ executionId: rows[0].id, approve: args.approve, userId: args.userId, note: args.note });
+  return r === "ok" ? "ok" : "none_awaiting";
+}
