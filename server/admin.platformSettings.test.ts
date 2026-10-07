@@ -8,10 +8,10 @@
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-const { appendLoginAuditMock, listPlatformSettingsMock, updatePlatformSettingMock } = vi.hoisted(() => ({
+const { appendLoginAuditMock, listPlatformSettingsMock, applyConfigChangeMock } = vi.hoisted(() => ({
   appendLoginAuditMock: vi.fn(async () => {}),
   listPlatformSettingsMock: vi.fn(async () => [] as any[]),
-  updatePlatformSettingMock: vi.fn(),
+  applyConfigChangeMock: vi.fn(),
 }));
 
 vi.mock("./db", async (importOriginal) => {
@@ -21,7 +21,8 @@ vi.mock("./db", async (importOriginal) => {
     listVerifiedMfaFactorsForUser: vi.fn(async () => [{ id: 1, userId: 1, kind: "totp", verifiedAt: new Date() }]),
     appendLoginAudit: appendLoginAuditMock,
     listPlatformSettings: listPlatformSettingsMock,
-    updatePlatformSetting: updatePlatformSettingMock,
+    applyConfigChange: applyConfigChangeMock,
+    ensureOperationsSettings: vi.fn(async () => {}),
   };
 });
 
@@ -93,25 +94,36 @@ describe("admin.updateSetting", () => {
     await expect(
       caller.admin.updateSetting({ key: "branding.summary", value: "New value" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(updatePlatformSettingMock).not.toHaveBeenCalled();
+    expect(applyConfigChangeMock).not.toHaveBeenCalled();
   });
 
-  it("allows super_admin, persists, and audits", async () => {
-    updatePlatformSettingMock.mockResolvedValueOnce({ key: "branding.summary", value: "New value" });
+  it("allows super_admin, applies through the validated path, and audits", async () => {
+    applyConfigChangeMock.mockResolvedValueOnce({ ok: true });
     const caller = appRouter.createCaller(makeCtx("super_admin", 5));
-    const r = await caller.admin.updateSetting({ key: "branding.summary", value: "New value" });
+    const r = await caller.admin.updateSetting({ key: "branding.summary", value: " New value " });
     expect(r).toMatchObject({ key: "branding.summary", value: "New value" });
-    expect(updatePlatformSettingMock).toHaveBeenCalledWith("branding.summary", { value: "New value" }, 5);
+    expect(applyConfigChangeMock).toHaveBeenCalledWith({ key: "branding.summary", value: " New value ", userId: 5 });
     expect(appendLoginAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({ reason: expect.stringContaining("admin.settings.update(branding.summary)") }),
     );
   });
 
   it("surfaces NOT_FOUND for an unknown key", async () => {
-    updatePlatformSettingMock.mockResolvedValueOnce(null);
+    applyConfigChangeMock.mockResolvedValueOnce({ ok: false, code: "NOT_FOUND", reason: "Unknown setting." });
     const caller = appRouter.createCaller(makeCtx("super_admin"));
     await expect(
       caller.admin.updateSetting({ key: "does.not.exist", value: "x" }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("rejects an invalid value as BAD_REQUEST and audits the failed attempt", async () => {
+    applyConfigChangeMock.mockResolvedValueOnce({ ok: false, code: "BAD_REQUEST", reason: "This setting must be a whole number from 1 to 24." });
+    const caller = appRouter.createCaller(makeCtx("super_admin"));
+    await expect(
+      caller.admin.updateSetting({ key: "security.session_hours", value: "99" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(appendLoginAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: "failed", reason: expect.stringContaining("admin.settings.rejected(security.session_hours)") }),
+    );
   });
 });

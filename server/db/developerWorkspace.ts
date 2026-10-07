@@ -1176,3 +1176,46 @@ export async function appendAdminDeveloperMessage(args: {
     .returning();
   return rows[0] ?? null;
 }
+
+/** Admin view of every developer task with the developers holding it. */
+export async function listAllDeveloperTasks(limit = 300) {
+  const db = await getDb();
+  if (!db) return [];
+  const tasks = await db
+    .select({
+      id: developerTasks.id,
+      projectId: developerTasks.projectId,
+      projectCode: developerProjects.code,
+      title: developerTasks.title,
+      status: developerTasks.status,
+      priority: developerTasks.priority,
+    })
+    .from(developerTasks)
+    .innerJoin(developerProjects, eq(developerProjects.id, developerTasks.projectId))
+    .orderBy(desc(developerTasks.id))
+    .limit(limit);
+  if (tasks.length === 0) return [];
+  const holders = await db
+    .select({ taskId: developerTaskAssignments.taskId, developerId: developerTaskAssignments.developerId, fullName: developerProfiles.fullName })
+    .from(developerTaskAssignments)
+    .innerJoin(developerProfiles, eq(developerProfiles.id, developerTaskAssignments.developerId))
+    .where(eq(developerTaskAssignments.status, "active"));
+  return tasks.map((t) => ({ ...t, assignees: holders.filter((h) => h.taskId === t.id).map((h) => h.fullName) }));
+}
+
+/** Active assignments with names, for the admin delivery screen. */
+export async function listAllDeveloperAssignments() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      projectId: developerProjectAssignments.projectId,
+      developerId: developerProjectAssignments.developerId,
+      developerName: developerProfiles.fullName,
+      role: developerProjectAssignments.assignmentRole,
+      status: developerProjectAssignments.status,
+    })
+    .from(developerProjectAssignments)
+    .innerJoin(developerProfiles, eq(developerProfiles.id, developerProjectAssignments.developerId))
+    .where(eq(developerProjectAssignments.status, "active"));
+}

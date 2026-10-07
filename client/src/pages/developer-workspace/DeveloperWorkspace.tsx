@@ -25,6 +25,7 @@ import DeveloperAccessScope from "./sections/DeveloperAccessScope";
 import DeveloperProfile from "./sections/DeveloperProfile";
 import DeveloperSecurity from "./sections/DeveloperSecurity";
 import DeveloperSupport from "./sections/DeveloperSupport";
+import DeveloperTime from "./sections/DeveloperTime";
 import PortalLoader from "@/pages/client-portal/components/PortalLoader";
 
 const SECTIONS = [
@@ -32,6 +33,7 @@ const SECTIONS = [
   "overview",
   "projects",
   "tasks",
+  "time",
   "files",
   "submissions",
   "messages",
@@ -162,6 +164,13 @@ function SectionSwitch({ section }: { section: string }) {
       return (
         <WorkspaceGate>
           {() => <DeveloperTasks />}
+        </WorkspaceGate>
+      );
+
+    case "time":
+      return (
+        <WorkspaceGate>
+          {() => <DeveloperTime />}
         </WorkspaceGate>
       );
 

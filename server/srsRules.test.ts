@@ -147,3 +147,18 @@ describe("project archive policy", () => {
     expect(checkCanArchiveProject({ status: "completed", pendingApprovals: 0, archivedAt: new Date() }).ok).toBe(false);
   });
 });
+
+import { categoryForNotificationKind } from "../shared/srsRules";
+
+describe("notification category mapping", () => {
+  it("maps kinds to preference categories", () => {
+    expect(categoryForNotificationKind("security_alert")).toBe("security");
+    expect(categoryForNotificationKind("payment")).toBe("billing");
+    expect(categoryForNotificationKind("assignment")).toBe("project");
+    expect(categoryForNotificationKind("support_reply")).toBe("support");
+    expect(categoryForNotificationKind("campaign")).toBe("marketing");
+  });
+  it("never files an unknown kind under marketing", () => {
+    expect(categoryForNotificationKind("something_new")).toBe("account");
+  });
+});

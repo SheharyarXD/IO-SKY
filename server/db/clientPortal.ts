@@ -9,7 +9,7 @@
  * Every helper scopes by organizationId so the clientProcedure can rely
  * on tenant isolation. Returns raw Drizzle rows.
  */
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import {
   bookings as bookingsTable,
   clientDocuments,
@@ -300,7 +300,8 @@ export async function listClientProjects(orgId: number) {
   return db
     .select()
     .from(clientProjects)
-    .where(eq(clientProjects.organizationId, orgId))
+    // SRS 15.17: archived projects leave the active view but are never deleted.
+    .where(and(eq(clientProjects.organizationId, orgId), isNull(clientProjects.archivedAt)))
     .orderBy(desc(clientProjects.createdAt))
     .limit(50);
 }

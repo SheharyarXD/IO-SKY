@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   LifeBuoy,
   CalendarClock,
+  ClipboardCheck,
   Menu,
 } from "lucide-react";
 import IOSkyLogo from "@/components/IOSkyLogo";
@@ -57,6 +58,7 @@ const NAV: NavItem[] = [
     icon: PhoneCall,
   },
   { id: "projects", label: "Project Progress", href: "/client-portal/projects", icon: GitBranch },
+  { id: "approvals", label: "Approvals", href: "/client-portal/approvals", icon: ClipboardCheck },
   { id: "billing", label: "Invoices & Billing", href: "/client-portal/billing", icon: Receipt },
   { id: "documents", label: "Documents", href: "/client-portal/documents", icon: FolderLock },
   {

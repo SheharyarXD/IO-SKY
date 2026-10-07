@@ -582,3 +582,37 @@ export async function recordScheduledReportResult(id: number, status: "sent" | "
   if (!db) return;
   await db.update(scheduledReports).set({ lastStatus: status }).where(eq(scheduledReports.id, id));
 }
+
+// ---------------------------------------------------------------------------
+// Delivery policy lookups used by the central notification service
+// ---------------------------------------------------------------------------
+
+import { inArray } from "drizzle-orm";
+import { users } from "../../drizzle/schema";
+import { shouldDeliver } from "../../shared/srsRules";
+
+/** Whether one user wants this category on this channel. Security is always true. */
+export async function isDeliveryAllowedForUser(userId: number, category: NotificationCategory, channel: NotificationChannel): Promise<boolean> {
+  if (category === "security") return true;
+  const db = await getDb();
+  if (!db) return true;
+  const prefs = await db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, userId));
+  return shouldDeliver({ category, channel, prefs });
+}
+
+/** Filters a list of recipient emails down to those who have not opted out of email for this category. */
+export async function filterEmailsByPreference(emails: string[], category: NotificationCategory): Promise<string[]> {
+  if (category === "security" || emails.length === 0) return emails;
+  const db = await getDb();
+  if (!db) return emails;
+  const rows = await db.select({ id: users.id, email: users.email }).from(users).where(inArray(users.email, emails));
+  const prefs = rows.length ? await db.select().from(notificationPreferences).where(inArray(notificationPreferences.userId, rows.map((r) => r.id))) : [];
+  const allowed = new Set<string>();
+  for (const r of rows) {
+    if (!r.email) continue;
+    const mine = prefs.filter((p) => p.userId === r.id);
+    if (shouldDeliver({ category, channel: "email", prefs: mine })) allowed.add(r.email);
+  }
+  // An address with no matching user has no preferences, so it defaults to delivering.
+  return emails.filter((e) => allowed.has(e) || !rows.some((r) => r.email === e));
+}

@@ -25,6 +25,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProfilePhoto } from "@/components/ProfilePhoto";
+import NotificationPreferences from "@/components/NotificationPreferences";
 import {
   GlassCard,
   SectionHeader,
@@ -177,6 +178,10 @@ export default function ClientAccount() {
           </div>
         </GlassCard>
       </div>
+
+      <GlassCard className="mt-5 p-5">
+        <NotificationPreferences />
+      </GlassCard>
 
       <p className="mt-6 text-[11px] text-white/40">
         Tenancy, e-mail, or company-level fields can only be changed by your

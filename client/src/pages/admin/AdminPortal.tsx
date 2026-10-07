@@ -34,6 +34,9 @@ import {
 import AdminBookings from "../AdminBookings";
 import BookingAvailability from "./sections/BookingAvailability";
 import AdminSecurityCenter from "./sections/AdminSecurityCenter";
+import { Delivery } from "./sections/Delivery";
+import { Sales } from "./sections/Sales";
+import { Governance } from "./sections/Governance";
 
 interface SectionDef {
   title: string;
@@ -49,6 +52,9 @@ const SECTIONS: Record<string, SectionDef> = {
   billing:          { title: "Billing & Payments",         Component: Billing },
   documents:        { title: "Documents & Storage",        Component: Documents },
   developers:       { title: "Developer Management",       Component: Developers },
+  delivery:         { title: "Delivery Management",       Component: Delivery },
+  sales:            { title: "Sales & Finance",            Component: Sales },
+  governance:       { title: "Governance & Operations",    Component: Governance },
   security:         { title: "Security Monitoring",        Component: Security },
   campaigns:        { title: "Email & SMS Campaigns",      Component: Campaigns },
   agents:           { title: "AI Agents & IVR",            Component: Agents },

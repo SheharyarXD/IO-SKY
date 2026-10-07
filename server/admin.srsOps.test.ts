@@ -16,9 +16,6 @@ const m = vi.hoisted(() => ({
   getDeveloperProfileById: vi.fn(),
   appendDeveloperNotification: vi.fn(async () => null),
   createAdminNotification: vi.fn(async () => null),
-  applyConfigChange: vi.fn(),
-  ensureOperationsSettings: vi.fn(async () => {}),
-  resetMaintenanceCache: vi.fn(),
   authoriseAndRecordAgentAction: vi.fn(),
   decideAiExecution: vi.fn(),
   upsertAiAgent: vi.fn(),
@@ -70,10 +67,8 @@ describe("authority boundaries", () => {
     await expect(as("client").adminOps.opportunities({})).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(as("client").adminOps.createQuote({ title: "x", lines: [{ description: "a", quantity: 1, unitCents: 1 }] })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
-  it("reserves configuration and AI governance for the super admin", async () => {
-    await expect(as("admin").adminOps.changeSetting({ key: "security.session_hours", value: "8" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  it("reserves AI governance for the super admin", async () => {
     await expect(as("admin").adminOps.upsertAiAgent({ key: "scribe", name: "Scribe", permissions: [] })).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(m.applyConfigChange).not.toHaveBeenCalled();
     expect(m.upsertAiAgent).not.toHaveBeenCalled();
   });
   it("lets a technical operator work incidents but not sales data", async () => {
@@ -135,20 +130,6 @@ describe("time review", () => {
   it("refuses an entry that was already reviewed", async () => {
     m.reviewTimeEntry.mockResolvedValueOnce(null);
     await expect(as("admin").adminOps.reviewTimeEntry({ id: 1, status: "approved" })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-  });
-});
-
-describe("configuration", () => {
-  it("rejects an invalid value, audits the failure and does not reset the maintenance cache", async () => {
-    m.applyConfigChange.mockResolvedValueOnce({ ok: false, code: "BAD_REQUEST", reason: 'This setting accepts only "on" or "off".' });
-    await expect(as("super_admin").adminOps.changeSetting({ key: "operations.maintenance_mode", value: "maybe" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(m.resetMaintenanceCache).not.toHaveBeenCalled();
-    expect(m.appendLoginAudit).toHaveBeenCalledWith(expect.objectContaining({ outcome: "failed", reason: expect.stringContaining("admin.setting.rejected") }));
-  });
-  it("applies a valid change and refreshes the maintenance cache", async () => {
-    m.applyConfigChange.mockResolvedValueOnce({ ok: true });
-    await as("super_admin").adminOps.changeSetting({ key: "operations.maintenance_mode", value: "on" });
-    expect(m.resetMaintenanceCache).toHaveBeenCalled();
   });
 });
 

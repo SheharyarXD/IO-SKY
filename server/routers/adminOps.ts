@@ -21,7 +21,6 @@ import {
   activatePromptVersion,
   addPromptVersion,
   appendDeveloperNotification,
-  applyConfigChange,
   archiveClientProject,
   authoriseAndRecordAgentAction,
   completeActivity,
@@ -36,7 +35,6 @@ import {
   createSubscription,
   customerTimeline,
   decideAiExecution,
-  ensureOperationsSettings,
   evaluateAlertRules,
   getDeveloperProfileById,
   listAdminNotifications,
@@ -61,7 +59,6 @@ import {
   readFinancialSummary,
   readPipelineSummary,
   requestProjectApproval,
-  resetMaintenanceCache,
   reviewTimeEntry,
   setScheduledReportEnabled,
   setSubscriptionStatus,
@@ -75,6 +72,7 @@ import {
   type OpportunityStage,
 } from "../../shared/srsRules";
 import { recordAdminEvent } from "./admin";
+import { notifyDeveloper } from "../notifications";
 
 const currency = z.string().length(3).transform((s) => s.toUpperCase());
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD.");
@@ -323,7 +321,7 @@ export const adminOpsRouter = router({
       if (!row) fail("PRECONDITION_FAILED", "Entry not found, or it was already reviewed.");
       const dev = await getDeveloperProfileById(row.developerId);
       if (dev) {
-        await appendDeveloperNotification({
+        await notifyDeveloper({
           developerId: row.developerId,
           kind: "time",
           title: `Time entry ${input.status}`,
@@ -436,21 +434,6 @@ export const adminOpsRouter = router({
   configHistory: adminProcedure
     .input(z.object({ settingKey: z.string().max(128).optional() }).default({}))
     .query(async ({ input }) => listConfigHistory(input.settingKey)),
-
-  changeSetting: superAdminProcedure
-    .input(z.object({ key: z.string().trim().min(1).max(128), value: z.string().max(2000) }))
-    .mutation(async ({ ctx, input }) => {
-      if (input.key === "operations.maintenance_mode") await ensureOperationsSettings();
-      const r = await applyConfigChange({ key: input.key, value: input.value, userId: ctx.user.id });
-      if (!r) fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
-      if (!r.ok) {
-        await recordAdminEvent({ ctx, reason: `admin.setting.rejected(${input.key})`, outcome: "failed" });
-        fail(r.code === "NOT_FOUND" ? "NOT_FOUND" : "BAD_REQUEST", r.reason);
-      }
-      if (input.key === "operations.maintenance_mode") resetMaintenanceCache();
-      await recordAdminEvent({ ctx, reason: `admin.setting.change(${input.key})` });
-      return { ok: true as const };
-    }),
 
   // =========================================================================
   // Incidents and alerts (SRS 20, 25), ops

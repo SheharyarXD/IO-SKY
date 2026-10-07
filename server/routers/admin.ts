@@ -26,7 +26,7 @@
  * never goes blank, even on first boot before the seed migration runs.
  */
 import { z } from "zod";
-import { count, desc, eq, gte, sql } from "drizzle-orm";
+import { count, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {
   adminProcedure,
@@ -86,8 +86,15 @@ import {
   createDeveloperTask,
   assignDeveloperTask,
   appendAdminDeveloperMessage,
+  listAllDeveloperTasks,
+  listAllDeveloperAssignments,
+  applyConfigChange,
+  ensureOperationsSettings,
+  resetMaintenanceCache,
 } from "../db";
 import { runWorkflowsForTrigger } from "../workflowEngine";
+import { notifyDeveloper } from "../notifications";
+
 import { dispatchWebhooksForTrigger } from "../webhookDispatcher";
 import { notifyClient } from "../notifications";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
@@ -553,6 +560,7 @@ async function readProjects() {
           targetMs: clientProjects.targetMs,
         })
         .from(clientProjects)
+        .where(isNull(clientProjects.archivedAt))
         .orderBy(desc(clientProjects.createdAt))
         .limit(100),
     [] as any[],
@@ -1647,6 +1655,16 @@ export const adminRouter = router({
     return listAllDeveloperProjects();
   }),
 
+  developerTasks: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.developer_tasks" });
+    return listAllDeveloperTasks();
+  }),
+
+  developerAssignments: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.developer_assignments" });
+    return listAllDeveloperAssignments();
+  }),
+
   createDeveloperProject: adminProcedure
     .input(
       z.object({
@@ -1725,7 +1743,7 @@ export const adminRouter = router({
       }
       // Tell the developer only when something actually changed for them.
       if (result.created) {
-        await appendDeveloperNotification({
+        await notifyDeveloper({
           developerId: input.developerId,
           kind: "assignment",
           title: `New project assignment: ${project.name}`,
@@ -1813,7 +1831,7 @@ export const adminRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not assign the task." });
       }
       if (outcome === "assigned") {
-        await appendDeveloperNotification({
+        await notifyDeveloper({
           developerId: input.developerId,
           kind: "task",
           title: "New task assigned",
@@ -1848,7 +1866,7 @@ export const adminRouter = router({
         body: input.body,
       });
       if (!message) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not send the message." });
-      await appendDeveloperNotification({
+      await notifyDeveloper({
         developerId: input.developerId,
         kind: "message",
         title: input.subject ? `Message: ${input.subject}` : "New message from IO SKY",
@@ -1925,12 +1943,20 @@ export const adminRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const updated = await updatePlatformSetting(input.key, { value: input.value }, ctx.user.id);
-      if (!updated) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Setting not found." });
+      // SRS 13.9 / 24.9: every change is validated before it applies, and every
+      // attempt, including a refused one, lands in config_history.
+      if (input.key === "operations.maintenance_mode") await ensureOperationsSettings();
+      const result = await applyConfigChange({ key: input.key, value: input.value, userId: ctx.user.id });
+      if (!result) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable." });
       }
+      if (!result.ok) {
+        await recordAdminEvent({ ctx, reason: `admin.settings.rejected(${input.key})`, outcome: "failed" });
+        throw new TRPCError({ code: result.code, message: result.reason });
+      }
+      if (input.key === "operations.maintenance_mode") resetMaintenanceCache();
       await recordAdminEvent({ ctx, reason: `admin.settings.update(${input.key})` });
-      return updated;
+      return { key: input.key, value: input.value.trim() };
     }),
   support: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.support" });

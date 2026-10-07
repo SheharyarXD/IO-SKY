@@ -251,3 +251,18 @@ export function checkCanArchiveProject(args: { status: string; pendingApprovals:
   }
   return { ok: true };
 }
+
+/**
+ * Which preference category a notification belongs to, from its `kind`. Unknown
+ * kinds fall into "account" rather than "marketing", so an unmapped kind is
+ * never silently suppressed by an opt out meant for promotional mail.
+ */
+export function categoryForNotificationKind(kind: string): NotificationCategory {
+  const k = kind.toLowerCase();
+  if (k.includes("security") || k.includes("mfa") || k.includes("login") || k.includes("password")) return "security";
+  if (k.includes("payment") || k.includes("invoice") || k.includes("billing") || k.includes("quote") || k.includes("subscription")) return "billing";
+  if (k.includes("support") || k.includes("ticket")) return "support";
+  if (k.includes("marketing") || k.includes("campaign") || k.includes("newsletter")) return "marketing";
+  if (k.includes("report") || k.includes("project") || k.includes("milestone") || k.includes("task") || k.includes("assignment") || k.includes("approval") || k.includes("booking") || k.includes("document") || k.includes("message") || k.includes("time")) return "project";
+  return "account";
+}

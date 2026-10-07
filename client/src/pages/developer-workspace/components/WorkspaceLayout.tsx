@@ -23,6 +23,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   ListTodo,
+  Clock,
   FolderLock,
   GitCommit,
   MessageSquare,
@@ -58,6 +59,7 @@ export const DEVELOPER_NAV: NavItem[] = [
     icon: FolderKanban,
   },
   { id: "tasks", label: "Tasks", href: "/developer-workspace/tasks", icon: ListTodo },
+  { id: "time", label: "Time", href: "/developer-workspace/time", icon: Clock },
   { id: "files", label: "Files", href: "/developer-workspace/files", icon: FolderLock },
   {
     id: "submissions",

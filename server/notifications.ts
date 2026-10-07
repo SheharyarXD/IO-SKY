@@ -21,7 +21,11 @@ import {
   appendDeveloperNotification,
   listOrganizationMemberEmails,
   getDeveloperEmail,
+  getDeveloperProfileById,
+  filterEmailsByPreference,
+  isDeliveryAllowedForUser,
 } from "./db";
+import { categoryForNotificationKind } from "../shared/srsRules";
 
 export type NotificationPriority = "low" | "normal" | "high" | "critical";
 
@@ -59,7 +63,12 @@ export async function notifyClient(args: {
   if (args.channel !== "in_app_and_email") return;
 
   try {
-    const recipients = await listOrganizationMemberEmails(args.organizationId);
+    // SRS 17.11: honour each member's email preference. The in-app feed is shared
+    // by the organization, so preferences narrow who is emailed, not what is shown.
+    const recipients = await filterEmailsByPreference(
+      await listOrganizationMemberEmails(args.organizationId),
+      categoryForNotificationKind(args.kind),
+    );
     const { html, text } = renderNotificationEmail(args.title, args.body);
     for (const to of recipients) {
       await dispatchSimpleEmail({
@@ -87,8 +96,13 @@ export async function notifyDeveloper(args: {
   channel?: "in_app" | "in_app_and_email";
 }): Promise<void> {
   const templateKey = args.channel === "in_app_and_email" ? GENERIC_TEMPLATE_KEY : null;
+  const category = categoryForNotificationKind(args.kind);
+  const userId = (await getDeveloperProfileById(args.developerId))?.userId ?? null;
+  const wantsInApp = userId === null || (await isDeliveryAllowedForUser(userId, category, "in_app"));
+  const wantsEmail = userId === null || (await isDeliveryAllowedForUser(userId, category, "email"));
 
-  await appendDeveloperNotification({
+  if (!wantsInApp && !wantsEmail) return;
+  if (wantsInApp) await appendDeveloperNotification({
     developerId: args.developerId,
     kind: args.kind,
     title: args.title,
@@ -99,7 +113,7 @@ export async function notifyDeveloper(args: {
     templateKey,
   });
 
-  if (args.channel !== "in_app_and_email") return;
+  if (args.channel !== "in_app_and_email" || !wantsEmail) return;
 
   try {
     const email = await getDeveloperEmail(args.developerId);

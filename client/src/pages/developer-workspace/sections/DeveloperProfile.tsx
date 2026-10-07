@@ -11,6 +11,7 @@
  * audited server-side, with an extra admin notify when availability
  * changes (so engineering scheduling stays in sync).
  */
+import NotificationPreferences from "@/components/NotificationPreferences";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -290,6 +291,10 @@ export default function DeveloperProfile() {
               Admin-owned fields (account status, MFA requirement,
               assignments, scope) cannot be modified here.
             </p>
+          </GlassCard>
+
+          <GlassCard className="p-5">
+            <NotificationPreferences />
           </GlassCard>
         </div>
       )}

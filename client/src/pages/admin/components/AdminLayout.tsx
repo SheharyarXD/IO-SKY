@@ -48,7 +48,11 @@ import {
   ShieldCheckIcon,
   KeyRound,
   Loader2,
+  Briefcase,
+  ClipboardCheck,
+  Scale,
 } from "lucide-react";
+import AdminBell from "./AdminBell";
 
 // ---------------------------------------------------------------------------
 // Sidebar config — locked to the master spec ordering.
@@ -74,6 +78,9 @@ export const ADMIN_NAV: NavItem[] = [
   { id: "billing", label: "Billing & Payments", href: "/admin/billing", icon: CreditCard },
   { id: "documents", label: "Documents & Storage", href: "/admin/documents", icon: FolderLock },
   { id: "developers", label: "Developer Management", href: "/admin/developers", icon: Wrench },
+  { id: "delivery", label: "Delivery Management", href: "/admin/delivery", icon: ClipboardCheck },
+  { id: "sales", label: "Sales & Finance", href: "/admin/sales", icon: Briefcase },
+  { id: "governance", label: "Governance & Operations", href: "/admin/governance", icon: Scale },
   { id: "security", label: "Security Monitoring", href: "/admin/security", icon: ShieldAlert },
   { id: "campaigns", label: "Email/SMS Campaigns", href: "/admin/campaigns", icon: Mail },
   { id: "agents", label: "AI Agents & IVR", href: "/admin/agents", icon: Headphones },
@@ -395,14 +402,8 @@ export function AdminLayout({
                 </span>
               </div>
 
-              {/*
-               * The header previously rendered three icon buttons carrying
-               * hardcoded counts (7 / 23 / 12) with no click handler and no
-               * backing data. There is no admin-scoped notification source in
-               * the platform yet, so rather than present invented figures as
-               * live operational data the cluster is removed. It returns when
-               * an admin notification feed exists to drive it.
-               */}
+              {/* Admin notification feed (SRS 12.15) */}
+              <AdminBell />
               {/* System status pill */}
               <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-[10px] bg-emerald-400/[0.05] border border-emerald-400/25 text-emerald-200">
                 <ShieldCheckIcon className="w-3.5 h-3.5" />

@@ -21,6 +21,7 @@ import ClientMessages from "./sections/ClientMessages";
 import ClientAccount from "./sections/ClientAccount";
 import ClientSecurity from "./sections/ClientSecurity";
 import ClientSupport from "./sections/ClientSupport";
+import ClientApprovals from "./sections/ClientApprovals";
 import ClientPortalLockedCard from "./components/ClientPortalLockedCard";
 import PortalLoader from "./components/PortalLoader";
 
@@ -32,6 +33,7 @@ const SECTIONS = [
   "recommendations",
   "strategy-calls",
   "projects",
+  "approvals",
   "billing",
   "documents",
   "messages",
@@ -127,6 +129,8 @@ function SectionSwitch({ section }: { section: string }) {
       return <ClientStrategyCalls />;
     case "projects":
       return <ClientProjects />;
+    case "approvals":
+      return <ClientApprovals />;
     case "billing":
       return <ClientInvoices />;
     case "documents":
