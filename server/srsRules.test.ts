@@ -190,3 +190,40 @@ describe("LIKE escaping", () => {
     expect(escapeLike("100%_\\")).toBe("100" + "\\" + "%" + "\\" + "_" + "\\" + "\\");
   });
 });
+
+import { canMoveReport, isReportVisibleToCustomer, isHumanOnlyReportStep, REPORT_STATUSES } from "../shared/srsRules";
+
+describe("AI Scan report lifecycle (SRS 9.6)", () => {
+  it("has exactly the nine statuses the SRS names", () => {
+    expect(REPORT_STATUSES).toHaveLength(9);
+  });
+  it("walks the happy path in order", () => {
+    const path = ["draft", "questionnaire_in_progress", "submitted", "ai_processing", "awaiting_expert_review", "approved", "published", "archived"] as const;
+    for (let i = 0; i < path.length - 1; i++) expect(canMoveReport(path[i], path[i + 1])).toBe(true);
+  });
+  it("cannot skip review: the engine output is never approved or published directly", () => {
+    expect(canMoveReport("ai_processing", "approved")).toBe(false);
+    expect(canMoveReport("ai_processing", "published")).toBe(false);
+    expect(canMoveReport("awaiting_expert_review", "published")).toBe(false);
+    expect(canMoveReport("submitted", "published")).toBe(false);
+  });
+  it("sends a report back and through review again", () => {
+    expect(canMoveReport("awaiting_expert_review", "revision_required")).toBe(true);
+    expect(canMoveReport("approved", "revision_required")).toBe(true);
+    expect(canMoveReport("revision_required", "ai_processing")).toBe(true);
+    expect(canMoveReport("revision_required", "published")).toBe(false);
+  });
+  it("treats archived as terminal and publication as one way", () => {
+    for (const s of REPORT_STATUSES) expect(canMoveReport("archived", s)).toBe(false);
+    expect(canMoveReport("published", "approved")).toBe(false);
+  });
+  it("shows the customer only a published report", () => {
+    for (const s of REPORT_STATUSES) expect(isReportVisibleToCustomer(s)).toBe(s === "published");
+    expect(isReportVisibleToCustomer(null)).toBe(false);
+  });
+  it("marks approve, revise, publish and archive as human only", () => {
+    expect(["approved", "revision_required", "published", "archived"].every((s) => isHumanOnlyReportStep(s as never))).toBe(true);
+    expect(isHumanOnlyReportStep("awaiting_expert_review")).toBe(false);
+    expect(isHumanOnlyReportStep("ai_processing")).toBe(false);
+  });
+});

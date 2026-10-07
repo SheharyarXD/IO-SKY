@@ -72,7 +72,9 @@ export default function AIScanResult() {
       enabled: token.length > 16,
       refetchInterval: (q) => {
         const data = q.state.data;
-        if (data?.status === "ready" || data?.status === "failed") return false;
+        if (data?.status === "failed") return false;
+        // Ready but not yet published means a person is reviewing it: check back slowly.
+        if (data?.status === "ready") return data.report ? false : 30_000;
         return POLL_INTERVAL_MS;
       },
     },
@@ -117,6 +119,20 @@ export default function AIScanResult() {
           <AlertDescription>
             {t("aiscan.result.failed") ||
               "We couldn't generate your report automatically. Our team has been notified and will reach out shortly."}
+          </AlertDescription>
+        </Alert>
+      </Shell>
+    );
+  }
+
+  if (data.status === "ready" && !data.report) {
+    return (
+      <Shell>
+        <Alert>
+          <AlertDescription>
+            {data.reportStatus === "revision_required"
+              ? "Our expert is refining your report before it is released. We will email you as soon as it is ready."
+              : "Your report has been generated and is being reviewed by an IO SKY expert before it is released to you. We will email you as soon as it is ready."}
           </AlertDescription>
         </Alert>
       </Shell>

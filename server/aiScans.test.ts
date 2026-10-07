@@ -386,12 +386,28 @@ describe("aiScansRouter.submitQuestionnaire", () => {
     expect(r.success).toBe(true);
   });
 
-  it("getReport returns 'pending' shape until status=ready", async () => {
+  it("holds a scored report for expert review and shows it only once published (BR-016)", async () => {
     const caller = aiScansRouter.createCaller(makeCtx("11.0.0.6"));
-    // First produce a ready report.
     const r = await caller.submitQuestionnaire(questionnaireInput());
     expect(r.reportToken).toBeTruthy();
 
+    // The engine has finished, but a person has not approved it yet.
+    const held = await caller.getReport({ token: r.reportToken as string });
+    expect(held.status).toBe("ready");
+    expect(held.reportStatus).toBe("awaiting_expert_review");
+    expect(held.report).toBeNull();
+    await expect(caller.getReportPdf({ token: r.reportToken as string })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    // Approved is still not visible: only Published is.
+    const state = (dbMock as unknown as { __state: { aiScans: Array<Record<string, unknown>> } }).__state;
+    const row = state.aiScans.find((x) => x.reportToken === r.reportToken)!;
+    row.reportStatus = "approved";
+    expect((await caller.getReport({ token: r.reportToken as string })).report).toBeNull();
+
+    row.reportStatus = "revision_required";
+    expect((await caller.getReport({ token: r.reportToken as string })).report).toBeNull();
+
+    row.reportStatus = "published";
     const ready = await caller.getReport({ token: r.reportToken as string });
     expect(ready.status).toBe("ready");
     expect(ready.report).not.toBeNull();

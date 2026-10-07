@@ -72,7 +72,15 @@ import {
   type OpportunityStage,
 } from "../../shared/srsRules";
 import { recordAdminEvent } from "./admin";
-import { toCsv } from "../../shared/srsRules";
+import { REPORT_STATUSES, toCsv, type ReportStatus } from "../../shared/srsRules";
+import { dispatchSimpleEmail, escapeHtml } from "../email";
+import {
+  assignAiScanReviewer,
+  getAiScanById,
+  listAiScanStatusEvents,
+  listAiScansForReview,
+  transitionAiScanReport,
+} from "../db";
 import { AUDIT_EXPORT_LIMIT, exportAuditLog, readPlatformHealth, searchAuditLog, searchDocuments } from "../db";
 
 const auditFilter = z.object({
@@ -567,4 +575,96 @@ export const adminOpsRouter = router({
     }),
 
   platformHealth: opsProcedure.query(async () => readPlatformHealth()),
+
+  // =========================================================================
+  // AI Scan expert review (SRS 9.6, 12.8, BR-009, BR-016)
+  // =========================================================================
+  aiScanReviewQueue: adminProcedure
+    .input(z.object({ statuses: z.array(z.enum(REPORT_STATUSES)).min(1).max(9).default(["awaiting_expert_review", "revision_required", "approved"]) }).default({ statuses: ["awaiting_expert_review", "revision_required", "approved"] }))
+    .query(async ({ input }) => listAiScansForReview(input.statuses as ReportStatus[])),
+
+  aiScanHistory: adminProcedure.input(z.object({ scanId: z.number().int().positive() })).query(async ({ input }) => listAiScanStatusEvents(input.scanId)),
+
+  assignAiScanReviewer: adminProcedure
+    .input(z.object({ scanId: z.number().int().positive(), reviewerUserId: z.number().int().positive().nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      const scan = await assignAiScanReviewer(input.scanId, input.reviewerUserId);
+      if (!scan) fail("NOT_FOUND", "AI Scan not found.");
+      await recordAdminEvent({ ctx, reason: `admin.ai_scan.assign_reviewer(${input.scanId}->${input.reviewerUserId ?? "none"})` });
+      return { ok: true as const };
+    }),
+
+  /** The only way a report is approved, sent back, published or archived: a person does it. */
+  moveAiScanReport: adminProcedure
+    .input(
+      z.object({
+        scanId: z.number().int().positive(),
+        to: z.enum(["approved", "revision_required", "published", "archived"]),
+        note: z.string().trim().max(2000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const res = await transitionAiScanReport({ scanId: input.scanId, to: input.to, actorUserId: ctx.user.id, note: input.note ?? null });
+      if (!res) fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
+      if (!res.ok) fail(res.code, res.reason);
+      await recordAdminEvent({ ctx, reason: `admin.ai_scan.${input.to}(${input.scanId}:from=${res.from})` });
+      const label = res.scan.company || res.scan.fullName;
+      if (input.to === "published") {
+        // SRS 9.9: tell the customer. A mail failure must not undo the publication.
+        const base = process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://iosky.com";
+        const link = `${base}/ai-scan/result/${res.scan.reportToken}`;
+        try {
+          await dispatchSimpleEmail({
+            to: res.scan.email,
+            subject: "Your IO SKY AI Scan report is ready",
+            html: `<p>Hello ${escapeHtml(res.scan.fullName)},</p><p>Your AI Scan report has been reviewed by our team and is now available.</p><p><a href="${link}">Open your report</a></p><p>IO SKY</p>`,
+            text: `Hello ${res.scan.fullName},\n\nYour AI Scan report has been reviewed by our team and is now available:\n${link}\n\nIO SKY`,
+            refHeader: `ai-scan-published:${res.scan.id}`,
+            messageType: "notification",
+            relatedRef: `ai-scan:${res.scan.id}`,
+          });
+        } catch (err) {
+          console.error("[aiScan] publish email failed:", err);
+        }
+      }
+      await createAdminNotification({
+        kind: `ai_scan_${input.to}`,
+        title: `AI Scan ${input.to.replace(/_/g, " ")}: ${label}`,
+        body: input.note ?? null,
+        href: "/admin/governance",
+        priority: input.to === "revision_required" ? "high" : "normal",
+      });
+      return { ok: true as const, status: input.to };
+    }),
+
+  /** After a revision request: re-run the engine against the stored answers, then it returns to review. */
+  regenerateAiScanReport: adminProcedure.input(z.object({ scanId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const scan = await getAiScanById(input.scanId);
+    if (!scan) fail("NOT_FOUND", "AI Scan not found.");
+    if (scan.reportStatus !== "revision_required") fail("PRECONDITION_FAILED", "Only a report that needs revision can be regenerated.");
+    let answers: Record<string, string>;
+    let contextNote: string | undefined;
+    try {
+      const parsed = JSON.parse(scan.responses ?? "{}") as { answers?: Record<string, string>; contextNote?: string };
+      if (!parsed.answers || Object.keys(parsed.answers).length === 0) throw new Error("none");
+      answers = parsed.answers;
+      contextNote = parsed.contextNote ?? undefined;
+    } catch {
+      fail("BAD_REQUEST", "This scan has no stored answers to regenerate from.");
+    }
+    const { runAiScanEngine } = await import("./aiScans");
+    runAiScanEngine({
+      scanId: scan.id,
+      reportToken: scan.reportToken,
+      tier: scan.tier as "free" | "growth" | "elite",
+      locale: scan.locale ?? "en",
+      fullName: scan.fullName ?? "",
+      email: scan.email ?? "",
+      company: scan.company ?? "",
+      answers,
+      contextNote,
+    }).catch((e) => console.warn("[adminOps.regenerateAiScanReport] engine threw:", e));
+    await recordAdminEvent({ ctx, reason: `admin.ai_scan.regenerate(${scan.id})` });
+    return { ok: true as const };
+  }),
 });

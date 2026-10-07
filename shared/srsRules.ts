@@ -293,3 +293,48 @@ export function toCsv(columns: string[], rows: Array<Record<string, unknown>>): 
 export function escapeLike(term: string): string {
   return term.replace(/[\\%_]/g, (c) => "\\" + c);
 }
+
+// ---------------------------------------------------------------------------
+// AI Scan report lifecycle (SRS 9.6, BR-009, BR-016)
+// ---------------------------------------------------------------------------
+
+export const REPORT_STATUSES = [
+  "draft",
+  "questionnaire_in_progress",
+  "submitted",
+  "ai_processing",
+  "awaiting_expert_review",
+  "revision_required",
+  "approved",
+  "published",
+  "archived",
+] as const;
+export type ReportStatus = (typeof REPORT_STATUSES)[number];
+
+const REPORT_TRANSITIONS: Record<ReportStatus, ReportStatus[]> = {
+  draft: ["questionnaire_in_progress", "submitted"],
+  questionnaire_in_progress: ["submitted"],
+  submitted: ["ai_processing"],
+  // A failed engine run drops back to submitted so it can be retried.
+  ai_processing: ["awaiting_expert_review", "submitted"],
+  awaiting_expert_review: ["approved", "revision_required"],
+  // After the requested changes the report is regenerated, then reviewed again.
+  revision_required: ["ai_processing", "awaiting_expert_review"],
+  approved: ["published", "revision_required"],
+  published: ["archived"],
+  archived: [],
+};
+
+export function canMoveReport(from: ReportStatus, to: ReportStatus): boolean {
+  return REPORT_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+/** BR-016: no report is visible to the customer until it is Published. */
+export function isReportVisibleToCustomer(status: string | null | undefined): boolean {
+  return status === "published";
+}
+
+/** Steps only a human may take. The engine can never approve or publish. */
+export function isHumanOnlyReportStep(to: ReportStatus): boolean {
+  return to === "approved" || to === "revision_required" || to === "published" || to === "archived";
+}

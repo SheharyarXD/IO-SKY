@@ -1978,9 +1978,18 @@ export const aiScans = pgTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().notNull(),
     scoredAt: timestamp("scoredAt"),
+    /** SRS 9.6 nine status review lifecycle. Only "published" is visible to the customer. */
+    reportStatus: varchar("reportStatus", { length: 32 }).default("submitted").notNull(),
+    reviewerUserId: integer("reviewerUserId").references(() => users.id),
+    reviewNote: text("reviewNote"),
+    approvedByUserId: integer("approvedByUserId").references(() => users.id),
+    approvedAt: timestamp("approvedAt"),
+    publishedAt: timestamp("publishedAt"),
   },
   (table) => [
     index("ai_scans_lead_id_idx").on(table.leadId),
+    index("ai_scans_report_status_idx").on(table.reportStatus),
+    index("ai_scans_reviewer_idx").on(table.reviewerUserId),
     index("ai_scans_status_idx").on(table.status),
   ],
 );
@@ -2547,3 +2556,19 @@ export const scheduledReports = pgTable("scheduled_reports", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type ScheduledReport = typeof scheduledReports.$inferSelect;
+
+/** Append-only history of every report status change (migration 0025). */
+export const aiScanStatusEvents = pgTable(
+  "ai_scan_status_events",
+  {
+    id: serial("id").primaryKey(),
+    scanId: integer("scanId").notNull().references(() => aiScans.id, { onDelete: "cascade" }),
+    fromStatus: varchar("fromStatus", { length: 32 }),
+    toStatus: varchar("toStatus", { length: 32 }).notNull(),
+    actorUserId: integer("actorUserId").references(() => users.id),
+    note: text("note"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("ai_scan_status_events_scan_idx").on(t.scanId, t.createdAt), index("ai_scan_status_events_actor_idx").on(t.actorUserId)],
+);
+export type AiScanStatusEvent = typeof aiScanStatusEvents.$inferSelect;

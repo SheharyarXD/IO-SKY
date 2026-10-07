@@ -25,6 +25,10 @@ const m = vi.hoisted(() => ({
   archiveClientProject: vi.fn(),
   createScheduledReport: vi.fn(),
   exportAuditLog: vi.fn(),
+  transitionAiScanReport: vi.fn(),
+  getAiScanById: vi.fn(),
+  assignAiScanReviewer: vi.fn(),
+  dispatchSimpleEmailMock: vi.fn(),
   searchAuditLog: vi.fn(),
   searchDocuments: vi.fn(),
   readPlatformHealth: vi.fn(),
@@ -217,5 +221,44 @@ describe("audit export, search and health", () => {
     (c.user as { organizationId: number | null }).organizationId = 42;
     await appRouter.createCaller(c).clientPortal.searchDocuments({ q: "organizationId=7" });
     expect(m.searchDocuments).toHaveBeenCalledWith(expect.objectContaining({ organizationId: 42, q: "organizationId=7" }));
+  });
+});
+
+vi.mock("./email", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return { ...actual, dispatchSimpleEmail: (...a: unknown[]) => m.dispatchSimpleEmailMock(...a) };
+});
+
+describe("AI Scan expert review", () => {
+  const scan = { id: 7, company: "Acme", fullName: "A Person", email: "a@example.com", reportToken: "tok123" };
+  it("keeps a technical operator and a client out of the review actions", async () => {
+    await expect(as("technical_operator").adminOps.moveAiScanReport({ scanId: 7, to: "published" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(as("client").adminOps.aiScanReviewQueue({})).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+  it("will not let the API approve straight from a state the rules forbid", async () => {
+    m.transitionAiScanReport.mockResolvedValueOnce({ ok: false, code: "PRECONDITION_FAILED", reason: "A report that is submitted cannot move to published." });
+    await expect(as("admin").adminOps.moveAiScanReport({ scanId: 7, to: "published" })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expect(m.dispatchSimpleEmailMock).not.toHaveBeenCalled();
+  });
+  it("records the approver and does not email the customer on approval", async () => {
+    m.transitionAiScanReport.mockResolvedValueOnce({ ok: true, from: "awaiting_expert_review", scan });
+    await as("admin").adminOps.moveAiScanReport({ scanId: 7, to: "approved" });
+    expect(m.transitionAiScanReport).toHaveBeenCalledWith(expect.objectContaining({ to: "approved", actorUserId: 99 }));
+    expect(m.dispatchSimpleEmailMock).not.toHaveBeenCalled();
+  });
+  it("emails the customer a link when a report is published", async () => {
+    m.transitionAiScanReport.mockResolvedValueOnce({ ok: true, from: "approved", scan });
+    m.dispatchSimpleEmailMock.mockResolvedValueOnce({ ok: true });
+    await as("admin").adminOps.moveAiScanReport({ scanId: 7, to: "published" });
+    expect(m.dispatchSimpleEmailMock).toHaveBeenCalledWith(expect.objectContaining({ to: "a@example.com", text: expect.stringContaining("/ai-scan/result/tok123") }));
+  });
+  it("still publishes when the notification email fails", async () => {
+    m.transitionAiScanReport.mockResolvedValueOnce({ ok: true, from: "approved", scan });
+    m.dispatchSimpleEmailMock.mockRejectedValueOnce(new Error("smtp down"));
+    await expect(as("admin").adminOps.moveAiScanReport({ scanId: 7, to: "published" })).resolves.toMatchObject({ ok: true, status: "published" });
+  });
+  it("only regenerates a report that was sent back", async () => {
+    m.getAiScanById.mockResolvedValueOnce({ id: 7, reportStatus: "awaiting_expert_review" });
+    await expect(as("admin").adminOps.regenerateAiScanReport({ scanId: 7 })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 });

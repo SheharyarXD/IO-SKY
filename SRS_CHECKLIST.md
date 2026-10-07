@@ -12,17 +12,17 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 79 of 155 criteria complete (51.0%)
+## Status: 84 of 155 criteria complete (54.2%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 79 | 51.0% |
-| 🔶 Partial | 66 | 42.6% |
+| ✅ Done | 84 | 54.2% |
+| 🔶 Partial | 61 | 39.4% |
 | ⏭ Not started | 5 | 3.2% |
 | ⛔ Blocked | 5 | 3.2% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **72.3%**.
+Counting a Partial as half: **73.9%**.
 
 ## Per module
 
@@ -30,10 +30,10 @@ Counting a Partial as half: **72.3%**.
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | 1 | Public Website & Lead Experience | §7.13 | 9 | 6 | 2 | 0 | 1 |
 | 2 | Identity & Authentication | §8.16 | 9 | 8 | 1 | 0 | 0 |
-| 3 | AI Scan Platform | §9.11 | 9 | 1 | 6 | 0 | 2 |
+| 3 | AI Scan Platform | §9.11 | 9 | 4 | 3 | 0 | 2 |
 | 4 | Client Portal | §10.17 | 10 | 6 | 4 | 0 | 0 |
 | 5 | Developer Portal | §11.15 | 8 | 5 | 3 | 0 | 0 |
-| 6 | Admin Portal | §12.17 | 10 | 6 | 4 | 0 | 0 |
+| 6 | Admin Portal | §12.17 | 10 | 8 | 2 | 0 | 0 |
 | 7 | Super Admin Portal | §13.18 | 10 | 7 | 3 | 0 | 0 |
 | 8 | CRM & Sales Management | §14.15 | 8 | 7 | 1 | 0 | 0 |
 | 9 | Project & Delivery Management | §15.18 | 8 | 3 | 5 | 0 | 0 |
@@ -48,7 +48,7 @@ Counting a Partial as half: **72.3%**.
 | 18 | Platform Configuration & System Administration | §24.15 | 6 | 3 | 2 | 1 | 0 |
 | 19 | Platform Operations & Maintenance | §25.14 | 6 | 2 | 4 | 0 | 0 |
 | 20 | Global Non-Functional Requirements | §26.18 | 6 | 1 | 5 | 0 | 0 |
-| | **Total** | | **155** | **79** | **66** | **5** | **5** |
+| | **Total** | | **155** | **84** | **61** | **5** | **5** |
 
 ---
 
@@ -88,10 +88,10 @@ Counting a Partial as half: **72.3%**.
 | SRS-03.2 | Accounts are created and activated correctly | 🔶 | Lead is created; account creation on purchase is not wired |
 | SRS-03.3 | Questionnaires can be completed and resumed | 🔶 | Completion works; no draft save and resume |
 | SRS-03.4 | AI analysis is generated successfully | ⛔ | Code complete, no LLM key configured |
-| SRS-03.5 | Expert review is mandatory before publication | 🔶 | Promote step exists; the 9.6 nine status model is not |
-| SRS-03.6 | Reports are published only after approval | 🔶 | As above |
+| SRS-03.5 | Expert review is mandatory before publication | ✅ | Nine status model (SRS 9.6) with the engine able only to reach Awaiting Expert Review; approve, revision, publish and archive are human steps. Verified against the live database. |
+| SRS-03.6 | Reports are published only after approval | ✅ | Publish requires Approved. The public report and PDF stay hidden until Published (BR-016); existing ready scans were backfilled as Published. |
 | SRS-03.7 | Published reports are accessible through the Client Portal | ✅ | Client reports section |
-| SRS-03.8 | All workflow stages are recorded in the audit log | 🔶 | Some stages only |
+| SRS-03.8 | All workflow stages are recorded in the audit log | ✅ | Every report status change, including the engine's, writes an append only ai_scan_status_events row with the actor. |
 | SRS-03.9 | Notifications are delivered at each defined milestone | 🔶 | Not every milestone emits |
 
 ## Module 4: Client Portal (§10.17)
@@ -128,8 +128,8 @@ Counting a Partial as half: **72.3%**.
 | --- | --- | :---: | --- |
 | SRS-06.1 | Admins are redirected to the Admin Portal after authentication | ✅ |  |
 | SRS-06.2 | Customer management functions correctly | ✅ | createOrganization, updateOrganization, clients |
-| SRS-06.3 | AI Scans can be reviewed | 🔶 | List and retrigger only. No assign, request info, or return for correction |
-| SRS-06.4 | Reports require explicit approval before publication | 🔶 | Approval not a first class state |
+| SRS-06.3 | AI Scans can be reviewed | ✅ | Review queue: take, approve, request revision with a note, regenerate, publish, archive, with history. |
+| SRS-06.4 | Reports require explicit approval before publication | ✅ | Approval is a first class state with the approver and time recorded separately from the publisher. |
 | SRS-06.5 | Projects can be managed successfully | ✅ | create, update, milestones |
 | SRS-06.6 | Developers can be assigned to projects | ✅ | Delivery screen: create project (privacy safe name), assign, end, tasks, notify, audit. Idempotent, active developers only. |
 | SRS-06.7 | Billing information is available | ✅ | billing, createInvoice |
@@ -324,7 +324,7 @@ Counting a Partial as half: **72.3%**.
 
 ## Before any of the new work is live
 
-1. **Migrations 0023 and 0024 are applied to the Supabase project** (0023 tables, archive column and append only audit triggers; 0024 row level security on every new table). Both are idempotent. Verified live: direct UPDATE and DELETE on audit tables are refused, a foreign key cascade still works, and the 77 test files pass against the live database.
+1. **Migrations 0023, 0024 and 0025 (AI Scan report lifecycle) are applied to the Supabase project** (0023 tables, archive column and append only audit triggers; 0024 row level security on every new table). Both are idempotent. Verified live: direct UPDATE and DELETE on audit tables are refused, a foreign key cascade still works, and the 77 test files pass against the live database.
 2. Nothing here was clicked through in a browser. Each Done means built, reachable from a screen, covered by tests where the logic is pure or the permission boundary matters, and typechecked.
 
 ## What remains, and what each item needs
@@ -333,7 +333,7 @@ Counting a Partial as half: **72.3%**.
 
 | Criterion | What to build |
 | --- | --- |
-| SRS-03.5, 03.6, 04.4, 06.3, 06.4 | AI Scan report lifecycle: the nine status model (Draft to Archived), assign reviewer, request revision, approve, publish, with the public report hidden until Published (BR-016). Backfill existing ready scans as Published. Deliberately not started: it changes what customers see, and the scan is slated for replacement in Milestone 4, so confirm first. |
+| SRS-04.4 | Show the customer the review status in the Client Portal AI Scan history, not only on the public result page. |
 | SRS-03.3 | Resumable questionnaire: save a draft per step and resume by link. |
 | SRS-03.8, 03.9, 09.6, 11.1, 11.2 | Route the 84 event catalogue through one dispatcher so every event emits to its recipients and channels. Largest remaining item. |
 | SRS-08.2 | Discovery Call outcomes, notes and follow ups on bookings. |

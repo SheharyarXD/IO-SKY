@@ -12,9 +12,11 @@ import { trpc } from "@/lib/trpc";
 import OperationalPage, { DataTable, StatusPill, type DataColumn } from "./_shared/OperationalPage";
 import { FormCard, Panel, SmallButton, TabBar, shortDateTime } from "./_shared/Forms";
 import { AuditSearch, Health } from "./GovernanceExtras";
+import { AiScanReview } from "./AiScanReview";
 
-type Tab = "incidents" | "alerts" | "ai" | "config" | "reports" | "audit" | "health";
+type Tab = "incidents" | "alerts" | "ai" | "config" | "reports" | "audit" | "health" | "scanreview";
 const TABS: Array<{ id: Tab; label: string }> = [
+  { id: "scanreview", label: "AI Scan review" },
   { id: "incidents", label: "Incidents" },
   { id: "alerts", label: "Alert rules" },
   { id: "ai", label: "AI agents" },
@@ -27,7 +29,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
 const sevTone = (s: string) => (s === "critical" ? "err" : s === "high" ? "warn" : s === "medium" ? "info" : "muted");
 
 export function Governance() {
-  const [tab, setTab] = useState<Tab>("incidents");
+  const [tab, setTab] = useState<Tab>("scanreview");
   return (
     <OperationalPage
       eyebrow="Governance"
@@ -36,6 +38,7 @@ export function Governance() {
       primary={
         <div className="space-y-4">
           <TabBar tabs={TABS} value={tab} onChange={setTab} />
+          {tab === "scanreview" && <AiScanReview />}
           {tab === "incidents" && <Incidents />}
           {tab === "alerts" && <Alerts />}
           {tab === "ai" && <AiGovernance />}

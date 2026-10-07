@@ -16,6 +16,7 @@
  *     those are explicit, separate journeys.
  */
 
+import { isReportVisibleToCustomer } from "../../shared/srsRules";
 import { TRPCError } from "@trpc/server";
 import { randomBytes } from "crypto";
 import { z } from "zod";
@@ -122,7 +123,7 @@ export async function runAiScanEngine(params: {
   answers: Record<string, string>;
   contextNote?: string;
 }): Promise<void> {
-  await updateAiScanStatus(params.scanId, { status: "scoring" });
+  await updateAiScanStatus(params.scanId, { status: "scoring", reportStatus: "ai_processing" });
   const result = await scoreAiScan({
     tier: params.tier,
     locale: params.locale,
@@ -134,13 +135,16 @@ export async function runAiScanEngine(params: {
   if (result.ok) {
     await updateAiScanStatus(params.scanId, {
       status: "ready",
+      // SRS 9.6 / BR-009: the engine can only hand the report to a human. It is
+      // not visible to the customer until an expert approves and publishes it.
+      reportStatus: "awaiting_expert_review",
       reportPayload: JSON.stringify(result.report),
       overallScore: result.report.overallScore,
       scoredAt: new Date(),
     });
     try {
       await notifyOwner({
-        title: `IO SKY · AI Scan ready (${params.tier.toUpperCase()})`,
+        title: `IO SKY · AI Scan awaiting expert review (${params.tier.toUpperCase()})`,
         content: [
           `Tier: ${params.tier}`,
           `Company: ${params.company}`,
@@ -155,6 +159,7 @@ export async function runAiScanEngine(params: {
   } else {
     await updateAiScanStatus(params.scanId, {
       status: "failed",
+      reportStatus: "submitted",
       errorMessage: result.error.slice(0, 1000),
     });
     try {
@@ -404,9 +409,14 @@ export const aiScansRouter = router({
         });
       }
 
-      if (scan.status !== "ready" || !scan.reportPayload) {
+      // BR-016: nothing is shown until the report is Published. A missing
+      // reportStatus is treated as published only so rows from before the
+      // lifecycle existed keep working; the migration backfills them anyway.
+      const visible = isReportVisibleToCustomer(scan.reportStatus ?? "published");
+      if (scan.status !== "ready" || !scan.reportPayload || !visible) {
         return {
           status: scan.status,
+          reportStatus: scan.reportStatus ?? null,
           tier: scan.tier as AiScanTier,
           company: scan.company,
           createdAt: scan.createdAt,
@@ -423,6 +433,7 @@ export const aiScansRouter = router({
 
       return {
         status: scan.status,
+        reportStatus: scan.reportStatus ?? null,
         tier: scan.tier as AiScanTier,
         company: scan.company,
         createdAt: scan.createdAt,
@@ -445,7 +456,7 @@ export const aiScansRouter = router({
           message: "Report not found or no longer available.",
         });
       }
-      if (scan.status !== "ready" || !scan.reportPayload) {
+      if (scan.status !== "ready" || !scan.reportPayload || !isReportVisibleToCustomer(scan.reportStatus ?? "published")) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "This report is not ready for download yet.",
