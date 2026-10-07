@@ -12,17 +12,17 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 124 of 155 criteria complete (80.0%)
+## Status: 127 of 155 criteria complete (81.9%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 124 | 80.0% |
-| 🔶 Partial | 24 | 15.5% |
+| ✅ Done | 127 | 81.9% |
+| 🔶 Partial | 21 | 13.5% |
 | ⏭ Not started | 2 | 1.3% |
 | ⛔ Blocked | 5 | 3.2% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **87.7%**.
+Counting a Partial as half: **88.7%**.
 
 ## Per module
 
@@ -39,16 +39,16 @@ Counting a Partial as half: **87.7%**.
 | 9 | Project & Delivery Management | §15.18 | 8 | 7 | 1 | 0 | 0 |
 | 10 | Commercial Billing & Subscription | §16.15 | 7 | 5 | 0 | 0 | 2 |
 | 11 | Notifications & Communication | §17.13 | 7 | 5 | 1 | 1 | 0 |
-| 12 | File & Document Management | §18.14 | 7 | 5 | 2 | 0 | 0 |
+| 12 | File & Document Management | §18.14 | 7 | 6 | 1 | 0 | 0 |
 | 13 | AI Intelligence Layer | §19.14 | 7 | 4 | 3 | 0 | 0 |
 | 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 7 | 0 | 0 | 0 |
-| 15 | Analytics & Business Intelligence | §21.14 | 7 | 4 | 3 | 0 | 0 |
+| 15 | Analytics & Business Intelligence | §21.14 | 7 | 6 | 1 | 0 | 0 |
 | 16 | Integration & API Management | §22.13 | 7 | 5 | 1 | 1 | 0 |
 | 17 | Workflow & Business Process Management | §23.15 | 7 | 7 | 0 | 0 | 0 |
 | 18 | Platform Configuration & System Administration | §24.15 | 6 | 6 | 0 | 0 | 0 |
 | 19 | Platform Operations & Maintenance | §25.14 | 6 | 5 | 1 | 0 | 0 |
 | 20 | Global Non-Functional Requirements | §26.18 | 6 | 1 | 5 | 0 | 0 |
-| | **Total** | | **155** | **124** | **24** | **2** | **5** |
+| | **Total** | | **155** | **127** | **21** | **2** | **5** |
 
 ---
 
@@ -211,7 +211,7 @@ Counting a Partial as half: **87.7%**.
 | SRS-12.3 | Permissions are enforced correctly | 🔶 | Org isolation yes; role level matrix no |
 | SRS-12.4 | Approval workflows function as specified | ✅ | reviewDocument |
 | SRS-12.5 | Search returns authorized results only | ✅ | Client search is scoped to the caller's organization by the server; admin search is admin only; wildcards escaped. |
-| SRS-12.6 | Automated document workflows execute successfully | 🔶 | Retention only |
+| SRS-12.6 | Automated document workflows execute successfully | ✅ | Document approved and rejected triggers run workflows and webhooks, workflows can run on a schedule, and retention runs automatically. |
 | SRS-12.7 | Audit records are created for all business critical document actions | ✅ | Upload, download, delete and review all write audit rows; enforced by the coverage test. |
 
 ## Module 13: AI Intelligence Layer (§19.14)
@@ -242,8 +242,8 @@ Counting a Partial as half: **87.7%**.
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
-| SRS-15.1 | Dashboards display accurate information | 🔶 |  |
-| SRS-15.2 | KPIs are calculated correctly | 🔶 | readBusinessIntelligence |
+| SRS-15.1 | Dashboards display accurate information | ✅ | Found and fixed counters that silently returned zero (BI funnel, growth comparisons, failed logins, ops health) caused by a Date parameter in raw sql; verified on live data and now guarded by a test over every server file. |
+| SRS-15.2 | KPIs are calculated correctly | ✅ | KPI queries use typed comparisons and return real values on live data; the guard test prevents the zeroing bug returning. |
 | SRS-15.3 | Reports are generated successfully | ✅ | Scheduled email reports, plus audited CSV exports of leads, invoices, opportunities, time entries and incidents. |
 | SRS-15.4 | Historical analytics function correctly | ✅ | Twelve month series of leads, paid revenue and won deals, zero filled; verified against live data. |
 | SRS-15.5 | Dashboard permissions are enforced | ✅ |  |
