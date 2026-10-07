@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-const DATE_LIKE = /^(now|since|until|week|twoDays|before|after|date|from|to|start|end|cutoff|threshold|expiresAt|dueAt)$/;
+const DATE_LIKE = /^(now|since|since\d+d|prior\d*d?|until|week|twoDays|before|after|date|from|to|start|end|cutoff|threshold|expiresAt|dueAt|new Date\(.*\))$/;
 
 function rawSqlParams(source: string): Array<{ param: string; line: number }> {
   const out: Array<{ param: string; line: number }> = [];
@@ -20,7 +20,7 @@ function rawSqlParams(source: string): Array<{ param: string; line: number }> {
   let m: RegExpExecArray | null;
   while ((m = re.exec(source))) {
     const body = m[1];
-    const pr = /\$\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}/g;
+    const pr = /\$\{\s*((?:new\s+)?[A-Za-z_][A-Za-z0-9_]*(?:\(.*?\))?)\s*\}/g;
     let p: RegExpExecArray | null;
     while ((p = pr.exec(body))) {
       if (DATE_LIKE.test(p[1])) out.push({ param: p[1], line: source.slice(0, m.index).split("\n").length });
@@ -30,16 +30,16 @@ function rawSqlParams(source: string): Array<{ param: string; line: number }> {
 }
 
 describe("raw sql date parameters", () => {
-  const dir = path.resolve(__dirname, "db");
-  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".ts"));
+  const dirs = ["db", "routers", "_core", "."].map((d) => path.resolve(__dirname, d));
+  const files = dirs.flatMap((dir) => fs.readdirSync(dir).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts")).map((f) => path.join(dir, f)));
 
   it("scans a meaningful number of db files", () => {
-    expect(files.length).toBeGreaterThan(10);
+    expect(files.length).toBeGreaterThan(40);
   });
 
   for (const f of files) {
-    it(`${f} passes no bare date variable into a raw sql template`, () => {
-      const src = fs.readFileSync(path.join(dir, f), "utf8").replace(/\r\n/g, "\n");
+    it(`${path.relative(__dirname, f)} passes no bare date variable into a raw sql template`, () => {
+      const src = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n");
       expect(rawSqlParams(src), "Use ${x.toISOString()}::timestamp or a typed helper like lte(column, x)").toEqual([]);
     });
   }
@@ -47,5 +47,7 @@ describe("raw sql date parameters", () => {
   it("the detector itself flags the bad pattern", () => {
     expect(rawSqlParams("const q = sql`select 1 where a < ${now}`;")).toHaveLength(1);
     expect(rawSqlParams("const q = sql`select 1 where a < ${now.toISOString()}::timestamp`;")).toHaveLength(0);
+    expect(rawSqlParams("const q = sql`${t.createdAt} >= ${new Date(x)}`;")).toHaveLength(1);
+    expect(rawSqlParams("const q = sql`${t.createdAt} >= ${since30d}`;")).toHaveLength(1);
   });
 });

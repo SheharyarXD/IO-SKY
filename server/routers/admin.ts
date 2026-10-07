@@ -26,7 +26,7 @@
  * never goes blank, even on first boot before the seed migration runs.
  */
 import { z } from "zod";
-import { count, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {
   adminProcedure,
@@ -288,7 +288,7 @@ async function buildSummary(): Promise<AdminSummary> {
         .select({ c: count() })
         .from(organizations)
         .where(
-          sql`${organizations.createdAt} >= ${new Date(previousMonthStartMs)} AND ${organizations.createdAt} < ${new Date(startOfMonthMs)}`,
+          and(gte(organizations.createdAt, new Date(previousMonthStartMs)), lt(organizations.createdAt, new Date(startOfMonthMs))),
         );
       return Number(r[0]?.c ?? 0);
     }, 0),
@@ -318,7 +318,7 @@ async function buildSummary(): Promise<AdminSummary> {
         .select({ c: count() })
         .from(aiScans)
         .where(
-          sql`${aiScans.createdAt} >= ${new Date(previousMonthStartMs)} AND ${aiScans.createdAt} < ${new Date(startOfMonthMs)}`,
+          and(gte(aiScans.createdAt, new Date(previousMonthStartMs)), lt(aiScans.createdAt, new Date(startOfMonthMs))),
         );
       return Number(r[0]?.c ?? 0);
     }, 0),
@@ -906,7 +906,7 @@ async function readSecurity() {
         .select({ c: count() })
         .from(loginAudit)
         .where(
-          sql`${loginAudit.outcome} = 'failed' AND ${loginAudit.createdAt} >= ${new Date(since)}`,
+          and(eq(loginAudit.outcome, "failed"), gte(loginAudit.createdAt, new Date(since))),
         );
       return Number(r[0]?.c ?? 0);
     },
@@ -1089,7 +1089,7 @@ async function readBusinessIntelligence() {
     const r = await db
       .select({ c: count() })
       .from(bookings)
-      .where(sql`${bookings.status} = 'completed' AND ${bookings.createdAt} >= ${since30d}`);
+      .where(and(eq(bookings.status, "completed"), gte(bookings.createdAt, since30d)));
     return Number(r[0]?.c ?? 0);
   }, 0);
   const aiScans30d = await safe(async () => {
@@ -1101,7 +1101,7 @@ async function readBusinessIntelligence() {
       .select({ c: count() })
       .from(leads)
       .where(
-        sql`${leads.status} IN ('qualified', 'engaged', 'won') AND ${leads.createdAt} >= ${since30d}`,
+        and(inArray(leads.status, ["qualified", "engaged", "won"]), gte(leads.createdAt, since30d)),
       );
     return Number(r[0]?.c ?? 0);
   }, 0);
@@ -1109,7 +1109,7 @@ async function readBusinessIntelligence() {
     const r = await db
       .select({ c: count() })
       .from(leads)
-      .where(sql`${leads.status} = 'won' AND ${leads.createdAt} >= ${since30d}`);
+      .where(and(eq(leads.status, "won"), gte(leads.createdAt, since30d)));
     return Number(r[0]?.c ?? 0);
   }, 0);
   const leads30d = await safe(async () => {
@@ -1120,7 +1120,7 @@ async function readBusinessIntelligence() {
     const r = await db
       .select({ c: count() })
       .from(leads)
-      .where(sql`${leads.createdAt} >= ${since60d} AND ${leads.createdAt} < ${since30d}`);
+      .where(and(gte(leads.createdAt, since60d), lt(leads.createdAt, since30d)));
     return Number(r[0]?.c ?? 0);
   }, 0);
   const leadsDelta =

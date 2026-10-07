@@ -17,7 +17,7 @@
  * slice that previously only existed inside admin.security.
  */
 import { z } from "zod";
-import { count, sql } from "drizzle-orm";
+import { and, count, gte, ne, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {
   opsProcedure,
@@ -114,7 +114,7 @@ export const opsRouter = router({
       const rows = await db
         .select({ status: emailDeliveryLog.status, c: count() })
         .from(emailDeliveryLog)
-        .where(sql`${emailDeliveryLog.createdAt} >= ${since}`)
+        .where(gte(emailDeliveryLog.createdAt, since))
         .groupBy(emailDeliveryLog.status);
       let sent24h = 0;
       let delivered24h = 0;
@@ -132,7 +132,7 @@ export const opsRouter = router({
       const r = await db
         .select({ c: count() })
         .from(loginAudit)
-        .where(sql`${loginAudit.outcome} != 'success' AND ${loginAudit.createdAt} >= ${since}`);
+        .where(and(ne(loginAudit.outcome, "success"), gte(loginAudit.createdAt, since)));
       return Number(r[0]?.c ?? 0);
     }, 0);
 
@@ -140,7 +140,7 @@ export const opsRouter = router({
       const rows = await db
         .select({ severity: developerSecurityEvents.severity, c: count() })
         .from(developerSecurityEvents)
-        .where(sql`${developerSecurityEvents.createdAt} >= ${since}`)
+        .where(gte(developerSecurityEvents.createdAt, since))
         .groupBy(developerSecurityEvents.severity);
       const out = { info: 0, warn: 0, high: 0, critical: 0 };
       for (const r of rows as any[]) {
