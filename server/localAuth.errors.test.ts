@@ -22,6 +22,8 @@ vi.mock("../server/db", () => ({
   getUserByEmailWithPassword: vi.fn(),
   appendLoginAudit: vi.fn(async () => {}),
   touchUserLastSignedIn: vi.fn(async () => {}),
+  // No enrolled factor, so the existing contract (a session on a correct password) still holds.
+  listVerifiedMfaFactorsForUser: vi.fn(async () => []),
 }));
 vi.mock("./_core/sdk", () => ({
   sdk: { createSessionToken: vi.fn(async () => "fake.session.token") },

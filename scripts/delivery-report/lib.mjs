@@ -1,0 +1,75 @@
+/**
+ * Shared browser helpers for the delivery report capture scripts.
+ *
+ * Everything drives the real deployed app through its real forms: the staging
+ * gate is unlocked with its real password, sign in uses the real login form,
+ * and the admin passes the real TOTP challenge. Nothing is forged.
+ */
+import { chromium } from "@playwright/test";
+import { generateSync } from "otplib";
+import fs from "node:fs";
+import path from "node:path";
+
+export const BASE = process.env.E2E_BASE_URL ?? "https://io-sky-production.up.railway.app";
+export const OUT = process.env.EVIDENCE_OUT ?? path.resolve("evidence-out");
+export const SHOTS = path.join(OUT, "shots");
+fs.mkdirSync(SHOTS, { recursive: true });
+
+export const creds = () => JSON.parse(fs.readFileSync(process.env.EVIDENCE_CREDS, "utf8"));
+
+export async function launch() {
+  return chromium.launch({ headless: true });
+}
+
+export async function newContext(browser, extra = {}) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, locale: "en-GB", timezoneId: "Europe/Amsterdam", ...extra });
+  // A real visitor dismisses the cookie banner first; seeding that decision keeps it from covering the evidence.
+  await ctx.addInitScript(() => {
+    try {
+      localStorage.setItem(
+        "iosky.consent.v1",
+        JSON.stringify({ subjectKey: "evidence-subject", decision: "accepted-all", categories: { functional: true, analytics: true, marketing: true }, recordedAt: new Date().toISOString() }),
+      );
+      localStorage.setItem("iosky.consent.subject", "evidence-subject");
+    } catch {}
+  });
+  return ctx;
+}
+
+export async function unlockStaging(ctx) {
+  const pw = process.env.STAGING_PASSWORD;
+  if (!pw) return;
+  const res = await ctx.request.post(`${BASE}/api/staging/unlock`, { form: { password: pw }, maxRedirects: 0, failOnStatusCode: false });
+  if (res.status() !== 302 && res.status() !== 200) throw new Error(`Staging gate refused the password (HTTP ${res.status()})`);
+}
+
+/** Sign in through the real form. Returns the landing URL. */
+export async function login(page, email, password, totpSecret) {
+  await page.goto(`${BASE}/login`);
+  await page.locator("#login-email").fill(email);
+  await page.locator("#login-password").fill(password);
+  await page.waitForTimeout(1800); // the form's anti-automation mount gate; waited out, not bypassed
+  await page.locator('form button[type="submit"]').click();
+  if (totpSecret) {
+    await page.waitForURL(/mfa-challenge/, { timeout: 20000 });
+    await page.getByPlaceholder("000000").fill(generateSync({ secret: totpSecret }));
+    await page.getByRole("button", { name: /verify/i }).click();
+  }
+  await page.waitForURL((u) => !/\/login|mfa-challenge/.test(u.pathname), { timeout: 25000 });
+  return page.url();
+}
+
+let counter = 0;
+/** Wait for the page to settle, then save a viewport screenshot. */
+export async function shot(page, id, { full = false, wait = 900, clip } = {}) {
+  await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(wait);
+  const file = path.join(SHOTS, `${id}.png`);
+  await page.screenshot({ path: file, fullPage: full, clip });
+  counter++;
+  return file;
+}
+
+export async function go(page, route) {
+  await page.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded" });
+}

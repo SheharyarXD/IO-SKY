@@ -22,6 +22,7 @@ import { sdk } from "./sdk";
 import { getSessionCookieOptions } from "./cookies";
 import { COOKIE_NAME, getSessionTtlMs } from "@shared/const";
 import { roleBasedDestination } from "./oauth";
+import { MFA_PENDING_COOKIE, MFA_PENDING_TTL_MS, sanitiseNext, signMfaPending } from "./mfaChallenge";
 import { getRequestIp } from "./requestMeta";
 
 // RM-89: session lifetime is the configured TTL (12h default), not a year.
@@ -79,6 +80,51 @@ export function registerLocalAuthRoutes(app: Express) {
           code: "invalid_credentials",
           error: "Invalid email or password",
         });
+        return;
+      }
+
+      // SRS 8.8 / 8.10: a correct password is the first factor only. If the account has a
+      // verified second factor, no session is issued here; the browser is sent to the
+      // challenge with a short lived pending token, exactly as the Supabase and OAuth
+      // sign in paths do. This path used to mint the session straight away, so for an
+      // account with MFA a stolen password alone was enough to sign in.
+      //
+      // Fails closed: if the factor lookup errors we refuse the login rather than
+      // guess that no second factor is enrolled.
+      let needsMfa = false;
+      try {
+        needsMfa = (await db.listVerifiedMfaFactorsForUser(user.id)).length > 0;
+      } catch (mfaError) {
+        console.error("[LocalAuth] mfa lookup failed; refusing login:", mfaError);
+        res.status(503).json({ ok: false, code: "server_error", error: "Login failed" });
+        return;
+      }
+      if (needsMfa) {
+        const destination = roleBasedDestination(user.role, "/");
+        const pendingToken = await signMfaPending({
+          openId: user.openId,
+          userId: user.id,
+          name: (user.name as string | null) ?? "",
+          next: sanitiseNext(destination),
+        });
+        const pendingCookieOptions = getSessionCookieOptions(req);
+        res.cookie(MFA_PENDING_COOKIE, pendingToken, { ...pendingCookieOptions, maxAge: MFA_PENDING_TTL_MS });
+        // Make sure no earlier session survives into the challenge.
+        res.cookie(COOKIE_NAME, "", { ...pendingCookieOptions, maxAge: 0 });
+        try {
+          await db.appendLoginAudit({
+            userId: user.id,
+            identifier: email,
+            provider: "local",
+            outcome: "mfa_required",
+            reason: null,
+            ip: getRequestIp(req),
+            userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
+          });
+        } catch (err) {
+          console.error("[LocalAuth] FAILED to record mfa_required audit row:", err);
+        }
+        res.status(200).json({ ok: true, mfaRequired: true, next: `/mfa-challenge?next=${encodeURIComponent(sanitiseNext(destination))}` });
         return;
       }
 

@@ -135,7 +135,9 @@ export function registerOAuthRoutes(app: Express) {
           needsMfa = verified.length > 0;
         }
       } catch (mfaError) {
-        console.warn("[OAuth] mfa lookup failed (skipping gate):", mfaError);
+        // Fail closed: not knowing whether a second factor is enrolled must not let the sign in through.
+        console.error("[OAuth] mfa lookup failed; refusing sign in:", mfaError);
+        throw mfaError;
       }
 
       if (needsMfa && userRow) {

@@ -112,7 +112,9 @@ export function registerSupabaseAuthRoutes(app: Express) {
         const verified = await db.listVerifiedMfaFactorsForUser(user.id);
         needsMfa = verified.length > 0;
       } catch (mfaError) {
-        console.warn("[SupabaseAuth] mfa lookup failed (skipping gate):", mfaError);
+        // Fail closed: not knowing whether a second factor is enrolled must not let the sign in through.
+        console.error("[SupabaseAuth] mfa lookup failed; refusing sign in:", mfaError);
+        throw mfaError;
       }
 
       if (needsMfa) {
