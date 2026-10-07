@@ -24,6 +24,10 @@ const m = vi.hoisted(() => ({
   setSubscriptionStatus: vi.fn(),
   archiveClientProject: vi.fn(),
   createScheduledReport: vi.fn(),
+  exportAuditLog: vi.fn(),
+  searchAuditLog: vi.fn(),
+  searchDocuments: vi.fn(),
+  readPlatformHealth: vi.fn(),
 }));
 
 vi.mock("./db", async (importOriginal) => {
@@ -75,6 +79,21 @@ describe("authority boundaries", () => {
     m.createIncident.mockResolvedValueOnce({ id: 1, category: "operational", severity: "low", title: "Disk" });
     await expect(as("technical_operator").adminOps.createIncident({ category: "operational", title: "Disk", severity: "low" })).resolves.toMatchObject({ id: 1 });
     await expect(as("technical_operator").adminOps.opportunities({})).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+});
+
+describe("denied access is recorded (SRS 8.16)", () => {
+  it("writes one blocked audit row when a signed in user is refused", async () => {
+    await expect(as("client").adminOps.opportunities({})).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(m.appendLoginAudit).toHaveBeenCalledTimes(1);
+    expect(m.appendLoginAudit).toHaveBeenCalledWith(expect.objectContaining({ outcome: "blocked", provider: "authz", userId: 99, reason: "denied:adminOps.opportunities" }));
+  });
+  it("does not write a row when an allowed call succeeds", async () => {
+    m.createIncident.mockResolvedValueOnce({ id: 1, category: "operational", severity: "low", title: "x" });
+    await as("technical_operator").adminOps.createIncident({ category: "operational", title: "x", severity: "low" });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(m.appendLoginAudit).not.toHaveBeenCalledWith(expect.objectContaining({ outcome: "blocked" }));
   });
 });
 
@@ -164,5 +183,39 @@ describe("incidents, archive and reports", () => {
       as("admin").adminOps.createScheduledReport({ name: "Weekly", reportKind: "billing", cadence: "weekly", recipients: ["a@example.com"], firstRunAt: Date.now() - 86_400_000 }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(m.createScheduledReport).not.toHaveBeenCalled();
+  });
+});
+
+describe("audit export, search and health", () => {
+  it("exports CSV, defuses a formula in an attacker typed identifier, and audits the export", async () => {
+    m.exportAuditLog.mockResolvedValueOnce([
+      { createdAt: new Date("2026-10-07T00:00:00Z"), provider: "local", outcome: "failed", identifier: "=cmd|' /C calc'!A1", reason: "bad password", ip: "1.2.3.4", userId: null },
+    ]);
+    const r = await as("admin").adminOps.auditExport({});
+    expect(r.rows).toBe(1);
+    expect(r.csv.split("\r\n")[0]).toBe("createdAt,provider,outcome,identifier,reason,ip,userId");
+    expect(r.csv).toContain("'=cmd");
+    expect(r.csv).not.toMatch(/,=cmd/);
+    expect(m.appendLoginAudit).toHaveBeenCalledWith(expect.objectContaining({ reason: expect.stringContaining("admin.audit.export(rows=1)") }));
+  });
+  it("keeps audit search and export away from a technical operator", async () => {
+    await expect(as("technical_operator").adminOps.auditSearch({})).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(as("technical_operator").adminOps.auditExport({})).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+  it("lets a technical operator read platform health but not search documents", async () => {
+    m.readPlatformHealth.mockResolvedValueOnce({ ok: true });
+    await expect(as("technical_operator").adminOps.platformHealth()).resolves.toEqual({ ok: true });
+    await expect(as("technical_operator").adminOps.searchDocuments({ q: "nda" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+  it("refuses a one character document search", async () => {
+    await expect(as("admin").adminOps.searchDocuments({ q: "a" })).rejects.toThrow();
+    expect(m.searchDocuments).not.toHaveBeenCalled();
+  });
+  it("scopes a client document search to the caller's organization, never the query text", async () => {
+    m.searchDocuments.mockResolvedValueOnce([]);
+    const c = ctx("client");
+    (c.user as { organizationId: number | null }).organizationId = 42;
+    await appRouter.createCaller(c).clientPortal.searchDocuments({ q: "organizationId=7" });
+    expect(m.searchDocuments).toHaveBeenCalledWith(expect.objectContaining({ organizationId: 42, q: "organizationId=7" }));
   });
 });

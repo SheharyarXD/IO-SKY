@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/_core/hooks/useAuth";
+import DocumentSearch from "../components/DocumentSearch";
 import {
   GlassCard,
   SectionHeader,
@@ -193,6 +194,8 @@ export default function ClientDocuments() {
           </Button>
         }
       />
+
+      <DocumentSearch />
 
       <input
         ref={fileRef}

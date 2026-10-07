@@ -72,6 +72,16 @@ import {
   type OpportunityStage,
 } from "../../shared/srsRules";
 import { recordAdminEvent } from "./admin";
+import { toCsv } from "../../shared/srsRules";
+import { AUDIT_EXPORT_LIMIT, exportAuditLog, readPlatformHealth, searchAuditLog, searchDocuments } from "../db";
+
+const auditFilter = z.object({
+  q: z.string().trim().max(200).optional(),
+  outcome: z.enum(["success", "failed", "blocked", "mfa_required"]).optional(),
+  provider: z.string().trim().max(32).optional(),
+  fromMs: z.number().int().optional(),
+  toMs: z.number().int().optional(),
+});
 import { notifyDeveloper } from "../notifications";
 
 const currency = z.string().length(3).transform((s) => s.toUpperCase());
@@ -529,4 +539,32 @@ export const adminOpsRouter = router({
       await recordAdminEvent({ ctx, reason: `admin.scheduled_report.${input.enabled ? "enable" : "disable"}(${input.id})` });
       return r;
     }),
+
+  // =========================================================================
+  // Audit search and export (SRS 13.9), documents search (SRS 18.12), health
+  // =========================================================================
+  auditSearch: adminProcedure
+    .input(auditFilter.extend({ limit: z.number().int().min(1).max(200).default(50), offset: z.number().int().min(0).default(0) }))
+    .query(async ({ ctx, input }) => {
+      const { limit, offset, ...filter } = input;
+      await recordAdminEvent({ ctx, reason: "admin.audit.search" });
+      return searchAuditLog(filter, limit, offset);
+    }),
+
+  /** Returns CSV text; the browser turns it into a download. Capped, and the export itself is audited. */
+  auditExport: adminProcedure.input(auditFilter).mutation(async ({ ctx, input }) => {
+    const rows = await exportAuditLog(input);
+    await recordAdminEvent({ ctx, reason: `admin.audit.export(rows=${rows.length})` });
+    const columns = ["createdAt", "provider", "outcome", "identifier", "reason", "ip", "userId"];
+    return { csv: toCsv(columns, rows as unknown as Array<Record<string, unknown>>), rows: rows.length, truncated: rows.length >= AUDIT_EXPORT_LIMIT };
+  }),
+
+  searchDocuments: adminProcedure
+    .input(z.object({ q: z.string().trim().min(2).max(100), category: z.string().max(96).optional() }))
+    .query(async ({ ctx, input }) => {
+      await recordAdminEvent({ ctx, reason: "admin.documents.search" });
+      return searchDocuments({ organizationId: null, q: input.q, category: input.category });
+    }),
+
+  platformHealth: opsProcedure.query(async () => readPlatformHealth()),
 });

@@ -38,7 +38,7 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { notifyOwner } from "../_core/notification";
 import { storageDelete, storageGetSignedUrl, storagePut } from "../storage";
 import { clientProcedure, router } from "../_core/trpc";
-import { createAdminNotification, decideProjectApproval, listApprovalsForOrganization } from "../db";
+import { createAdminNotification, decideProjectApproval, listApprovalsForOrganization, searchDocuments } from "../db";
 import { generatePublicRef } from "../_core/publicRef";
 
 const supportTicketSchema = z.object({
@@ -852,6 +852,11 @@ export const clientPortalRouter = router({
    * organization by a join through client_projects, so one tenant can never
    * see or decide another's approval.
    */
+  /** Document search (SRS 18.12): always scoped to the caller's organization. */
+  searchDocuments: clientProcedure
+    .input(z.object({ q: z.string().trim().min(2).max(100), category: z.string().max(96).optional() }))
+    .query(async ({ ctx, input }) => searchDocuments({ organizationId: ctx.organizationId, q: input.q, category: input.category })),
+
   approvals: clientProcedure.query(async ({ ctx }) => listApprovalsForOrganization(ctx.organizationId)),
 
   decideApproval: clientProcedure

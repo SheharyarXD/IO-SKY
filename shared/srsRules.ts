@@ -266,3 +266,30 @@ export function categoryForNotificationKind(kind: string): NotificationCategory 
   if (k.includes("report") || k.includes("project") || k.includes("milestone") || k.includes("task") || k.includes("assignment") || k.includes("approval") || k.includes("booking") || k.includes("document") || k.includes("message") || k.includes("time")) return "project";
   return "account";
 }
+
+// ---------------------------------------------------------------------------
+// CSV export (SRS 13.9, 21.9)
+// ---------------------------------------------------------------------------
+
+/**
+ * One CSV cell. Quotes are doubled and any cell containing a comma, quote or
+ * line break is wrapped. A cell that starts with =, +, - or @ is prefixed with
+ * an apostrophe: audit rows carry attacker-influenced text (an identifier typed
+ * into a login form), and a spreadsheet would otherwise run it as a formula.
+ */
+export function csvCell(value: unknown): string {
+  let s = value === null || value === undefined ? "" : value instanceof Date ? value.toISOString() : String(value);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+export function toCsv(columns: string[], rows: Array<Record<string, unknown>>): string {
+  const lines = [columns.map(csvCell).join(",")];
+  for (const r of rows) lines.push(columns.map((c) => csvCell(r[c])).join(","));
+  return lines.join("\r\n") + "\r\n";
+}
+
+/** Escape LIKE wildcards so a search for "100%" matches the text, not everything. */
+export function escapeLike(term: string): string {
+  return term.replace(/[\\%_]/g, (c) => "\\" + c);
+}

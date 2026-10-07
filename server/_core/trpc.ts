@@ -12,6 +12,41 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 /**
+ * SRS 8.16: "Unauthorized access attempts are denied and logged."
+ *
+ * Wraps every privileged procedure. When a signed-in caller is refused with
+ * FORBIDDEN, by this procedure's own role check or by any gate inside it, one
+ * row is written to the audit log. UNAUTHORIZED (no session) is deliberately
+ * not logged: an expired tab polling the API would otherwise write a row every
+ * few seconds into a table that is now append-only and cannot be pruned.
+ * The write is fire and forget so a slow audit insert never delays the refusal.
+ */
+const auditDenials = t.middleware(async ({ ctx, path, next }) => {
+  const result = await next();
+  if (!result.ok && result.error.code === "FORBIDDEN" && ctx.user) {
+    void (async () => {
+      try {
+        const [{ appendLoginAudit }, { getRequestMeta }] = await Promise.all([import("../db"), import("./requestMeta")]);
+        const { ip, userAgent } = getRequestMeta(ctx.req);
+        await appendLoginAudit({
+          userId: ctx.user!.id,
+          identifier: ctx.user!.email ?? null,
+          provider: "authz",
+          outcome: "blocked",
+          reason: `denied:${path}`.slice(0, 200),
+          ip,
+          userAgent,
+        });
+      } catch (err) {
+        console.error("[authz] could not record a denied access attempt:", err);
+      }
+    })();
+  }
+  return result;
+});
+const audited = t.procedure.use(auditDenials);
+
+/**
  * RM-57: "super_admin" is a strict superset of "admin" — every place that
  * previously checked `role === "admin"` to mean "this account has
  * admin-or-above privilege" must also accept "super_admin", or a promoted
@@ -37,14 +72,14 @@ const requireUser = t.middleware(async opts => {
   });
 });
 
-export const protectedProcedure = t.procedure.use(requireUser);
+export const protectedProcedure = audited.use(requireUser);
 
 /**
  * clientProcedure — requires authenticated user with role="client" AND a
  * non-null organizationId. Every downstream procedure can rely on
  * `ctx.user.organizationId` being a real integer.
  */
-export const clientProcedure = t.procedure.use(
+export const clientProcedure = audited.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
@@ -127,7 +162,7 @@ async function resolveDeveloperContext(user: User) {
  * Downstream procedures can rely on `ctx.developer.id`, `ctx.developer.profile`,
  * and `ctx.developer.scope` always being defined.
  */
-export const developerProcedure = t.procedure.use(
+export const developerProcedure = audited.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
@@ -158,7 +193,7 @@ export const developerProcedure = t.procedure.use(
  * Use this for any endpoint that writes to the calling developer's row
  * or returns their personal audit log.
  */
-export const developerSelfProcedure = t.procedure.use(
+export const developerSelfProcedure = audited.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
@@ -216,7 +251,7 @@ async function assertPrivilegedMfaGate(user: User) {
   }
 }
 
-export const adminProcedure = t.procedure.use(
+export const adminProcedure = audited.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
@@ -263,7 +298,7 @@ export const adminProcedure = t.procedure.use(
  * the grant is checked FIRST, so a user with no grant never learns whether
  * their MFA state would have been acceptable.
  */
-export const privacyOfficerProcedure = t.procedure.use(
+export const privacyOfficerProcedure = audited.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
@@ -301,7 +336,7 @@ export const privacyOfficerProcedure = t.procedure.use(
   }),
 );
 
-export const superAdminProcedure = t.procedure.use(
+export const superAdminProcedure = audited.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
@@ -334,7 +369,7 @@ export function isOpsRole(role: string | null | undefined): boolean {
   return role === "technical_operator" || isAdminRole(role);
 }
 
-export const opsProcedure = t.procedure.use(
+export const opsProcedure = audited.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 

@@ -44,3 +44,4 @@ export * from "./privacy";
 export * from "./srsDelivery";
 export * from "./srsSales";
 export * from "./srsGovernance";
+export * from "./srsOps";

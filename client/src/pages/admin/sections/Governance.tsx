@@ -11,14 +11,17 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import OperationalPage, { DataTable, StatusPill, type DataColumn } from "./_shared/OperationalPage";
 import { FormCard, Panel, SmallButton, TabBar, shortDateTime } from "./_shared/Forms";
+import { AuditSearch, Health } from "./GovernanceExtras";
 
-type Tab = "incidents" | "alerts" | "ai" | "config" | "reports";
+type Tab = "incidents" | "alerts" | "ai" | "config" | "reports" | "audit" | "health";
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "incidents", label: "Incidents" },
   { id: "alerts", label: "Alert rules" },
   { id: "ai", label: "AI agents" },
   { id: "config", label: "Configuration" },
   { id: "reports", label: "Scheduled reports" },
+  { id: "audit", label: "Audit search" },
+  { id: "health", label: "Platform health" },
 ];
 
 const sevTone = (s: string) => (s === "critical" ? "err" : s === "high" ? "warn" : s === "medium" ? "info" : "muted");
@@ -38,6 +41,8 @@ export function Governance() {
           {tab === "ai" && <AiGovernance />}
           {tab === "config" && <Configuration />}
           {tab === "reports" && <Reports />}
+          {tab === "audit" && <AuditSearch />}
+          {tab === "health" && <Health />}
         </div>
       }
     />

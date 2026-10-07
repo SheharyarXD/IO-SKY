@@ -162,3 +162,31 @@ describe("notification category mapping", () => {
     expect(categoryForNotificationKind("something_new")).toBe("account");
   });
 });
+
+import { csvCell, toCsv, escapeLike } from "../shared/srsRules";
+
+describe("CSV export", () => {
+  it("quotes cells with commas, quotes and line breaks", () => {
+    expect(csvCell("a,b")).toBe('"a,b"');
+    expect(csvCell('say "hi"')).toBe('"say ""hi"""');
+    expect(csvCell("two\nlines")).toBe('"two\nlines"');
+    expect(csvCell(null)).toBe("");
+    expect(csvCell(new Date("2026-10-07T00:00:00Z"))).toBe("2026-10-07T00:00:00.000Z");
+  });
+  it("defuses spreadsheet formulas", () => {
+    expect(csvCell("=HYPERLINK(\"http://x\")")).toBe('"\'=HYPERLINK(""http://x"")"');
+    expect(csvCell("+1")).toBe("'+1");
+    expect(csvCell("-2")).toBe("'-2");
+    expect(csvCell("@SUM(A1)")).toBe("'@SUM(A1)");
+    expect(csvCell("normal-text")).toBe("normal-text");
+  });
+  it("builds a header and rows", () => {
+    expect(toCsv(["a", "b"], [{ a: 1, b: "x,y" }])).toBe('a,b\r\n1,"x,y"\r\n');
+  });
+});
+
+describe("LIKE escaping", () => {
+  it("escapes wildcards and the escape character", () => {
+    expect(escapeLike("100%_\\")).toBe("100" + "\\" + "%" + "\\" + "_" + "\\" + "\\");
+  });
+});
