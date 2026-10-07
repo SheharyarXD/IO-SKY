@@ -222,6 +222,21 @@ describe.skipIf(!liveReachable)("RM-108: database constraint enforcement", () =>
   // Row-level security
   // -------------------------------------------------------------------------
   describe("row-level security", () => {
+    it("enables RLS on EVERY public table, not only the tenant-scoped ones", async () => {
+      // The tenant-scoped check below keys on an organizationId column, which the
+      // privacy request tables do not have, so they shipped without RLS and would
+      // have been readable with the publishable key. Supabase serves every public
+      // table over its REST API, so the rule has to be "all of them".
+      const rows = await sql<{ table_name: string }[]>`
+        SELECT c.relname AS table_name
+        FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'public' AND c.relkind = 'r' AND NOT c.relrowsecurity
+        ORDER BY c.relname
+      `;
+      expect(rows.map((r) => r.table_name)).toEqual([]);
+    });
+
     it("enables RLS on every tenant-scoped table", async () => {
       // Complements RM-60, which proves the policies *behave*. This proves
       // they are switched on: a table with policies but RLS disabled enforces
