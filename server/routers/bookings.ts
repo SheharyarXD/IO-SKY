@@ -17,6 +17,7 @@
  * Admin surface lives in routers/bookingAdmin.ts and is mounted under
  * `bookingAdmin.*` in routers.ts.
  */
+import { emitNotification } from "../notificationDispatcher";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -364,6 +365,8 @@ export const bookingsRouter = router({
       });
       if (emailResult.ok) await markBookingEmailSent(booking.id);
 
+      await emitNotification({ event: "DISCOVERY_CALL_REQUESTED", audience: { type: "admin" }, dedupeRef: `booking:${booking.id}`, title: `Discovery Call requested: ${booking.fullName}`, href: "/admin/strategy-calls", skipAdminFeed: true });
+
       // Owner notification — non-blocking.
       try {
         const when = new Date(booking.slotStartMs).toISOString();
@@ -434,6 +437,7 @@ export const bookingsRouter = router({
         event: "cancelled_by_guest",
         detail: input.reason ?? null,
       });
+      await emitNotification({ event: "DISCOVERY_CALL_CANCELLED", audience: { type: "admin" }, dedupeRef: `booking:${verified.bookingId}:cancelled`, title: `Discovery Call ${verified.bookingId} cancelled by the guest`, href: "/admin/strategy-calls", skipAdminFeed: true });
       await notifyOwner({
         title: `IO SKY · Booking ${verified.bookingId} cancelled by guest`,
         content: input.reason ?? "(no reason provided)",

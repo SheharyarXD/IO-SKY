@@ -209,3 +209,14 @@ export async function readPlatformHealth(): Promise<PlatformHealth> {
   }
   return base;
 }
+
+/** Recent email attempts, newest first, for the communication history view (SRS 17.13). */
+export async function listRecentEmailLog(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({ id: emailDeliveryLog.id, createdAt: emailDeliveryLog.createdAt, recipient: emailDeliveryLog.recipient, subject: emailDeliveryLog.subject, status: emailDeliveryLog.status, messageType: emailDeliveryLog.messageType, errorMessage: emailDeliveryLog.errorMessage })
+    .from(emailDeliveryLog)
+    .orderBy(desc(emailDeliveryLog.createdAt))
+    .limit(limit);
+}

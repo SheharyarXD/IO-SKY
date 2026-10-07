@@ -17,6 +17,7 @@
  */
 
 import { isReportVisibleToCustomer } from "../../shared/srsRules";
+import { emitNotification } from "../notificationDispatcher";
 import { TRPCError } from "@trpc/server";
 import { randomBytes } from "crypto";
 import { z } from "zod";
@@ -158,6 +159,7 @@ export async function runAiScanEngine(params: {
       overallScore: result.report.overallScore,
       scoredAt: new Date(),
     });
+    await emitNotification({ event: "AI_SCAN_READY_FOR_REVIEW", audience: { type: "admin" }, dedupeRef: `scan:${params.scanId}:${result.report.scoredAt}`, title: `AI Scan ready for expert review (${params.tier})`, href: "/admin/governance", skipAdminFeed: true });
     try {
       await notifyOwner({
         title: `IO SKY · AI Scan awaiting expert review (${params.tier.toUpperCase()})`,
@@ -178,6 +180,8 @@ export async function runAiScanEngine(params: {
       reportStatus: "submitted",
       errorMessage: result.error.slice(0, 1000),
     });
+    await emitNotification({ event: "AI_SCAN_ANALYSIS_EXCEPTION", audience: { type: "admin" }, dedupeRef: `scan:${params.scanId}:${Date.now()}`, title: `AI Scan analysis failed (${params.tier})`, body: result.error.slice(0, 300), href: "/admin/governance", skipAdminFeed: true });
+    await emitNotification({ event: "AI_OPERATION_FAILED", audience: { type: "admin" }, dedupeRef: `scan:${params.scanId}:${Date.now()}`, title: "An AI operation failed", skipAdminFeed: true });
     try {
       await notifyOwner({
         title: `IO SKY · AI Scan FAILED (${params.tier.toUpperCase()})`,
@@ -403,6 +407,8 @@ export const aiScansRouter = router({
             "Your scan could not be saved. Please try again in a few minutes.",
         });
       }
+
+      await emitNotification({ event: "AI_SCAN_SUBMITTED", audience: { type: "admin" }, dedupeRef: `scan:${scan.id}`, title: `AI Scan submitted (${input.tier}): ${input.company.trim()}`, href: "/admin/governance" });
 
       // The draft has served its purpose. Removed best effort: it holds personal
       // data, but a leftover row also expires on its own.

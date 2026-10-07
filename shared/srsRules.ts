@@ -367,3 +367,52 @@ export function draftExpiry(now: Date): Date {
 export function isDraftExpired(expiresAt: Date, now: Date): boolean {
   return expiresAt.getTime() <= now.getTime();
 }
+
+// ---------------------------------------------------------------------------
+// Notification dispatch policy (SRS 17, Functional Specification 35 and 37)
+// ---------------------------------------------------------------------------
+
+export type DispatchPriority = "P1" | "P2" | "P3" | "P4";
+
+/** Maps the catalogue priority onto the three existing in-app priority scales. */
+export function inAppPriority(p: DispatchPriority): "low" | "normal" | "high" | "critical" {
+  return p === "P1" ? "critical" : p === "P2" ? "high" : p === "P3" ? "normal" : "low";
+}
+
+/**
+ * Whether the catalogue asks for an email. The source text is prose
+ * ("IMMEDIATE where time-sensitive", "OPTIONAL"), so only the leading keyword
+ * is read: IMMEDIATE and MANDATORY request email, anything else stays in app.
+ * Reading further into the prose would be evaluating it at runtime, which the
+ * Functional Specification forbids.
+ */
+export function catalogueWantsEmail(emailDelivery: string): boolean {
+  return /^\s*(IMMEDIATE|MANDATORY)/i.test(emailDelivery);
+}
+
+/** Preference category implied by an event family, so opt outs and the security lock apply. */
+export function kindForFamily(family: string): string {
+  switch (family) {
+    case "security_access":
+      return "security";
+    case "payments_billing":
+      return "billing";
+    case "projects_delivery":
+      return "project";
+    case "ai_scans":
+      return "report";
+    case "discovery_calls":
+      return "booking";
+    default:
+      return "account";
+  }
+}
+
+/**
+ * The de-duplication key (Functional Specification 35). It is built from the
+ * event, the audience and recipient, and a reference the caller chooses to say
+ * what counts as "the same occurrence" (a scan id, an invoice id plus a date).
+ */
+export function buildDedupKey(parts: { eventId: string; audience: string; recipientRef: string; ref: string }): string {
+  return [parts.eventId, parts.audience, parts.recipientRef, parts.ref].map((p) => p.trim()).join("|").slice(0, 300);
+}

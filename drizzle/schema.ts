@@ -2627,3 +2627,23 @@ export const aiScanDrafts = pgTable(
   (t) => [index("ai_scan_drafts_expires_idx").on(t.expiresAt)],
 );
 export type AiScanDraft = typeof aiScanDrafts.$inferSelect;
+
+/** Append-only log of every catalogue notification emitted (migration 0027). */
+export const notificationEvents = pgTable(
+  "notification_events",
+  {
+    id: serial("id").primaryKey(),
+    eventId: varchar("eventId", { length: 16 }).notNull(),
+    eventName: varchar("eventName", { length: 80 }).notNull(),
+    /** admin | client | developer */
+    audience: varchar("audience", { length: 16 }).notNull(),
+    recipientRef: varchar("recipientRef", { length: 64 }).notNull(),
+    dedupKey: varchar("dedupKey", { length: 300 }).notNull().unique(),
+    priority: varchar("priority", { length: 4 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    emailRequested: boolean("emailRequested").default(false).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("notification_events_event_idx").on(t.eventId, t.createdAt), index("notification_events_recipient_idx").on(t.recipientRef, t.createdAt)],
+);
+export type NotificationEventRow = typeof notificationEvents.$inferSelect;

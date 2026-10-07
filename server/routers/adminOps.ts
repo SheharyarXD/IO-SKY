@@ -72,12 +72,14 @@ import {
   type OpportunityStage,
 } from "../../shared/srsRules";
 import { recordAdminEvent } from "./admin";
+import { emitNotification } from "../notificationDispatcher";
 import { CALL_OUTCOMES, REPORT_STATUSES, checkCallOutcome, toCsv, type ReportStatus } from "../../shared/srsRules";
-import { addTaskCommentByStaff, getCallOutcome, listTaskCommentsForStaff, recordCallOutcome } from "../db";
+import { addTaskCommentByStaff, getCallOutcome, listNotificationEvents, listRecentEmailLog, listTaskCommentsForStaff, recordCallOutcome } from "../db";
 import { dispatchSimpleEmail, escapeHtml } from "../email";
 import {
   assignAiScanReviewer,
   getAiScanById,
+  getProjectOrganizationId,
   listAiScanStatusEvents,
   listAiScansForReview,
   transitionAiScanReport,
@@ -370,6 +372,10 @@ export const adminOpsRouter = router({
       if (a === "milestone_mismatch") fail("BAD_REQUEST", "That milestone does not belong to this project.");
       if (!a) fail("INTERNAL_SERVER_ERROR", "Could not request the approval.");
       await recordAdminEvent({ ctx, reason: `admin.project_approval.request(${a.id}:project=${input.projectId})` });
+      const orgId = await getProjectOrganizationId(input.projectId);
+      if (orgId) {
+        await emitNotification({ event: "PROJECT_REVIEW_REQUESTED", audience: { type: "client", organizationId: orgId }, dedupeRef: `approval:${a.id}`, title: `Your approval is needed: ${input.title}`, href: "/client-portal/approvals" });
+      }
       return a;
     }),
 
@@ -473,8 +479,16 @@ export const adminOpsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const i = await createIncident({ ...input, description: input.description ?? null, reportedByUserId: ctx.user.id });
       if (!i) fail("INTERNAL_SERVER_ERROR", "Could not register the incident.");
-      if (i.severity === "critical" || i.severity === "high") {
-        await createAdminNotification({ kind: "incident", title: `${i.severity} ${i.category} incident: ${i.title}`, href: "/admin/security", priority: i.severity === "critical" ? "critical" : "high" });
+      if (i.severity === "critical") {
+        await emitNotification({
+          event: i.category === "security" ? "SECURITY_ALERT_CRITICAL" : "PLATFORM_INCIDENT_CRITICAL",
+          audience: { type: "admin" },
+          dedupeRef: `incident:${i.id}`,
+          title: `Critical ${i.category} incident: ${i.title}`,
+          href: "/admin/governance",
+        });
+      } else if (i.severity === "high") {
+        await createAdminNotification({ kind: "incident", title: `High ${i.category} incident: ${i.title}`, href: "/admin/governance", priority: "high" });
       }
       await recordAdminEvent({ ctx, reason: `ops.incident.create(${i.id}:${i.category}:${i.severity})` });
       return i;
@@ -592,6 +606,9 @@ export const adminOpsRouter = router({
       const scan = await assignAiScanReviewer(input.scanId, input.reviewerUserId);
       if (!scan) fail("NOT_FOUND", "AI Scan not found.");
       await recordAdminEvent({ ctx, reason: `admin.ai_scan.assign_reviewer(${input.scanId}->${input.reviewerUserId ?? "none"})` });
+      if (input.reviewerUserId) {
+        await emitNotification({ event: "AI_SCAN_REVIEW_ASSIGNED", audience: { type: "admin" }, dedupeRef: `scan:${input.scanId}:reviewer:${input.reviewerUserId}`, title: `AI Scan SCN-${input.scanId} assigned for review`, href: "/admin/governance" });
+      }
       return { ok: true as const };
     }),
 
@@ -628,13 +645,17 @@ export const adminOpsRouter = router({
           console.error("[aiScan] publish email failed:", err);
         }
       }
-      await createAdminNotification({
-        kind: `ai_scan_${input.to}`,
-        title: `AI Scan ${input.to.replace(/_/g, " ")}: ${label}`,
-        body: input.note ?? null,
-        href: "/admin/governance",
-        priority: input.to === "revision_required" ? "high" : "normal",
-      });
+      const eventFor = { approved: "AI_SCAN_REVIEW_APPROVED", revision_required: "AI_SCAN_CHANGES_REQUIRED", published: "AI_SCAN_PUBLISHED" } as const;
+      if (input.to !== "archived") {
+        await emitNotification({
+          event: eventFor[input.to],
+          audience: { type: "admin" },
+          dedupeRef: `scan:${res.scan.id}:${input.to}:${Date.now()}`,
+          title: `AI Scan ${input.to.replace(/_/g, " ")}: ${label}`,
+          body: input.note ?? null,
+          href: "/admin/governance",
+        });
+      }
       return { ok: true as const, status: input.to };
     }),
 
@@ -706,4 +727,11 @@ export const adminOpsRouter = router({
       await recordAdminEvent({ ctx, reason: `admin.task_comment(${input.taskId})` });
       return c;
     }),
+
+  /** Who was told what, and every email attempt (SRS 17.13). Admin only: recipients are personal data. */
+  communicationHistory: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.communication_history" });
+    const [events, emails] = await Promise.all([listNotificationEvents(100), listRecentEmailLog(100)]);
+    return { events, emails };
+  }),
 });

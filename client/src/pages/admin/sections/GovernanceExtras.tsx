@@ -182,3 +182,40 @@ export function Health() {
     </>
   );
 }
+
+export function CommunicationHistory() {
+  const q = trpc.adminOps.communicationHistory.useQuery();
+  type Ev = NonNullable<typeof q.data>["events"][number];
+  type Em = NonNullable<typeof q.data>["emails"][number];
+  return (
+    <>
+      <Panel title="Notifications emitted (append only)">
+        <DataTable
+          columns={[
+            { key: "createdAt", header: "When", render: (r: Ev) => shortDateTime(r.createdAt) },
+            { key: "eventId", header: "Event", render: (r: Ev) => <span className="font-mono">{r.eventId}</span> },
+            { key: "title", header: "What" },
+            { key: "recipientRef", header: "To", render: (r: Ev) => <span className="font-mono text-white/60">{r.recipientRef}</span> },
+            { key: "priority", header: "Priority", render: (r: Ev) => <StatusPill tone={r.priority === "P1" ? "err" : r.priority === "P2" ? "warn" : "muted"} label={r.priority} /> },
+            { key: "emailRequested", header: "Email", render: (r: Ev) => (r.emailRequested ? "requested" : "in app") },
+          ]}
+          rows={q.data?.events ?? []}
+          emptyLabel="No notifications have been emitted yet."
+        />
+      </Panel>
+      <Panel title="Email attempts">
+        <DataTable
+          columns={[
+            { key: "createdAt", header: "When", render: (r: Em) => shortDateTime(r.createdAt) },
+            { key: "recipient", header: "To" },
+            { key: "subject", header: "Subject" },
+            { key: "messageType", header: "Type" },
+            { key: "status", header: "Result", render: (r: Em) => <StatusPill tone={r.status === "failed" || r.status === "bounced" || r.status === "complained" ? "err" : "ok"} label={r.status} /> },
+          ]}
+          rows={q.data?.emails ?? []}
+          emptyLabel="No emails recorded."
+        />
+      </Panel>
+    </>
+  );
+}

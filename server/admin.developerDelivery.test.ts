@@ -93,7 +93,7 @@ describe("admin developer delivery", () => {
     m.listAllDeveloperProjects.mockResolvedValueOnce([{ id: 1, code: "P1", name: "Alpha", status: "active" }]);
     m.assignDeveloperToProject.mockResolvedValueOnce({ assignment: { id: 9 }, created: true });
     await admin().admin.assignDeveloperToProject({ projectId: 1, developerId: 5, assignmentRole: "lead" });
-    expect(m.appendDeveloperNotification).toHaveBeenCalledWith(expect.objectContaining({ developerId: 5, kind: "assignment" }));
+    expect(m.appendDeveloperNotification).toHaveBeenCalledWith(expect.objectContaining({ developerId: 5, kind: "project" }));
     expect(m.appendDeveloperAudit).toHaveBeenCalledWith(expect.objectContaining({ event: "assignment.created" }));
     expect(m.appendLoginAudit).toHaveBeenCalledWith(
       expect.objectContaining({ reason: expect.stringContaining("admin.developer.assign(5->P1:lead)") }),

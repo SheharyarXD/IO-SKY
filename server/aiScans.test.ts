@@ -42,6 +42,8 @@ vi.mock("./db", () => {
       },
     ),
     listRecentAiScans: vi.fn(async () => state.aiScans),
+    recordNotificationEvent: vi.fn(async () => true),
+    createAdminNotification: vi.fn(async () => null),
   };
 });
 

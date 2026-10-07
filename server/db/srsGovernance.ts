@@ -506,6 +506,10 @@ export async function evaluateAlertRules(now = new Date()): Promise<AlertEvaluat
       href: "/admin/security",
       priority: rule.severity === "critical" ? "critical" : "high",
     });
+    // Imported lazily: the dispatcher itself depends on this module.
+    const { emitNotification } = await import("../notificationDispatcher");
+    const eventFor: Record<string, string> = { failed_logins: "SUSPICIOUS_ACCESS_EVENT", webhook_failures: "INTEGRATION_FAILURE", email_failures: "INTEGRATION_FAILURE", open_critical_incidents: "SYSTEM_GOVERNANCE_ISSUE" };
+    await emitNotification({ event: eventFor[rule.metric] ?? "SYSTEM_GOVERNANCE_ISSUE", audience: { type: "admin" }, dedupeRef: `rule:${rule.key}:${now.getTime()}`, title: `Alert: ${rule.title}`, body: `${count} in the last ${rule.windowMinutes} minutes (threshold ${rule.threshold}).`, href: "/admin/governance", skipAdminFeed: true });
     if (rule.metric === "failed_logins" || rule.metric === "open_critical_incidents") {
       if (rule.metric === "failed_logins") {
         await createIncident({

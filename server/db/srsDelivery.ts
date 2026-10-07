@@ -246,3 +246,10 @@ export async function archiveClientProject(
   await db.update(clientProjects).set({ archivedAt: new Date() }).where(eq(clientProjects.id, projectId));
   return { ok: true };
 }
+
+export async function getProjectOrganizationId(projectId: number): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const r = await db.select({ o: clientProjects.organizationId }).from(clientProjects).where(eq(clientProjects.id, projectId)).limit(1);
+  return r[0]?.o ?? null;
+}

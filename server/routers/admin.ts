@@ -93,6 +93,7 @@ import {
   resetMaintenanceCache,
 } from "../db";
 import { runWorkflowsForTrigger } from "../workflowEngine";
+import { emitNotification } from "../notificationDispatcher";
 import { notifyDeveloper } from "../notifications";
 
 import { dispatchWebhooksForTrigger } from "../webhookDispatcher";
@@ -1498,6 +1499,7 @@ export const adminRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not create invoice." });
       }
       await recordAdminEvent({ ctx, reason: `admin.invoice.create(org=${input.organizationId})` });
+      await emitNotification({ event: "INVOICE_CREATED_ACTION_REQUIRED", audience: { type: "client", organizationId: input.organizationId }, dedupeRef: `invoice:${invoice.id}`, title: `New invoice ${invoice.number}`, href: "/client-portal/billing" });
       return invoice;
     }),
 
@@ -1743,14 +1745,7 @@ export const adminRouter = router({
       }
       // Tell the developer only when something actually changed for them.
       if (result.created) {
-        await notifyDeveloper({
-          developerId: input.developerId,
-          kind: "assignment",
-          title: `New project assignment: ${project.name}`,
-          body: `You were assigned to ${project.code} as ${input.assignmentRole}.`,
-          href: "/developer-workspace/projects",
-          priority: "normal",
-        });
+        await emitNotification({ event: "PROJECT_ASSIGNED", audience: { type: "developer", developerId: input.developerId }, dedupeRef: `project:${input.projectId}:${input.developerId}:${Date.now()}`, title: `New project assignment: ${project.name}`, body: `You were assigned to ${project.code} as ${input.assignmentRole}.`, href: "/developer-workspace/projects" });
       }
       await appendDeveloperAudit({
         developerId: input.developerId,
@@ -2171,6 +2166,7 @@ export const adminRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Milestone not found for this project." });
       }
       await recordAdminEvent({ ctx, reason: `admin.milestone.update(${id})` });
+      await emitNotification({ event: "PROJECT_MILESTONE_UPDATED", audience: { type: "client", organizationId }, dedupeRef: `milestone:${id}:${milestone.status}`, title: `Milestone updated: ${milestone.title}`, href: "/client-portal/projects" });
       return milestone;
     }),
 
@@ -2277,6 +2273,7 @@ export const adminRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "create_failed" });
       }
       await recordAdminEvent({ ctx, reason: `admin.org.create(${org.id}:${org.slug})` });
+      await emitNotification({ event: "CLIENT_ACCOUNT_CREATED", audience: { type: "admin" }, dedupeRef: `org:${org.id}`, title: `Client organization created: ${org.name}`, href: "/admin/clients" });
       return org;
     }),
 
@@ -2334,6 +2331,10 @@ export const adminRouter = router({
         ctx,
         reason: `admin.user.set_role(${input.userId}: ${before.role} -> ${input.role})`,
       });
+      await emitNotification({ event: "SIGNIFICANT_PERMISSION_CHANGE", audience: { type: "admin" }, dedupeRef: `user:${input.userId}:${before.role}->${input.role}:${Date.now()}`, title: `Role changed for user #${input.userId}: ${before.role} to ${input.role}`, href: "/admin/users" });
+      if (input.role === "admin" || input.role === "super_admin") {
+        await emitNotification({ event: "PRIVILEGED_ACCESS_GRANTED", audience: { type: "admin" }, dedupeRef: `user:${input.userId}:${input.role}:${Date.now()}`, title: `Privileged access granted to user #${input.userId} (${input.role})`, href: "/admin/users" });
+      }
       return { id: after.id, role: after.role };
     }),
 

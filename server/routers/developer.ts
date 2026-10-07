@@ -43,6 +43,7 @@ import {
   updateUserMfaMethod,
 } from "../db";
 import { storageGetSignedUrl } from "../storage";
+import { emitNotification } from "../notificationDispatcher";
 import { TASK_COMMENT_KINDS, checkTimeEntry } from "../../shared/srsRules";
 import { getRequestMeta } from "../_core/requestMeta";
 
@@ -216,6 +217,9 @@ export const developerRouter = router({
         ip: meta.ip,
         userAgent: meta.userAgent,
       });
+      if (input.status === "blocked") {
+        await emitNotification({ event: "PROJECT_BLOCKER_CREATED", audience: { type: "admin" }, dedupeRef: `task:${input.taskId}:blocked:${Math.floor(Date.now() / 3_600_000)}`, title: `${ctx.developer.profile.fullName} is blocked on task #${input.taskId}`, href: "/admin/delivery", skipAdminFeed: true });
+      }
       await notifyOwner({
         title: "Developer task status changed",
         content: `${ctx.developer.profile.fullName} marked task #${input.taskId} as ${input.status}.`,

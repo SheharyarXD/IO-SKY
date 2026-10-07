@@ -10,6 +10,7 @@
  *   bookings.cancel/reschedule/noShow      — admin-driven lifecycle changes
  *   reminders.tick                         — manual reminder dispatch (Heartbeat does this too)
  */
+import { emitNotification } from "../notificationDispatcher";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, router } from "../_core/trpc";
@@ -186,6 +187,7 @@ export const bookingAdminRouter = router({
         actorOpenId: ctx.user?.openId ?? null,
         detail: input.reason ?? null,
       });
+      await emitNotification({ event: "DISCOVERY_CALL_CANCELLED", audience: { type: "admin" }, dedupeRef: `booking:${booking.id}:cancelled`, title: `Discovery Call ${booking.publicRef} cancelled by an admin`, href: "/admin/strategy-calls", skipAdminFeed: true });
       await notifyOwner({
         title: `IO SKY · Booking ${booking.publicRef} cancelled by admin`,
         content: [

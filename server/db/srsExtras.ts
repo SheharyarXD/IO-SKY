@@ -189,3 +189,38 @@ export async function purgeExpiredAiScanDrafts(now = new Date()): Promise<number
   const rows = await db.delete(aiScanDrafts).where(lt(aiScanDrafts.expiresAt, now)).returning({ id: aiScanDrafts.id });
   return rows.length;
 }
+
+// ---------------------------------------------------------------------------
+// Notification emission log
+// ---------------------------------------------------------------------------
+
+import { notificationEvents } from "../../drizzle/schema";
+
+/**
+ * Records an emission. Returns true when this is the first time (so the caller
+ * should deliver) and false when the same occurrence was already recorded.
+ * The unique dedupKey makes the check and the write one atomic statement, so two
+ * concurrent triggers cannot both win.
+ */
+export async function recordNotificationEvent(args: {
+  eventId: string;
+  eventName: string;
+  audience: "admin" | "client" | "developer";
+  recipientRef: string;
+  dedupKey: string;
+  priority: string;
+  title: string;
+  emailRequested: boolean;
+}): Promise<boolean> {
+  const db = await getDb();
+  // Without a database nothing can be de-duplicated; deliver rather than drop.
+  if (!db) return true;
+  const rows = await db.insert(notificationEvents).values(args).onConflictDoNothing({ target: notificationEvents.dedupKey }).returning({ id: notificationEvents.id });
+  return rows.length > 0;
+}
+
+export async function listNotificationEvents(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(notificationEvents).orderBy(sql`${notificationEvents.createdAt} desc`, sql`${notificationEvents.id} desc`).limit(limit);
+}

@@ -11,10 +11,10 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import OperationalPage, { DataTable, StatusPill, type DataColumn } from "./_shared/OperationalPage";
 import { FormCard, Panel, SmallButton, TabBar, shortDateTime } from "./_shared/Forms";
-import { AuditSearch, Health } from "./GovernanceExtras";
+import { AuditSearch, CommunicationHistory, Health } from "./GovernanceExtras";
 import { AiScanReview } from "./AiScanReview";
 
-type Tab = "incidents" | "alerts" | "ai" | "config" | "reports" | "audit" | "health" | "scanreview";
+type Tab = "incidents" | "alerts" | "ai" | "config" | "reports" | "audit" | "health" | "scanreview" | "comms";
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "scanreview", label: "AI Scan review" },
   { id: "incidents", label: "Incidents" },
@@ -24,6 +24,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "reports", label: "Scheduled reports" },
   { id: "audit", label: "Audit search" },
   { id: "health", label: "Platform health" },
+  { id: "comms", label: "Communication history" },
 ];
 
 const sevTone = (s: string) => (s === "critical" ? "err" : s === "high" ? "warn" : s === "medium" ? "info" : "muted");
@@ -46,6 +47,7 @@ export function Governance() {
           {tab === "reports" && <Reports />}
           {tab === "audit" && <AuditSearch />}
           {tab === "health" && <Health />}
+          {tab === "comms" && <CommunicationHistory />}
         </div>
       }
     />
