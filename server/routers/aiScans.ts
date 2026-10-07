@@ -18,6 +18,7 @@
 
 import { isReportVisibleToCustomer } from "../../shared/srsRules";
 import { guardAiScanRun } from "../aiGovernance";
+import { dispatchSimpleEmail, escapeHtml } from "../email";
 import { emitNotification } from "../notificationDispatcher";
 import { TRPCError } from "@trpc/server";
 import { randomBytes } from "crypto";
@@ -416,6 +417,22 @@ export const aiScansRouter = router({
         });
       }
 
+      // SRS 9.9 / catalogue AS-03: the customer gets a confirmation. Best effort; it never blocks the scan.
+      try {
+        const base = process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://iosky.com";
+        const link = `${base}/ai-scan/result/${reportToken}`;
+        await dispatchSimpleEmail({
+          to: input.email.trim().toLowerCase(),
+          subject: "We received your IO SKY AI Scan",
+          html: `<p>Hello ${escapeHtml(input.fullName.trim())},</p><p>Thank you. Your AI Scan has been received. An IO SKY expert reviews every report before it is released, and we will email you as soon as yours is ready.</p><p>You can check progress here: <a href="${link}">${link}</a></p><p>IO SKY</p>`,
+          text: `Hello ${input.fullName.trim()},\n\nThank you. Your AI Scan has been received. An IO SKY expert reviews every report before it is released, and we will email you as soon as yours is ready.\n\nCheck progress: ${link}\n\nIO SKY`,
+          refHeader: `ai-scan-received:${scan.id}`,
+          messageType: "notification",
+          relatedRef: `ai-scan:${scan.id}`,
+        });
+      } catch (err) {
+        console.warn("[aiScans.submitQuestionnaire] confirmation email failed:", err);
+      }
       await emitNotification({ event: "AI_SCAN_SUBMITTED", audience: { type: "admin" }, dedupeRef: `scan:${scan.id}`, title: `AI Scan submitted (${input.tier}): ${input.company.trim()}`, href: "/admin/governance" });
 
       // The draft has served its purpose. Removed best effort: it holds personal

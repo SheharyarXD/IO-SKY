@@ -20,6 +20,7 @@ import {
 } from "../db";
 import type { ScheduledReport } from "../../drizzle/schema";
 import { runDueScheduledWorkflows } from "../workflowEngine";
+import { refreshSecurityPolicy } from "./policy";
 
 /**
  * Paths that must keep working while maintenance is on. Health must, or the
@@ -157,7 +158,9 @@ export async function runDueScheduledReports(now = new Date()): Promise<{ sent: 
 const TICK_MS = 5 * 60_000;
 
 export function startOperationsJobs(): void {
+  void refreshSecurityPolicy();
   setInterval(() => {
+    void refreshSecurityPolicy();
     evaluateAlertRules().catch((err) => console.warn("[alerts] evaluation tick failed:", err));
     runDueScheduledReports().catch((err) => console.warn("[scheduledReports] tick failed:", err));
     runDueScheduledWorkflows().catch((err) => console.warn("[scheduledWorkflows] tick failed:", err));

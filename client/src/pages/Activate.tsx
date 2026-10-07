@@ -41,13 +41,14 @@ export default function Activate() {
   if (details.isLoading || !details.data) return shell(<p className="text-sm text-white/60">Checking your invitation…</p>);
 
   const d = details.data;
-  const strength = password ? checkPasswordStrength(password, d.email) : null;
+  const minLen = d.passwordMinLength ?? MIN_PASSWORD_LENGTH;
+  const strength = password ? checkPasswordStrength(password, d.email, minLen) : null;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (password !== confirm) return setError("The two passwords do not match.");
-    const s = checkPasswordStrength(password, d.email);
+    const s = checkPasswordStrength(password, d.email, minLen);
     if (!s.ok) return setError(s.reason);
     if (!accepted) return setError("Please accept the agreements to continue.");
     try {
@@ -76,7 +77,7 @@ export default function Activate() {
         <label htmlFor="act-pw" className="text-xs text-white/60 block mb-1">Password</label>
         <Input id="act-pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required aria-describedby="act-pw-hint" />
         <p id="act-pw-hint" className={`mt-1 text-xs ${strength && !strength.ok ? "text-amber-300" : "text-white/45"}`}>
-          {strength && !strength.ok ? strength.reason : `At least ${MIN_PASSWORD_LENGTH} characters, with letters and numbers.`}
+          {strength && !strength.ok ? strength.reason : `At least ${minLen} characters, with letters and numbers.`}
         </p>
       </div>
       <div>

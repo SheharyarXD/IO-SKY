@@ -110,6 +110,11 @@ function withDerivedRows(rows: PlatformSetting[]): PlatformSetting[] {
   );
 }
 
+const POLICY_SETTINGS = [
+  { section: "security", key: "security.session_hours", title: "Session length (hours)", description: "How long a new sign in lasts, from 1 to 24. Applies to sessions created after the change.", value: "12" },
+  { section: "security", key: "security.password_min_length", title: "Minimum password length", description: "Minimum characters for a new password, from 8 to 128. Applies to accounts activated after the change.", value: "12" },
+];
+
 const MAINTENANCE_SETTING = {
   section: "operations",
   key: "operations.maintenance_mode",
@@ -125,8 +130,8 @@ export async function listPlatformSettings(): Promise<PlatformSetting[]> {
   if (existing.length > 0) {
     // Settings added after the first seed (the maintenance toggle) would
     // otherwise never exist on a database that was seeded earlier.
-    if (!existing.some((r) => r.key === "operations.maintenance_mode")) {
-      await db.insert(platformSettings).values(MAINTENANCE_SETTING).onConflictDoNothing();
+    if (!existing.some((r) => r.key === "operations.maintenance_mode") || !existing.some((r) => r.key === "security.session_hours")) {
+      await db.insert(platformSettings).values([MAINTENANCE_SETTING, ...POLICY_SETTINGS]).onConflictDoNothing();
       return withDerivedRows(await db.select().from(platformSettings).orderBy(asc(platformSettings.section)));
     }
     return withDerivedRows(existing);

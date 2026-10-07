@@ -94,6 +94,7 @@ import {
   resetMaintenanceCache,
 } from "../db";
 import { fireTrigger, runWorkflowsForTrigger } from "../workflowEngine";
+import { refreshSecurityPolicy } from "../_core/policy";
 import { emitNotification } from "../notificationDispatcher";
 import { notifyDeveloper } from "../notifications";
 
@@ -1962,6 +1963,7 @@ export const adminRouter = router({
         throw new TRPCError({ code: result.code, message: result.reason });
       }
       if (input.key === "operations.maintenance_mode") resetMaintenanceCache();
+      if (input.key.startsWith("security.")) await refreshSecurityPolicy();
       await recordAdminEvent({ ctx, reason: `admin.settings.update(${input.key})` });
       return { key: input.key, value: input.value.trim() };
     }),

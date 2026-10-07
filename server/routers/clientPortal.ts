@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { fireTrigger } from "../workflowEngine";
+import { categoryForNotificationKind, shouldDeliver } from "../../shared/srsRules";
 import { z } from "zod";
 import {
   appendClientMessage,
@@ -39,7 +40,7 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { notifyOwner } from "../_core/notification";
 import { storageDelete, storageGetSignedUrl, storagePut } from "../storage";
 import { clientProcedure, router } from "../_core/trpc";
-import { createAdminNotification, decideProjectApproval, listApprovalsForOrganization, listAiScanProgressForEmail, searchDocuments } from "../db";
+import { createAdminNotification, decideProjectApproval, listApprovalsForOrganization, listAiScanProgressForEmail, listNotificationPreferences, searchDocuments } from "../db";
 import { generatePublicRef } from "../_core/publicRef";
 
 const supportTicketSchema = z.object({
@@ -115,9 +116,15 @@ export const clientPortalRouter = router({
     }));
   }),
 
-  notifications: clientProcedure.query(async ({ ctx }) =>
-    listClientNotifications(ctx.organizationId),
-  ),
+  /**
+   * The organization's shared feed, narrowed by THIS user's in-app preferences
+   * (SRS 17.11). The feed is stored once per organization, so preferences apply
+   * when it is read rather than when it is written. Security is always shown.
+   */
+  notifications: clientProcedure.query(async ({ ctx }) => {
+    const [rows, prefs] = await Promise.all([listClientNotifications(ctx.organizationId), listNotificationPreferences(ctx.user.id)]);
+    return rows.filter((n) => shouldDeliver({ category: categoryForNotificationKind(n.kind), channel: "in_app", prefs }));
+  }),
   /** Milestone 2 §2.7 — real Notification Center mark-as-read (bell was previously non-functional). */
   markNotificationRead: clientProcedure
     .input(z.object({ notificationId: z.number().int().positive(), read: z.boolean().default(true) }))

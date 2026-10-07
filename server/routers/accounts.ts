@@ -24,6 +24,7 @@ import { roleBasedDestination } from "../_core/oauth";
 import { ACTIVATION_AGREEMENT_KINDS, checkPasswordStrength, roleRequiresMfa } from "../../shared/srsRules";
 import { activateAccount, appendLoginAudit, getInvitationByToken, getLiveAgreementVersion, recordAgreementAcceptance } from "../db";
 import { emitNotification } from "../notificationDispatcher";
+import { getPasswordMinLength } from "../_core/policy";
 
 const isActivationRateLimited = createRateLimiter(10);
 
@@ -53,6 +54,7 @@ export const accountsRouter = router({
       email: found.invitation.email,
       role: found.invitation.role,
       mfaRequired: roleRequiresMfa(found.invitation.role),
+      passwordMinLength: getPasswordMinLength(),
       agreements: await liveAgreements(),
       expiresAt: found.invitation.expiresAt,
     };
@@ -75,7 +77,7 @@ export const accountsRouter = router({
       const found = await getInvitationByToken(input.token);
       if (!found || found.state !== "pending") throw new TRPCError({ code: "NOT_FOUND", message: INVALID_LINK });
 
-      const strength = checkPasswordStrength(input.password, found.invitation.email);
+      const strength = checkPasswordStrength(input.password, found.invitation.email, getPasswordMinLength());
       if (!strength.ok) throw new TRPCError({ code: "BAD_REQUEST", message: strength.reason });
 
       const agreements = await liveAgreements();

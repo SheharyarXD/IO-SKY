@@ -22,7 +22,20 @@ export const DEFAULT_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const MIN_SESSION_TTL_MS = 5 * 60 * 1000;
 const MAX_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
+/**
+ * A security policy set in the admin console (SRS 24.12). When present it wins
+ * over SESSION_TTL_HOURS, which stays as the fallback for a fresh install. Set by
+ * the server's policy refresh, never by client code.
+ */
+let sessionPolicyHours: number | null = null;
+export function setSessionPolicyHours(hours: number | null): void {
+  sessionPolicyHours = hours !== null && Number.isFinite(hours) && hours > 0 ? hours : null;
+}
+
 export function getSessionTtlMs(): number {
+  if (sessionPolicyHours !== null) {
+    return Math.min(MAX_SESSION_TTL_MS, Math.max(MIN_SESSION_TTL_MS, sessionPolicyHours * 60 * 60 * 1000));
+  }
   const raw = process.env.SESSION_TTL_HOURS?.trim();
   if (!raw) return DEFAULT_SESSION_TTL_MS;
   const hours = Number(raw);

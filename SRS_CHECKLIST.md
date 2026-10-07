@@ -12,17 +12,17 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 121 of 155 criteria complete (78.1%)
+## Status: 124 of 155 criteria complete (80.0%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 121 | 78.1% |
-| 🔶 Partial | 26 | 16.8% |
-| ⏭ Not started | 3 | 1.9% |
+| ✅ Done | 124 | 80.0% |
+| 🔶 Partial | 24 | 15.5% |
+| ⏭ Not started | 2 | 1.3% |
 | ⛔ Blocked | 5 | 3.2% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **86.5%**.
+Counting a Partial as half: **87.7%**.
 
 ## Per module
 
@@ -30,7 +30,7 @@ Counting a Partial as half: **86.5%**.
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | 1 | Public Website & Lead Experience | §7.13 | 9 | 6 | 2 | 0 | 1 |
 | 2 | Identity & Authentication | §8.16 | 9 | 9 | 0 | 0 | 0 |
-| 3 | AI Scan Platform | §9.11 | 9 | 5 | 2 | 0 | 2 |
+| 3 | AI Scan Platform | §9.11 | 9 | 6 | 1 | 0 | 2 |
 | 4 | Client Portal | §10.17 | 10 | 10 | 0 | 0 | 0 |
 | 5 | Developer Portal | §11.15 | 8 | 8 | 0 | 0 | 0 |
 | 6 | Admin Portal | §12.17 | 10 | 9 | 1 | 0 | 0 |
@@ -38,17 +38,17 @@ Counting a Partial as half: **86.5%**.
 | 8 | CRM & Sales Management | §14.15 | 8 | 8 | 0 | 0 | 0 |
 | 9 | Project & Delivery Management | §15.18 | 8 | 7 | 1 | 0 | 0 |
 | 10 | Commercial Billing & Subscription | §16.15 | 7 | 5 | 0 | 0 | 2 |
-| 11 | Notifications & Communication | §17.13 | 7 | 4 | 2 | 1 | 0 |
+| 11 | Notifications & Communication | §17.13 | 7 | 5 | 1 | 1 | 0 |
 | 12 | File & Document Management | §18.14 | 7 | 5 | 2 | 0 | 0 |
 | 13 | AI Intelligence Layer | §19.14 | 7 | 4 | 3 | 0 | 0 |
 | 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 7 | 0 | 0 | 0 |
 | 15 | Analytics & Business Intelligence | §21.14 | 7 | 4 | 3 | 0 | 0 |
 | 16 | Integration & API Management | §22.13 | 7 | 5 | 1 | 1 | 0 |
 | 17 | Workflow & Business Process Management | §23.15 | 7 | 7 | 0 | 0 | 0 |
-| 18 | Platform Configuration & System Administration | §24.15 | 6 | 5 | 0 | 1 | 0 |
+| 18 | Platform Configuration & System Administration | §24.15 | 6 | 6 | 0 | 0 | 0 |
 | 19 | Platform Operations & Maintenance | §25.14 | 6 | 5 | 1 | 0 | 0 |
 | 20 | Global Non-Functional Requirements | §26.18 | 6 | 1 | 5 | 0 | 0 |
-| | **Total** | | **155** | **121** | **26** | **3** | **5** |
+| | **Total** | | **155** | **124** | **24** | **2** | **5** |
 
 ---
 
@@ -92,7 +92,7 @@ Counting a Partial as half: **86.5%**.
 | SRS-03.6 | Reports are published only after approval | ✅ | Publish requires Approved. The public report and PDF stay hidden until Published (BR-016); existing ready scans were backfilled as Published. |
 | SRS-03.7 | Published reports are accessible through the Client Portal | ✅ | Client reports section |
 | SRS-03.8 | All workflow stages are recorded in the audit log | ✅ | Every report status change, including the engine's, writes an append only ai_scan_status_events row with the actor. |
-| SRS-03.9 | Notifications are delivered at each defined milestone | 🔶 | Not every milestone emits |
+| SRS-03.9 | Notifications are delivered at each defined milestone | ✅ | Customer confirmation on submission, admin events for review, changes, approval and publication, and the customer is emailed on publication. |
 
 ## Module 4: Client Portal (§10.17)
 
@@ -196,7 +196,7 @@ Counting a Partial as half: **86.5%**.
 | --- | --- | :---: | --- |
 | SRS-11.1 | Notifications are generated for all defined business events | 🔶 | Dispatcher built and tested for all 84 events: validation, de-duplication, priority, email policy, preferences. About 20 events are wired to real triggers today; the rest belong to features that do not exist yet (payments, IVR, integrations). |
 | SRS-11.2 | Email and in-app notifications are delivered successfully | ✅ | Admin bell, client and developer in-app feeds, and email per the catalogue policy; delivery failures recorded. |
-| SRS-11.3 | User notification preferences are respected | 🔶 | Per user, per category, per channel; honoured for email and developer in-app. The client in-app feed is shared by the organization, so it is not filtered. |
+| SRS-11.3 | User notification preferences are respected | ✅ | Per user, category and channel: honoured for email, developer in-app and, at read time, the shared client feed. Security cannot be switched off. |
 | SRS-11.4 | Communication history is maintained | ✅ | Append only emission log plus the email delivery log, shown in Governance, Communication history. |
 | SRS-11.5 | Notification templates function correctly | ⏭ | Held by open decision OPD-001 |
 | SRS-11.6 | Delivery failures are recorded | ✅ | emailDeliveryFailures |
@@ -282,7 +282,7 @@ Counting a Partial as half: **86.5%**.
 | SRS-18.2 | Administrative permissions are enforced | ✅ |  |
 | SRS-18.3 | Configuration history is maintained | ✅ | config_history is append only; screen shows from, to, result, reason. |
 | SRS-18.4 | Platform settings remain consistent | ✅ | Every change is validated, derived values are locked, and history is append only. |
-| SRS-18.5 | Security policies are configurable | ⏭ | Settings are labels, not enforced policy |
+| SRS-18.5 | Security policies are configurable | ✅ | Session length and minimum password length are settings that actually drive new sessions and new accounts; validated, audited and kept in history. MFA requirements and the security notification rule are fixed by the SRS rather than optional. |
 | SRS-18.6 | AI configuration functions correctly | ✅ | Agents, permissions, approval requirement and versioned prompts are managed and enforced at run time. |
 
 ## Module 19: Platform Operations & Maintenance (§25.14)
