@@ -11,7 +11,7 @@
 --
 -- AUDIT IMMUTABILITY (BR-020, SRS 20)
 -- Section at the end. UPDATE is always refused. DELETE is refused only when it
--- is issued directly: pg_trigger_depth() is 0 for a direct statement and above
+-- is issued directly: pg_trigger_depth() is 1 inside this trigger for a direct statement and above
 -- 0 when the delete is the cascade of a foreign key, which is how
 -- booking_audit rows legitimately disappear with their booking. A naive
 -- BEFORE DELETE trigger would have made deleting any booking impossible.
@@ -344,9 +344,9 @@ BEGIN
     RAISE EXCEPTION 'audit table % is append only: UPDATE refused', TG_TABLE_NAME
       USING ERRCODE = 'restrict_violation';
   END IF;
-  -- A cascade from a parent row runs inside the RI trigger, so the depth is
-  -- above zero. A direct DELETE is depth zero and is refused.
-  IF TG_OP = 'DELETE' AND pg_trigger_depth() = 0 THEN
+  -- Inside this trigger the depth is already 1 for a direct DELETE. A cascade from a parent row runs inside the RI trigger, so the depth is
+  -- 2 or more and is allowed.
+  IF TG_OP = 'DELETE' AND pg_trigger_depth() <= 1 THEN
     RAISE EXCEPTION 'audit table % is append only: DELETE refused', TG_TABLE_NAME
       USING ERRCODE = 'restrict_violation';
   END IF;
