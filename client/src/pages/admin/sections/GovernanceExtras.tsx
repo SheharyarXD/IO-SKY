@@ -122,6 +122,7 @@ function KeyValues({ rows }: { rows: Array<[string, string]> }) {
 
 export function Health() {
   const q = trpc.adminOps.platformHealth.useQuery(undefined, { refetchInterval: 30_000 });
+  const deploys = trpc.adminOps.deployments.useQuery();
   const h = q.data;
   if (!h) return <div className="text-[12.5px] text-white/55">{q.isLoading ? "Loading…" : "Health data is unavailable."}</div>;
   type Hook = (typeof h.integrations.webhooks)[number];
@@ -175,6 +176,18 @@ export function Health() {
             emptyLabel="No webhooks registered."
           />
         </div>
+      </Panel>
+      <Panel title="Release history">
+        <DataTable
+          columns={[
+            { key: "startedAt", header: "Started", render: (r: NonNullable<typeof deploys.data>[number]) => shortDateTime(r.startedAt) },
+            { key: "commitSha", header: "Commit", render: (r: NonNullable<typeof deploys.data>[number]) => <span className="font-mono">{r.commitSha ? r.commitSha.slice(0, 10) : "not provided"}</span> },
+            { key: "environment", header: "Environment" },
+            { key: "nodeVersion", header: "Node" },
+          ]}
+          rows={deploys.data ?? []}
+          emptyLabel="No release has been recorded yet. Each production start adds a row."
+        />
       </Panel>
       <Panel title="Open incidents">
         <KeyValues rows={[["Security", String(h.openIncidents.security)], ["Operational", String(h.openIncidents.operational)]]} />

@@ -73,8 +73,8 @@ import {
 } from "../../shared/srsRules";
 import { recordAdminEvent } from "./admin";
 import { emitNotification } from "../notificationDispatcher";
-import { complianceSummary, evaluateCompliance } from "../../shared/srsRules";
-import { AI_SCAN_AGENT_KEY, decideLatestAiExecutionForSubject, readComplianceInputs } from "../db";
+import { EXPORT_DATASETS, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
+import { AI_SCAN_AGENT_KEY, decideLatestAiExecutionForSubject, listDeployments, readComplianceInputs, readExportDataset, readMonthlyHistory } from "../db";
 import { fireTrigger } from "../workflowEngine";
 import { CALL_OUTCOMES, REPORT_STATUSES, checkCallOutcome, toCsv, type ReportStatus } from "../../shared/srsRules";
 import { addTaskCommentByStaff, getCallOutcome, listNotificationEvents, listRecentEmailLog, listTaskCommentsForStaff, recordCallOutcome } from "../db";
@@ -753,4 +753,16 @@ export const adminOpsRouter = router({
     const checks = evaluateCompliance(await readComplianceInputs());
     return { checks, summary: complianceSummary(checks), generatedAt: Date.now() };
   }),
+
+  /** Twelve months of leads, paid revenue and won deals (SRS 21.10). */
+  history: adminProcedure.query(async () => readMonthlyHistory(12)),
+
+  /** CSV export of a fixed dataset (SRS 21.9). Audited, and formula defused like the audit export. */
+  exportDataset: adminProcedure.input(z.object({ dataset: z.enum(EXPORT_DATASETS) })).mutation(async ({ ctx, input }) => {
+    const { columns, rows } = await readExportDataset(input.dataset);
+    await recordAdminEvent({ ctx, reason: `admin.export.${input.dataset}(rows=${rows.length})` });
+    return { csv: toCsv(columns, rows), rows: rows.length };
+  }),
+
+  deployments: opsProcedure.query(async () => listDeployments(20)),
 });

@@ -12,17 +12,17 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 102 of 155 criteria complete (65.8%)
+## Status: 113 of 155 criteria complete (72.9%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 102 | 65.8% |
-| 🔶 Partial | 45 | 29.0% |
+| ✅ Done | 113 | 72.9% |
+| 🔶 Partial | 34 | 21.9% |
 | ⏭ Not started | 3 | 1.9% |
 | ⛔ Blocked | 5 | 3.2% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **80.3%**.
+Counting a Partial as half: **83.9%**.
 
 ## Per module
 
@@ -31,24 +31,24 @@ Counting a Partial as half: **80.3%**.
 | 1 | Public Website & Lead Experience | §7.13 | 9 | 6 | 2 | 0 | 1 |
 | 2 | Identity & Authentication | §8.16 | 9 | 8 | 1 | 0 | 0 |
 | 3 | AI Scan Platform | §9.11 | 9 | 5 | 2 | 0 | 2 |
-| 4 | Client Portal | §10.17 | 10 | 8 | 2 | 0 | 0 |
+| 4 | Client Portal | §10.17 | 10 | 9 | 1 | 0 | 0 |
 | 5 | Developer Portal | §11.15 | 8 | 7 | 1 | 0 | 0 |
-| 6 | Admin Portal | §12.17 | 10 | 8 | 2 | 0 | 0 |
+| 6 | Admin Portal | §12.17 | 10 | 9 | 1 | 0 | 0 |
 | 7 | Super Admin Portal | §13.18 | 10 | 7 | 3 | 0 | 0 |
 | 8 | CRM & Sales Management | §14.15 | 8 | 8 | 0 | 0 | 0 |
-| 9 | Project & Delivery Management | §15.18 | 8 | 4 | 4 | 0 | 0 |
+| 9 | Project & Delivery Management | §15.18 | 8 | 5 | 3 | 0 | 0 |
 | 10 | Commercial Billing & Subscription | §16.15 | 7 | 5 | 0 | 0 | 2 |
 | 11 | Notifications & Communication | §17.13 | 7 | 4 | 2 | 1 | 0 |
-| 12 | File & Document Management | §18.14 | 7 | 3 | 4 | 0 | 0 |
+| 12 | File & Document Management | §18.14 | 7 | 4 | 3 | 0 | 0 |
 | 13 | AI Intelligence Layer | §19.14 | 7 | 4 | 3 | 0 | 0 |
-| 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 6 | 1 | 0 | 0 |
-| 15 | Analytics & Business Intelligence | §21.14 | 7 | 2 | 5 | 0 | 0 |
+| 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 7 | 0 | 0 | 0 |
+| 15 | Analytics & Business Intelligence | §21.14 | 7 | 4 | 3 | 0 | 0 |
 | 16 | Integration & API Management | §22.13 | 7 | 5 | 1 | 1 | 0 |
 | 17 | Workflow & Business Process Management | §23.15 | 7 | 6 | 1 | 0 | 0 |
-| 18 | Platform Configuration & System Administration | §24.15 | 6 | 3 | 2 | 1 | 0 |
-| 19 | Platform Operations & Maintenance | §25.14 | 6 | 2 | 4 | 0 | 0 |
+| 18 | Platform Configuration & System Administration | §24.15 | 6 | 4 | 1 | 1 | 0 |
+| 19 | Platform Operations & Maintenance | §25.14 | 6 | 5 | 1 | 0 | 0 |
 | 20 | Global Non-Functional Requirements | §26.18 | 6 | 1 | 5 | 0 | 0 |
-| | **Total** | | **155** | **102** | **45** | **3** | **5** |
+| | **Total** | | **155** | **113** | **34** | **3** | **5** |
 
 ---
 
@@ -107,7 +107,7 @@ Counting a Partial as half: **80.3%**.
 | SRS-04.7 | Invoices are available | ✅ |  |
 | SRS-04.8 | Messaging functions correctly | ✅ | Send, read receipts, history; E2E covered |
 | SRS-04.9 | Notifications are delivered successfully | ✅ | Project, billing and approval events route through the dispatcher to the right audience. |
-| SRS-04.10 | All activities are recorded in the audit log where required | 🔶 |  |
+| SRS-04.10 | All activities are recorded in the audit log where required | ✅ | Client portal messages, tickets and approval decisions are recorded centrally; document actions audit in their handlers. |
 
 ## Module 5: Developer Portal (§11.15)
 
@@ -135,7 +135,7 @@ Counting a Partial as half: **80.3%**.
 | SRS-06.7 | Billing information is available | ✅ | billing, createInvoice |
 | SRS-06.8 | Operational dashboards display accurate information | 🔶 | Executive Overview now shows real compliance, AI governance, alerts, automation, pipeline, health and pending work. Only the Campaigns panel and Campaigns page remain labelled sample data; there is no campaign module. |
 | SRS-06.9 | Notifications function correctly | ✅ | Admin bell with unread count, mark read, and catalogue events with de-duplication. |
-| SRS-06.10 | All required audit events are recorded | 🔶 |  |
+| SRS-06.10 | All required audit events are recorded | ✅ | Same enforced coverage for every admin mutation. |
 
 ## Module 7: Super Admin Portal (§13.18)
 
@@ -175,7 +175,7 @@ Counting a Partial as half: **80.3%**.
 | SRS-09.4 | Project documentation is securely managed | 🔶 | Storage unblocked as above; awaiting the production key and a UI walk through. |
 | SRS-09.5 | Automated workflows execute correctly | 🔶 | Engine exists; no project automations wired |
 | SRS-09.6 | Notifications are delivered successfully | ✅ | Project, billing and approval events route through the dispatcher to the right audience. |
-| SRS-09.7 | Audit events are recorded for all business critical actions | 🔶 |  |
+| SRS-09.7 | Audit events are recorded for all business critical actions | ✅ | Enforced by the audit coverage test. |
 | SRS-09.8 | Completed projects are archived according to platform policies | ✅ | Only completed projects with no pending approvals; archived projects leave active views, never deleted. |
 
 ## Module 10: Commercial Billing & Subscription (§16.15)
@@ -212,7 +212,7 @@ Counting a Partial as half: **80.3%**.
 | SRS-12.4 | Approval workflows function as specified | ✅ | reviewDocument |
 | SRS-12.5 | Search returns authorized results only | ✅ | Client search is scoped to the caller's organization by the server; admin search is admin only; wildcards escaped. |
 | SRS-12.6 | Automated document workflows execute successfully | 🔶 | Retention only |
-| SRS-12.7 | Audit records are created for all business critical document actions | 🔶 |  |
+| SRS-12.7 | Audit records are created for all business critical document actions | ✅ | Upload, download, delete and review all write audit rows; enforced by the coverage test. |
 
 ## Module 13: AI Intelligence Layer (§19.14)
 
@@ -230,7 +230,7 @@ Counting a Partial as half: **80.3%**.
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
-| SRS-14.1 | Audit records are generated for all business critical activities | 🔶 |  |
+| SRS-14.1 | Audit records are generated for all business critical activities | ✅ | A source scan test fails the build if any mutation in the admin, client, developer, booking, ops or privacy routers has no audit call and is not on the central audit list; the audit middleware records the listed ones. |
 | SRS-14.2 | Security monitoring operates continuously | ✅ | Alert rules are evaluated every five minutes and raise notifications and incidents; the compliance view re-checks live. |
 | SRS-14.3 | Compliance monitoring functions correctly | ✅ | Seven live checks (admin MFA, privacy deadlines, critical incidents, expired access, document and report review backlog, alerting). Lawful basis and breach duties await the Security and Compliance Specification. |
 | SRS-14.4 | Security incidents are managed successfully | ✅ | Incident register: register, classify severity, assign, investigate, resolve and close (resolution required). |
@@ -244,8 +244,8 @@ Counting a Partial as half: **80.3%**.
 | --- | --- | :---: | --- |
 | SRS-15.1 | Dashboards display accurate information | 🔶 |  |
 | SRS-15.2 | KPIs are calculated correctly | 🔶 | readBusinessIntelligence |
-| SRS-15.3 | Reports are generated successfully | 🔶 | Limited export |
-| SRS-15.4 | Historical analytics function correctly | 🔶 |  |
+| SRS-15.3 | Reports are generated successfully | ✅ | Scheduled email reports, plus audited CSV exports of leads, invoices, opportunities, time entries and incidents. |
+| SRS-15.4 | Historical analytics function correctly | ✅ | Twelve month series of leads, paid revenue and won deals, zero filled; verified against live data. |
 | SRS-15.5 | Dashboard permissions are enforced | ✅ |  |
 | SRS-15.6 | Scheduled reporting operates correctly | ✅ | Daily, weekly or monthly pipeline, billing, delivery and security reports by email; rows claimed before sending so instances cannot double send. |
 | SRS-15.7 | Analytics data remains consistent across the platform | 🔶 |  |
@@ -283,18 +283,18 @@ Counting a Partial as half: **80.3%**.
 | SRS-18.3 | Configuration history is maintained | ✅ | config_history is append only; screen shows from, to, result, reason. |
 | SRS-18.4 | Platform settings remain consistent | 🔶 |  |
 | SRS-18.5 | Security policies are configurable | ⏭ | Settings are labels, not enforced policy |
-| SRS-18.6 | AI configuration functions correctly | 🔶 | Read only provider state |
+| SRS-18.6 | AI configuration functions correctly | ✅ | Agents, permissions, approval requirement and versioned prompts are managed and enforced at run time. |
 
 ## Module 19: Platform Operations & Maintenance (§25.14)
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
-| SRS-19.1 | Platform monitoring operates continuously | 🔶 | Health endpoints; no monitoring service |
+| SRS-19.1 | Platform monitoring operates continuously | ✅ | Alert rules including capacity are evaluated every five minutes and raise notifications and incidents. Host level uptime monitoring is the provider's. |
 | SRS-19.2 | Maintenance procedures function correctly | ✅ | Maintenance mode setting returns 503 to everyone except sign in, admin and health, so it can always be switched off. |
 | SRS-19.3 | Backup and recovery processes are available | 🔶 | Provider managed; undocumented |
 | SRS-19.4 | Operational incidents are managed successfully | ✅ | Same incident register, operational category, available to technical operators. |
-| SRS-19.5 | Release management is operational | 🔶 | Commit and process start shown when the host provides them. No deployment history. |
-| SRS-19.6 | Capacity monitoring functions correctly | 🔶 | Memory, uptime, database size and row counts shown. No capacity thresholds or trend history yet. |
+| SRS-19.5 | Release management is operational | ✅ | Every production start records the commit and time; release history is shown under Platform health. |
+| SRS-19.6 | Capacity monitoring functions correctly | ✅ | Server memory and database size are alert rules with thresholds, evaluated every five minutes, on top of the capacity view. |
 
 ## Module 20: Global Non-Functional Requirements (§26.18)
 
@@ -324,7 +324,7 @@ Counting a Partial as half: **80.3%**.
 
 ## Before any of the new work is live
 
-1. **Migrations 0022 to 0028 are applied to the Supabase project** (0023 tables, archive column and append only audit triggers; 0024 row level security on every new table). Both are idempotent. Verified live: direct UPDATE and DELETE on audit tables are refused, a foreign key cascade still works, and the 77 test files pass against the live database.
+1. **Migrations 0022 to 0029 are applied to the Supabase project** (0023 tables, archive column and append only audit triggers; 0024 row level security on every new table). Both are idempotent. Verified live: direct UPDATE and DELETE on audit tables are refused, a foreign key cascade still works, and the 77 test files pass against the live database.
 2. Nothing here was clicked through in a browser. Each Done means built, reachable from a screen, covered by tests where the logic is pure or the permission boundary matters, and typechecked.
 
 ## What remains, and what each item needs
@@ -337,7 +337,7 @@ Counting a Partial as half: **80.3%**.
 | SRS-13.2, 13.3, 13.7 | Route further modules through the agent gate and prompt store as they gain AI features. Only the AI Scan uses AI today. |
 | SRS-06.8, 07.9, 15.1 to 15.4, 15.7 | Campaigns is the only sample panel left. It needs a campaign module, which the SRS names but never specifies. |
 | SRS-09.5 | Project specific automations: the engine and triggers exist; which automations to ship needs a business decision. |
-| SRS-07.3, 12.6, 14.1, 14.2, 14.3, 18.5 | Per operator and temporary permissions, document automations, audit coverage sweep, continuous detection, compliance monitoring, enforcing security policy values such as session length. |
+| SRS-07.3, 12.6, 18.5 | Per operator and temporary permissions, document automations, enforcing security policy values such as session length. Each needs a decision on what the policy should be; see the list below. |
 | SRS-01.2, 01.8, 20.1, 20.2, 20.4, 20.6 | Navigation, responsive and non functional sweep once the redesign inputs arrive. |
 
 **Needs something from outside**

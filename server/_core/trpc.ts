@@ -3,6 +3,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
 import type { User } from "../../drizzle/schema";
+import { shouldAuditMutation } from "../../shared/srsRules";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -44,7 +45,36 @@ const auditDenials = t.middleware(async ({ ctx, path, next }) => {
   }
   return result;
 });
-const audited = t.procedure.use(auditDenials);
+/**
+ * Records a successful mutation for the paths in shouldAuditMutation. Only
+ * success is recorded here: a refusal is already covered by auditDenials, and a
+ * failed attempt did not change anything. The write is fire and forget.
+ */
+const auditMutations = t.middleware(async ({ ctx, path, type, next }) => {
+  const result = await next();
+  if (type === "mutation" && result.ok && ctx.user && shouldAuditMutation(path)) {
+    void (async () => {
+      try {
+        const [{ appendLoginAudit }, { getRequestMeta }] = await Promise.all([import("../db"), import("./requestMeta")]);
+        const { ip, userAgent } = getRequestMeta(ctx.req);
+        await appendLoginAudit({
+          userId: ctx.user!.id,
+          identifier: ctx.user!.email ?? null,
+          provider: isAdminRole(ctx.user!.role) || ctx.user!.role === "technical_operator" ? "admin" : ctx.user!.role,
+          outcome: "success",
+          reason: `mutation:${path}`.slice(0, 200),
+          ip,
+          userAgent,
+        });
+      } catch (err) {
+        console.error("[audit] could not record a mutation:", err);
+      }
+    })();
+  }
+  return result;
+});
+
+const audited = t.procedure.use(auditDenials).use(auditMutations);
 
 /**
  * RM-57: "super_admin" is a strict superset of "admin" — every place that

@@ -7,7 +7,7 @@
  *
  * No authorisation opinion here; RBAC lives on the tRPC procedures.
  */
-import { and, asc, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, lte, sql } from "drizzle-orm";
 import {
   adminNotifications,
   aiAgents,
@@ -431,13 +431,15 @@ const DEFAULT_ALERT_RULES: Array<Pick<AlertRule, "key" | "title" | "metric" | "t
   { key: "webhook_failure_burst", title: "Webhook deliveries failing", metric: "webhook_failures", threshold: 5, windowMinutes: 60, severity: "medium" },
   { key: "email_failure_burst", title: "Email deliveries failing", metric: "email_failures", threshold: 5, windowMinutes: 60, severity: "high" },
   { key: "open_critical_incidents", title: "Critical incident left open", metric: "open_critical_incidents", threshold: 1, windowMinutes: 240, severity: "critical" },
+  { key: "memory_high", title: "Server memory high", metric: "memory_mb", threshold: 900, windowMinutes: 60, severity: "high" },
+  { key: "database_size_high", title: "Database size approaching its limit", metric: "database_mb", threshold: 400, windowMinutes: 1440, severity: "high" },
 ];
 
 export async function listAlertRules(): Promise<AlertRule[]> {
   const db = await getDb();
   if (!db) return [];
-  const existing = await db.select().from(alertRules).orderBy(asc(alertRules.id));
-  if (existing.length > 0) return existing;
+  // Idempotent: a rule added in a later release reaches databases seeded earlier,
+  // and a rule an operator edited or disabled is never overwritten (conflict ignored).
   await db.insert(alertRules).values(DEFAULT_ALERT_RULES).onConflictDoNothing();
   return db.select().from(alertRules).orderBy(asc(alertRules.id));
 }
@@ -466,6 +468,16 @@ async function countMetric(metric: AlertMetric, windowMinutes: number, now: Date
   if (metric === "email_failures") {
     const r = await db.select({ n: sql<number>`count(*)::int` }).from(emailDeliveryLog).where(and(eq(emailDeliveryLog.status, "failed"), gte(emailDeliveryLog.createdAt, since)));
     return Number(r[0]?.n ?? 0);
+  }
+  if (metric === "memory_mb") return Math.round(process.memoryUsage().rss / 1024 / 1024);
+  if (metric === "database_mb") {
+    try {
+      const res = (await db.execute(sql`select pg_database_size(current_database()) as bytes`)) as unknown as Array<{ bytes: string | number }> & { rows?: Array<{ bytes: string | number }> };
+      const bytes = Number((res[0] ?? res.rows?.[0])?.bytes ?? 0);
+      return Math.round(bytes / 1024 / 1024);
+    } catch {
+      return 0;
+    }
   }
   const r = await db.select({ n: sql<number>`count(*)::int` }).from(incidents).where(and(eq(incidents.severity, "critical"), sql`${incidents.status} in ('open','investigating')`));
   return Number(r[0]?.n ?? 0);
@@ -502,14 +514,14 @@ export async function evaluateAlertRules(now = new Date()): Promise<AlertEvaluat
     await createAdminNotification({
       kind: "alert",
       title: `Alert: ${rule.title}`,
-      body: `${count} in the last ${rule.windowMinutes} minutes (threshold ${rule.threshold}).`,
-      href: "/admin/security",
+      body: rule.metric === "memory_mb" || rule.metric === "database_mb" ? `Currently ${count} MB (threshold ${rule.threshold} MB).` : `${count} in the last ${rule.windowMinutes} minutes (threshold ${rule.threshold}).`,
+      href: "/admin/governance",
       priority: rule.severity === "critical" ? "critical" : "high",
     });
     // Imported lazily: the dispatcher itself depends on this module.
     const { emitNotification } = await import("../notificationDispatcher");
-    const eventFor: Record<string, string> = { failed_logins: "SUSPICIOUS_ACCESS_EVENT", webhook_failures: "INTEGRATION_FAILURE", email_failures: "INTEGRATION_FAILURE", open_critical_incidents: "SYSTEM_GOVERNANCE_ISSUE" };
-    await emitNotification({ event: eventFor[rule.metric] ?? "SYSTEM_GOVERNANCE_ISSUE", audience: { type: "admin" }, dedupeRef: `rule:${rule.key}:${now.getTime()}`, title: `Alert: ${rule.title}`, body: `${count} in the last ${rule.windowMinutes} minutes (threshold ${rule.threshold}).`, href: "/admin/governance", skipAdminFeed: true });
+    const eventFor: Record<string, string> = { failed_logins: "SUSPICIOUS_ACCESS_EVENT", webhook_failures: "INTEGRATION_FAILURE", email_failures: "INTEGRATION_FAILURE", open_critical_incidents: "SYSTEM_GOVERNANCE_ISSUE", memory_mb: "PLATFORM_COMPONENT_ACTION_REQUIRED", database_mb: "PLATFORM_COMPONENT_ACTION_REQUIRED" };
+    await emitNotification({ event: eventFor[rule.metric] ?? "SYSTEM_GOVERNANCE_ISSUE", audience: { type: "admin" }, dedupeRef: `rule:${rule.key}:${now.getTime()}`, title: `Alert: ${rule.title}`, body: rule.metric === "memory_mb" || rule.metric === "database_mb" ? `Currently ${count} MB (threshold ${rule.threshold} MB).` : `${count} in the last ${rule.windowMinutes} minutes (threshold ${rule.threshold}).`, href: "/admin/governance", skipAdminFeed: true });
     if (rule.metric === "failed_logins" || rule.metric === "open_critical_incidents") {
       if (rule.metric === "failed_logins") {
         await createIncident({
@@ -567,7 +579,7 @@ export async function setScheduledReportEnabled(id: number, enabled: boolean): P
 export async function claimDueScheduledReports(now = new Date()): Promise<ScheduledReport[]> {
   const db = await getDb();
   if (!db) return [];
-  const due = await db.select().from(scheduledReports).where(and(eq(scheduledReports.enabled, true), sql`${scheduledReports.nextRunAt} <= ${now}`));
+  const due = await db.select().from(scheduledReports).where(and(eq(scheduledReports.enabled, true), lte(scheduledReports.nextRunAt, now)));
   const won: ScheduledReport[] = [];
   for (const r of due) {
     const next = nextRunAfter(r.cadence as Cadence, now);
@@ -679,4 +691,31 @@ export async function decideLatestAiExecutionForSubject(args: { agentKey: string
   if (!rows[0]) return "none_awaiting";
   const r = await decideAiExecution({ executionId: rows[0].id, approve: args.approve, userId: args.userId, note: args.note });
   return r === "ok" ? "ok" : "none_awaiting";
+}
+
+// ---------------------------------------------------------------------------
+// Release tracking
+// ---------------------------------------------------------------------------
+
+import { deployments } from "../../drizzle/schema";
+
+/** Called once at process start. Best effort: tracking a release must never stop the server booting. */
+export async function recordDeployment(): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await db.insert(deployments).values({
+      commitSha: process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT ?? process.env.SOURCE_COMMIT ?? null,
+      environment: process.env.NODE_ENV ?? "development",
+      nodeVersion: process.version,
+    });
+  } catch (err) {
+    console.warn("[deployments] could not record this start:", err);
+  }
+}
+
+export async function listDeployments(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(deployments).orderBy(desc(deployments.startedAt), desc(deployments.id)).limit(limit);
 }

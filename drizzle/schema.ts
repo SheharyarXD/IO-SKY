@@ -2656,3 +2656,17 @@ export const notificationEvents = pgTable(
   (t) => [index("notification_events_event_idx").on(t.eventId, t.createdAt), index("notification_events_recipient_idx").on(t.recipientRef, t.createdAt)],
 );
 export type NotificationEventRow = typeof notificationEvents.$inferSelect;
+
+/** One row per process start: which build went live and when (migration 0029). */
+export const deployments = pgTable(
+  "deployments",
+  {
+    id: serial("id").primaryKey(),
+    commitSha: varchar("commitSha", { length: 64 }),
+    environment: varchar("environment", { length: 32 }).notNull(),
+    nodeVersion: varchar("nodeVersion", { length: 32 }).notNull(),
+    startedAt: timestamp("startedAt").defaultNow().notNull(),
+  },
+  (t) => [index("deployments_started_idx").on(t.startedAt)],
+);
+export type Deployment = typeof deployments.$inferSelect;

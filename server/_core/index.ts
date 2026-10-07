@@ -19,6 +19,7 @@ import { createContext } from "./context";
 import { serveStatic } from "./staticServer";
 import { dispatchDueBookingReminders } from "./bookingReminders";
 import { registerMaintenanceMode, startOperationsJobs } from "./operations";
+import { recordDeployment } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -175,6 +176,8 @@ async function startServer() {
   // (each reminder row is claimed via markBookingReminderSent) and a no-op
   // when no database is configured, so this is safe to always start.
   startOperationsJobs();
+  // Production only: a dev server restarting on every save would bury the real releases.
+  if (isProduction) void recordDeployment();
   const REMINDER_INTERVAL_MS = 5 * 60_000;
   setInterval(() => {
     dispatchDueBookingReminders().catch((err) =>

@@ -144,6 +144,9 @@ export const ALERT_METRICS = [
   "webhook_failures",
   "email_failures",
   "open_critical_incidents",
+  // Capacity (SRS 25.13): current process memory and database size, in megabytes.
+  "memory_mb",
+  "database_mb",
 ] as const;
 export type AlertMetric = (typeof ALERT_METRICS)[number];
 
@@ -455,3 +458,53 @@ export function evaluateCompliance(i: ComplianceInputs): ComplianceCheck[] {
 export function complianceSummary(checks: ComplianceCheck[]): { pass: number; warn: number; fail: number } {
   return { pass: checks.filter((c) => c.status === "pass").length, warn: checks.filter((c) => c.status === "warn").length, fail: checks.filter((c) => c.status === "fail").length };
 }
+
+// ---------------------------------------------------------------------------
+// Central mutation audit (SRS 20.5, BR-020)
+// ---------------------------------------------------------------------------
+
+/**
+ * Mutations that the audit middleware records for the caller, because their
+ * handlers do not write an audit row themselves. Everything under an admin
+ * router audits inside its own handler (a test enforces that), so this list is
+ * deliberately short and explicit. Adding a path here is how a new unaudited
+ * business action is brought under the audit trail.
+ */
+const AUDITED_MUTATION_PREFIXES = ["bookingAdmin."];
+const AUDITED_MUTATION_PATHS = new Set([
+  "ops.acknowledgeSecurityEvent",
+  "clientPortal.sendMessage",
+  "clientPortal.createTicket",
+  "clientPortal.decideApproval",
+  "privacy.revokeOfficer",
+  "privacy.grantOfficer",
+  "profile.updateDisplayName",
+]);
+
+export function shouldAuditMutation(path: string): boolean {
+  return AUDITED_MUTATION_PATHS.has(path) || AUDITED_MUTATION_PREFIXES.some((p) => path.startsWith(p));
+}
+
+// ---------------------------------------------------------------------------
+// Monthly history (SRS 21.10)
+// ---------------------------------------------------------------------------
+
+/** The last n calendar months as YYYY-MM, oldest first, so a series with gaps still lines up. */
+export function lastMonths(n: number, now: Date): string[] {
+  const out: string[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    out.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+  }
+  return out;
+}
+
+/** Fill the months a query had no rows for with zero, in the order given. */
+export function fillMonthly<T extends { month: string }>(months: string[], rows: T[], zero: Omit<T, "month">): T[] {
+  const byMonth = new Map(rows.map((r) => [r.month, r]));
+  return months.map((m) => byMonth.get(m) ?? ({ month: m, ...zero } as T));
+}
+
+/** Datasets an admin may export as CSV (SRS 21.9). Fixed, so an export cannot reach a table nobody chose to expose. */
+export const EXPORT_DATASETS = ["leads", "invoices", "opportunities", "time_entries", "incidents"] as const;
+export type ExportDataset = (typeof EXPORT_DATASETS)[number];

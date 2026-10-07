@@ -376,6 +376,22 @@ function Subscriptions() {
 }
 
 function Finance() {
+  const history = trpc.adminOps.history.useQuery();
+  const exporter = trpc.adminOps.exportDataset.useMutation();
+  const download = async (dataset: "leads" | "invoices" | "opportunities" | "time_entries" | "incidents") => {
+    try {
+      const r = await exporter.mutateAsync({ dataset });
+      const url = URL.createObjectURL(new Blob([r.csv], { type: "text/csv;charset=utf-8" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${dataset}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${r.rows} rows.`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
   const q = trpc.adminOps.financialSummary.useQuery();
   const f = q.data;
   if (!f) return <div className="text-[12.5px] text-white/55">{q.isLoading ? "Loading…" : "Financial data is unavailable."}</div>;
@@ -387,6 +403,7 @@ function Finance() {
     ["Monthly recurring revenue", `${money(f.monthlyRecurringCents)} from ${f.activeSubscriptions} subscriptions`],
   ];
   return (
+    <>
     <Panel title="Financial summary">
       <dl className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {rows.map(([k, v]) => (
@@ -398,5 +415,26 @@ function Finance() {
       </dl>
       <p className="mt-3 text-[11.5px] text-white/45">Computed from invoice and subscription records. Payment processing is not connected, so "paid" reflects what an admin has recorded.</p>
     </Panel>
+    <Panel title="Last twelve months">
+      <DataTable
+        columns={[
+          { key: "month", header: "Month" },
+          { key: "leads", header: "New leads", align: "right" },
+          { key: "paidCents", header: "Paid revenue", align: "right", render: (r: NonNullable<typeof history.data>[number] & { id: string }) => money(r.paidCents) },
+          { key: "wonDeals", header: "Deals won", align: "right" },
+        ]}
+        rows={(history.data ?? []).map((h) => ({ ...h, id: h.month }))}
+        emptyLabel="No history yet."
+      />
+    </Panel>
+    <Panel title="Export data (CSV)">
+      <div className="flex flex-wrap gap-2">
+        {(["leads", "invoices", "opportunities", "time_entries", "incidents"] as const).map((d) => (
+          <SmallButton key={d} onClick={() => download(d)}>{d.replace("_", " ")}</SmallButton>
+        ))}
+      </div>
+      <p className="mt-2 text-[11.5px] text-white/45">Each export is recorded in the audit log. Exports are capped at 10,000 rows.</p>
+    </Panel>
+    </>
   );
 }

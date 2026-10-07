@@ -281,3 +281,24 @@ describe("compliance evaluation", () => {
     expect(evaluateCompliance({ ...clean, expiredActiveDeveloperScopes: 3 }).find((c) => c.key === "developer_scopes")?.detail).toContain("3");
   });
 });
+
+import { lastMonths, fillMonthly, ALERT_METRICS } from "../shared/srsRules";
+
+describe("monthly history helpers", () => {
+  it("lists the last n months oldest first, across a year boundary", () => {
+    expect(lastMonths(3, new Date("2027-01-15T00:00:00Z"))).toEqual(["2026-11", "2026-12", "2027-01"]);
+    expect(lastMonths(1, new Date("2026-10-31T23:59:59Z"))).toEqual(["2026-10"]);
+  });
+  it("fills missing months with zero and keeps the order", () => {
+    const rows = [{ month: "2026-09", leads: 4 }];
+    expect(fillMonthly(["2026-08", "2026-09", "2026-10"], rows, { leads: 0 })).toEqual([
+      { month: "2026-08", leads: 0 },
+      { month: "2026-09", leads: 4 },
+      { month: "2026-10", leads: 0 },
+    ]);
+  });
+  it("knows the capacity metrics", () => {
+    expect(ALERT_METRICS).toContain("memory_mb");
+    expect(ALERT_METRICS).toContain("database_mb");
+  });
+});

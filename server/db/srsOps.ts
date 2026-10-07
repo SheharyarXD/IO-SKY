@@ -11,7 +11,7 @@ import {
   webhookDeliveries,
   webhookRegistrations,
 } from "../../drizzle/schema";
-import { escapeLike } from "../../shared/srsRules";
+import { escapeLike, type ExportDataset } from "../../shared/srsRules";
 import { getDb } from "./connection";
 
 // ---------------------------------------------------------------------------
@@ -230,19 +230,67 @@ export async function readComplianceInputs(now = new Date()): Promise<import("..
     try {
       const r = (await db.execute(q)) as unknown as Array<{ n: number }> & { rows?: Array<{ n: number }> };
       return Number((r[0] ?? r.rows?.[0])?.n ?? 0);
-    } catch {
-      return 0;
+    } catch (err) {
+      // Never report a failed query as a clean zero: a check that cannot run must not pass.
+      console.error("[compliance] query failed:", err);
+      throw err;
     }
   };
   const week = new Date(now.getTime() - 7 * 86_400_000);
   const twoDays = new Date(now.getTime() - 48 * 3_600_000);
   return {
     adminsWithoutMfa: await n(sql`select count(*)::int n from users u where u.role in ('admin','super_admin') and not exists (select 1 from mfa_factors f where f."userId" = u.id and f."verifiedAt" is not null)`),
-    overduePrivacyRequests: await n(sql`select count(*)::int n from privacy_requests where "dueAt" is not null and "dueAt" < ${now} and status not in ('completed','rejected','withdrawn')`),
-    staleDocumentReviews: await n(sql`select count(*)::int n from client_documents where status = 'pending_review' and "createdAt" < ${week}`),
-    scansWaitingTooLong: await n(sql`select count(*)::int n from ai_scans where "reportStatus" = 'awaiting_expert_review' and "updatedAt" < ${twoDays}`),
+    overduePrivacyRequests: await n(sql`select count(*)::int n from privacy_requests where "dueAt" is not null and "dueAt" < ${now.toISOString()}::timestamp and status not in ('completed','rejected','withdrawn')`),
+    staleDocumentReviews: await n(sql`select count(*)::int n from client_documents where status = 'pending_review' and "createdAt" < ${week.toISOString()}::timestamp`),
+    scansWaitingTooLong: await n(sql`select count(*)::int n from ai_scans where "reportStatus" = 'awaiting_expert_review' and "updatedAt" < ${twoDays.toISOString()}::timestamp`),
     openCriticalIncidents: await n(sql`select count(*)::int n from incidents where severity = 'critical' and status in ('open','investigating')`),
     expiredActiveDeveloperScopes: await n(sql`select count(*)::int n from developer_access_scopes where status = 'active' and "expiresMs" is not null and "expiresMs" < ${now.getTime()}`),
     enabledAlertRules: await n(sql`select count(*)::int n from alert_rules where enabled`),
   };
+}
+
+/** Twelve months of leads, paid revenue and won deals (SRS 21.10). */
+export async function readMonthlyHistory(months = 12, now = new Date()) {
+  const { lastMonths, fillMonthly } = await import("../../shared/srsRules");
+  const list = lastMonths(months, now);
+  const db = await getDb();
+  const zero = { leads: 0, paidCents: 0, wonDeals: 0 };
+  if (!db) return list.map((month) => ({ month, ...zero }));
+  const since = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
+  const run = async <R,>(q: ReturnType<typeof sql>): Promise<R[]> => {
+    try {
+      return (await db.execute(q)) as unknown as R[];
+    } catch (err) {
+      console.error("[history] query failed:", err);
+      throw err;
+    }
+  };
+  const [leadsRows, paidRows, wonRows] = await Promise.all([
+    run<{ month: string; n: number }>(sql`select to_char("createdAt", 'YYYY-MM') as month, count(*)::int as n from leads where "createdAt" >= ${since.toISOString()}::timestamp group by 1`),
+    run<{ month: string; n: string }>(sql`select to_char(to_timestamp("paidMs"/1000.0), 'YYYY-MM') as month, coalesce(sum("amountCents"),0)::bigint as n from client_invoices where status = 'paid' and "paidMs" >= ${since.getTime()} group by 1`),
+    run<{ month: string; n: number }>(sql`select to_char("closedAt", 'YYYY-MM') as month, count(*)::int as n from crm_opportunities where stage = 'won' and "closedAt" >= ${since.toISOString()}::timestamp group by 1`),
+  ]);
+  const merged = new Map<string, { month: string; leads: number; paidCents: number; wonDeals: number }>();
+  const get = (m: string) => merged.get(m) ?? (merged.set(m, { month: m, ...zero }), merged.get(m)!);
+  for (const r of leadsRows) get(r.month).leads = Number(r.n);
+  for (const r of paidRows) get(r.month).paidCents = Number(r.n);
+  for (const r of wonRows) get(r.month).wonDeals = Number(r.n);
+  return fillMonthly(list, [...merged.values()], zero);
+}
+
+
+/** Fixed column lists per dataset, so an export can never include a column nobody chose to expose. */
+export async function readExportDataset(name: ExportDataset): Promise<{ columns: string[]; rows: Array<Record<string, unknown>> }> {
+  const db = await getDb();
+  if (!db) return { columns: [], rows: [] };
+  const table: Record<ExportDataset, { sql: string; columns: string[] }> = {
+    leads: { sql: 'select id, "fullName", email, company, source, interest, "createdAt" from leads order by "createdAt" desc limit 10000', columns: ["id", "fullName", "email", "company", "source", "interest", "createdAt"] },
+    invoices: { sql: 'select id, number, "organizationId", description, "amountCents", currency, status, "issuedMs", "paidMs" from client_invoices order by id desc limit 10000', columns: ["id", "number", "organizationId", "description", "amountCents", "currency", "status", "issuedMs", "paidMs"] },
+    opportunities: { sql: 'select id, title, stage, "valueCents", currency, "expectedCloseDate", "closedAt", "createdAt" from crm_opportunities order by id desc limit 10000', columns: ["id", "title", "stage", "valueCents", "currency", "expectedCloseDate", "closedAt", "createdAt"] },
+    time_entries: { sql: 'select id, "developerId", "projectId", "workDate", minutes, status, "createdAt" from developer_time_entries order by id desc limit 10000', columns: ["id", "developerId", "projectId", "workDate", "minutes", "status", "createdAt"] },
+    incidents: { sql: 'select id, category, title, severity, status, "createdAt", "closedAt" from incidents order by id desc limit 10000', columns: ["id", "category", "title", "severity", "status", "createdAt", "closedAt"] },
+  };
+  const def = table[name];
+  const res = (await db.execute(sql.raw(def.sql))) as unknown as Array<Record<string, unknown>>;
+  return { columns: def.columns, rows: res };
 }
