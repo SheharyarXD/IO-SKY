@@ -1,4 +1,4 @@
-> **SUPERSEDED. Do not use or share the figures below.** The per module counts in this file were estimates made by probing the code. `SRS_CHECKLIST.md` replaces it and was checked criterion by criterion: **79 of 155 complete (51.0%)** after the SRS completion work (it was 45 of 155 before it), not the 75 (48.4%) stated here. The structural findings in this file (fabricated data, the two SRS contradictions, the three external blockers) still stand.
+> **SUPERSEDED. Do not use or share the figures below.** The per module counts in this file were estimates made by probing the code. `SRS_CHECKLIST.md` replaces it and was checked criterion by criterion: **the current count in SRS_CHECKLIST.md** after the SRS completion work (it was 45 of 155 before it), not the 75 (48.4%) stated here. The structural findings in this file (fabricated data, the two SRS contradictions, the three external blockers) still stand.
 
 # SRS Traceability Matrix — Master SRS v1.1 against the built platform
 
