@@ -1013,3 +1013,68 @@ A redesign is the one workstream where the task list is not the hard part. These
 
 Until those five are answered this workstream is sized as a placeholder. The task list above is the
 shape of the work, not an estimate.
+
+---
+
+# Workstream 4.9: Commercial, mailbox and AI additions requested after the SRS
+
+These came from the client's reply of 8 October 2026. They are **not in Master SRS v1.1**, so they are
+tracked here and not in `SRS_CHECKLIST.md`. What the reply asked for that the SRS does cover (Stripe as
+the payment provider, OpenAI as the AI provider, Zoho as the sending mailbox) is being built under the
+existing SRS criteria and is not repeated here.
+
+Task IDs continue from RM-437.
+
+## 4.9.1 VAT and invoice branding
+
+| ID | Task | Status | Note |
+|---|---|---|---|
+| RM-438 | VAT identification number validation for EU numbers | ⏭ | Against the EU VIES service. Result and time of check stored. |
+| RM-439 | VAT calculation for EU and international customers | ⏭ | Domestic rate, EU reverse charge, and outside the EU. Rules need confirming with the client's accountant. |
+| RM-440 | Customer VAT number captured on the organization record | ⏭ | |
+| RM-441 | Customer VAT number shown on every invoice | ⏭ | |
+| RM-442 | IO SKY VAT number and company details shown on every invoice | ⏭ | Needs the client's number and legal details. |
+| RM-443 | VAT data stored securely and access controlled | ⏭ | Same access rules and audit as other financial data. |
+| RM-444 | VAT data searchable by number, customer and period | ⏭ | |
+| RM-445 | Branded invoice PDF template (logo, colours, fonts) | ⏭ | Needs the brand assets from the client. |
+| RM-446 | Template editable by an administrator, with legally required fields locked | ⏭ | |
+| RM-447 | Customer company details on the invoice | ⏭ | |
+| RM-448 | Every generated invoice stored as a PDF and searchable | ⏭ | |
+| RM-449 | Manual invoice creation with the same template | ⏭ | |
+
+## 4.9.2 Mailbox integration and email templates
+
+| ID | Task | Status | Note |
+|---|---|---|---|
+| RM-450 | Connect a Gmail mailbox (Google OAuth) | ⏭ | Needs a Google Cloud project created or authorized by the client. |
+| RM-451 | Connect an Outlook mailbox (Microsoft OAuth) | ⏭ | Needs an Azure app registration created or authorized by the client. |
+| RM-452 | Send from and read from a connected mailbox | ⏭ | Scope to be agreed: sending only, or sending and reading. |
+| RM-453 | Token storage encrypted, refresh and revocation handled | ⏭ | |
+| RM-454 | Email template manager: create, edit, archive | ⏭ | Relates to open decision OPD-001, which sets the template structure. |
+| RM-455 | Template variables and preview | ⏭ | |
+| RM-456 | Use a template when sending manually | ⏭ | |
+| RM-457 | Template versions and audit trail | ⏭ | |
+
+## 4.9.3 AI model routing
+
+| ID | Task | Status | Note |
+|---|---|---|---|
+| RM-458 | Task complexity classes: simple, medium, complex | ⏭ | |
+| RM-459 | Routing rules mapping each class to a configured model | ⏭ | Model names stay configurable, not hard coded. |
+| RM-460 | Every AI call declares its class, with a safe default | ⏭ | |
+| RM-461 | Cost and latency recorded per call and per model | ⏭ | Extends the append only AI execution log. |
+| RM-462 | Fallback to a stronger model on low confidence or failure | ⏭ | |
+| RM-463 | Administrator view of routing and spend | ⏭ | |
+
+## 4.9.4 Professional translation review
+
+| ID | Task | Status | Note |
+|---|---|---|---|
+| RM-464 | Review status per language and text: machine, in review, approved | ⏭ | |
+| RM-465 | Record reviewer, date and the exact text version approved | ⏭ | A changed text returns to in review. |
+| RM-466 | Audit trail of every status change | ⏭ | |
+| RM-467 | Unapproved translations blocked from customer facing use | ⏭ | Policy to confirm with the client. |
+| RM-468 | Reviewer role and hand off to an external translator | ⏭ | The review itself is human work done outside the system. |
+| RM-469 | Review status report per language | ⏭ | |
+
+**Counts for Workstream 4.9:** 32 tasks (RM-438 to RM-469), 0 done.
