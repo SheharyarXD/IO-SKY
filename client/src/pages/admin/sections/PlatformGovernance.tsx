@@ -11,12 +11,13 @@ import { trpc } from "@/lib/trpc";
 import { DataTable, StatusPill } from "./_shared/OperationalPage";
 import { FormCard, Panel, SmallButton, TabBar, shortDateTime } from "./_shared/Forms";
 
-type Sub = "templates" | "matrix" | "scopes" | "aiusage";
+type Sub = "templates" | "matrix" | "scopes" | "aiusage" | "integrations";
 const SUBS: Array<{ id: Sub; label: string }> = [
   { id: "templates", label: "Notification templates" },
   { id: "matrix", label: "Document matrix" },
   { id: "scopes", label: "Operator scopes" },
   { id: "aiusage", label: "AI routing and usage" },
+  { id: "integrations", label: "Integrations" },
 ];
 
 export function PlatformGovernance() {
@@ -28,6 +29,7 @@ export function PlatformGovernance() {
       {sub === "matrix" && <Matrix />}
       {sub === "scopes" && <Scopes />}
       {sub === "aiusage" && <AiUsage />}
+      {sub === "integrations" && <Integrations />}
     </div>
   );
 }
@@ -204,6 +206,7 @@ function AiUsage() {
         </div>
         <p className="mt-2 text-[12px] text-white/50">Each AI call declares its complexity and the matching model is used. Models are set by configuration, not code.{d && !d.routing.pricesConfigured ? " Prices are not configured, so cost shows as not priced." : ""}</p>
       </Panel>
+      <LeadEvaluation />
       <Panel title="Usage, last 30 days">
         <DataTable
           columns={[
@@ -216,6 +219,78 @@ function AiUsage() {
           ]}
           rows={usageRows}
           emptyLabel="No AI calls recorded yet."
+        />
+      </Panel>
+    </>
+  );
+}
+
+function Integrations() {
+  const q = trpc.adminPlatform.integrations.useQuery();
+  const test = trpc.adminPlatform.testIntegration.useMutation();
+  const rows = (q.data ?? []).map((r) => ({ ...r, id: r.key }));
+  type Row = (typeof rows)[number];
+  return (
+    <Panel title="Connected providers">
+      <DataTable
+        columns={[
+          { key: "name", header: "Provider" },
+          { key: "purpose", header: "Used for" },
+          { key: "configured", header: "State", render: (r: Row) => <StatusPill tone={(r.configured ? "ok" : "warn") as never} label={r.configured ? "configured" : "not configured"} /> },
+          { key: "missing", header: "Missing", render: (r: Row) => (r.missing.length ? r.missing.join(", ") : "none") },
+          {
+            key: "actions",
+            header: "",
+            render: (r: Row) => (
+              <SmallButton
+                disabled={!r.configured || test.isPending}
+                onClick={() =>
+                  test
+                    .mutateAsync({ key: r.key as never })
+                    .then((res) => (res.ok ? toast.success(`${r.name}: ${res.detail}`) : toast.error(`${r.name}: ${res.detail}`)))
+                    .catch((e) => toast.error(e.message))
+                }
+              >
+                Test connection
+              </SmallButton>
+            ),
+          },
+        ]}
+        rows={rows}
+        emptyLabel="No providers."
+      />
+      <p className="mt-3 text-[12px] text-white/50">Secrets are never shown here. Tests create nothing and use no paid quota. The OpenAI test confirms the key but not that the account has credit.</p>
+    </Panel>
+  );
+}
+
+function LeadEvaluation() {
+  const utils = trpc.useUtils();
+  const list = trpc.adminPlatform.leadEvaluations.useQuery();
+  const run = trpc.adminPlatform.evaluateLead.useMutation({ onSuccess: () => utils.adminPlatform.leadEvaluations.invalidate() });
+  const rows = (list.data ?? []).map((r) => ({ ...r, id: r.id }));
+  type Row = (typeof rows)[number];
+  return (
+    <>
+      <FormCard
+        title="Evaluate a lead with AI"
+        submitLabel="Evaluate"
+        successMessage="Evaluation recorded. It is a recommendation; a person decides what happens to the lead."
+        fields={[{ name: "leadId", label: "Lead id", type: "number", required: true }]}
+        onSubmit={(v) => run.mutateAsync({ leadId: Number(v.leadId) })}
+      />
+      <Panel title="Recent lead evaluations">
+        <DataTable
+          columns={[
+            { key: "subjectRef", header: "Lead" },
+            { key: "fit", header: "Fit", render: (r: Row) => r.result?.fit ?? "n/a" },
+            { key: "service", header: "Likely service", render: (r: Row) => String(r.result?.likelyService ?? "n/a").replace(/_/g, " ") },
+            { key: "summary", header: "Summary (hypothesis)", render: (r: Row) => r.result?.summary ?? "n/a" },
+            { key: "next", header: "Next step", render: (r: Row) => r.result?.nextStep ?? "n/a" },
+            { key: "createdAt", header: "When", render: (r: Row) => shortDateTime(r.createdAt) },
+          ]}
+          rows={rows}
+          emptyLabel="No evaluations yet."
         />
       </Panel>
     </>

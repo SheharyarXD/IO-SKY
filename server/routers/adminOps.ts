@@ -400,6 +400,9 @@ export const adminOpsRouter = router({
       if (orgId && (input.to === "customer_review" || input.to === "completed")) {
         await emitNotification({ event: "PROJECT_MILESTONE_UPDATED", audience: { type: "client", organizationId: orgId }, dedupeRef: `project:${input.projectId}:${input.to}`, title: `Your project moved to ${input.to.replace(/_/g, " ")}`, href: "/client-portal/projects" });
       }
+      // Project automations (SRS 15.16): administrators can attach workflows to these events.
+      void fireTrigger("project_stage_changed", { projectId: String(input.projectId), stage: input.to, previous: res.from }, String(input.projectId));
+      if (input.to === "completed") void fireTrigger("project_completed", { projectId: String(input.projectId) }, String(input.projectId));
       return { ok: true as const, from: res.from };
     }),
 

@@ -1516,6 +1516,8 @@ export const adminRouter = router({
           "invoice_created",
           "incident_created",
           "approval_decided",
+          "project_stage_changed",
+          "project_completed",
         ]),
         actionType: z.enum(["notify_owner", "audit_log"]),
         actionConfig: z.string().max(2000).optional(),
@@ -1585,6 +1587,8 @@ export const adminRouter = router({
           "invoice_created",
           "incident_created",
           "approval_decided",
+          "project_stage_changed",
+          "project_completed",
         ]),
       }),
     )

@@ -2060,6 +2060,9 @@ export const workflowDefinitionsTriggerTypeEnum = pgEnum("workflow_definitions_t
   "invoice_created",
   "incident_created",
   "approval_decided",
+  // Added in migration 0035.
+  "project_stage_changed",
+  "project_completed",
 ]);
 export const workflowDefinitionsActionTypeEnum = pgEnum("workflow_definitions_action_type", [
   "notify_owner",

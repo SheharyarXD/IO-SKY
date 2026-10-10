@@ -32,6 +32,12 @@ export async function createLead(input: InsertLead): Promise<Lead | null> {
   return rows[0] ?? null;
 }
 
+export async function getLeadById(id: number): Promise<Lead | null> {
+  const db = await getDb();
+  if (!db) return null;
+  return (await db.select().from(leads).where(eq(leads.id, id)).limit(1))[0] ?? null;
+}
+
 export async function listRecentLeads(limit = 100): Promise<Lead[]> {
   const db = await getDb();
   if (!db) return [];

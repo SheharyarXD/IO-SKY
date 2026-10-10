@@ -12,17 +12,17 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 128 of 155 criteria complete (82.6%)
+## Status: 131 of 155 criteria complete (84.5%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 128 | 82.6% |
-| 🔶 Partial | 21 | 13.5% |
+| ✅ Done | 131 | 84.5% |
+| 🔶 Partial | 18 | 11.6% |
 | ⏭ Not started | 1 | 0.6% |
 | ⛔ Blocked | 5 | 3.2% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **89.4%**.
+Counting a Partial as half: **90.3%**.
 
 ## Per module
 
@@ -34,13 +34,13 @@ Counting a Partial as half: **89.4%**.
 | 4 | Client Portal | §10.17 | 10 | 10 | 0 | 0 | 0 |
 | 5 | Developer Portal | §11.15 | 8 | 8 | 0 | 0 | 0 |
 | 6 | Admin Portal | §12.17 | 10 | 9 | 1 | 0 | 0 |
-| 7 | Super Admin Portal | §13.18 | 10 | 8 | 2 | 0 | 0 |
+| 7 | Super Admin Portal | §13.18 | 10 | 9 | 1 | 0 | 0 |
 | 8 | CRM & Sales Management | §14.15 | 8 | 8 | 0 | 0 | 0 |
-| 9 | Project & Delivery Management | §15.18 | 8 | 7 | 1 | 0 | 0 |
+| 9 | Project & Delivery Management | §15.18 | 8 | 8 | 0 | 0 | 0 |
 | 10 | Commercial Billing & Subscription | §16.15 | 7 | 5 | 0 | 0 | 2 |
 | 11 | Notifications & Communication | §17.13 | 7 | 5 | 2 | 0 | 0 |
 | 12 | File & Document Management | §18.14 | 7 | 6 | 1 | 0 | 0 |
-| 13 | AI Intelligence Layer | §19.14 | 7 | 4 | 3 | 0 | 0 |
+| 13 | AI Intelligence Layer | §19.14 | 7 | 5 | 2 | 0 | 0 |
 | 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 7 | 0 | 0 | 0 |
 | 15 | Analytics & Business Intelligence | §21.14 | 7 | 6 | 1 | 0 | 0 |
 | 16 | Integration & API Management | §22.13 | 7 | 5 | 1 | 1 | 0 |
@@ -148,7 +148,7 @@ Counting a Partial as half: **89.4%**.
 | SRS-07.5 | Security monitoring functions correctly | ✅ | AdminSecurityCenter is live |
 | SRS-07.6 | Audit logs are searchable | ✅ | Audit search by text, outcome and date, paged, CSV export with formula defusing; the export is itself audited. |
 | SRS-07.7 | Platform configuration changes are validated | ✅ | admin.updateSetting validates (ranges, on/off, derived values locked) and records every attempt in config_history. No second approver step. |
-| SRS-07.8 | Integration settings can be managed | 🔶 | Webhooks yes; provider management no |
+| SRS-07.8 | Integration settings can be managed | ✅ | Webhooks, plus a provider panel (database, Supabase, Stripe, OpenAI, email, Twilio) showing configured state and a Super Admin connection test. Keys are held in the environment and never shown. |
 | SRS-07.9 | Executive dashboards display accurate information | 🔶 | As above: all panels are live except Campaigns. |
 | SRS-07.10 | All platform wide actions are recorded in the audit log | ✅ | recordAdminEvent |
 
@@ -173,7 +173,7 @@ Counting a Partial as half: **89.4%**.
 | SRS-09.2 | Tasks, milestones, and deliverables function as specified | ✅ | Admin task creation and assignment, milestones, and deliverable upload on verified storage. |
 | SRS-09.3 | Customer approvals operate correctly | ✅ | Admin requests, client approves or sends back from the portal, tenant scoped, notifies admin (BR-019). |
 | SRS-09.4 | Project documentation is securely managed | ✅ | Same verified storage path with approval and version history. |
-| SRS-09.5 | Automated workflows execute correctly | 🔶 | Engine exists; no project automations wired |
+| SRS-09.5 | Automated workflows execute correctly | ✅ | Project stage changes and completion fire workflow triggers (project_stage_changed, project_completed). Administrators choose which automations to attach, alongside approval, invoice and opportunity triggers. |
 | SRS-09.6 | Notifications are delivered successfully | ✅ | Project, billing and approval events route through the dispatcher to the right audience. |
 | SRS-09.7 | Audit events are recorded for all business critical actions | ✅ | Enforced by the audit coverage test. |
 | SRS-09.8 | Completed projects are archived according to platform policies | ✅ | Only completed projects with no pending approvals; archived projects leave active views, never deleted. |
@@ -219,12 +219,12 @@ Counting a Partial as half: **89.4%**.
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
 | SRS-13.1 | AI Agents operate according to assigned permissions | ✅ | The AI Scan engine runs only through the registry gate: a disabled agent or missing permission stops the run and is recorded. Verified on the live database. |
-| SRS-13.2 | AI workflows execute successfully | 🔶 | Scan analysis only |
-| SRS-13.3 | AI recommendations are generated correctly | 🔶 | Scan only |
+| SRS-13.2 | AI workflows execute successfully | 🔶 | AI Scan and lead evaluation workflows are built and tested with a stub model. No live run has succeeded yet because the OpenAI account has no credit. |
+| SRS-13.3 | AI recommendations are generated correctly | 🔶 | Lead evaluation produces a recommendation with a hypothesis label and a human decision. Not yet exercised against a live model. |
 | SRS-13.4 | AI prompts are centrally managed | ✅ | The scan engine reads the active managed prompt; the language instruction is appended by code so an edit cannot remove it. |
 | SRS-13.5 | AI activities are audited | ✅ | Every scan run writes an append only execution record with the prompt version. |
 | SRS-13.6 | Human approval workflows function correctly | ✅ | A reviewer approving or sending back a report is recorded as the human decision on the AI run that drafted it. |
-| SRS-13.7 | AI services integrate successfully with platform modules | 🔶 | One module |
+| SRS-13.7 | AI services integrate successfully with platform modules | ✅ | Two modules now run through the agent registry, prompt store and execution log: the AI Scan and AI lead evaluation (SRS 14.16). |
 
 ## Module 14: Audit, Compliance & Security Monitoring (§20.14)
 
@@ -255,7 +255,7 @@ Counting a Partial as half: **89.4%**.
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
 | SRS-16.1 | APIs operate securely | ✅ | helmet, CORS, shared state rate limiting, zod |
-| SRS-16.2 | Integrations function correctly | 🔶 | Resend, Twilio, webhooks |
+| SRS-16.2 | Integrations function correctly | 🔶 | Stripe verified live (test mode, Checkout session created). OpenAI key accepted but the account has no credit. Resend, Twilio and webhooks as before. |
 | SRS-16.3 | Synchronization completes successfully | ⏭ |  |
 | SRS-16.4 | Integration monitoring is operational | ✅ | Platform health: provider configuration, 24h email result, per webhook attempts, failures and last success. |
 | SRS-16.5 | Security controls are enforced | ✅ |  |
@@ -291,7 +291,7 @@ Counting a Partial as half: **89.4%**.
 | --- | --- | :---: | --- |
 | SRS-19.1 | Platform monitoring operates continuously | ✅ | Alert rules including capacity are evaluated every five minutes and raise notifications and incidents. Host level uptime monitoring is the provider's. |
 | SRS-19.2 | Maintenance procedures function correctly | ✅ | Maintenance mode setting returns 503 to everyone except sign in, admin and health, so it can always be switched off. |
-| SRS-19.3 | Backup and recovery processes are available | 🔶 | Provider managed; undocumented |
+| SRS-19.3 | Backup and recovery processes are available | 🔶 | Procedure and gaps written in docs/BACKUP_AND_RECOVERY.md. No restore rehearsed, and the Supabase plan terms are unconfirmed. |
 | SRS-19.4 | Operational incidents are managed successfully | ✅ | Same incident register, operational category, available to technical operators. |
 | SRS-19.5 | Release management is operational | ✅ | Every production start records the commit and time; release history is shown under Platform health. |
 | SRS-19.6 | Capacity monitoring functions correctly | ✅ | Server memory and database size are alert rules with thresholds, evaluated every five minutes, on top of the capacity view. |

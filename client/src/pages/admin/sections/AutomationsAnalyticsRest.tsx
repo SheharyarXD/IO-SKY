@@ -59,7 +59,7 @@ interface WorkflowRunRow {
   ranAt: string | Date;
 }
 
-const TRIGGER_TYPES = ["document_approved", "document_rejected", "booking_completed", "lead_won", "ai_scan_completed", "schedule", "opportunity_won", "invoice_created", "incident_created", "approval_decided"] as const;
+const TRIGGER_TYPES = ["document_approved", "document_rejected", "booking_completed", "lead_won", "ai_scan_completed", "schedule", "opportunity_won", "invoice_created", "incident_created", "approval_decided", "project_stage_changed", "project_completed"] as const;
 const WEBHOOK_TRIGGERS = TRIGGER_TYPES.filter((t): t is Exclude<(typeof TRIGGER_TYPES)[number], "schedule"> => t !== "schedule");
 const ACTION_TYPES = ["notify_owner", "audit_log"] as const;
 

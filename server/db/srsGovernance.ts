@@ -667,6 +667,32 @@ export async function ensureDefaultAiAgents(basePromptForScan: string): Promise<
   }
 }
 
+/** Registers one agent and its first prompt, leaving an existing row untouched. */
+export async function ensureAgent(args: { key: string; name: string; purpose: string; permissions: string[]; requiresHumanApproval: boolean; basePrompt: string }): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .insert(aiAgents)
+    .values({ key: args.key, name: args.name, purpose: args.purpose, permissionsJson: JSON.stringify(args.permissions), requiresHumanApproval: args.requiresHumanApproval, status: "active" })
+    .onConflictDoNothing({ target: aiAgents.key });
+  const has = await db.select({ id: aiPromptVersions.id }).from(aiPromptVersions).where(eq(aiPromptVersions.agentKey, args.key)).limit(1);
+  if (has.length === 0) {
+    await db.insert(aiPromptVersions).values({ agentKey: args.key, version: 1, body: args.basePrompt, changeNote: "Initial prompt, copied from the built in default.", isActive: true }).onConflictDoNothing();
+  }
+}
+
+/** Appends the outcome of a run. ai_executions is append only, so a result is its own row. */
+export async function recordAgentResult(args: { agentKey: string; action: string; subjectRef: string; detail: string }): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const active = (await db.select().from(aiPromptVersions).where(and(eq(aiPromptVersions.agentKey, args.agentKey), eq(aiPromptVersions.isActive, true))).limit(1))[0];
+  const rows = await db
+    .insert(aiExecutions)
+    .values({ agentKey: args.agentKey, promptVersion: active?.version ?? null, action: args.action, subjectRef: args.subjectRef, outcome: "completed", detail: args.detail })
+    .returning({ id: aiExecutions.id });
+  return rows[0]?.id ?? null;
+}
+
 export async function getActivePrompt(agentKey: string): Promise<{ version: number; body: string } | null> {
   const db = await getDb();
   if (!db) return null;

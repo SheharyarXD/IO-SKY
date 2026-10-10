@@ -7,6 +7,10 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, router, superAdminProcedure } from "../_core/trpc";
 import { recordAdminEvent } from "./admin";
+import { INTEGRATIONS, integrationStatus, testIntegration, type IntegrationKey } from "../integrations";
+import { evaluateLead, LEAD_AGENT_KEY } from "../leadEvaluation";
+import { getLeadById } from "../db/crm";
+import { listAiExecutions } from "../db/srsGovernance";
 import { NOTIFICATION_EVENTS } from "../../shared/notificationCatalogue";
 import {
   DOCUMENT_CLASSIFICATIONS,
@@ -128,6 +132,32 @@ export const adminPlatformRouter = router({
     if (!(await revokeOperatorScope(input.id))) fail("NOT_FOUND", "No active grant with that id.");
     await recordAdminEvent({ ctx, reason: `admin.operator_scope.revoke(${input.id})` });
     return { ok: true as const };
+  }),
+
+  // ---- Integrations (SRS 22, 7.8) ---------------------------------------------------------------------------------
+  integrations: adminProcedure.query(() => integrationStatus()),
+  testIntegration: superAdminProcedure
+    .input(z.object({ key: z.enum(INTEGRATIONS.map((i) => i.key) as [IntegrationKey, ...IntegrationKey[]]) }))
+    .mutation(async ({ ctx, input }) => {
+      const res = await testIntegration(input.key);
+      await recordAdminEvent({ ctx, reason: `admin.integration.test(${input.key}:${res.ok ? "ok" : "failed"})` });
+      return res;
+    }),
+
+  // ---- AI lead evaluation (SRS 14.16, 19.7) -------------------------------------------------------------------------
+  evaluateLead: adminProcedure.input(z.object({ leadId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const lead = await getLeadById(input.leadId);
+    if (!lead) fail("NOT_FOUND", "Lead not found.");
+    const res = await evaluateLead({ id: lead!.id, fullName: lead!.fullName, company: lead!.company ?? null, interest: lead!.interest ?? null, note: lead!.note ?? null, source: lead!.source });
+    await recordAdminEvent({ ctx, reason: `admin.lead.ai_evaluate(${input.leadId}:${res.ok ? "ok" : "failed"})` });
+    if (!res.ok) fail("BAD_GATEWAY", res.reason);
+    return res.ok ? res.evaluation : null;
+  }),
+  leadEvaluations: adminProcedure.query(async () => {
+    const rows = await listAiExecutions(LEAD_AGENT_KEY, 50);
+    return rows
+      .filter((r) => r.action === "evaluate_lead_result")
+      .map((r) => ({ id: r.id, subjectRef: r.subjectRef, createdAt: r.createdAt, result: (() => { try { return JSON.parse(r.detail ?? "null"); } catch { return null; } })() }));
   }),
 
   // ---- AI usage and routing ---------------------------------------------------------------------------------------
