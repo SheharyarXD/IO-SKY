@@ -12,17 +12,17 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 127 of 155 criteria complete (81.9%)
+## Status: 128 of 155 criteria complete (82.6%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 127 | 81.9% |
+| ✅ Done | 128 | 82.6% |
 | 🔶 Partial | 21 | 13.5% |
-| ⏭ Not started | 2 | 1.3% |
+| ⏭ Not started | 1 | 0.6% |
 | ⛔ Blocked | 5 | 3.2% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **88.7%**.
+Counting a Partial as half: **89.4%**.
 
 ## Per module
 
@@ -34,11 +34,11 @@ Counting a Partial as half: **88.7%**.
 | 4 | Client Portal | §10.17 | 10 | 10 | 0 | 0 | 0 |
 | 5 | Developer Portal | §11.15 | 8 | 8 | 0 | 0 | 0 |
 | 6 | Admin Portal | §12.17 | 10 | 9 | 1 | 0 | 0 |
-| 7 | Super Admin Portal | §13.18 | 10 | 7 | 3 | 0 | 0 |
+| 7 | Super Admin Portal | §13.18 | 10 | 8 | 2 | 0 | 0 |
 | 8 | CRM & Sales Management | §14.15 | 8 | 8 | 0 | 0 | 0 |
 | 9 | Project & Delivery Management | §15.18 | 8 | 7 | 1 | 0 | 0 |
 | 10 | Commercial Billing & Subscription | §16.15 | 7 | 5 | 0 | 0 | 2 |
-| 11 | Notifications & Communication | §17.13 | 7 | 5 | 1 | 1 | 0 |
+| 11 | Notifications & Communication | §17.13 | 7 | 5 | 2 | 0 | 0 |
 | 12 | File & Document Management | §18.14 | 7 | 6 | 1 | 0 | 0 |
 | 13 | AI Intelligence Layer | §19.14 | 7 | 4 | 3 | 0 | 0 |
 | 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 7 | 0 | 0 | 0 |
@@ -62,7 +62,7 @@ Counting a Partial as half: **88.7%**.
 | SRS-01.4 | CRM records are created successfully | ✅ | leads and contactSubmissions written on submit |
 | SRS-01.5 | Notifications are generated correctly | ✅ | Every owner alert now also writes an admin in-app notification (admin_notifications, header bell). |
 | SRS-01.6 | Login redirects users to the correct portal | ✅ | Role based routing, E2E covered |
-| SRS-01.7 | AI Scan purchases initiate the onboarding workflow | ⛔ | No payment processor credential. Fallback in clientPortal.ts:374 |
+| SRS-01.7 | AI Scan purchases initiate the onboarding workflow | ⛔ | Built: Stripe Checkout and a verified webhook create the account invitation only after payment. Needs STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET and the tier prices. Unverified against live Stripe. |
 | SRS-01.8 | The website is fully responsive | 🔶 | Redesign in flight; not verified at every breakpoint |
 | SRS-01.9 | Legal pages are accessible | ✅ | legalDocuments, agreementVersions, cookie consent |
 
@@ -84,8 +84,8 @@ Counting a Partial as half: **88.7%**.
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
-| SRS-03.1 | Customers can successfully purchase an AI Scan | ⛔ | No payment processor credential |
-| SRS-03.2 | Accounts are created and activated correctly | 🔶 | Lead is created; account creation on purchase is not wired |
+| SRS-03.1 | Customers can successfully purchase an AI Scan | ⛔ | Built: paid tiers go to Stripe Checkout (startPurchase). Needs STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET and AI_SCAN_PRICE_GROWTH_CENTS / AI_SCAN_PRICE_ELITE_CENTS. |
+| SRS-03.2 | Accounts are created and activated correctly | 🔶 | Built: account invitation is created after verified payment. Not exercised against live Stripe yet. |
 | SRS-03.3 | Questionnaires can be completed and resumed | ✅ | Save and continue later on the questionnaire: a 14 day link restores answers and step on any device; the draft is deleted on submission and purged when expired. |
 | SRS-03.4 | AI analysis is generated successfully | ⛔ | Code complete, no LLM key configured |
 | SRS-03.5 | Expert review is mandatory before publication | ✅ | Nine status model (SRS 9.6) with the engine able only to reach Awaiting Expert Review; approve, revision, publish and archive are human steps. Verified against the live database. |
@@ -143,7 +143,7 @@ Counting a Partial as half: **88.7%**.
 | --- | --- | :---: | --- |
 | SRS-07.1 | Super Admins can manage organizations | ✅ |  |
 | SRS-07.2 | Users and permissions can be managed securely | ✅ | setUserRole, assignUserOrganization |
-| SRS-07.3 | Technical Operator permissions are configurable | 🔶 | Role exists; no per operator or temporary permissions |
+| SRS-07.3 | Technical Operator permissions are configurable | ✅ | Per operator scopes (frontend, backend, full stack, UI/UX, infrastructure, security, database) with expiry and revocation, granted by a Super Admin and audited. The Security Center needs an active security scope; the role alone does not open it. |
 | SRS-07.4 | AI configuration is versioned and auditable | ✅ | Agent registry, versioned prompts (never edited in place), append only execution history, configuration history. |
 | SRS-07.5 | Security monitoring functions correctly | ✅ | AdminSecurityCenter is live |
 | SRS-07.6 | Audit logs are searchable | ✅ | Audit search by text, outcome and date, paged, CSV export with formula defusing; the export is itself audited. |
@@ -184,8 +184,8 @@ Counting a Partial as half: **88.7%**.
 | --- | --- | :---: | --- |
 | SRS-10.1 | Quotations can be created and managed | ✅ | Integer cent totals, lifecycle, public reference. |
 | SRS-10.2 | Invoices are generated correctly | ✅ | createInvoice |
-| SRS-10.3 | Payments are processed successfully | ⛔ | No processor credential |
-| SRS-10.4 | Payment confirmation activates the appropriate workflows | ⛔ | As above |
+| SRS-10.3 | Payments are processed successfully | ⛔ | Built: Pay now opens Stripe Checkout; Stripe issues the invoice. Needs STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET. |
+| SRS-10.4 | Payment confirmation activates the appropriate workflows | ⛔ | Built: a verified, idempotent webhook marks the invoice paid, checks amount and currency, and notifies. Needs the Stripe keys to run live. |
 | SRS-10.5 | Subscription management functions correctly | ✅ | Create, pause, reactivate, cancel (final); MRR in the financial summary. |
 | SRS-10.6 | Financial reports display accurate information | ✅ | Outstanding, overdue, paid 30 and 90 days, MRR, computed from invoices and subscriptions. |
 | SRS-10.7 | Audit records are created for all financial events | ✅ | Invoices, quotations, subscriptions all audited. |
@@ -198,7 +198,7 @@ Counting a Partial as half: **88.7%**.
 | SRS-11.2 | Email and in-app notifications are delivered successfully | ✅ | Admin bell, client and developer in-app feeds, and email per the catalogue policy; delivery failures recorded. |
 | SRS-11.3 | User notification preferences are respected | ✅ | Per user, category and channel: honoured for email, developer in-app and, at read time, the shared client feed. Security cannot be switched off. |
 | SRS-11.4 | Communication history is maintained | ✅ | Append only emission log plus the email delivery log, shown in Governance, Communication history. |
-| SRS-11.5 | Notification templates function correctly | ⏭ | Held by open decision OPD-001 |
+| SRS-11.5 | Notification templates function correctly | 🔶 | Templates are versioned per event, channel and language (OPD-001), Super Admin managed, and applied to in app notifications. Email delivery of catalogue events is not wired to templates yet. |
 | SRS-11.6 | Delivery failures are recorded | ✅ | emailDeliveryFailures |
 | SRS-11.7 | Security notifications are always delivered according to platform policy | ✅ | shouldDeliver ignores any opt out for the security category; the preference screen shows it locked. |
 
@@ -208,7 +208,7 @@ Counting a Partial as half: **88.7%**.
 | --- | --- | :---: | --- |
 | SRS-12.1 | Documents can be uploaded and downloaded securely | ✅ | Same verified storage path on all buckets. |
 | SRS-12.2 | Version history operates correctly | ✅ | listDocumentVersions |
-| SRS-12.3 | Permissions are enforced correctly | 🔶 | Org isolation yes; role level matrix no |
+| SRS-12.3 | Permissions are enforced correctly | 🔶 | Document matrix (OPD-003) is stored, editable and audited with the 11 document types. It is not yet enforced on every document endpoint, and the seeded values are provisional. |
 | SRS-12.4 | Approval workflows function as specified | ✅ | reviewDocument |
 | SRS-12.5 | Search returns authorized results only | ✅ | Client search is scoped to the caller's organization by the server; admin search is admin only; wildcards escaped. |
 | SRS-12.6 | Automated document workflows execute successfully | ✅ | Document approved and rejected triggers run workflows and webhooks, workflows can run on a schedule, and retention runs automatically. |
@@ -317,8 +317,8 @@ Counting a Partial as half: **88.7%**.
 
 ## Open decisions that cap completion
 
-- **OPD-001** Notification template structure: caps Module 11.
-- **OPD-003** Document governance matrix: caps Module 12.
+- **OPD-001** Notification template structure: decided by the Product Owner on 10 October 2026 and implemented for in app delivery; email template delivery still to wire.
+- **OPD-003** Document governance matrix: decided by the Product Owner; the matrix exists with provisional values. The ownership and access direction the client refers to as "previously communicated" has not been received by development and is needed to confirm the values.
 - **§26.16** defers lawful basis, consent, data subject requests, retention and breach notification to a Security & Compliance Specification that has never been supplied: caps Module 20.
 - **§15.16 vs §21.15** require predictive AI forecasting and exclude predictive ML in the same document. Needs a Product Owner ruling.
 
@@ -346,8 +346,8 @@ Counting a Partial as half: **88.7%**.
 | --- | --- |
 | SRS-01.7, 03.1, 03.2, 10.3, 10.4 | A payment processor account and credential. |
 | SRS-03.4 | `OPENAI_API_KEY` (or the LLM pair) set in Railway. |
-| SRS-11.5 | Decision OPD-001, notification template structure. |
-| SRS-12.3 | Decision OPD-003, document governance matrix. |
+| SRS-11.5 | Wire templates into email delivery and supply the AWF-01 to AWF-09 email specification document, which was not received. |
+| SRS-12.3 | The OPD-003 ownership and access direction, to replace the provisional matrix values. |
 | SRS-20.5 and the rest of module 20 | The Security and Compliance Specification referenced in §26.16. |
 | SRS-15.x forecasting | Product Owner ruling on §15.16 against §21.15. |
 | SRS-02.3, 16.2, 16.3 | Confirmation of the activation sequence, and which external systems must synchronise. |
