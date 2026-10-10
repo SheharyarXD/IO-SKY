@@ -292,7 +292,8 @@ export const aiScansRouter = router({
   startPurchase: publicProcedure
     .input(
       z.object({
-        tier: z.enum(["growth", "elite"]),
+        // All three tiers are sold on the AI Scan page. "free" is the internal id of the entry tier.
+        tier: z.enum(["free", "growth", "elite"]),
         fullName: z.string().trim().min(2).max(200),
         email: z.string().trim().toLowerCase().email().max(320),
         company: z.string().trim().max(200).optional(),

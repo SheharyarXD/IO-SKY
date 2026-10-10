@@ -593,17 +593,13 @@ export default function AIScan() {
                 e.preventDefault();
                 if (!acceptedDisclaimer || submitLead.isPending || startPurchase.isPending) return;
                 setSubmitState({ kind: "idle" });
-                if (selectedTier === "free") {
-                  submitLead.mutate(leadPayload());
-                } else {
-                  startPurchase.mutate({
-                    tier: selectedTier as "growth" | "elite",
-                    fullName: form.name.trim(),
-                    email: form.email.trim(),
-                    company: form.company.trim() || undefined,
-                    locale: language,
-                  });
-                }
+                startPurchase.mutate({
+                  tier: selectedTier,
+                  fullName: form.name.trim(),
+                  email: form.email.trim(),
+                  company: form.company.trim() || undefined,
+                  locale: language,
+                });
               }}
             >
               <label className="block">

@@ -46,6 +46,8 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<{ id:
     "line_items[0][price_data][currency]": input.currency.toLowerCase(),
     "line_items[0][price_data][unit_amount]": input.amountCents,
     "line_items[0][price_data][product_data][name]": input.description.slice(0, 250),
+    // Prices on the site are shown excluding VAT, so tax is added on top when Stripe Tax is on.
+    "line_items[0][price_data][tax_behavior]": input.automaticTax === true ? "exclusive" : null,
     // Stripe generates the invoice and its PDF, with the customer details and tax ID collected here.
     "invoice_creation[enabled]": true,
     "billing_address_collection": "required",
