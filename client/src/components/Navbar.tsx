@@ -8,8 +8,8 @@
  *   • premium glass mega-menu with icon + title + description per child item
  *   • cinematic transitions, smooth easing
  *
- * Layout: Logo · [Infrastructure ▾, Intelligence ▾, Enterprise ▾, AI Scan,
- * Solutions, About, Contact] · Language selector · Log in · Book Discovery Call.
+ * Layout: Logo · [Infrastructure ▾, Intelligence ▾, Enterprise ▾, Solutions,
+ * AI Scan, About, Contact] · Language selector · Log in · Book Discovery Call.
  *
  * Localization: every visible label (including dropdown children + descriptions)
  * is sourced from useT() so changing language re-renders the entire navbar.
@@ -87,8 +87,9 @@ const NAV: NavItem[] = [
       { labelKey: "ent.cap.integrationHub.title", descKey: "ent.cap.integrationHub.short", href: "/enterprise#integration", icon: <Network    className={ICON_CLASS} strokeWidth={1.6} /> },
     ],
   },
-  { labelKey: "nav.aiScan", href: "/ai-scan" },
+  // Order follows the supplied navbar reference: Solutions, then AI Scan.
   { labelKey: "nav.solutions", href: "/solutions" },
+  { labelKey: "nav.aiScan", href: "/ai-scan" },
   { labelKey: "nav.about", href: "/about" },
   { labelKey: "nav.contact", href: "/contact" },
 ];

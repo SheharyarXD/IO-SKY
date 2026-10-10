@@ -493,6 +493,7 @@ export const bookingsRouter = router({
         event: "rescheduled_by_guest",
         detail: JSON.stringify({ newSlotStartMs: input.newSlotStartMs, tz: input.timezone }),
       });
+      await emitNotification({ event: "DISCOVERY_CALL_RESCHEDULED", audience: { type: "admin" }, dedupeRef: `booking:${booking.id}:rescheduled:${input.newSlotStartMs}`, title: `Discovery Call rescheduled by the guest: ${booking.fullName}`, href: "/admin/strategy-calls" }).catch(() => null);
       return { ok: true as const };
     }),
 

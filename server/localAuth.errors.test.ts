@@ -325,3 +325,21 @@ describe("POST /api/auth/local/login — internal error", () => {
     expect(cap.body.code).toBe("server_error");
   });
 });
+
+// ---- 7. Brute force throttle (SRS 8.16) -------------------------------
+
+describe("POST /api/auth/local/login: brute force throttle", () => {
+  it("answers 429 after repeated attempts on one account, and records it as blocked", async () => {
+    vi.mocked(db.getUserByEmailWithPassword).mockResolvedValue(null as any);
+    let last: Capture | undefined;
+    for (let i = 0; i < 12; i++) last = await callLogin({ email: "throttle.target@iosky.local", password: "wrong-" + i });
+    expect(last!.status).toBe(429);
+    expect(last!.body.code).toBe("rate_limited");
+    expect(vi.mocked(db.appendLoginAudit)).toHaveBeenCalledWith(expect.objectContaining({ outcome: "blocked", reason: "rate_limited" }));
+  });
+  it("does not check the password once an account is throttled", async () => {
+    vi.mocked(db.getUserByEmailWithPassword).mockClear();
+    await callLogin({ email: "throttle.target@iosky.local", password: "again" });
+    expect(db.getUserByEmailWithPassword).not.toHaveBeenCalled();
+  });
+});

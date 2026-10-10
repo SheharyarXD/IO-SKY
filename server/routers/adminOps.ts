@@ -538,6 +538,10 @@ export const adminOpsRouter = router({
       if (!r) fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
       if (!r.ok) fail(r.code, r.reason);
       await recordAdminEvent({ ctx, reason: `ops.incident.update(${input.id}${input.status ? `:${input.status}` : ""})` });
+      if (input.status === "resolved") {
+        const security = r.incident.category === "security";
+        await emitNotification({ event: security ? "SECURITY_INCIDENT_RESOLVED" : "GOVERNANCE_INCIDENT_RESOLVED", audience: { type: "admin" }, dedupeRef: `incident:${input.id}:resolved`, title: `Incident resolved: ${r.incident.title}`, href: "/admin/governance" });
+      }
       return r.incident;
     }),
 
@@ -681,6 +685,7 @@ export const adminOpsRouter = router({
           });
         } catch (err) {
           console.error("[aiScan] publish email failed:", err);
+          await emitNotification({ event: "AI_SCAN_PUBLICATION_FAILED", audience: { type: "admin" }, dedupeRef: `scan:${res.scan.id}:publish-email:${Date.now()}`, title: `Publication email failed for ${label}`, body: "The report is published. The customer email did not send.", href: "/admin/governance" });
         }
       }
       const eventFor = { approved: "AI_SCAN_REVIEW_APPROVED", revision_required: "AI_SCAN_CHANGES_REQUIRED", published: "AI_SCAN_PUBLISHED" } as const;

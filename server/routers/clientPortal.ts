@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { emitNotification } from "../notificationDispatcher";
 import { fireTrigger } from "../workflowEngine";
 import { categoryForNotificationKind, shouldDeliver } from "../../shared/srsRules";
 import { z } from "zod";
@@ -633,6 +634,7 @@ export const clientPortalRouter = router({
       } catch {
         /* audit best-effort */
       }
+      await emitNotification({ event: "CLIENT_INFORMATION_SUBMITTED", audience: { type: "admin" }, dedupeRef: `document:${inserted?.id ?? Date.now()}`, title: `Customer uploaded ${input.name}`, href: "/admin/documents", skipAdminFeed: true }).catch(() => null);
       try {
         await appendClientNotification({
           organizationId: ctx.organizationId,

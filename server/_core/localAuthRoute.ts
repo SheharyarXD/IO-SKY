@@ -15,6 +15,7 @@
  * admin user-management UI; we intentionally do not expose a public
  * signup endpoint here because the platform is invite-only.
  */
+import { createRateLimiter } from "./rateLimiter";
 import type { Express, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import * as db from "../db";
@@ -26,6 +27,10 @@ import { MFA_PENDING_COOKIE, MFA_PENDING_TTL_MS, sanitiseNext, signMfaPending } 
 import { getRequestIp } from "./requestMeta";
 
 // RM-89: session lifetime is the configured TTL (12h default), not a year.
+
+const THROTTLE_WINDOW_MS = 15 * 60_000;
+const isIpThrottled = createRateLimiter(60, THROTTLE_WINDOW_MS);
+const isAccountThrottled = createRateLimiter(10, THROTTLE_WINDOW_MS);
 
 export function registerLocalAuthRoutes(app: Express) {
   app.post("/api/auth/local/login", async (req: Request, res: Response) => {
@@ -49,7 +54,20 @@ export function registerLocalAuthRoutes(app: Express) {
         return;
       }
 
-      const user = await db.getUserByEmailWithPassword(email.trim().toLowerCase());
+      // Brute force throttle (SRS 8.16): per address and per account, before any password work.
+      const ip = getRequestIp(req);
+      const normalised = email.trim().toLowerCase();
+      if ((await isIpThrottled(ip)) || (await isAccountThrottled(normalised))) {
+        try {
+          await db.appendLoginAudit({ userId: null, identifier: normalised, provider: "local", outcome: "blocked", reason: "rate_limited", ip, userAgent: (req.headers["user-agent"] as string | undefined) ?? null });
+        } catch {
+          /* audit best effort */
+        }
+        res.status(429).json({ ok: false, code: "rate_limited", retryAfterSec: 900, error: "Too many sign in attempts. Please wait a few minutes and try again." });
+        return;
+      }
+
+      const user = await db.getUserByEmailWithPassword(normalised);
 
       // Always do a bcrypt compare even when the user is missing — keeps
       // timing constant and prevents user enumeration.
