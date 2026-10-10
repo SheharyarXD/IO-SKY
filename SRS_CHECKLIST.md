@@ -12,32 +12,32 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 131 of 155 criteria complete (84.5%)
+## Status: 136 of 155 criteria complete (87.7%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 131 | 84.5% |
-| 🔶 Partial | 18 | 11.6% |
+| ✅ Done | 136 | 87.7% |
+| 🔶 Partial | 17 | 11.0% |
 | ⏭ Not started | 1 | 0.6% |
-| ⛔ Blocked | 5 | 3.2% |
+| ⛔ Blocked | 1 | 0.6% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **90.3%**.
+Counting a Partial as half: **93.2%**.
 
 ## Per module
 
 | # | Module | SRS | Criteria | ✅ | 🔶 | ⏭ | ⛔ |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| 1 | Public Website & Lead Experience | §7.13 | 9 | 6 | 2 | 0 | 1 |
+| 1 | Public Website & Lead Experience | §7.13 | 9 | 7 | 2 | 0 | 0 |
 | 2 | Identity & Authentication | §8.16 | 9 | 9 | 0 | 0 | 0 |
-| 3 | AI Scan Platform | §9.11 | 9 | 6 | 1 | 0 | 2 |
+| 3 | AI Scan Platform | §9.11 | 9 | 8 | 0 | 0 | 1 |
 | 4 | Client Portal | §10.17 | 10 | 10 | 0 | 0 | 0 |
 | 5 | Developer Portal | §11.15 | 8 | 8 | 0 | 0 | 0 |
 | 6 | Admin Portal | §12.17 | 10 | 9 | 1 | 0 | 0 |
 | 7 | Super Admin Portal | §13.18 | 10 | 9 | 1 | 0 | 0 |
 | 8 | CRM & Sales Management | §14.15 | 8 | 8 | 0 | 0 | 0 |
 | 9 | Project & Delivery Management | §15.18 | 8 | 8 | 0 | 0 | 0 |
-| 10 | Commercial Billing & Subscription | §16.15 | 7 | 5 | 0 | 0 | 2 |
+| 10 | Commercial Billing & Subscription | §16.15 | 7 | 7 | 0 | 0 | 0 |
 | 11 | Notifications & Communication | §17.13 | 7 | 5 | 2 | 0 | 0 |
 | 12 | File & Document Management | §18.14 | 7 | 6 | 1 | 0 | 0 |
 | 13 | AI Intelligence Layer | §19.14 | 7 | 5 | 2 | 0 | 0 |
@@ -62,7 +62,7 @@ Counting a Partial as half: **90.3%**.
 | SRS-01.4 | CRM records are created successfully | ✅ | leads and contactSubmissions written on submit |
 | SRS-01.5 | Notifications are generated correctly | ✅ | Every owner alert now also writes an admin in-app notification (admin_notifications, header bell). |
 | SRS-01.6 | Login redirects users to the correct portal | ✅ | Role based routing, E2E covered |
-| SRS-01.7 | AI Scan purchases initiate the onboarding workflow | ⛔ | Built: Stripe Checkout and a verified webhook create the account invitation only after payment. Needs STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET and the tier prices. Unverified against live Stripe. |
+| SRS-01.7 | AI Scan purchases initiate the onboarding workflow | ✅ | Verified live in Stripe test mode on 11 October 2026: a purchase through the hosted page, paid with the test card, created the CRM lead, the customer organization, the client invitation and the admin notification, all from the verified webhook. |
 | SRS-01.8 | The website is fully responsive | 🔶 | Redesign in flight; not verified at every breakpoint |
 | SRS-01.9 | Legal pages are accessible | ✅ | legalDocuments, agreementVersions, cookie consent |
 
@@ -84,8 +84,8 @@ Counting a Partial as half: **90.3%**.
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
-| SRS-03.1 | Customers can successfully purchase an AI Scan | ⛔ | Built: paid tiers go to Stripe Checkout (startPurchase). Needs STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET and AI_SCAN_PRICE_GROWTH_CENTS / AI_SCAN_PRICE_ELITE_CENTS. |
-| SRS-03.2 | Accounts are created and activated correctly | 🔶 | Built: account invitation is created after verified payment. Not exercised against live Stripe yet. |
+| SRS-03.1 | Customers can successfully purchase an AI Scan | ✅ | Verified live: all three tiers are sold at the published prices (795, 1,595 and 3,295 EUR excluding VAT) through Stripe Checkout, with the paid amount and currency checked against the order. |
+| SRS-03.2 | Accounts are created and activated correctly | ✅ | Verified live: the account invitation and the organization are created only after verified payment; a redelivered event changes nothing. |
 | SRS-03.3 | Questionnaires can be completed and resumed | ✅ | Save and continue later on the questionnaire: a 14 day link restores answers and step on any device; the draft is deleted on submission and purged when expired. |
 | SRS-03.4 | AI analysis is generated successfully | ⛔ | Code complete, no LLM key configured |
 | SRS-03.5 | Expert review is mandatory before publication | ✅ | Nine status model (SRS 9.6) with the engine able only to reach Awaiting Expert Review; approve, revision, publish and archive are human steps. Verified against the live database. |
@@ -184,8 +184,8 @@ Counting a Partial as half: **90.3%**.
 | --- | --- | :---: | --- |
 | SRS-10.1 | Quotations can be created and managed | ✅ | Integer cent totals, lifecycle, public reference. |
 | SRS-10.2 | Invoices are generated correctly | ✅ | createInvoice |
-| SRS-10.3 | Payments are processed successfully | ⛔ | Built: Pay now opens Stripe Checkout; Stripe issues the invoice. Needs STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET. |
-| SRS-10.4 | Payment confirmation activates the appropriate workflows | ⛔ | Built: a verified, idempotent webhook marks the invoice paid, checks amount and currency, and notifies. Needs the Stripe keys to run live. |
+| SRS-10.3 | Payments are processed successfully | ✅ | Verified live: an invoice paid through Stripe Checkout with the test card; Stripe generated the invoice and its link is stored. |
+| SRS-10.4 | Payment confirmation activates the appropriate workflows | ✅ | Verified live: the webhook marked the invoice paid, recorded the event once and notified the customer and the admin. |
 | SRS-10.5 | Subscription management functions correctly | ✅ | Create, pause, reactivate, cancel (final); MRR in the financial summary. |
 | SRS-10.6 | Financial reports display accurate information | ✅ | Outstanding, overdue, paid 30 and 90 days, MRR, computed from invoices and subscriptions. |
 | SRS-10.7 | Audit records are created for all financial events | ✅ | Invoices, quotations, subscriptions all audited. |
@@ -312,8 +312,8 @@ Counting a Partial as half: **90.3%**.
 ## Blocked items (5 criteria, 3 external causes)
 
 1. **Supabase API key revoked after the credential leak, not reissued.** Blocks storage, document upload and download, deliverable upload, project documentation.
-2. **No payment processor credential in any environment.** Blocks AI Scan purchase, payments, payment driven activation.
-3. **No LLM key configured.** Blocks live AI analysis. `OPENAI_API_KEY` alone activates it.
+2. ~~No payment processor credential.~~ Resolved 11 October 2026: Stripe test mode is connected and verified end to end. Live keys, a Stripe Tax registration for the Netherlands and the accountant tax code are still to be confirmed before real customers pay.
+3. **OpenAI account has no credit.** The key is set and accepted, but every call fails with credit_balance_exhausted. Blocks live AI analysis (SRS-03.4) until credit is added.
 
 ## Open decisions that cap completion
 
