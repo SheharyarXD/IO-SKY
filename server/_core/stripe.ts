@@ -53,6 +53,8 @@ export async function createCheckoutSession(input: CheckoutInput): Promise<{ id:
     // Stripe generates the invoice and its PDF, with the customer details and tax ID collected here.
     "invoice_creation[enabled]": true,
     "billing_address_collection": "required",
+    // Prices are set in EUR. Currency conversion would change amount_total and currency on the webhook.
+    "adaptive_pricing[enabled]": false,
     "tax_id_collection[enabled]": true,
     "automatic_tax[enabled]": input.automaticTax === true,
     ...Object.fromEntries(Object.entries(input.metadata).map(([k, v]) => [`metadata[${k}]`, v])),
