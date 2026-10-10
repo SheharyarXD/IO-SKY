@@ -991,7 +991,7 @@ export async function assignDeveloperToProject(args: {
   developerId: number;
   assignmentRole: "lead" | "contributor" | "reviewer";
   createdByUserId: number;
-}): Promise<{ assignment: DeveloperProjectAssignment; created: boolean } | null> {
+}): Promise<{ assignment: DeveloperProjectAssignment; created: boolean; changed?: boolean } | null> {
   const db = await getDb();
   if (!db) return null;
   return db.transaction(async (tx) => {
@@ -1023,7 +1023,7 @@ export async function assignDeveloperToProject(args: {
     const row = existing[0];
     if (row) {
       if (row.status === "active" && row.assignmentRole === args.assignmentRole) {
-        return { assignment: row, created: false };
+        return { assignment: row, created: false, changed: false };
       }
       const updated = await tx
         .update(developerProjectAssignments)
@@ -1035,7 +1035,7 @@ export async function assignDeveloperToProject(args: {
         })
         .where(eq(developerProjectAssignments.id, row.id))
         .returning();
-      return { assignment: updated[0]!, created: false };
+      return { assignment: updated[0]!, created: false, changed: true };
     }
     const inserted = await tx
       .insert(developerProjectAssignments)
@@ -1047,7 +1047,7 @@ export async function assignDeveloperToProject(args: {
         createdByUserId: args.createdByUserId,
       })
       .returning();
-    return { assignment: inserted[0]!, created: true };
+    return { assignment: inserted[0]!, created: true, changed: true };
   });
 }
 

@@ -20,7 +20,8 @@ import {
 import { createLead } from "../db/crm";
 import { createOrganization } from "../db/clientPortal";
 import { createInvitation } from "../db/accounts";
-import { dispatchSimpleEmail, escapeHtml } from "../email";
+import { dispatchSimpleEmail } from "../email";
+import { brandedEmail } from "../emailShell";
 import { emitNotification } from "../notificationDispatcher";
 
 type StripeEvent = {
@@ -126,15 +127,16 @@ export async function processStripeEvent(event: StripeEvent): Promise<StripeOutc
   if (invite && invite !== "user_exists") {
     const base = process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://iosky.com";
     const link = `${base}/activate?token=${invite.token}`;
+    const shell = brandedEmail({
+      title: "Your IO SKY AI Scan: activate your account",
+      paragraphs: [`Thank you, ${purchase.fullName}. Your payment for the ${purchase.tier} AI Scan was received.`, "Activate your account to continue with your assessment. This link works once and expires in 7 days."],
+      cta: { label: "Activate your account", url: link },
+    });
     await dispatchSimpleEmail({
       to: purchase.email,
       subject: "Your IO SKY AI Scan: activate your account",
-      html: `<p>Thank you, ${escapeHtml(purchase.fullName)}. Your payment for the ${escapeHtml(purchase.tier)} AI Scan was received.</p><p><a href="${link}">Activate your account</a> to continue with your assessment.</p><p>This link works once and expires in 7 days.</p>`,
-      text: `Thank you, ${purchase.fullName}. Your payment for the ${purchase.tier} AI Scan was received.
-
-Activate your account: ${link}
-
-This link works once and expires in 7 days.`,
+      html: shell.html,
+      text: shell.text,
       refHeader: `scan-purchase:${purchaseId}`,
       messageType: "notification",
       relatedRef: `scan-purchase:${purchaseId}`,

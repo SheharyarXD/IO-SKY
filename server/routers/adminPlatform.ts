@@ -10,6 +10,8 @@ import { recordAdminEvent } from "./admin";
 import { INTEGRATIONS, integrationStatus, testIntegration, type IntegrationKey } from "../integrations";
 import { evaluateLead, LEAD_AGENT_KEY } from "../leadEvaluation";
 import { getLeadById } from "../db/crm";
+import { reconcileStripePayments } from "../paymentSync";
+import { emitNotification } from "../notificationDispatcher";
 import { listAiExecutions } from "../db/srsGovernance";
 import { NOTIFICATION_EVENTS } from "../../shared/notificationCatalogue";
 import {
@@ -30,6 +32,7 @@ import {
   listTemplates,
   revokeOperatorScope,
   saveTemplateVersion,
+  setClientDocumentType,
   summariseAiUsage,
   updateDocumentMatrixRow,
 } from "../db/platformGovernance";
@@ -108,6 +111,14 @@ export const adminPlatformRouter = router({
       return row;
     }),
 
+  setDocumentType: adminProcedure
+    .input(z.object({ documentId: z.number().int().positive(), documentType: z.string().max(64).nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!(await setClientDocumentType(input.documentId, input.documentType))) fail("NOT_FOUND", "Document or document type not found.");
+      await recordAdminEvent({ ctx, reason: `admin.document.set_type(${input.documentId}:${input.documentType ?? "none"})` });
+      return { ok: true as const };
+    }),
+
   // ---- Technical Operator scopes ----------------------------------------------------------------------------------
   operatorScopes: adminProcedure.input(z.object({ userId: z.number().int().positive().optional() }).optional()).query(({ input }) => listOperatorScopes(input?.userId)),
   grantOperatorScope: superAdminProcedure
@@ -131,6 +142,7 @@ export const adminPlatformRouter = router({
   revokeOperatorScope: superAdminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
     if (!(await revokeOperatorScope(input.id))) fail("NOT_FOUND", "No active grant with that id.");
     await recordAdminEvent({ ctx, reason: `admin.operator_scope.revoke(${input.id})` });
+    await emitNotification({ event: "PRIVILEGED_ACCESS_REVOKED", audience: { type: "admin" }, dedupeRef: `operator-scope:${input.id}:revoked`, title: "A Technical Operator scope was revoked", href: "/admin/governance" });
     return { ok: true as const };
   }),
 
@@ -141,8 +153,17 @@ export const adminPlatformRouter = router({
     .mutation(async ({ ctx, input }) => {
       const res = await testIntegration(input.key);
       await recordAdminEvent({ ctx, reason: `admin.integration.test(${input.key}:${res.ok ? "ok" : "failed"})` });
+      if (!res.ok) {
+        await emitNotification({ event: "INTEGRATION_FAILURE", audience: { type: "admin" }, dedupeRef: `integration:${input.key}:${Math.floor(Date.now() / 3_600_000)}`, title: `Integration check failed: ${input.key}`, body: res.detail, href: "/admin/governance" });
+      }
       return res;
     }),
+
+  reconcilePayments: superAdminProcedure.mutation(async ({ ctx }) => {
+    const summary = await reconcileStripePayments();
+    await recordAdminEvent({ ctx, reason: `admin.payments.reconcile(checked=${summary.checked}:paid=${summary.paid})` });
+    return summary;
+  }),
 
   // ---- AI lead evaluation (SRS 14.16, 19.7) -------------------------------------------------------------------------
   evaluateLead: adminProcedure.input(z.object({ leadId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {

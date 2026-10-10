@@ -81,6 +81,7 @@ export async function searchDocuments(args: { organizationId: number | null; q: 
       organizationId: clientDocuments.organizationId,
       name: clientDocuments.name,
       category: clientDocuments.category,
+      documentType: clientDocuments.documentType,
       version: clientDocuments.version,
       status: clientDocuments.status,
       uploadedBy: clientDocuments.uploadedBy,

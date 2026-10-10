@@ -17,7 +17,6 @@
  * Admin surface lives in routers/bookingAdmin.ts and is mounted under
  * `bookingAdmin.*` in routers.ts.
  */
-import { emitNotification } from "../notificationDispatcher";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -44,6 +43,7 @@ import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { createRateLimiter } from "../_core/rateLimiter";
 import { getRequestIp, getRequestMeta } from "../_core/requestMeta";
 import { generatePublicRef } from "../_core/publicRef";
+import { emitNotification } from "../notificationDispatcher";
 import {
   CONSULTATION_CATALOG,
   getBookingAdapter,
@@ -303,6 +303,8 @@ export const bookingsRouter = router({
         event: "created",
         detail: JSON.stringify({ serviceId: input.serviceId, slotStartMs: input.slotStartMs }),
       });
+
+      await emitNotification({ event: "DISCOVERY_CALL_SCHEDULED", audience: { type: "admin" }, dedupeRef: `booking:${booking.id}:scheduled`, title: `Discovery Call scheduled: ${booking.fullName}`, href: "/admin/strategy-calls" }).catch(() => null);
 
       // Persist the timezone so reminders can render in the guest's tz.
       await rememberTimezonePreference(booking.email, input.timezone).catch(() => null);

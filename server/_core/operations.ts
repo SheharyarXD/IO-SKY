@@ -20,6 +20,7 @@ import {
 } from "../db";
 import type { ScheduledReport } from "../../drizzle/schema";
 import { runDueScheduledWorkflows } from "../workflowEngine";
+import { reconcileStripePayments, runPaymentReminders } from "../paymentSync";
 import { refreshSecurityPolicy } from "./policy";
 
 /**
@@ -165,5 +166,7 @@ export function startOperationsJobs(): void {
     runDueScheduledReports().catch((err) => console.warn("[scheduledReports] tick failed:", err));
     runDueScheduledWorkflows().catch((err) => console.warn("[scheduledWorkflows] tick failed:", err));
     purgeExpiredAiScanDrafts().catch((err) => console.warn("[aiScanDrafts] purge failed:", err));
+    reconcileStripePayments().catch((err) => console.warn("[paymentSync] reconcile failed:", err));
+    runPaymentReminders().catch((err) => console.warn("[paymentReminders] tick failed:", err));
   }, TICK_MS).unref();
 }

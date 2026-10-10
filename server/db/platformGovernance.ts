@@ -3,8 +3,8 @@
  * and AI usage reporting.
  */
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
-import { aiUsage, documentMatrix, notificationTemplates, operatorScopes, users } from "../../drizzle/schema";
-import { type ScopeGrant } from "../../shared/platformRules";
+import { aiUsage, clientDocuments, documentMatrix, notificationTemplates, operatorScopes, users } from "../../drizzle/schema";
+import { roleMayAccessDocumentType, type ScopeGrant } from "../../shared/platformRules";
 import { getDb } from "./connection";
 
 // ---- Templates ---------------------------------------------------------------------------------------------------
@@ -89,6 +89,25 @@ export async function updateDocumentMatrixRow(
     .where(eq(documentMatrix.documentType, documentType))
     .returning();
   return rows[0] ?? null;
+}
+
+/** Types a client may not see. Empty when the matrix cannot be read, so a failure never hides documents. */
+export async function clientHiddenDocumentTypes(): Promise<Set<string>> {
+  const rows = await listDocumentMatrix();
+  const hidden = new Set<string>();
+  for (const r of rows) if (!roleMayAccessDocumentType("client", r)) hidden.add(r.documentType);
+  return hidden;
+}
+
+export async function setClientDocumentType(documentId: number, documentType: string | null): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  if (documentType) {
+    const known = await getDocumentMatrixRow(documentType);
+    if (!known) return false;
+  }
+  const rows = await db.update(clientDocuments).set({ documentType }).where(eq(clientDocuments.id, documentId)).returning({ id: clientDocuments.id });
+  return rows.length > 0;
 }
 
 // ---- Operator scopes ---------------------------------------------------------------------------------------------

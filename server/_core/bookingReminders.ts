@@ -17,6 +17,7 @@
  * already sends that email synchronously at creation and marks it via
  * markBookingEmailSent, so processing it again here would double-send.
  */
+import { emitNotification } from "../notificationDispatcher";
 import {
   getBookingById,
   listDueBookingReminders,
@@ -96,6 +97,15 @@ export async function dispatchDueBookingReminders(
     });
 
     await markBookingReminderSent(reminder.id, result.ok ? null : result.error ?? "send failed");
+    if (result.ok) {
+      await emitNotification({
+        event: reminder.kind === "reminder_1h" ? "DISCOVERY_CALL_UPCOMING_1H" : "DISCOVERY_CALL_UPCOMING_24H",
+        audience: { type: "admin" },
+        dedupeRef: `booking:${booking.id}:${reminder.kind}`,
+        title: `Discovery Call ${reminder.kind === "reminder_1h" ? "in one hour" : "tomorrow"}: ${booking.fullName}`,
+        href: "/admin/strategy-calls",
+      }).catch(() => null);
+    }
     if (result.ok) summary.sent++;
     else summary.failed++;
   }

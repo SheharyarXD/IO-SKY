@@ -76,6 +76,7 @@ import { emitNotification } from "../notificationDispatcher";
 import { EXPORT_DATASETS, INVITABLE_ROLES, INVITATION_TTL_DAYS, canInviteRole, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
 import { AI_SCAN_AGENT_KEY, createInvitation, decideLatestAiExecutionForSubject, listInvitations, revokeInvitation, listDeployments, readComplianceInputs, readExportDataset, readMonthlyHistory } from "../db";
 import { fireTrigger } from "../workflowEngine";
+import { brandedEmail, resolveEventMessage } from "../emailShell";
 import { PROJECT_LIFECYCLE } from "../../shared/srsRules";
 import { listProjectLifecycleEvents, listProjectLifecycles, setProjectLifecycle } from "../db/srsDelivery";
 import { CALL_OUTCOMES, REPORT_STATUSES, checkCallOutcome, toCsv, type ReportStatus } from "../../shared/srsRules";
@@ -397,8 +398,8 @@ export const adminOpsRouter = router({
       if (!res.ok) fail("PRECONDITION_FAILED", res.reason);
       await recordAdminEvent({ ctx, reason: `admin.project.lifecycle(${input.projectId}:${res.from}->${input.to})` });
       const orgId = await getProjectOrganizationId(input.projectId);
-      if (orgId && (input.to === "customer_review" || input.to === "completed")) {
-        await emitNotification({ event: "PROJECT_MILESTONE_UPDATED", audience: { type: "client", organizationId: orgId }, dedupeRef: `project:${input.projectId}:${input.to}`, title: `Your project moved to ${input.to.replace(/_/g, " ")}`, href: "/client-portal/projects" });
+      if (orgId) {
+        await emitNotification({ event: "PROJECT_DELIVERY_STATE_CHANGED", audience: { type: "client", organizationId: orgId }, dedupeRef: `project:${input.projectId}:${input.to}`, title: `Your project moved to ${input.to.replace(/_/g, " ")}`, href: "/client-portal/projects" });
       }
       // Project automations (SRS 15.16): administrators can attach workflows to these events.
       void fireTrigger("project_stage_changed", { projectId: String(input.projectId), stage: input.to, previous: res.from }, String(input.projectId));
@@ -664,11 +665,16 @@ export const adminOpsRouter = router({
         const base = process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://iosky.com";
         const link = `${base}/ai-scan/result/${res.scan.reportToken}`;
         try {
+          const msg = await resolveEventMessage("AI_SCAN_PUBLISHED", res.scan.locale, { recipientName: res.scan.fullName, link, reference: `SCN-${res.scan.id}` }, {
+            subject: "Your IO SKY AI Scan report is ready",
+            paragraphs: [`Hello ${res.scan.fullName},`, "Your AI Scan report has been reviewed by our team and is now available."],
+          });
+          const shell = brandedEmail({ title: msg.subject, paragraphs: msg.paragraphs, cta: { label: "Open your report", url: link } });
           await dispatchSimpleEmail({
             to: res.scan.email,
-            subject: "Your IO SKY AI Scan report is ready",
-            html: `<p>Hello ${escapeHtml(res.scan.fullName)},</p><p>Your AI Scan report has been reviewed by our team and is now available.</p><p><a href="${link}">Open your report</a></p><p>IO SKY</p>`,
-            text: `Hello ${res.scan.fullName},\n\nYour AI Scan report has been reviewed by our team and is now available:\n${link}\n\nIO SKY`,
+            subject: msg.subject,
+            html: shell.html,
+            text: shell.text,
             refHeader: `ai-scan-published:${res.scan.id}`,
             messageType: "notification",
             relatedRef: `ai-scan:${res.scan.id}`,
@@ -813,11 +819,16 @@ export const adminOpsRouter = router({
       const link = `${base}/activate?token=${res.token}`;
       // The link is the secret. It goes to the invitee by email and is never returned to the admin
       // or written to a log, so the admin cannot activate the account on their behalf.
+      const inviteShell = brandedEmail({
+        title: "Your IO SKY invitation",
+        paragraphs: [`You have been invited to IO SKY as ${input.role.replace(/_/g, " ")}.`, `This link works once and expires in ${INVITATION_TTL_DAYS} days. If you were not expecting it, ignore this email.`],
+        cta: { label: "Activate your account", url: link },
+      });
       const sent = await dispatchSimpleEmail({
         to: res.invitation.email,
         subject: "Your IO SKY invitation",
-        html: `<p>You have been invited to IO SKY as <strong>${escapeHtml(input.role.replace(/_/g, " "))}</strong>.</p><p><a href="${link}">Activate your account</a></p><p>This link works once and expires in ${INVITATION_TTL_DAYS} days. If you were not expecting it, ignore this email.</p>`,
-        text: `You have been invited to IO SKY as ${input.role.replace(/_/g, " ")}.\n\nActivate your account: ${link}\n\nThis link works once and expires in ${INVITATION_TTL_DAYS} days. If you were not expecting it, ignore this email.`,
+        html: inviteShell.html,
+        text: inviteShell.text,
         refHeader: `invitation:${res.invitation.id}`,
         messageType: "notification",
         relatedRef: `invitation:${res.invitation.id}`,

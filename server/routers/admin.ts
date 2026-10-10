@@ -1759,6 +1759,12 @@ export const adminRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not assign the developer." });
       }
       // Tell the developer only when something actually changed for them.
+      if (!result.created && result.changed === true) {
+        await emitNotification({ event: "PROJECT_REASSIGNED", audience: { type: "developer", developerId: input.developerId }, dedupeRef: `project:${input.projectId}:${input.developerId}:${input.assignmentRole}:${Math.floor(Date.now() / 60_000)}`, title: `Your role changed on ${project.name}`, body: `You are now ${input.assignmentRole} on ${project.code}.`, href: "/developer-workspace/projects" });
+      }
+      if (input.assignmentRole === "reviewer" && result.changed !== false) {
+        await emitNotification({ event: "PROJECT_REVIEWER_ASSIGNED", audience: { type: "admin" }, dedupeRef: `project:${input.projectId}:reviewer:${input.developerId}`, title: `Reviewer assigned to ${project.name}`, href: "/admin/delivery" });
+      }
       if (result.created) {
         await emitNotification({ event: "PROJECT_ASSIGNED", audience: { type: "developer", developerId: input.developerId }, dedupeRef: `project:${input.projectId}:${input.developerId}:${Date.now()}`, title: `New project assignment: ${project.name}`, body: `You were assigned to ${project.code} as ${input.assignmentRole}.`, href: "/developer-workspace/projects" });
       }

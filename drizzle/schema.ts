@@ -783,6 +783,8 @@ export const clientDocuments = pgTable(
       .references(() => organizations.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 200 }).notNull(),
     category: varchar("category", { length: 96 }).default("general").notNull(),
+    /** Document matrix type (OPD-003). Null means untyped and follows the organization rule only. */
+    documentType: varchar("documentType", { length: 64 }),
     fileKey: varchar("fileKey", { length: 512 }).notNull(),
     sizeBytes: integer("sizeBytes"),
     mimeType: varchar("mimeType", { length: 96 }),
