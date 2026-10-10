@@ -15,10 +15,11 @@ import {
   developerProjects,
   developerTimeEntries,
   projectApprovals,
+  projectLifecycleEvents,
   type DeveloperTimeEntry,
   type ProjectApproval,
 } from "../../drizzle/schema";
-import { checkCanArchiveProject } from "../../shared/srsRules";
+import { checkCanArchiveProject, checkLifecycleMove, legacyStatusForLifecycle } from "../../shared/srsRules";
 import { getDb } from "./connection";
 
 // ---------------------------------------------------------------------------
@@ -245,8 +246,49 @@ export async function archiveClientProject(
     archivedAt: project.archivedAt ?? null,
   });
   if (!verdict.ok) return verdict;
-  await db.update(clientProjects).set({ archivedAt: new Date() }).where(eq(clientProjects.id, projectId));
+  await db.update(clientProjects).set({ archivedAt: new Date(), lifecycle: "archived" }).where(eq(clientProjects.id, projectId));
   return { ok: true };
+}
+
+export async function listProjectLifecycles() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({ id: clientProjects.id, name: clientProjects.name, organizationId: clientProjects.organizationId, lifecycle: clientProjects.lifecycle, status: clientProjects.status, archivedAt: clientProjects.archivedAt })
+    .from(clientProjects)
+    .orderBy(desc(clientProjects.id))
+    .limit(200);
+}
+
+/**
+ * Moves a customer project to its next SRS 15.5 stage. Archiving goes through the existing
+ * archive policy, so a project with an approval still waiting on the customer cannot be archived
+ * by this path either. Every move is written to an append only history.
+ */
+export async function setProjectLifecycle(args: { projectId: number; to: string; actorUserId: number; note: string | null }): Promise<{ ok: true; from: string } | { ok: false; reason: string } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const project = (await db.select().from(clientProjects).where(eq(clientProjects.id, args.projectId)).limit(1))[0];
+  if (!project) return { ok: false, reason: "Project not found." };
+  const verdict = checkLifecycleMove(project.lifecycle, args.to);
+  if (!verdict.ok) return verdict;
+  if (args.to === "archived") {
+    const res = await archiveClientProject(args.projectId);
+    if (!res) return null;
+    if (!res.ok) return res;
+  }
+  const legacy = legacyStatusForLifecycle(args.to);
+  await db.transaction(async (tx) => {
+    await tx.update(clientProjects).set({ lifecycle: args.to, ...(args.to === "archived" ? {} : { status: legacy }) }).where(eq(clientProjects.id, args.projectId));
+    await tx.insert(projectLifecycleEvents).values({ projectId: args.projectId, fromState: project.lifecycle, toState: args.to, actorUserId: args.actorUserId, note: args.note });
+  });
+  return { ok: true, from: project.lifecycle };
+}
+
+export async function listProjectLifecycleEvents(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(projectLifecycleEvents).where(eq(projectLifecycleEvents.projectId, projectId)).orderBy(desc(projectLifecycleEvents.id)).limit(100);
 }
 
 export async function getProjectOrganizationId(projectId: number): Promise<number | null> {

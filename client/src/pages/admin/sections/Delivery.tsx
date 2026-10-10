@@ -4,6 +4,7 @@
  * Developer projects and assignments (BR-018), tasks, time review, customer
  * approval gates (BR-019), project archiving and messages to developers.
  */
+import { PROJECT_LIFECYCLE, nextLifecycleStates } from "@shared/srsRules";
 import { useState } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -208,8 +209,32 @@ function Approvals() {
     { key: "title", header: "Awaiting the customer's decision on" },
     { key: "createdAt", header: "Requested", render: (r) => shortDateTime(r.createdAt) },
   ];
+  const lifecycles = trpc.adminOps.projectLifecycles.useQuery();
+  const setStage = trpc.adminOps.setProjectLifecycle.useMutation({ onSuccess: () => { utils.adminOps.projectLifecycles.invalidate(); utils.adminOps.pendingApprovals.invalidate(); } });
+  const stageRows = lifecycles.data ?? [];
   return (
     <>
+      <Panel title="Customer project stages">
+        <DataTable
+          columns={[
+            { key: "name", header: "Project" },
+            { key: "lifecycle", header: "Stage", render: (r: (typeof stageRows)[number]) => r.lifecycle.replace(/_/g, " ") },
+            { key: "next", header: "Can move to", render: (r: (typeof stageRows)[number]) => nextLifecycleStates(r.lifecycle).map((s) => s.replace(/_/g, " ")).join(", ") || "none" },
+          ]}
+          rows={stageRows}
+          emptyLabel="No customer projects yet."
+        />
+      </Panel>
+      <FormCard
+        title="Move a customer project to its next stage"
+        submitLabel="Move"
+        fields={[
+          { name: "projectId", label: "Project id", type: "number", required: true },
+          { name: "to", label: "Stage", type: "select", required: true, options: PROJECT_LIFECYCLE.map((s) => ({ value: s, label: s.replace(/_/g, " ") })) },
+          { name: "note", label: "Note" },
+        ]}
+        onSubmit={(v) => setStage.mutateAsync({ projectId: Number(v.projectId), to: v.to as (typeof PROJECT_LIFECYCLE)[number], note: v.note || undefined })}
+      />
       <Panel title="Waiting for the customer">
         <DataTable columns={cols} rows={pending.data ?? []} emptyLabel="No approvals are waiting." />
       </Panel>

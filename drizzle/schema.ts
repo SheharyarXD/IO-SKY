@@ -667,6 +667,8 @@ export const clientProjects = pgTable(
     startMs: bigint("startMs", { mode: "number" }),
     targetMs: bigint("targetMs", { mode: "number" }),
     status: clientProjectsStatusEnum("status").default("active").notNull(),
+    /** SRS 15.5 stage. `status` stays as the coarse value older screens read. */
+    lifecycle: varchar("lifecycle", { length: 24 }).default("created").notNull(),
     summary: text("summary"),
     /** SRS 15.17: archived projects leave active views but are never deleted. */
     archivedAt: timestamp("archivedAt"),
@@ -2783,3 +2785,13 @@ export const operatorScopes = pgTable("operator_scopes", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type ScanPurchaseRow = typeof scanPurchases.$inferSelect;
+
+export const projectLifecycleEvents = pgTable("project_lifecycle_events", {
+  id: serial("id").primaryKey(),
+  projectId: integer("projectId").notNull().references(() => clientProjects.id, { onDelete: "cascade" }),
+  fromState: varchar("fromState", { length: 24 }),
+  toState: varchar("toState", { length: 24 }).notNull(),
+  actorUserId: integer("actorUserId").references(() => users.id),
+  note: varchar("note", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});

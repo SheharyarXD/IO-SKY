@@ -359,3 +359,28 @@ describe("password strength", () => {
     expect(r.ok === false && r.reason).toContain("12");
   });
 });
+
+describe("project lifecycle (SRS 15.5)", () => {
+  it("moves forward one stage at a time", async () => {
+    const { checkLifecycleMove } = await import("../shared/srsRules");
+    expect(checkLifecycleMove("created", "planning").ok).toBe(true);
+    expect(checkLifecycleMove("created", "in_progress").ok).toBe(false);
+    expect(checkLifecycleMove("approved", "completed").ok).toBe(true);
+  });
+  it("lets a review send work back to in progress and nothing else go backwards", async () => {
+    const { checkLifecycleMove } = await import("../shared/srsRules");
+    expect(checkLifecycleMove("customer_review", "in_progress").ok).toBe(true);
+    expect(checkLifecycleMove("completed", "in_progress").ok).toBe(false);
+  });
+  it("treats archived as final and rejects unknown stages", async () => {
+    const { checkLifecycleMove, nextLifecycleStates } = await import("../shared/srsRules");
+    expect(nextLifecycleStates("archived")).toEqual([]);
+    expect(checkLifecycleMove("created", "launched").ok).toBe(false);
+  });
+  it("keeps the coarse status older screens read", async () => {
+    const { legacyStatusForLifecycle } = await import("../shared/srsRules");
+    expect(legacyStatusForLifecycle("kick_off")).toBe("planning");
+    expect(legacyStatusForLifecycle("customer_review")).toBe("active");
+    expect(legacyStatusForLifecycle("closed")).toBe("completed");
+  });
+});

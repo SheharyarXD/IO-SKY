@@ -76,6 +76,8 @@ import { emitNotification } from "../notificationDispatcher";
 import { EXPORT_DATASETS, INVITABLE_ROLES, INVITATION_TTL_DAYS, canInviteRole, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
 import { AI_SCAN_AGENT_KEY, createInvitation, decideLatestAiExecutionForSubject, listInvitations, revokeInvitation, listDeployments, readComplianceInputs, readExportDataset, readMonthlyHistory } from "../db";
 import { fireTrigger } from "../workflowEngine";
+import { PROJECT_LIFECYCLE } from "../../shared/srsRules";
+import { listProjectLifecycleEvents, listProjectLifecycles, setProjectLifecycle } from "../db/srsDelivery";
 import { CALL_OUTCOMES, REPORT_STATUSES, checkCallOutcome, toCsv, type ReportStatus } from "../../shared/srsRules";
 import { addTaskCommentByStaff, getCallOutcome, listNotificationEvents, listRecentEmailLog, listTaskCommentsForStaff, recordCallOutcome } from "../db";
 import { dispatchSimpleEmail, escapeHtml } from "../email";
@@ -383,6 +385,22 @@ export const adminOpsRouter = router({
         await emitNotification({ event: "PROJECT_REVIEW_REQUESTED", audience: { type: "client", organizationId: orgId }, dedupeRef: `approval:${a.id}`, title: `Your approval is needed: ${input.title}`, href: "/client-portal/approvals" });
       }
       return a;
+    }),
+
+  projectLifecycles: adminProcedure.query(() => listProjectLifecycles()),
+  projectLifecycleHistory: adminProcedure.input(z.object({ projectId: z.number().int().positive() })).query(({ input }) => listProjectLifecycleEvents(input.projectId)),
+  setProjectLifecycle: adminProcedure
+    .input(z.object({ projectId: z.number().int().positive(), to: z.enum(PROJECT_LIFECYCLE), note: z.string().trim().max(500).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const res = await setProjectLifecycle({ projectId: input.projectId, to: input.to, actorUserId: ctx.user.id, note: input.note ?? null });
+      if (!res) fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
+      if (!res.ok) fail("PRECONDITION_FAILED", res.reason);
+      await recordAdminEvent({ ctx, reason: `admin.project.lifecycle(${input.projectId}:${res.from}->${input.to})` });
+      const orgId = await getProjectOrganizationId(input.projectId);
+      if (orgId && (input.to === "customer_review" || input.to === "completed")) {
+        await emitNotification({ event: "PROJECT_MILESTONE_UPDATED", audience: { type: "client", organizationId: orgId }, dedupeRef: `project:${input.projectId}:${input.to}`, title: `Your project moved to ${input.to.replace(/_/g, " ")}`, href: "/client-portal/projects" });
+      }
+      return { ok: true as const, from: res.from };
     }),
 
   archiveProject: adminProcedure.input(z.object({ projectId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {

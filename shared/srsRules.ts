@@ -561,3 +561,36 @@ export function checkPasswordStrength(password: string, email: string, minLength
 }
 
 export const ACTIVATION_AGREEMENT_KINDS = ["privacy-policy", "terms-of-service"] as const;
+
+// ---------------------------------------------------------------------------
+// Project lifecycle (SRS 15.5)
+// Created, Planning, Kick-off, In Progress, Internal Review, Customer Review,
+// Approved, Completed, Closed, Archived.
+// ---------------------------------------------------------------------------
+
+export const PROJECT_LIFECYCLE = ["created", "planning", "kick_off", "in_progress", "internal_review", "customer_review", "approved", "completed", "closed", "archived"] as const;
+export type ProjectLifecycle = (typeof PROJECT_LIFECYCLE)[number];
+
+/** Forward one stage at a time. Reviews may send work back to In Progress. Archived is terminal. */
+export function nextLifecycleStates(from: string): ProjectLifecycle[] {
+  const i = PROJECT_LIFECYCLE.indexOf(from as ProjectLifecycle);
+  if (i < 0 || from === "archived") return [];
+  const out: ProjectLifecycle[] = [PROJECT_LIFECYCLE[i + 1]];
+  if (from === "internal_review" || from === "customer_review") out.push("in_progress");
+  return out;
+}
+
+export function checkLifecycleMove(from: string, to: string): CloseCheck {
+  if (!(PROJECT_LIFECYCLE as readonly string[]).includes(to)) return { ok: false, reason: "Unknown project stage." };
+  if (!nextLifecycleStates(from).includes(to as ProjectLifecycle)) {
+    return { ok: false, reason: `A project in ${from.replace(/_/g, " ")} cannot move to ${to.replace(/_/g, " ")}.` };
+  }
+  return { ok: true };
+}
+
+/** The coarse status older screens and reports still read. */
+export function legacyStatusForLifecycle(l: string): "planning" | "active" | "completed" {
+  if (l === "created" || l === "planning" || l === "kick_off") return "planning";
+  if (l === "in_progress" || l === "internal_review" || l === "customer_review" || l === "approved") return "active";
+  return "completed";
+}
