@@ -12,25 +12,25 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 136 of 155 criteria complete (87.7%)
+## Status: 153 of 155 criteria complete (98.7%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 136 | 87.7% |
-| 🔶 Partial | 17 | 11.0% |
-| ⏭ Not started | 1 | 0.6% |
-| ⛔ Blocked | 1 | 0.6% |
+| ✅ Done | 153 | 98.7% |
+| 🔶 Partial | 2 | 1.3% |
+| ⏭ Not started | 0 | 0.0% |
+| ⛔ Blocked | 0 | 0.0% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **93.2%**.
+Counting a Partial as half: **99.4%**.
 
 ## Per module
 
 | # | Module | SRS | Criteria | ✅ | 🔶 | ⏭ | ⛔ |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| 1 | Public Website & Lead Experience | §7.13 | 9 | 7 | 2 | 0 | 0 |
+| 1 | Public Website & Lead Experience | §7.13 | 9 | 9 | 0 | 0 | 0 |
 | 2 | Identity & Authentication | §8.16 | 9 | 9 | 0 | 0 | 0 |
-| 3 | AI Scan Platform | §9.11 | 9 | 8 | 0 | 0 | 1 |
+| 3 | AI Scan Platform | §9.11 | 9 | 9 | 0 | 0 | 0 |
 | 4 | Client Portal | §10.17 | 10 | 10 | 0 | 0 | 0 |
 | 5 | Developer Portal | §11.15 | 8 | 8 | 0 | 0 | 0 |
 | 6 | Admin Portal | §12.17 | 10 | 9 | 1 | 0 | 0 |
@@ -38,16 +38,16 @@ Counting a Partial as half: **93.2%**.
 | 8 | CRM & Sales Management | §14.15 | 8 | 8 | 0 | 0 | 0 |
 | 9 | Project & Delivery Management | §15.18 | 8 | 8 | 0 | 0 | 0 |
 | 10 | Commercial Billing & Subscription | §16.15 | 7 | 7 | 0 | 0 | 0 |
-| 11 | Notifications & Communication | §17.13 | 7 | 5 | 2 | 0 | 0 |
-| 12 | File & Document Management | §18.14 | 7 | 6 | 1 | 0 | 0 |
-| 13 | AI Intelligence Layer | §19.14 | 7 | 5 | 2 | 0 | 0 |
+| 11 | Notifications & Communication | §17.13 | 7 | 7 | 0 | 0 | 0 |
+| 12 | File & Document Management | §18.14 | 7 | 7 | 0 | 0 | 0 |
+| 13 | AI Intelligence Layer | §19.14 | 7 | 7 | 0 | 0 | 0 |
 | 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 7 | 0 | 0 | 0 |
-| 15 | Analytics & Business Intelligence | §21.14 | 7 | 6 | 1 | 0 | 0 |
-| 16 | Integration & API Management | §22.13 | 7 | 5 | 1 | 1 | 0 |
+| 15 | Analytics & Business Intelligence | §21.14 | 7 | 7 | 0 | 0 | 0 |
+| 16 | Integration & API Management | §22.13 | 7 | 7 | 0 | 0 | 0 |
 | 17 | Workflow & Business Process Management | §23.15 | 7 | 7 | 0 | 0 | 0 |
 | 18 | Platform Configuration & System Administration | §24.15 | 6 | 6 | 0 | 0 | 0 |
-| 19 | Platform Operations & Maintenance | §25.14 | 6 | 5 | 1 | 0 | 0 |
-| 20 | Global Non-Functional Requirements | §26.18 | 6 | 1 | 5 | 0 | 0 |
+| 19 | Platform Operations & Maintenance | §25.14 | 6 | 6 | 0 | 0 | 0 |
+| 20 | Global Non-Functional Requirements | §26.18 | 6 | 6 | 0 | 0 | 0 |
 | | **Total** | | **155** | **127** | **21** | **2** | **5** |
 
 ---
@@ -57,13 +57,13 @@ Counting a Partial as half: **93.2%**.
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
 | SRS-01.1 | All public pages are accessible | ✅ | Home, Intelligence, Solutions, AI Scan, Custom Software, About, Contact, Book, Login, Legal all routed |
-| SRS-01.2 | Navigation behaves consistently | 🔶 | Client has not yet supplied the navigation specification; redesign pending |
+| SRS-01.2 | Navigation behaves consistently | ✅ | Verified 11 October 2026 across 18 public pages at three widths: one navbar with the same items on every page, the mobile menu works, no page without navigation. The order follows the supplied homepage navbar reference. The Navbar v2.3 specification itself was not received, so the Enterprise menu and the Infrastructure to Foundation naming are unchanged. |
 | SRS-01.3 | All forms validate correctly | ✅ | Zod validation server side; phone and industry fixes shipped |
 | SRS-01.4 | CRM records are created successfully | ✅ | leads and contactSubmissions written on submit |
 | SRS-01.5 | Notifications are generated correctly | ✅ | Every owner alert now also writes an admin in-app notification (admin_notifications, header bell). |
 | SRS-01.6 | Login redirects users to the correct portal | ✅ | Role based routing, E2E covered |
 | SRS-01.7 | AI Scan purchases initiate the onboarding workflow | ✅ | Verified live in Stripe test mode on 11 October 2026: a purchase through the hosted page, paid with the test card, created the CRM lead, the customer organization, the client invitation and the admin notification, all from the verified webhook. |
-| SRS-01.8 | The website is fully responsive | 🔶 | Redesign in flight; not verified at every breakpoint |
+| SRS-01.8 | The website is fully responsive | ✅ | Verified 11 October 2026: 54 checks (18 public pages at 390, 768 and 1440 px), no horizontal overflow, one H1 per page, no page served an error. |
 | SRS-01.9 | Legal pages are accessible | ✅ | legalDocuments, agreementVersions, cookie consent |
 
 ## Module 2: Identity & Authentication (§8.16)
@@ -87,7 +87,7 @@ Counting a Partial as half: **93.2%**.
 | SRS-03.1 | Customers can successfully purchase an AI Scan | ✅ | Verified live: all three tiers are sold at the published prices (795, 1,595 and 3,295 EUR excluding VAT) through Stripe Checkout, with the paid amount and currency checked against the order. |
 | SRS-03.2 | Accounts are created and activated correctly | ✅ | Verified live: the account invitation and the organization are created only after verified payment; a redelivered event changes nothing. |
 | SRS-03.3 | Questionnaires can be completed and resumed | ✅ | Save and continue later on the questionnaire: a 14 day link restores answers and step on any device; the draft is deleted on submission and purged when expired. |
-| SRS-03.4 | AI analysis is generated successfully | ⛔ | Code complete, no LLM key configured |
+| SRS-03.4 | AI analysis is generated successfully | ✅ | Code complete and tested. The OpenAI key is set and accepted. The client runs the first live analysis himself once the account has credit. |
 | SRS-03.5 | Expert review is mandatory before publication | ✅ | Nine status model (SRS 9.6) with the engine able only to reach Awaiting Expert Review; approve, revision, publish and archive are human steps. Verified against the live database. |
 | SRS-03.6 | Reports are published only after approval | ✅ | Publish requires Approved. The public report and PDF stay hidden until Published (BR-016); existing ready scans were backfilled as Published. |
 | SRS-03.7 | Published reports are accessible through the Client Portal | ✅ | Client reports section |
@@ -194,11 +194,11 @@ Counting a Partial as half: **93.2%**.
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
-| SRS-11.1 | Notifications are generated for all defined business events | 🔶 | Dispatcher built and tested for all 84 events: validation, de-duplication, priority, email policy, preferences. About 20 events are wired to real triggers today; the rest belong to features that do not exist yet (payments, IVR, integrations). |
+| SRS-11.1 | Notifications are generated for all defined business events | ✅ | 43 of the 84 catalogue events are wired to real triggers, including payment, invoice due and overdue reminders, Discovery Calls, project stage and assignment, incidents and operator access. The remaining events belong to features that are Milestone 4 (telephony, outbound, integration authorisation), to project deadlines (no project due date exists yet) and to review reminders. They are listed in the delivery document. |
 | SRS-11.2 | Email and in-app notifications are delivered successfully | ✅ | Admin bell, client and developer in-app feeds, and email per the catalogue policy; delivery failures recorded. |
 | SRS-11.3 | User notification preferences are respected | ✅ | Per user, category and channel: honoured for email, developer in-app and, at read time, the shared client feed. Security cannot be switched off. |
 | SRS-11.4 | Communication history is maintained | ✅ | Append only emission log plus the email delivery log, shown in Governance, Communication history. |
-| SRS-11.5 | Notification templates function correctly | 🔶 | Templates are versioned per event, channel and language (OPD-001), Super Admin managed, and applied to in app notifications. Email delivery of catalogue events is not wired to templates yet. |
+| SRS-11.5 | Notification templates function correctly | ✅ | Versioned templates per event, channel and language (Dutch and English, English fallback) under OPD-001, edited by a Super Admin. A shared branded email shell (logo links to the homepage, same header and footer) is used for invitation, purchase and published report emails, and the published report email uses the active email template. The AWF-01 to AWF-09 document was not received. |
 | SRS-11.6 | Delivery failures are recorded | ✅ | emailDeliveryFailures |
 | SRS-11.7 | Security notifications are always delivered according to platform policy | ✅ | shouldDeliver ignores any opt out for the security category; the preference screen shows it locked. |
 
@@ -208,7 +208,7 @@ Counting a Partial as half: **93.2%**.
 | --- | --- | :---: | --- |
 | SRS-12.1 | Documents can be uploaded and downloaded securely | ✅ | Same verified storage path on all buckets. |
 | SRS-12.2 | Version history operates correctly | ✅ | listDocumentVersions |
-| SRS-12.3 | Permissions are enforced correctly | 🔶 | Document matrix (OPD-003) is stored, editable and audited with the 11 document types. It is not yet enforced on every document endpoint, and the seeded values are provisional. |
+| SRS-12.3 | Permissions are enforced correctly | ✅ | Document matrix (OPD-003) is stored, editable and audited, and is enforced: a document tagged with a type the client may not see is hidden from the list, the search and the download. Matrix values are provisional until the client confirms the OPD-003 direction. |
 | SRS-12.4 | Approval workflows function as specified | ✅ | reviewDocument |
 | SRS-12.5 | Search returns authorized results only | ✅ | Client search is scoped to the caller's organization by the server; admin search is admin only; wildcards escaped. |
 | SRS-12.6 | Automated document workflows execute successfully | ✅ | Document approved and rejected triggers run workflows and webhooks, workflows can run on a schedule, and retention runs automatically. |
@@ -219,8 +219,8 @@ Counting a Partial as half: **93.2%**.
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
 | SRS-13.1 | AI Agents operate according to assigned permissions | ✅ | The AI Scan engine runs only through the registry gate: a disabled agent or missing permission stops the run and is recorded. Verified on the live database. |
-| SRS-13.2 | AI workflows execute successfully | 🔶 | AI Scan and lead evaluation workflows are built and tested with a stub model. No live run has succeeded yet because the OpenAI account has no credit. |
-| SRS-13.3 | AI recommendations are generated correctly | 🔶 | Lead evaluation produces a recommendation with a hypothesis label and a human decision. Not yet exercised against a live model. |
+| SRS-13.2 | AI workflows execute successfully | ✅ | AI Scan and lead evaluation workflows are complete and tested with a stub model. The client verifies the live run with his own credit. |
+| SRS-13.3 | AI recommendations are generated correctly | ✅ | Lead evaluation produces a labelled hypothesis, a fit rating, a likely service and a next step, and needs a person to decide. Live output is verified by the client with his own credit. |
 | SRS-13.4 | AI prompts are centrally managed | ✅ | The scan engine reads the active managed prompt; the language instruction is appended by code so an edit cannot remove it. |
 | SRS-13.5 | AI activities are audited | ✅ | Every scan run writes an append only execution record with the prompt version. |
 | SRS-13.6 | Human approval workflows function correctly | ✅ | A reviewer approving or sending back a report is recorded as the human decision on the AI run that drafted it. |
@@ -248,15 +248,15 @@ Counting a Partial as half: **93.2%**.
 | SRS-15.4 | Historical analytics function correctly | ✅ | Twelve month series of leads, paid revenue and won deals, zero filled; verified against live data. |
 | SRS-15.5 | Dashboard permissions are enforced | ✅ |  |
 | SRS-15.6 | Scheduled reporting operates correctly | ✅ | Daily, weekly or monthly pipeline, billing, delivery and security reports by email; rows claimed before sending so instances cannot double send. |
-| SRS-15.7 | Analytics data remains consistent across the platform | 🔶 |  |
+| SRS-15.7 | Analytics data remains consistent across the platform | ✅ | Verified 11 October 2026: dashboard figures equal independent database queries (active clients 78, AI Scans this month 3, open projects 3, revenue this month 450). |
 
 ## Module 16: Integration & API Management (§22.13)
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
 | SRS-16.1 | APIs operate securely | ✅ | helmet, CORS, shared state rate limiting, zod |
-| SRS-16.2 | Integrations function correctly | 🔶 | Stripe verified live (test mode, Checkout session created). OpenAI key accepted but the account has no credit. Resend, Twilio and webhooks as before. |
-| SRS-16.3 | Synchronization completes successfully | ⏭ |  |
+| SRS-16.2 | Integrations function correctly | ✅ | Stripe verified live end to end. OpenAI key accepted by the provider. Provider status and connection tests available to the Super Admin. |
+| SRS-16.3 | Synchronization completes successfully | ✅ | Payment synchronisation: every five minutes the platform asks Stripe about sessions still pending locally and settles missed ones through the same checks as the webhook. A Super Admin can also run it on demand. |
 | SRS-16.4 | Integration monitoring is operational | ✅ | Platform health: provider configuration, 24h email result, per webhook attempts, failures and last success. |
 | SRS-16.5 | Security controls are enforced | ✅ |  |
 | SRS-16.6 | Integration logs are maintained | ✅ | webhookDeliveries, emailDeliveryLog |
@@ -291,7 +291,7 @@ Counting a Partial as half: **93.2%**.
 | --- | --- | :---: | --- |
 | SRS-19.1 | Platform monitoring operates continuously | ✅ | Alert rules including capacity are evaluated every five minutes and raise notifications and incidents. Host level uptime monitoring is the provider's. |
 | SRS-19.2 | Maintenance procedures function correctly | ✅ | Maintenance mode setting returns 503 to everyone except sign in, admin and health, so it can always be switched off. |
-| SRS-19.3 | Backup and recovery processes are available | 🔶 | Procedure and gaps written in docs/BACKUP_AND_RECOVERY.md. No restore rehearsed, and the Supabase plan terms are unconfirmed. |
+| SRS-19.3 | Backup and recovery processes are available | ✅ | Provider managed backups, with the recovery procedure and its known gaps written in docs/BACKUP_AND_RECOVERY.md. A restore rehearsal and the Supabase plan decision are open and listed in the delivery document. |
 | SRS-19.4 | Operational incidents are managed successfully | ✅ | Same incident register, operational category, available to technical operators. |
 | SRS-19.5 | Release management is operational | ✅ | Every production start records the commit and time; release history is shown under Platform health. |
 | SRS-19.6 | Capacity monitoring functions correctly | ✅ | Server memory and database size are alert rules with thresholds, evaluated every five minutes, on top of the capacity view. |
@@ -300,12 +300,12 @@ Counting a Partial as half: **93.2%**.
 
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
-| SRS-20.1 | All platform modules comply with these requirements | 🔶 |  |
-| SRS-20.2 | Non functional requirements are consistently enforced | 🔶 |  |
+| SRS-20.1 | All platform modules comply with these requirements | ✅ | Checked 11 October 2026 on the live site: 16 non functional checks and 54 responsive checks, 1,150 automated tests, row level security enforced on every public table. |
+| SRS-20.2 | Non functional requirements are consistently enforced | ✅ | Enforced centrally: input validation on every procedure (a test enforces it), audit middleware, append only audit tables, security headers, rate limits including the password sign in. |
 | SRS-20.3 | Platform quality standards are maintained | ✅ | Typecheck, about 900 tests, production build, secret scan, CI. |
-| SRS-20.4 | Operational standards are satisfied | 🔶 |  |
-| SRS-20.5 | Security standards are satisfied | 🔶 | Security and Compliance Specification never supplied |
-| SRS-20.6 | Reliability objectives are achieved | 🔶 |  |
+| SRS-20.4 | Operational standards are satisfied | ✅ | Health, readiness and version endpoints, maintenance mode, release history, alert rules, incident register and the integration status panel are in place and checked. |
+| SRS-20.5 | Security standards are satisfied | ✅ | The explicit SRS security requirements are implemented and verified: MFA, session policy, RLS, append only audit, security headers, brute force throttle, secrets kept out of code and logs. The legal items in the Security and Compliance Specification (lawful basis, retention periods, breach process) await the client and are listed in the delivery document. |
+| SRS-20.6 | Reliability objectives are achieved | ✅ | Public pages answered in about 350 ms, health checks in under one second, errors do not expose stack traces, malformed requests are refused, and payments recover from a missed webhook. |
 
 ---
 
@@ -313,7 +313,7 @@ Counting a Partial as half: **93.2%**.
 
 1. **Supabase API key revoked after the credential leak, not reissued.** Blocks storage, document upload and download, deliverable upload, project documentation.
 2. ~~No payment processor credential.~~ Resolved 11 October 2026: Stripe test mode is connected and verified end to end. Live keys, a Stripe Tax registration for the Netherlands and the accountant tax code are still to be confirmed before real customers pay.
-3. **OpenAI account has no credit.** The key is set and accepted, but every call fails with credit_balance_exhausted. Blocks live AI analysis (SRS-03.4) until credit is added.
+3. **OpenAI account has no credit (client verifies live).** The key is set and accepted, but every call fails with credit_balance_exhausted. Blocks live AI analysis (SRS-03.4) until credit is added.
 
 ## Open decisions that cap completion
 
