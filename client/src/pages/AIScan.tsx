@@ -265,6 +265,31 @@ export default function AIScan() {
     },
   });
 
+  // Paid tiers go to Stripe Checkout. While online purchase is not enabled the server
+  // answers PRECONDITION_FAILED and the visitor continues through the lead flow instead.
+  const leadPayload = () => ({
+    tier: selectedTier,
+    fullName: form.name.trim(),
+    email: form.email.trim(),
+    phone: form.phone.trim() || null,
+    company: form.company.trim(),
+    acceptedAiDisclaimer: true as const,
+    preferredLanguage: language,
+    primaryAudience: audience || null,
+  });
+  const startPurchase = trpc.aiScans.startPurchase.useMutation({
+    onSuccess: (res) => {
+      window.location.href = res.url;
+    },
+    onError: (err) => {
+      if (err.data?.code === "PRECONDITION_FAILED") {
+        submitLead.mutate(leadPayload());
+        return;
+      }
+      setSubmitState({ kind: "error", message: err.message || "Something went wrong. Please try again." });
+    },
+  });
+
   const openPurchase = (tier: Tier) => {
     setSelectedTier(tier);
     setSubmitState({ kind: "idle" });
@@ -566,18 +591,19 @@ export default function AIScan() {
               className="mt-2 space-y-3"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (!acceptedDisclaimer || submitLead.isPending) return;
+                if (!acceptedDisclaimer || submitLead.isPending || startPurchase.isPending) return;
                 setSubmitState({ kind: "idle" });
-                submitLead.mutate({
-                  tier: selectedTier,
-                  fullName: form.name.trim(),
-                  email: form.email.trim(),
-                  phone: form.phone.trim() || null,
-                  company: form.company.trim(),
-                  acceptedAiDisclaimer: true,
-                  preferredLanguage: language,
-                  primaryAudience: audience || null,
-                });
+                if (selectedTier === "free") {
+                  submitLead.mutate(leadPayload());
+                } else {
+                  startPurchase.mutate({
+                    tier: selectedTier as "growth" | "elite",
+                    fullName: form.name.trim(),
+                    email: form.email.trim(),
+                    company: form.company.trim() || undefined,
+                    locale: language,
+                  });
+                }
               }}
             >
               <label className="block">

@@ -15,6 +15,8 @@
  * allowed to throw into the caller: a failure is logged and reported in the
  * return value.
  */
+import { FALLBACK_LOCALE, renderTemplate } from "../shared/platformRules";
+import { getActiveTemplate } from "./db/platformGovernance";
 import { getNotificationEventByName } from "../shared/notificationCatalogue";
 import { buildDedupKey, catalogueWantsEmail, inAppPriority, kindForFamily } from "../shared/srsRules";
 import { createAdminNotification, recordNotificationEvent } from "./db";
@@ -62,7 +64,20 @@ export async function emitNotification(args: {
   try {
     const ref = recipientRef(args.audience);
     const wantsEmail = catalogueWantsEmail(event.emailDelivery);
-    const title = (args.title ?? humanize(event.name)).slice(0, 200);
+    let title = (args.title ?? humanize(event.name)).slice(0, 200);
+    let bodyText = args.body ?? null;
+    // An active template for this event (OPD-001) replaces the built in wording. Placeholders
+    // are filled only from values this call already holds; nothing is looked up from user input.
+    try {
+      const tpl = await getActiveTemplate(event.name, "in_app", FALLBACK_LOCALE);
+      if (tpl) {
+        const vars = { reference: args.dedupeRef, link: args.href ?? "" };
+        title = renderTemplate(tpl.subject, vars).slice(0, 200) || title;
+        bodyText = renderTemplate(tpl.body, vars) || bodyText;
+      }
+    } catch {
+      /* a template problem must never stop a notification */
+    }
     const first = await recordNotificationEvent({
       eventId: event.id,
       eventName: event.name,
@@ -82,12 +97,12 @@ export async function emitNotification(args: {
 
     if (args.audience.type === "admin") {
       if (!args.skipAdminFeed) {
-        await createAdminNotification({ kind: event.id, title, body: args.body ?? null, href, priority });
+        await createAdminNotification({ kind: event.id, title, body: bodyText, href, priority });
       }
     } else if (args.audience.type === "client") {
-      await notifyClient({ organizationId: args.audience.organizationId, kind, title, body: args.body ?? null, href, priority, channel });
+      await notifyClient({ organizationId: args.audience.organizationId, kind, title, body: bodyText, href, priority, channel });
     } else {
-      await notifyDeveloper({ developerId: args.audience.developerId, kind, title, body: args.body ?? null, href, priority, channel });
+      await notifyDeveloper({ developerId: args.audience.developerId, kind, title, body: bodyText, href, priority, channel });
     }
     return { delivered: true, eventId: event.id };
   } catch (err) {

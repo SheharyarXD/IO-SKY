@@ -1,3 +1,6 @@
+import { routeModel, type TaskComplexity } from "../../shared/modelRouting";
+import { recordLlmUsage } from "./llmUsage";
+
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
 
 export type TextContent = {
@@ -64,6 +67,10 @@ export type InvokeParams = {
   output_schema?: OutputSchema;
   responseFormat?: ResponseFormat;
   response_format?: ResponseFormat;
+  /** How demanding the task is; picks the model through shared/modelRouting. Defaults to complex. */
+  complexity?: TaskComplexity;
+  /** Short label for usage reporting, e.g. "ai_scan.scoring". */
+  purpose?: string;
 };
 
 export type ToolCall = {
@@ -232,7 +239,6 @@ const normalizeToolChoice = (
  * populated and unread, which is a confusing way for a platform to be
  * broken.
  */
-const DEFAULT_MODEL = "gpt-4o-mini";
 const DEFAULT_TIMEOUT_MS = 60_000;
 const OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -281,7 +287,7 @@ export function isLlmConfigured(): boolean {
   }
 }
 
-const resolveModel = () => process.env.LLM_MODEL || DEFAULT_MODEL;
+const resolveModel = (complexity?: TaskComplexity) => routeModel(complexity, process.env).model;
 
 const resolveTimeoutMs = () => {
   const raw = process.env.LLM_TIMEOUT_MS;
@@ -350,7 +356,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: resolveModel(),
+    model: resolveModel(params.complexity),
     messages: messages.map(normalizeMessage),
   };
 
@@ -412,5 +418,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     );
   }
 
-  return (await response.json()) as InvokeResult;
+  const result = (await response.json()) as InvokeResult;
+  recordLlmUsage({ model: result.model ?? String(payload.model), complexity: params.complexity ?? "complex", purpose: params.purpose ?? null, usage: result.usage });
+  return result;
 }

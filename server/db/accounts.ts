@@ -20,7 +20,8 @@ export async function createInvitation(args: {
   email: string;
   role: InvitableRole;
   organizationId: number | null;
-  invitedByUserId: number;
+  /** Null when the invitation follows a verified payment rather than an administrator action. */
+  invitedByUserId: number | null;
   now?: Date;
 }): Promise<{ invitation: AccountInvitation; token: string } | "user_exists" | null> {
   const db = await getDb();

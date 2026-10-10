@@ -14,8 +14,9 @@ import { FormCard, Panel, SmallButton, TabBar, shortDateTime } from "./_shared/F
 import { AuditSearch, CommunicationHistory, Compliance, Health } from "./GovernanceExtras";
 import { AiScanReview } from "./AiScanReview";
 import { Invitations } from "./Invitations";
+import { PlatformGovernance } from "./PlatformGovernance";
 
-type Tab = "incidents" | "alerts" | "ai" | "config" | "reports" | "audit" | "health" | "scanreview" | "comms" | "compliance" | "invites";
+type Tab = "incidents" | "alerts" | "ai" | "config" | "reports" | "audit" | "health" | "scanreview" | "comms" | "compliance" | "invites" | "platform";
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "scanreview", label: "AI Scan review" },
   { id: "incidents", label: "Incidents" },
@@ -28,6 +29,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "comms", label: "Communication history" },
   { id: "compliance", label: "Compliance" },
   { id: "invites", label: "Invitations" },
+  { id: "platform", label: "Templates, matrix and scopes" },
 ];
 
 const sevTone = (s: string) => (s === "critical" ? "err" : s === "high" ? "warn" : s === "medium" ? "info" : "muted");
@@ -53,6 +55,7 @@ export function Governance() {
           {tab === "comms" && <CommunicationHistory />}
           {tab === "compliance" && <Compliance />}
           {tab === "invites" && <Invitations />}
+          {tab === "platform" && <PlatformGovernance />}
         </div>
       }
     />

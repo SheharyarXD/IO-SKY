@@ -6,7 +6,7 @@
  * RBAC lives on the tRPC procedures; these functions enforce data integrity
  * (who may log time against what) because that must hold on every path.
  */
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import {
   clientProjectMilestones,
   clientProjects,
@@ -49,6 +49,8 @@ export async function createTimeEntry(args: {
           eq(developerProjectAssignments.projectId, args.projectId),
           eq(developerProjectAssignments.developerId, args.developerId),
           eq(developerProjectAssignments.status, "active"),
+          // A reviewer inspects the work; they are not an implementer and do not bill time to it.
+          ne(developerProjectAssignments.assignmentRole, "reviewer"),
         ),
       )
       .limit(1);

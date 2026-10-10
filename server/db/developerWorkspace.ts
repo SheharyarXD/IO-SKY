@@ -16,7 +16,7 @@
  * developer_audit, developer_security_events, developer_support_tickets,
  * developer_notifications.
  */
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, ne, or } from "drizzle-orm";
 import {
   developerAccessRequests,
   developerAccessScopes,
@@ -995,6 +995,21 @@ export async function assignDeveloperToProject(args: {
   const db = await getDb();
   if (!db) return null;
   return db.transaction(async (tx) => {
+    // One primary internal contact per project: promoting someone to lead steps the
+    // previous lead down to contributor. Nothing is deleted, so history stays intact.
+    if (args.assignmentRole === "lead") {
+      await tx
+        .update(developerProjectAssignments)
+        .set({ assignmentRole: "contributor", updatedAt: new Date() })
+        .where(
+          and(
+            eq(developerProjectAssignments.projectId, args.projectId),
+            eq(developerProjectAssignments.assignmentRole, "lead"),
+            eq(developerProjectAssignments.status, "active"),
+            ne(developerProjectAssignments.developerId, args.developerId),
+          ),
+        );
+    }
     const existing = await tx
       .select()
       .from(developerProjectAssignments)

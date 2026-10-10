@@ -42,6 +42,8 @@ import { storageDelete, storageGetSignedUrl, storagePut } from "../storage";
 import { clientProcedure, router } from "../_core/trpc";
 import { createAdminNotification, decideProjectApproval, listApprovalsForOrganization, listAiScanProgressForEmail, listNotificationPreferences, searchDocuments } from "../db";
 import { generatePublicRef } from "../_core/publicRef";
+import { createCheckoutSession, isStripeConfigured } from "../_core/stripe";
+import { setInvoiceCheckoutSession } from "../db/payments";
 
 const supportTicketSchema = z.object({
   subject: z.string().min(3).max(200),
@@ -439,6 +441,31 @@ export const clientPortalRouter = router({
         });
       } catch {
         /* best-effort */
+      }
+      if (isStripeConfigured()) {
+        const base = process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://iosky.com";
+        try {
+          const session = await createCheckoutSession({
+            amountCents: invoice.amountCents,
+            currency: invoice.currency,
+            description: `${invoice.number}: ${invoice.description}`,
+            customerEmail: ctx.user.email ?? null,
+            successUrl: `${base}/client-portal/billing?paid=${encodeURIComponent(invoice.number)}`,
+            cancelUrl: `${base}/client-portal/billing`,
+            metadata: { kind: "invoice", invoiceId: String(invoice.id), organizationId: String(ctx.organizationId) },
+            idempotencyKey: `invoice-${invoice.id}-${invoice.amountCents}-${Math.floor(Date.now() / 600_000)}`,
+            automaticTax: process.env.STRIPE_AUTOMATIC_TAX === "on",
+          });
+          await setInvoiceCheckoutSession(invoice.id, session.id);
+          return {
+            mode: "stripe" as const,
+            url: session.url,
+            invoice: { id: invoice.id, number: invoice.number, amountCents: invoice.amountCents, currency: invoice.currency },
+          };
+        } catch (err) {
+          console.error("[clientPortal.requestInvoiceCheckout] Stripe checkout failed:", err instanceof Error ? err.message : err);
+          throw new TRPCError({ code: "BAD_GATEWAY", message: "The payment page could not be opened. Please try again shortly." });
+        }
       }
       return {
         mode: "manual" as const,

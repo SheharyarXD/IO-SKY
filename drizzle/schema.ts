@@ -739,6 +739,8 @@ export const clientInvoices = pgTable(
     dueMs: bigint("dueMs", { mode: "number" }),
     paidMs: bigint("paidMs", { mode: "number" }),
     pdfKey: varchar("pdfKey", { length: 512 }),
+    stripeSessionId: varchar("stripeSessionId", { length: 128 }),
+    stripeInvoiceUrl: varchar("stripeInvoiceUrl", { length: 512 }),
   },
   (table) => [
     index("client_invoices_organization_id_idx").on(table.organizationId),
@@ -2695,3 +2697,89 @@ export const accountInvitations = pgTable(
   ],
 );
 export type AccountInvitation = typeof accountInvitations.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// Migration 0032: payments, AI usage, templates, document matrix, operator scopes
+// ---------------------------------------------------------------------------
+export const paymentEvents = pgTable("payment_events", {
+  id: serial("id").primaryKey(),
+  providerEventId: varchar("providerEventId", { length: 128 }).notNull().unique(),
+  type: varchar("type", { length: 96 }).notNull(),
+  invoiceId: integer("invoiceId"),
+  organizationId: integer("organizationId"),
+  scanPurchaseId: integer("scanPurchaseId"),
+  amountCents: integer("amountCents"),
+  currency: varchar("currency", { length: 8 }),
+  outcome: varchar("outcome", { length: 32 }).notNull(),
+  detail: text("detail"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const scanPurchases = pgTable("scan_purchases", {
+  id: serial("id").primaryKey(),
+  tier: varchar("tier", { length: 16 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  fullName: varchar("fullName", { length: 200 }).notNull(),
+  company: varchar("company", { length: 200 }),
+  locale: varchar("locale", { length: 8 }).default("en").notNull(),
+  amountCents: integer("amountCents").notNull(),
+  currency: varchar("currency", { length: 8 }).default("EUR").notNull(),
+  stripeSessionId: varchar("stripeSessionId", { length: 128 }).unique(),
+  status: varchar("status", { length: 16 }).default("pending").notNull(),
+  leadId: integer("leadId"),
+  organizationId: integer("organizationId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  paidAt: timestamp("paidAt"),
+});
+
+export const aiUsage = pgTable("ai_usage", {
+  id: serial("id").primaryKey(),
+  model: varchar("model", { length: 96 }).notNull(),
+  complexity: varchar("complexity", { length: 16 }).notNull(),
+  purpose: varchar("purpose", { length: 96 }),
+  promptTokens: integer("promptTokens").default(0).notNull(),
+  completionTokens: integer("completionTokens").default(0).notNull(),
+  costMicros: integer("costMicros"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const notificationTemplates = pgTable("notification_templates", {
+  id: serial("id").primaryKey(),
+  eventName: varchar("eventName", { length: 96 }).notNull(),
+  channel: varchar("channel", { length: 16 }).notNull(),
+  locale: varchar("locale", { length: 8 }).notNull(),
+  version: integer("version").notNull(),
+  subject: varchar("subject", { length: 300 }).notNull(),
+  body: text("body").notNull(),
+  status: varchar("status", { length: 16 }).default("draft").notNull(),
+  createdByUserId: integer("createdByUserId").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const documentMatrix = pgTable("document_matrix", {
+  documentType: varchar("documentType", { length: 64 }).primaryKey(),
+  label: varchar("label", { length: 120 }).notNull(),
+  owningEntity: varchar("owningEntity", { length: 64 }).notNull(),
+  authorizedRoles: text("authorizedRoles").notNull(),
+  versioned: boolean("versioned").default(true).notNull(),
+  approvalRequired: boolean("approvalRequired").default(false).notNull(),
+  retentionDays: integer("retentionDays"),
+  archiveOnProjectCompletion: boolean("archiveOnProjectCompletion").default(true).notNull(),
+  classification: varchar("classification", { length: 32 }).default("confidential").notNull(),
+  clientVisible: boolean("clientVisible").default(false).notNull(),
+  provisional: boolean("provisional").default(true).notNull(),
+  updatedByUserId: integer("updatedByUserId").references(() => users.id),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export const operatorScopes = pgTable("operator_scopes", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  scope: varchar("scope", { length: 32 }).notNull(),
+  expiresAt: timestamp("expiresAt"),
+  revokedAt: timestamp("revokedAt"),
+  grantedByUserId: integer("grantedByUserId").references(() => users.id),
+  note: varchar("note", { length: 300 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ScanPurchaseRow = typeof scanPurchases.$inferSelect;

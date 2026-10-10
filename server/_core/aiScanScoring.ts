@@ -312,6 +312,8 @@ export async function scoreAiScan(
         type: "json_schema",
         json_schema: REPORT_JSON_SCHEMA,
       },
+      complexity: "complex",
+      purpose: "ai_scan.scoring",
     });
   } catch (e) {
     return {

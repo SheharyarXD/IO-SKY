@@ -19,6 +19,8 @@
 import { z } from "zod";
 import { and, count, gte, ne, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { mayUseSecurityCenter } from "../../shared/platformRules";
+import { getScopeGrants } from "../db/platformGovernance";
 import {
   opsProcedure,
   protectedProcedure,
@@ -69,6 +71,18 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   } catch (err) {
     console.error("[ops] query failed, returning fallback:", err);
     return fallback;
+  }
+}
+
+/**
+ * The Security Center is not implied by the Technical Operator role. An operator needs an
+ * active, unexpired "security" scope granted by a Super Admin (SRS 15.4).
+ */
+async function requireSecurityScope(user: { id: number; role: string }) {
+  if (user.role !== "technical_operator") return;
+  const grants = await getScopeGrants(user.id);
+  if (!mayUseSecurityCenter(user.role, grants)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "The Security Center needs a security scope granted by a Super Admin." });
   }
 }
 
@@ -180,6 +194,7 @@ export const opsRouter = router({
 
   /** Security Center — recent platform-wide security events for investigation. */
   securityEvents: opsProcedure.query(async ({ ctx }) => {
+    await requireSecurityScope(ctx.user);
     await recordOpsEvent({ ctx, reason: "ops.read.security_events" });
     return safe(() => listRecentSecurityEvents(100), []);
   }),
@@ -188,6 +203,7 @@ export const opsRouter = router({
   acknowledgeSecurityEvent: opsProcedure
     .input(z.object({ eventId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
+      await requireSecurityScope(ctx.user);
       const updated = await acknowledgeDeveloperSecurityEvent(input.eventId, ctx.user.id);
       if (!updated) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Security event not found." });

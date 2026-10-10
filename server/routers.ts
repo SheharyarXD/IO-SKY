@@ -14,6 +14,7 @@ import { privacyRouter } from "./routers/privacy";
 import { profileRouter } from "./routers/profile";
 import { adminRouter } from "./routers/admin";
 import { adminOpsRouter } from "./routers/adminOps";
+import { adminPlatformRouter } from "./routers/adminPlatform";
 import { accountsRouter } from "./routers/accounts";
 import { opsRouter } from "./routers/ops";
 import { bookingAdminRouter } from "./routers/bookingAdmin";
@@ -105,6 +106,7 @@ export const appRouter = router({
   profile: profileRouter,
   admin: adminRouter,
   adminOps: adminOpsRouter,
+  adminPlatform: adminPlatformRouter,
   accounts: accountsRouter,
   ops: opsRouter,
   bookingAdmin: bookingAdminRouter,

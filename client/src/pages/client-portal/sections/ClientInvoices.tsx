@@ -89,6 +89,10 @@ export default function ClientInvoices() {
 
   const startCheckout = trpc.clientPortal.requestInvoiceCheckout.useMutation({
     onSuccess: res => {
+      if (res.mode === "stripe") {
+        window.location.href = res.url;
+        return;
+      }
       toast.success(`Payment started — ${res.invoice.number}`, {
         description:
           "Your IO SKY operating partner has been notified. Routing you to instructions…",

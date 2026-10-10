@@ -16,6 +16,8 @@
  *     those are explicit, separate journeys.
  */
 
+import { createCheckoutSession, isStripeConfigured } from "../_core/stripe";
+import { attachScanPurchaseSession, createScanPurchase } from "../db/payments";
 import { isReportVisibleToCustomer } from "../../shared/srsRules";
 import { guardAiScanRun } from "../aiGovernance";
 import { dispatchSimpleEmail, escapeHtml } from "../email";
@@ -280,6 +282,61 @@ export const aiScansRouter = router({
       }
 
       return { success: true as const, tier: input.tier, leadId: lead.id };
+    }),
+
+  /**
+   * Paid tier purchase (SRS 9.5 stages 1 and 2, 16.7). Creates a pending purchase and a
+   * Stripe Checkout Session. Nothing is granted here: the account and the invitation are
+   * created only when the verified webhook confirms payment.
+   */
+  startPurchase: publicProcedure
+    .input(
+      z.object({
+        tier: z.enum(["growth", "elite"]),
+        fullName: z.string().trim().min(2).max(200),
+        email: z.string().trim().toLowerCase().email().max(320),
+        company: z.string().trim().max(200).optional(),
+        locale: z.string().trim().max(8).default("en"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { ip } = getRequestMeta(ctx.req);
+      if (await isAiScanRateLimited(ip)) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many requests. Please try again shortly." });
+      }
+      const price = Number(process.env[`AI_SCAN_PRICE_${input.tier.toUpperCase()}_CENTS`]);
+      if (!isStripeConfigured() || !Number.isInteger(price) || price <= 0) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Online purchase is not available yet. Please book a Discovery Call." });
+      }
+      const purchase = await createScanPurchase({
+        tier: input.tier,
+        email: input.email,
+        fullName: input.fullName,
+        company: input.company || null,
+        locale: input.locale,
+        amountCents: price,
+        currency: (process.env.AI_SCAN_CURRENCY || "EUR").toUpperCase(),
+      });
+      if (!purchase) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Your order could not be saved. Please try again." });
+      const base = process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://iosky.com";
+      try {
+        const session = await createCheckoutSession({
+          amountCents: purchase.amountCents,
+          currency: purchase.currency,
+          description: `IO SKY AI Scan (${input.tier})`,
+          customerEmail: purchase.email,
+          successUrl: `${base}/ai-scan?purchase=success`,
+          cancelUrl: `${base}/ai-scan?purchase=cancelled`,
+          metadata: { kind: "scan_purchase", scanPurchaseId: String(purchase.id), tier: input.tier },
+          idempotencyKey: `scan-purchase-${purchase.id}`,
+          automaticTax: process.env.STRIPE_AUTOMATIC_TAX === "on",
+        });
+        await attachScanPurchaseSession(purchase.id, session.id);
+        return { url: session.url };
+      } catch (err) {
+        console.error("[aiScans.startPurchase] Stripe checkout failed:", err instanceof Error ? err.message : err);
+        throw new TRPCError({ code: "BAD_GATEWAY", message: "The payment page could not be opened. Please try again shortly." });
+      }
     }),
 
   /**

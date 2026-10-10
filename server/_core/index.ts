@@ -14,6 +14,7 @@ import { registerSecurityHeaders } from "./securityHeaders";
 import { registerCorsPolicy } from "./corsPolicy";
 import { registerHealthRoutes } from "./healthRoute";
 import { registerResendWebhookRoutes } from "./resendWebhookRoute";
+import { registerStripeWebhookRoutes } from "./stripeWebhookRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./staticServer";
@@ -108,6 +109,7 @@ async function startServer() {
   registerMfaChallengeRoutes(app);
   registerViewAsRoutes(app);
   registerResendWebhookRoutes(app);
+  registerStripeWebhookRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",
