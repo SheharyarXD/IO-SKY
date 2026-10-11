@@ -130,9 +130,38 @@ After verification Zoho shows the MX, SPF and DKIM values for iosky.co in the sa
 
 | Item | State |
 |---|---|
-| Plan | Mail Lite, 5 licences, 2 in use, 3 free, valid until 11 October 2027 |
-| Users | leeroy.correiadjalo@iosky.nl, loubna.maghnouj@iosky.nl |
-| Domains | iosky.nl (verified, MX not yet pointed), iosky.co (added, verification pending) |
-| Data centre | EU (zoho.eu) |
-| DNS host | Hostinger |
-| Still to create | three more users for the plan above, aliases, folders and filters |
+| Plan | Mail Lite, 5 licences, all 5 now in use, valid until 11 October 2027 |
+| Data centre | EU (zoho.eu). DNS host: Hostinger |
+| Mailbox 1, General | `support@iosky.nl` created, aliases `contact@`, `info@`, `no-reply@` added |
+| Mailbox 2, Projects | `projects@iosky.nl` created, aliases `development@`, `engineering@` added |
+| Mailbox 3, Sensitive | `security@iosky.nl` created, aliases `privacy@`, `billing@` added |
+| Mailbox 4, Personal | existing user `leeroy.correiadjalo@iosky.nl`. The client wants `lcorreiad@iosky.nl` with the display name "Leeroy Correia Djalo \| IO SKY". Add it as an alias and make it the mailbox address when ready |
+| Mailbox 5, Outbound | the existing user `loubna.maghnouj@iosky.nl` occupies the fifth licence. The final iosky.co sender is confirmed by the client on 12 October 2026 |
+| Domains | iosky.nl verified, MX not yet pointed. iosky.co added, ownership not yet verified |
+| Folders on support@ | Support, Contact, Info created |
+| Folders on projects@ and security@ | still to create |
+| Server side filters | still to create on all three shared mailboxes |
+| Time zone | new users default to Asia/Karachi. Set Europe/Amsterdam in each mailbox under Settings, System |
+
+Zoho limits sign in attempts per day. Sign in once per mailbox and do all work in that session.
+New users must change their temporary password at the first sign in, and the welcome tour must be dismissed before the
+settings dialog responds to clicks.
+
+## 11. Routing as specified by the client
+
+| Address | Purpose | Folder |
+|---|---|---|
+| support@ | customer support, portal and Scan support, tickets | Support |
+| contact@ | enquiries, Discovery Call requests and confirmations | Contact |
+| info@ | general information requests | Info |
+| no-reply@ | automated platform messages, no human reply | none |
+| projects@ | project communication, milestones, deliverables, handoff, 30 day monitoring | Projects |
+| development@ | developer invitations, onboarding, access, offboarding | Development |
+| engineering@ | architecture, infrastructure, technical escalation | Engineering |
+| security@ | security reports, vulnerability reports, Cyber Scan escalations | Security |
+| privacy@ | GDPR and data requests | Privacy |
+| billing@ | payments, invoices, receipts, subscriptions | Billing |
+
+Sender per message type, for platform emails about an AI Scan: billing@ for payments and invoices, no-reply@ for automated
+status and report notices, support@ for human help, security@ for Cyber Scan security escalations, contact@ for Discovery Call
+follow up.
