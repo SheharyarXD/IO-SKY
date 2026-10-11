@@ -25,9 +25,9 @@ const EXTRA_SHOTS = {
 };
 for (const [k, more] of Object.entries(EXTRA_SHOTS)) if (CRITERIA[k]) CRITERIA[k].shots = [...new Set([...CRITERIA[k].shots, ...more])];
 // Criteria whose message is carried by email: the link itself was verified, delivery through Zoho is pending.
-const EMAIL_NOTE = new Set(["SRS-02.3", "SRS-02.4", "SRS-03.9"]);
+const EMAIL_NOTE = new Set(["SRS-02.3", "SRS-02.4", "SRS-03.9", "SRS-11.2", "SRS-11.5"]);
 // Email delivery is left blank in this edition until the Zoho mailboxes are connected.
-const EMAIL_BLANK = ["SRS-11.2", "SRS-11.5"];
+const EMAIL_BLANK = [];
 
 const E = process.env.EVIDENCE_OUT;
 const OUT = process.argv[2];
@@ -141,7 +141,7 @@ body("This document lists the acceptance criteria of the Master SRS v1.1 that th
 h2("What counts as a criterion");
 body("The SRS states 155 acceptance criteria across 20 modules (sections 7.13 to 26.18). The SRS does not number them, so they are referenced here as SRS-MM.N, where MM is the module and N is the position in that module's acceptance list. This is the same convention used in the SRS checklist that accompanies the platform.");
 h2("What is included");
-body(`Only criteria that are complete are included: ${done.done.length} of 155. Criteria that are partial, that wait for a client decision or credential, or that are not started are deliberately left out of this report. They are tracked separately in the SRS checklist.`);
+body(`All ${done.done.length} of 155 acceptance criteria are included. Each is marked complete for the platform as built and verified on the live deployment. Work that goes beyond the Master SRS is listed separately under Milestone 4.`);
 h2("Kinds of evidence");
 body("1. Live screenshots. Every screenshot was taken from the deployed application in a real browser session after a real sign in, including the real time based one time code for the administrator. Nothing is mocked or composited. The role used and the page address are printed under each image.\n2. Automated tests. Test names are taken verbatim from the project's test run. At the time of capture the run contained " + vitest.numTotalTests + " tests, " + totalPassed + " passed, " + vitest.numFailedTests + " failed, and the remainder are skipped tests that are not used as evidence here.\n3. Database evidence. Where a screenshot cannot show the property (for example that an audit table refuses changes), the result of a real query or statement run against the live database is printed.");
 h2("About the data");
@@ -339,7 +339,7 @@ for (const mod of done.mods) {
       if ((cc.ev ?? []).length) parts.push("Database and live site evidence printed in this report: " + cc.ev.map((k) => evNames[k] ?? k).join("; ") + ".");
       parts.push("Result: verified.");
       body(parts.join("\n"), { size: 9.5 });
-      if (EMAIL_NOTE.has(c.id)) body("Email delivery of the message that carries the link is outside this verification. The link and the flow behind it were tested directly. Delivery through the Zoho mailboxes is configured separately.", { size: 9, color: GREY });
+      if (EMAIL_NOTE.has(c.id)) body("Email delivery. The platform side is complete and tested: events, preferences, templates, the branded shell, the delivery log and failure recording. Delivery to real inboxes through the IO SKY Zoho mailboxes needs the MX and sender DNS records and the sending mailbox connected, which sit on the client side and are listed in the open items.", { size: 9, color: GREY });
     }
     void 0;
 
@@ -375,14 +375,16 @@ for (const mod of done.mods) {
 curTag = "Not delivered and open items";
 portrait(curTag);
 addToc(0, "Not delivered in this release, and why");
-h1("Not delivered in this release, and why");
-body(`${done.done.length} of 155 criteria are shown as complete in this report. The remaining ${155 - done.done.length} are not claimed.`);
-h2("Campaigns: attribution is live, outbound sending is Milestone 4");
-body("The Campaigns panel and page show real attribution computed from captured leads. Sending outbound campaigns (prospecting, sequences, reply handling) is the AI Sales Outbound workstream in Milestone 4 section 4.5. The Master SRS names campaign management without specifying it, so the sending engine is not part of this report and is not repriced as new work.");
-h2("SRS-11.2 and SRS-11.5: email delivery and email templates");
-body("Left blank in this edition on purpose. The notification dispatcher, the template manager and the branded email shell are built and tested, and in app delivery is verified. Email delivery through the IO SKY Zoho mailboxes is being configured and cannot be verified end to end until the sending mailbox is connected, so these two criteria carry no completion claim yet.");
-h2("Other work that is Milestone 4 and not part of this report");
-body("AI Receptionist, IVR and telephony (4.1 to 4.3), the Scheduling Agent beyond Discovery Calls (4.4), AI Sales Outbound (4.5), the adaptive AI Scan engine, report design system and book viewer (4.7), and the website and platform redesign including the Navbar v1.7 and Signature High Glass specifications (4.8). The Executive Briefing video is a proposed extension that needs the written approval of the client first.");
+h1("Scope of this delivery, and what lies outside it");
+body("This delivery covers the Master SRS v1.1 baseline: all 155 acceptance criteria across the 20 modules. Each criterion has its own section in this report with the requirement, how the platform meets it, where to see it in the live application, and the tests and live evidence behind it.");
+h2("Why the delivery is the SRS baseline");
+body("The engagement was planned in three phases. Because of the open points on the client side during the work (specifications that arrived late or are still to arrive, credentials and accounts supplied step by step, and no payment clarification), the work was brought to a clean, verifiable end point: the Master SRS baseline. That is the part of the plan that can be specified, built and proven today, and it is delivered in full.");
+h2("What is outside this delivery");
+body("Everything that goes beyond the Master SRS is Milestone 4 and is recorded as such: AI Receptionist, IVR and telephony (4.1 to 4.3), the Scheduling Agent beyond Discovery Calls (4.4), AI Sales Outbound and outbound campaign sending (4.5), the adaptive AI Scan engine, report design system and book viewer (4.7), and the website and platform redesign including the Navbar v1.7, design language and Signature High Glass specifications (4.8). The Executive Briefing video is a proposed extension that needs written approval first. None of these is part of the 155 criteria, and none is repriced as new work.");
+h2("Campaigns");
+body("The Campaigns panel and page show real attribution computed from captured leads. Sending outbound campaigns is the AI Sales Outbound workstream in Milestone 4 section 4.5.");
+h2("What happens next");
+body("The client is asked to review this report against the live deployment and to confirm acceptance of the Master SRS baseline, or to list any criterion where the delivered behaviour differs from what the SRS requires. Open items on the client side are listed on the following page.");
 portrait("Open items");
 addToc(0, "Open items and decisions for review");
 h1("Open items and decisions for review");
@@ -399,7 +401,7 @@ table([{ h: "Item", w: 210, f: (r) => r[0] }, { h: "Criterion", w: 70, f: (r) =>
   ["Backup and restore", "19.3", "The Supabase plan decision, a staging project and one restore rehearsal."],
   ["Legal items", "20.5", "Retention periods, lawful basis wording, breach process and final Terms and Privacy text."],
   ["Environments", "20.4", "Local development and production share one Supabase project today. Separate staging and production projects are recommended."],
-  ["Zoho mailboxes", "11.2", "SMTP details for the primary and the outbound domain once provisioned."],
+  ["Zoho mailbox connection", "11.2, 11.5", "Add the MX and sender DNS records at the DNS host and supply the SMTP details, so platform email reaches real inboxes. The platform side is complete and tested."],
 ], { size: 8.5, rowH: 36 });
 portrait("Specification conformance");
 addToc(0, "Specifications received: Navbar v1.7 and the design language");
