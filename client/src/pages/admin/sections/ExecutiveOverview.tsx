@@ -455,43 +455,8 @@ export default function ExecutiveOverview() {
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <AccessPanel />
 
-        {/* Email & SMS Campaigns */}
-        <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Email & SMS Campaigns</div>
-              <SampleBadge />
-            </div>
-            <button className="text-[11px] text-[#F58A1F] hover:underline">View all</button>
-          </div>
-          <ul className="mt-3 space-y-2.5">
-            {[
-              { Icon: Mail, lab: "Email Campaigns", n: 12, sub: "Active Campaigns", metric: "42.6%", metricLabel: "Open Rate", trend: trendOrange, c: "#F58A1F" },
-              { Icon: PhoneCall, lab: "SMS Campaigns", n: 5, sub: "Active Campaigns", metric: "98.4%", metricLabel: "Delivery Rate", trend: trendBlue, c: "#60A5FA" },
-              { Icon: Workflow, lab: "Automations", n: 28, sub: "Active Automations", metric: "99.1%", metricLabel: "Success Rate", trend: trendGreen, c: "#34D399" },
-            ].map(row => (
-              <li key={row.lab} className="flex items-start gap-3 px-2.5 py-2 rounded-[10px] bg-white/[0.02] border border-white/[0.05]">
-                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: `${row.c}1A`, border: `1px solid ${row.c}40`, color: row.c }}>
-                  <row.Icon className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between text-[12px]">
-                    <span className="text-white/85">{row.lab}</span>
-                    <span className="font-mono text-white/55">{row.metricLabel}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="font-display font-semibold text-[18px] leading-none">{row.n}</div>
-                    <div className="font-display font-semibold text-[16px] leading-none" style={{ color: row.c }}>{row.metric}</div>
-                  </div>
-                  <div className="flex items-center justify-between text-[10.5px] text-white/45 mt-0.5">
-                    <span>{row.sub}</span>
-                    <Sparkline values={row.trend} stroke={row.c} fill={`${row.c}33`} height={16} />
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Campaign attribution: real lead data */}
+        <CampaignPanel />
 
         <HealthPanel />
 
@@ -511,6 +476,43 @@ export default function ExecutiveOverview() {
         >
           <Play className="w-3 h-3" /> Refresh
         </button>
+      </div>
+    </div>
+  );
+}
+
+function CampaignPanel() {
+  const q = trpc.adminOps.campaignOverview.useQuery(undefined, { staleTime: 60_000 });
+  const d = q.data;
+  const top = (d?.rows ?? []).slice(0, 3);
+  return (
+    <div className="lg:col-span-3 rounded-[16px] border border-white/[0.07] bg-[#103438]/85 p-4">
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-white/55">Campaign attribution</div>
+      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+        <div className="rounded-[10px] bg-white/[0.02] border border-white/[0.05] py-2">
+          <div className="font-display font-semibold text-[20px]">{d?.totals.leads ?? "..."}</div>
+          <div className="text-[10.5px] text-white/50">Leads</div>
+        </div>
+        <div className="rounded-[10px] bg-white/[0.02] border border-white/[0.05] py-2">
+          <div className="font-display font-semibold text-[20px]">{d?.totals.attributed ?? "..."}</div>
+          <div className="text-[10.5px] text-white/50">With a tag</div>
+        </div>
+        <div className="rounded-[10px] bg-white/[0.02] border border-white/[0.05] py-2">
+          <div className="font-display font-semibold text-[20px]">{d?.totals.won ?? "..."}</div>
+          <div className="text-[10.5px] text-white/50">Won</div>
+        </div>
+      </div>
+      <ul className="mt-3 space-y-1.5 text-[12px]">
+        {top.length === 0 ? <li className="text-white/50">No leads captured yet.</li> : null}
+        {top.map((r) => (
+          <li key={`${r.campaign}|${r.source}`} className="flex items-center justify-between gap-2">
+            <span className="truncate text-white/85">{r.campaign} <span className="text-white/40">via {r.source}</span></span>
+            <span className="font-mono text-white/65">{r.leads}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 text-[10.5px] text-white/45">
+        Automations: {d?.automations.active ?? 0} active, success rate {d?.automations.successRate == null ? "no runs yet" : `${d.automations.successRate}%`}.
       </div>
     </div>
   );

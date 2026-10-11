@@ -292,64 +292,46 @@ interface Campaign {
   status: "Draft" | "Scheduled" | "Sending" | "Done";
 }
 
-const CAMP_KPIS: KpiTile[] = [
-  { id: "act", label: "Active campaigns", value: "12", delta: { value: "2", positive: true }, icon: Mail, accent: "orange", spark: [8, 9, 9, 10, 11, 11, 12] },
-  { id: "open", label: "Avg. open rate", value: "42.6%", delta: { value: "1.8%", positive: true }, icon: Activity, accent: "green", spark: [38, 39, 40, 41, 41, 42, 42.6] },
-  { id: "sms", label: "SMS delivery", value: "98.4%", delta: { value: "0.2%", positive: true }, icon: MessageSquare, accent: "blue", spark: [97, 97, 97.5, 98, 98.2, 98.3, 98.4] },
-  { id: "rev", label: "Attributed rev.", value: "€48,210", delta: { value: "11.2%", positive: true }, icon: Activity, accent: "violet", spark: [30, 33, 36, 38, 42, 45, 48] },
-];
-
-const CAMPAIGNS: Campaign[] = [
-  { id: "C-414", name: "Q2 Strategy outreach", channel: "Email", audience: 4218, openRate: 44.2, status: "Sending" },
-  { id: "C-413", name: "AI Scan reminders",    channel: "SMS",   audience: 1284, deliveryRate: 99.1, status: "Done" },
-  { id: "C-412", name: "Voice agent launch",   channel: "Email", audience: 8120, openRate: 39.8, status: "Done" },
-  { id: "C-411", name: "Renewals nudge",       channel: "Email", audience: 612,  openRate: 51.4, status: "Done" },
-  { id: "C-410", name: "Critical alert SMS",   channel: "SMS",   audience: 142,  deliveryRate: 100, status: "Done" },
-];
-
-const CAMP_COLS: DataColumn<Campaign>[] = [
-  { key: "id", header: "Ref", width: "80px" },
-  { key: "name", header: "Campaign" },
-  { key: "channel", header: "Channel", render: (r) => <StatusPill tone={r.channel === "Email" ? "info" : "warn"} label={r.channel} /> },
-  { key: "audience", header: "Audience", align: "right", render: (r) => <span className="font-mono text-white/65">{r.audience.toLocaleString()}</span> },
-  {
-    key: "openRate",
-    header: "Performance",
-    render: (r) =>
-      r.channel === "Email" ? (
-        <span className="font-mono text-emerald-400">{r.openRate?.toFixed(1)}% open</span>
-      ) : (
-        <span className="font-mono text-emerald-400">{r.deliveryRate?.toFixed(1)}% delivery</span>
-      ),
-  },
-  { key: "status", header: "Status", render: (r) => <StatusPill tone={r.status === "Done" ? "ok" : r.status === "Sending" ? "info" : r.status === "Scheduled" ? "warn" : "muted"} label={r.status} /> },
-];
+type CampaignRow = { id: string; campaign: string; source: string; leads: number; last30Days: number; qualified: number; won: number; lastSeen: Date | string | null };
 
 export function Campaigns() {
-  const q = trpc.admin.campaigns.useQuery(undefined, { staleTime: 30_000 });
-  const audited = useAuditedAction();
+  const q = trpc.adminOps.campaignOverview.useQuery(undefined, { staleTime: 30_000 });
+  const d = q.data;
+  const rows: CampaignRow[] = (d?.rows ?? []).map((r) => ({ ...r, id: `${r.campaign}|${r.source}` }));
+  const cols: DataColumn<CampaignRow>[] = [
+    { key: "campaign", header: "Campaign tag" },
+    { key: "source", header: "Source", render: (r) => <span className="font-mono">{r.source}</span> },
+    { key: "leads", header: "Leads", align: "right", render: (r) => <span className="font-mono">{r.leads}</span> },
+    { key: "last30Days", header: "Last 30 days", align: "right", render: (r) => <span className="font-mono">{r.last30Days}</span> },
+    { key: "qualified", header: "Qualified or further", align: "right", render: (r) => <span className="font-mono">{r.qualified}</span> },
+    { key: "won", header: "Won", align: "right", render: (r) => <span className="font-mono">{r.won}</span> },
+    { key: "lastSeen", header: "Last lead", render: (r) => (r.lastSeen ? new Date(r.lastSeen).toLocaleDateString() : "n/a") },
+  ];
   return (
     <ModuleStateBoundary isLoading={q.isLoading} error={q.error as any} data={q.data} onRetry={() => q.refetch()}>
       {() => (
-    <OperationalPage
-      eyebrow="Outbound"
-      sampleData
-      title="Email & SMS Campaigns"
-      tagline="Outbound and inbound campaigns wired to Twilio, SendGrid and Postmark with conversion analytics, segment targeting and automation triggers."
-      kpis={CAMP_KPIS}
-      toolbar={<DefaultToolbar searchPlaceholder="Search campaigns, segments…" filters={["Channel", "Status", "Owner"]} primaryAction={{ label: "New campaign", onClick: () => audited.fire("campaigns", "new-campaign") }} />}
-      primary={<DataTable columns={CAMP_COLS} rows={CAMPAIGNS} />}
-      aside={
-        <SideCard title="Inbox health">
-          <ul className="space-y-2.5 text-[12.5px] text-white/85">
-            <li className="flex items-center justify-between"><span>SPF / DKIM</span><span className="text-emerald-400 font-mono">aligned</span></li>
-            <li className="flex items-center justify-between"><span>Bounce rate</span><span className="font-mono text-white/65">0.4%</span></li>
-            <li className="flex items-center justify-between"><span>Spam complaints</span><span className="font-mono text-white/65">0.02%</span></li>
-            <li className="flex items-center justify-between"><span>Reputation</span><span className="text-emerald-400 font-mono">A+</span></li>
-          </ul>
-        </SideCard>
-      }
-    />
+        <OperationalPage
+          eyebrow="Campaigns"
+          title="Campaign attribution"
+          tagline="Where inbound leads come from, by campaign tag and source, taken from the leads the platform captured. Outbound sending is part of AI Sales Outbound and is not in this release."
+          kpis={[
+            { id: "leads", label: "Leads captured", value: String(d?.totals.leads ?? 0), icon: Mail, accent: "orange" },
+            { id: "attr", label: "Attributed to a campaign", value: String(d?.totals.attributed ?? 0), icon: Activity, accent: "green" },
+            { id: "camp", label: "Campaign tags", value: String(d?.totals.campaigns ?? 0), icon: MessageSquare, accent: "blue" },
+            { id: "won", label: "Won", value: String(d?.totals.won ?? 0), icon: Activity, accent: "violet" },
+          ]}
+          primary={<DataTable columns={cols} rows={rows} emptyLabel="No leads captured yet." />}
+          aside={
+            <SideCard title="Automations">
+              <ul className="space-y-2.5 text-[12.5px] text-white/85">
+                <li className="flex items-center justify-between"><span>Active workflows</span><span className="font-mono text-white/65">{d?.automations.active ?? 0}</span></li>
+                <li className="flex items-center justify-between"><span>Runs, last 30 days</span><span className="font-mono text-white/65">{d?.automations.runs30Days ?? 0}</span></li>
+                <li className="flex items-center justify-between"><span>Success rate</span><span className="font-mono text-white/65">{d?.automations.successRate == null ? "no runs yet" : `${d.automations.successRate}%`}</span></li>
+                <li className="flex items-center justify-between"><span>Leads without a campaign tag</span><span className="font-mono text-white/65">{d?.totals.unattributed ?? 0}</span></li>
+              </ul>
+            </SideCard>
+          }
+        />
       )}
     </ModuleStateBoundary>
   );

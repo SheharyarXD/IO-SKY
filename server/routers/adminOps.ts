@@ -76,6 +76,7 @@ import { emitNotification } from "../notificationDispatcher";
 import { EXPORT_DATASETS, INVITABLE_ROLES, INVITATION_TTL_DAYS, canInviteRole, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
 import { AI_SCAN_AGENT_KEY, createInvitation, decideLatestAiExecutionForSubject, listInvitations, revokeInvitation, listDeployments, readComplianceInputs, readExportDataset, readMonthlyHistory } from "../db";
 import { fireTrigger } from "../workflowEngine";
+import { readCampaignOverview } from "../db/campaigns";
 import { brandedEmail, resolveEventMessage } from "../emailShell";
 import { PROJECT_LIFECYCLE } from "../../shared/srsRules";
 import { listProjectLifecycleEvents, listProjectLifecycles, setProjectLifecycle } from "../db/srsDelivery";
@@ -388,6 +389,11 @@ export const adminOpsRouter = router({
       return a;
     }),
 
+  campaignOverview: adminProcedure.query(async () => {
+    const o = await readCampaignOverview();
+    if (!o) fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
+    return o;
+  }),
   projectLifecycles: adminProcedure.query(() => listProjectLifecycles()),
   projectLifecycleHistory: adminProcedure.input(z.object({ projectId: z.number().int().positive() })).query(({ input }) => listProjectLifecycleEvents(input.projectId)),
   setProjectLifecycle: adminProcedure
