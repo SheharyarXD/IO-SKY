@@ -81,21 +81,33 @@ Development needs, through a private channel:
 Development then sets them as Railway variables and sends a test message.
 Zoho limits how many messages a mailbox may send per day, so platform email must stay well inside that limit.
 
-## 7. DNS for iosky.nl and iosky.co
+## 7. DNS records (values read from the Zoho console on 11 October 2026)
 
-From the Zoho Admin Console, Domains, Email Configuration, copy the exact records Zoho shows and add them at the DNS host
-(Hostinger for iosky.co):
+The organisation uses the **Zoho EU data centre** and the DNS host for both domains is **Hostinger**. Add these at Hostinger,
+DNS Zone, for each domain. Use the lowest TTL offered while setting up.
 
-| Record | Purpose |
-|---|---|
-| TXT verification | proves the domain is yours |
-| MX (three records) | delivers mail to Zoho |
-| TXT SPF | `v=spf1 include:zoho.eu ~all` or the include Zoho shows for your data centre |
-| TXT DKIM (selector shown by Zoho) | signs outgoing mail |
-| TXT DMARC at `_dmarc` | start with `p=none` and a report address, then tighten |
+### iosky.nl (domain verified on 13 August 2026, MX still to be pointed)
 
-If any other service sends mail as iosky.nl (for example a transactional provider), it must be added to the same SPF record.
-One domain can have only one SPF record.
+| Type | Host | Priority | Value |
+|---|---|---|---|
+| MX | @ | 10 | mx.zoho.eu |
+| MX | @ | 20 | mx2.zoho.eu |
+| MX | @ | 50 | mx3.zoho.eu |
+| TXT (SPF) | @ | | v=spf1 include:zohomail.eu ~all |
+| TXT (DKIM) | zmail._domainkey | | the value shown in Zoho, Domains, iosky.nl, Email configuration, DKIM |
+| TXT (DMARC) | _dmarc | | v=DMARC1; p=none; rua=mailto:the report address chosen in Zoho |
+
+Remove any older MX record that points elsewhere, otherwise mail still goes to the old provider.
+Keep any existing A or CNAME records for the website. They are not touched by this change.
+If another service also sends mail for iosky.nl, add its include to the same SPF record. A domain may have only one SPF record.
+
+### iosky.co (added to Zoho on 11 October 2026, ownership not yet verified)
+
+| Type | Host | Value |
+|---|---|---|
+| TXT (verification) | @ | zoho-verification=zb74405463.zmverify.zoho.eu |
+
+After verification Zoho shows the MX, SPF and DKIM values for iosky.co in the same way. Add them, then click Verify in Zoho.
 
 ## 8. The outbound domain iosky.co
 
@@ -113,3 +125,14 @@ One domain can have only one SPF record.
 - A filter that moves mail out of the Inbox also hides it from unread counters on the Inbox. Outlook shows the counter per folder.
 - The no-reply alias is not a mailbox for people. Anything addressed to it is read by whoever owns the General user.
 - Sending as an alias from Outlook depends on the Outlook version and needs the test in section 5.
+
+## 10. State of the account on 11 October 2026
+
+| Item | State |
+|---|---|
+| Plan | Mail Lite, 5 licences, 2 in use, 3 free, valid until 11 October 2027 |
+| Users | leeroy.correiadjalo@iosky.nl, loubna.maghnouj@iosky.nl |
+| Domains | iosky.nl (verified, MX not yet pointed), iosky.co (added, verification pending) |
+| Data centre | EU (zoho.eu) |
+| DNS host | Hostinger |
+| Still to create | three more users for the plan above, aliases, folders and filters |
