@@ -9,6 +9,8 @@ import fs from "node:fs";
 import path from "node:path";
 import PDFDocument from "pdfkit";
 import { CRITERIA, MODULE_INTRO } from "./criteria-content.mjs";
+import { NEW_CRITERIA } from "./criteria-content-r2.mjs";
+Object.assign(CRITERIA, NEW_CRITERIA);
 
 const E = process.env.EVIDENCE_OUT;
 const OUT = process.argv[2];
@@ -17,9 +19,19 @@ const done = read("done.json");
 const manifest = read("manifest.json");
 const vitest = read("vitest.json");
 const ev = read("evidence-data.json");
+const tryRead = (f) => { try { return read(f); } catch { return null; } };
+ev.responsive = tryRead("responsive.json");
+ev.nfr = tryRead("nfr.json");
+ev.navbar = tryRead("navbar-conformance.json");
+if (ev.consistency) { const dash = [78, 3, 3, 450]; ev.consistency.forEach((c, i) => { c.dashboard = dash[i]; }); }
 const BASE = "https://io-sky-production.up.railway.app";
 
 // ---- text safety: no dashes of the em or en kind, nothing outside WinAnsi ---------------------------------
+const pageOf = (u) => {
+  const x = String(u ?? "");
+  if (/^https?:\/\//i.test(x)) { try { return new URL(x).host + " (hosted page)"; } catch { return "external page"; } }
+  return x.split("?")[0].split("#")[0] || "/";
+};
 const T = (s) =>
   String(s ?? "")
     .replace(/[—–−]/g, "-")
@@ -120,7 +132,7 @@ body("All records visible in the screenshots are dummy data. Demo accounts were 
 h2("How to read a criterion section");
 body("Each section starts with a page that gives the requirement, its status, how it is met, where to see it and the matching automated tests. Landscape pages follow with the screenshots. For every screenshot a full page view is given first. Where useful, an enlarged detail view of the upper left of the content area follows for legibility.");
 h2("Reading order");
-body("Module sections follow SRS order. At the end are appendices: traceability matrix, full list of passing tests, database schema, procedure inventory, notification catalogue, migration list, live database verification and an index of every screenshot.");
+body("Module sections follow SRS order. After them come the items not delivered and why, the open items for review and the specification conformance, then appendices: traceability matrix, full list of passing tests, database schema, procedure inventory, notification catalogue, migration list, live database verification and an index of every screenshot.");
 
 portrait("Summary");
 addToc(0, "Summary by module");
@@ -146,7 +158,7 @@ function figurePage(crit, k, id, extraNote, mode) {
   figNo++;
   const L = doc.page.margins.left, W = doc.page.width - 72;
   doc.font("Helvetica-Bold").fontSize(11).fillColor(NAVY).text(T(`Figure ${figNo}  |  ${crit.id}  |  ${m.title}`), L, 36, { width: W, lineBreak: false, ellipsis: true });
-  doc.font("Helvetica").fontSize(8.5).fillColor(GREY).text(T(`Live app, role: ${m.role}, page: ${m.url && m.url !== "" ? m.url : m.route}, captured ${m.capturedAt.replace("T", " ").slice(0, 16)} UTC${mode === "zoom" ? "  |  enlarged detail view" : ""}`), L, 50, { width: W, lineBreak: false, ellipsis: true });
+  doc.font("Helvetica").fontSize(8.5).fillColor(GREY).text(T(`Live app, role: ${m.role}, page: ${pageOf(m.url && m.url !== "" ? m.url : m.route)}, captured ${m.capturedAt.replace("T", " ").slice(0, 16)} UTC${mode === "zoom" ? "  |  enlarged detail view" : ""}`), L, 50, { width: W, lineBreak: false, ellipsis: true });
   const top = 66, availH = doc.page.height - top - 56;
   if (mode === "zoom") {
     const pub = m.role === "public";
@@ -172,10 +184,11 @@ function evidencePage(crit, key) {
   const L = doc.page.margins.left, W = doc.page.width - 72;
   const titles = {
     counts: "Record counts in the live database", emissions: "Latest notification emissions (append only event log)", auditSample: "Latest sign in audit rows", scanEvents: "Latest AI Scan status transitions (append only)", immutability: "Immutability attempts run against the live database", policies: "Row level security policies on client facing tables", aiExecutions: "Latest AI executions (append only)", alertRules: "Configured alert rules", configHistory: "Latest configuration changes and refusals", emailLog: "Latest email delivery log rows", rls: "Row level security status of every public table", catalogue: "Notification event catalogue (first rows)", deployments: "Recorded releases", auditTriggers: "Tables protected by the append only trigger",
+    paymentEvents: "Payment events recorded from the verified Stripe webhook (append only)", scanPurchases: "Paid AI Scan purchases", consistency: "Dashboard figures against independent database queries", nfr: "Non functional checks run against the live site", responsive: "Responsive audit: 18 public pages at 390, 768 and 1440 px", navbar: "Navbar v1.7 specification: conformance of the live navbar",
   };
   figNo++;
   doc.font("Helvetica-Bold").fontSize(11).fillColor(NAVY).text(T(`Figure ${figNo}  |  ${crit.id}  |  ${titles[key] ?? key}`), L, 36, { width: W, lineBreak: false, ellipsis: true });
-  doc.font("Helvetica").fontSize(8.5).fillColor(GREY).text(`Captured from the live database on ${ev.collectedAt.replace("T", " ").slice(0, 16)} UTC. Printed as returned.`, L, 50, { width: W, lineBreak: false });
+  doc.font("Helvetica").fontSize(8.5).fillColor(GREY).text(`${["nfr", "responsive", "navbar"].includes(key) ? "Run against the deployed site" : "Captured from the live database"} on ${ev.collectedAt.replace("T", " ").slice(0, 16)} UTC. Printed as returned.`, L, 50, { width: W, lineBreak: false });
   doc.y = 70;
   const d = ev[key];
   const iso = (v) => (v ? String(v).replace("T", " ").slice(0, 19) : "");
@@ -208,6 +221,29 @@ function evidencePage(crit, key) {
     table([{ h: "When (UTC)", w: 105, f: (r) => iso(r.createdAt) }, { h: "Type", w: 130, f: (r) => r.messageType }, { h: "Transport", w: 60, f: (r) => r.transport }, { h: "Status", w: 60, f: (r) => r.status }, { h: "Subject", w: 280, f: (r) => r.subject }], d, { size: 7.5, rowH: 12.5, maxRows: 30 });
   } else if (key === "catalogue") {
     table([{ h: "Id", w: 40, f: (r) => String(r.id) }, { h: "Event", w: 190, f: (r) => r.name }, { h: "Family", w: 90, f: (r) => r.family }, { h: "Priority", w: 60, f: (r) => String(r.priority) }, { h: "Floor", w: 50, f: (r) => String(r.priorityFloor ?? "") }, { h: "Email", w: 60, f: (r) => String(r.emailDelivery) }], d, { size: 7.5, rowH: 12.5, maxRows: 30 });
+  } else if (key === "paymentEvents") {
+    table([{ h: "When (UTC)", w: 110, f: (r) => iso(r.createdAt) }, { h: "Stripe event", w: 200, f: (r) => r.providerEventId }, { h: "Type", w: 170, f: (r) => r.type }, { h: "Outcome", w: 70, f: (r) => r.outcome }, { h: "Amount", w: 70, f: (r) => (r.amountCents == null ? "" : (r.amountCents / 100).toFixed(2) + " " + (r.currency ?? "")) }, { h: "Invoice", w: 50, f: (r) => String(r.invoiceId ?? "") }, { h: "Purchase", w: 55, f: (r) => String(r.scanPurchaseId ?? "") }], d, { size: 7.5, rowH: 13, maxRows: 20 });
+    body("These rows come from signed events sent by Stripe. The table is append only and unique on the event id, so a redelivered event is recorded once and acted on once.", { size: 9 });
+  } else if (key === "scanPurchases") {
+    table([{ h: "Purchase", w: 60, f: (r) => String(r.id) }, { h: "Tier", w: 80, f: (r) => r.tier }, { h: "Status", w: 70, f: (r) => r.status }, { h: "Amount", w: 90, f: (r) => (r.amountCents / 100).toFixed(2) + " " + r.currency }, { h: "Lead", w: 60, f: (r) => String(r.leadId ?? "") }, { h: "Organization", w: 90, f: (r) => String(r.organizationId ?? "") }, { h: "Paid (UTC)", w: 130, f: (r) => iso(r.paidAt) }], d, { size: 8.5, rowH: 15 });
+  } else if (key === "consistency") {
+    table([{ h: "Figure", w: 220, f: (r) => r.figure }, { h: "Shown on the dashboard", w: 150, f: (r) => String(r.dashboard) }, { h: "Independent database query", w: 170, f: (r) => String(r.query) }, { h: "Match", w: 60, f: (r) => (r.dashboard === r.query ? "yes" : "NO") }], d, { size: 9.5, rowH: 18 });
+  } else if (key === "nfr") {
+    const res = d?.res ?? [];
+    body(`Checked ${String(d?.at ?? "").replace("T", " ").slice(0, 16)} UTC against the deployed site. ${res.filter((x) => x.ok).length} of ${res.length} passed. The checks that did not pass are explained below the table.`, { size: 9.5 });
+    doc.moveDown(0.3);
+    table([{ h: "Area", w: 80, f: (r) => r.area }, { h: "Check", w: 330, f: (r) => r.check }, { h: "Result", w: 55, f: (r) => (r.ok ? "pass" : "see note") }, { h: "Observed", w: 260, f: (r) => String(r.detail).slice(0, 62) }], res, { size: 8, rowH: 14 });
+    body("Notes. A malformed URL is refused by the hosting provider edge with a 502 before it reaches the application. The sign in throttle answers 429 after repeated attempts on one account and is also covered by automated tests.", { size: 8.5, color: GREY });
+  } else if (key === "responsive") {
+    const rows = d ?? [];
+    const sizes = ["mobile", "tablet", "desktop"];
+    const pages = [...new Set(rows.map((r) => r.path))];
+    table([{ h: "Page", w: 180, f: (r) => r.path }, ...sizes.map((sz) => ({ h: sz, w: 110, f: (r) => { const x = rows.find((q) => q.path === r.path && q.size === sz); return !x ? "n/a" : x.error ? "error" : x.overflow ? "scrolls sideways" : "fits, status " + x.status; } }))], pages.map((p) => ({ path: p })), { size: 8, rowH: 13 });
+    body(`${rows.length} checks. Pages that scrolled sideways: ${rows.filter((x) => x.overflow).length}. Pages without a main heading: ${rows.filter((x) => x.h1 === 0).length}. Pages that returned an error: ${rows.filter((x) => x.error || x.status >= 400).length}.`, { size: 9.5 });
+  } else if (key === "navbar") {
+    const res = d?.res ?? [];
+    table([{ h: "Id", w: 40, f: (r) => r.id }, { h: "Requirement in the specification", w: 300, f: (r) => r.spec }, { h: "Result", w: 45, f: (r) => (r.pass ? "meets" : "differs") }, { h: "Live site", w: 280, f: (r) => String(r.actual).slice(0, 70) }], res, { size: 7.5, rowH: 13 });
+    body(`Specification: ${d?.spec ?? ""}. ${res.filter((x) => x.pass).length} of ${res.length} requirements are met today. The differences are part of the website and platform redesign recorded in Milestone 4 section 4.8 and are not SRS acceptance criteria.`, { size: 9 });
   } else if (key === "deployments") {
     table([{ h: "Commit", w: 150, f: (r) => r.commitSha }, { h: "Environment", w: 100, f: (r) => r.environment }, { h: "Node", w: 70, f: (r) => r.nodeVersion }, { h: "Started (UTC)", w: 140, f: (r) => iso(r.startedAt) }], d, { size: 9, rowH: 15 });
   }
@@ -255,7 +291,7 @@ for (const mod of done.mods) {
     body(cc.text);
     if (c.note && c.note.length > 25 && c.note.includes(" ")) { doc.moveDown(0.3); body("Status note from the SRS checklist: " + c.note, { size: 9.5, color: GREY }); }
     h2("Where to see it in the live application");
-    for (const s of shots) { const m = manifest[s]; body(`${m.title} (${m.role === "public" ? "no sign in needed" : "signed in as " + m.role}, page ${m.url || m.route})`, { size: 9.5 }); }
+    for (const s of shots) { const m = manifest[s]; body(`${m.title} (${m.role === "public" ? "no sign in needed" : "signed in as " + m.role}, page ${pageOf(m.url || m.route)})`, { size: 9.5 }); }
     if ((cc.ev ?? []).length) body("Database evidence is also included: " + cc.ev.join(", ") + ".", { size: 9.5 });
     h2("Evidence in this report");
     const nFig = shots.length * 2 + (cc.ev ?? []).length;
@@ -289,6 +325,41 @@ for (const mod of done.mods) {
     traceRows.push({ id: c.id, text: c.text, shots: shots.length, tests: tlist.length, ev: (cc.ev ?? []).length, mod: mod.n });
   }
 }
+
+// ---- not delivered, open items, specification conformance -----------------------------------------------------
+curTag = "Not delivered and open items";
+portrait(curTag);
+addToc(0, "Not delivered in this release, and why");
+h1("Not delivered in this release, and why");
+body(`${done.done.length} of 155 criteria are shown as complete in this report. The remaining ${155 - done.done.length} are not claimed.`);
+h2("SRS-06.8 and SRS-07.9: dashboards display accurate information");
+body("Every operational and executive panel shows live data except the Campaigns panel. The Master SRS names campaign management but does not specify it, and the AI Sales Outbound and Campaign Management workstream is Milestone 4 section 4.5. The panel stays labelled as sample data until that workstream is delivered. These two criteria are therefore left open on purpose and are not repriced as new work.");
+h2("Other work that is Milestone 4 and not part of this report");
+body("AI Receptionist, IVR and telephony (4.1 to 4.3), the Scheduling Agent beyond Discovery Calls (4.4), AI Sales Outbound (4.5), the adaptive AI Scan engine, report design system and book viewer (4.7), and the website and platform redesign including the Navbar v1.7 and Signature High Glass specifications (4.8). The Executive Briefing video is a proposed extension that needs the written approval of the client first.");
+portrait("Open items");
+addToc(0, "Open items and decisions for review");
+h1("Open items and decisions for review");
+body("These do not block any criterion marked complete, but each one changes how a complete criterion is configured or proven. Each is an item for review after delivery.");
+doc.moveDown(0.4);
+table([{ h: "Item", w: 210, f: (r) => r[0] }, { h: "Criterion", w: 70, f: (r) => r[1] }, { h: "What is needed", w: 330, f: (r) => r[2] }], [
+  ["OpenAI account credit", "03.4, 13.2, 13.3", "The key is set and accepted. The account has no credit, so the client runs the first live analysis himself."],
+  ["Stripe: VAT registration", "03.1, 10.3", "Stripe Tax is active with a Netherlands head office but has no registration, so VAT is not added at checkout yet. Add the registration in Stripe before live payments."],
+  ["Stripe: tax code", "03.1, 10.3", "The general services code is used. The accountant should confirm it."],
+  ["Stripe: live keys and webhook", "01.7, 10.3", "Everything was verified in test mode."],
+  ["Document matrix values (OPD-003)", "12.3", "Values are provisional until the ownership and access direction is confirmed. Retention periods are configurable and empty."],
+  ["Email specification (AWF-01 to AWF-09)", "11.5", "The templates and shell exist. The exact customer copy is loaded as templates once the specification is received."],
+  ["Events not yet triggered", "11.1", "Events for telephony, outbound, integration authorisation and project deadlines wait for those features or for a project due date."],
+  ["Backup and restore", "19.3", "The Supabase plan decision, a staging project and one restore rehearsal."],
+  ["Legal items", "20.5", "Retention periods, lawful basis wording, breach process and final Terms and Privacy text."],
+  ["Environments", "20.4", "Local development and production share one Supabase project today. Separate staging and production projects are recommended."],
+  ["Zoho mailboxes", "11.2", "SMTP details for the primary and the outbound domain once provisioned."],
+], { size: 8.5, rowH: 36 });
+portrait("Specification conformance");
+addToc(0, "Specifications received: Navbar v1.7 and the design language");
+h1("Specifications received: Navbar v1.7 and the design language");
+body("Two further specifications were received while this report was being produced: the Navbar, Dropdown, Responsive and Localization specification v1.7 and the Website and Platform Layout Design Language v1.0. Both describe the redesign in Milestone 4 section 4.8. The live navbar was checked against v1.7 so the gap is known and measured. The next page shows the result.");
+body("The design language v1.0 sets a page canvas of #1C4744 and an orange of #FD9105, while the Signature High Glass specification sets #0D2D2E and #F58A1F. The two supplied documents disagree, so the redesign needs one decision on which values are final before it is built.", { size: 10 });
+if (ev.navbar) evidencePage({ id: "Navbar v1.7" }, "navbar");
 
 // ---- appendices ----------------------------------------------------------------------------------------------------------
 function appendixTitle(t, sub) { portrait(t); curTag = t; addToc(0, t); h1(t); if (sub) body(sub, { color: GREY }); doc.moveDown(0.4); }
@@ -382,7 +453,7 @@ appendixTitle("Appendix H: Screenshot index", `All ${Object.keys(manifest).lengt
 {
   let rows = Object.entries(manifest).map(([id, m]) => ({ id, ...m }));
   while (rows.length) {
-    const left = table([{ h: "Scene", w: 130, f: (r) => r.id }, { h: "Role", w: 50, f: (r) => r.role }, { h: "Page", w: 150, f: (r) => r.url || r.route }, { h: "Title", w: 260, f: (r) => r.title }], rows, { size: 7, rowH: 11.5 });
+    const left = table([{ h: "Scene", w: 130, f: (r) => r.id }, { h: "Role", w: 50, f: (r) => r.role }, { h: "Page", w: 150, f: (r) => pageOf(r.url || r.route) }, { h: "Title", w: 260, f: (r) => r.title }], rows, { size: 7, rowH: 11.5 });
     if (!left) break;
     rows = rows.slice(rows.length - left);
     portrait("Appendix H (continued)"); doc.y = 50;

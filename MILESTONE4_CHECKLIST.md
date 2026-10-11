@@ -1043,3 +1043,18 @@ marked D, and a D row needs written approval before work starts.
 **Note on passkeys.** A passkey is a second sign in method alongside the existing password and one time
 code. It needs the production domain fixed as the relying party identifier before it can be built and
 tested, and a recovery path decided with the Product Owner.
+
+## Specifications received 11 October 2026 (workstream 4.8)
+
+Delivered into the project folder `10591`: Navbar, Dropdown, Responsive and Localization v1.7 FINAL, Website and
+Platform Layout Design Language v1.0, the AI Scan Engine Master Specification v1.0, the AI Scan Operational,
+Administration and Clarification Addendum v1.0, the AI Scan Report Design System and Template Architecture
+Specification v1.0, and sample report pages.
+
+The live navbar was checked against v1.7 on 11 October 2026: 8 of 14 requirements met. It differs on the item
+set (Infrastructure and Enterprise instead of Foundation and Case Studies), dropdown chevrons, the language
+selector opening on hover, the page canvas value, navbar type size and touch target height.
+
+Two supplied documents disagree and need one decision before the redesign starts: the design language sets the
+page canvas to #1C4744 and orange to #FD9105, while the Signature High Glass specification sets #0D2D2E and
+#F58A1F.

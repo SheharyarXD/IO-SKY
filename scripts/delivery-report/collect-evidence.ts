@@ -109,6 +109,14 @@ data.scanEvents = await sql`select "scanId", "fromStatus", "toStatus", "actorUse
 data.policies = await sql`select tablename, policyname, cmd from pg_policies where schemaname='public' and tablename in ('quotes','subscriptions','project_approvals','notification_preferences','client_invoices') order by 1,2`;
 data.alertRules = await sql`select key, title, metric, threshold, "windowMinutes", severity, enabled, "lastFiredAt" from alert_rules order by id`;
 data.deployments = await sql`select "commitSha", environment, "nodeVersion", "startedAt" from deployments order by id desc limit 8`;
+data.paymentEvents = await sql`select "providerEventId", type, outcome, "amountCents", currency, "invoiceId", "scanPurchaseId", "createdAt" from payment_events order by id desc limit 12`;
+data.scanPurchases = await sql`select id, tier, status, "amountCents", currency, "leadId", "organizationId", "paidAt" from scan_purchases where status = 'paid' order by id desc limit 5`;
+data.consistency = [
+  { figure: "Active clients", dashboard: null, query: Number((await sql`select count(*)::int n from organizations`)[0].n) },
+  { figure: "AI Scans this month", dashboard: null, query: Number((await sql`select count(*)::int n from ai_scans where "createdAt" >= date_trunc('month', now())`)[0].n) },
+  { figure: "Open projects", dashboard: null, query: Number((await sql`select count(*)::int n from client_projects where status in ('planning','active','on_hold')`)[0].n) },
+  { figure: "Paid this month (EUR)", dashboard: null, query: Number((await sql`select coalesce(sum("amountCents"),0)::int s from client_invoices where status='paid' and "paidMs" >= extract(epoch from date_trunc('month', now()))*1000`)[0].s) / 100 },
+];
 data.counts = {
   leads: Number((await sql`select count(*)::int n from leads`)[0].n),
   bookings: Number((await sql`select count(*)::int n from bookings`)[0].n),
