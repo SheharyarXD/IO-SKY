@@ -12,17 +12,17 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 153 of 155 criteria complete (98.7%)
+## Status: 151 of 155 criteria complete (97.4%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 153 | 98.7% |
-| 🔶 Partial | 2 | 1.3% |
+| ✅ Done | 151 | 97.4% |
+| 🔶 Partial | 4 | 2.6% |
 | ⏭ Not started | 0 | 0.0% |
 | ⛔ Blocked | 0 | 0.0% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **99.4%**.
+Counting a Partial as half: **98.7%**.
 
 ## Per module
 
@@ -38,7 +38,7 @@ Counting a Partial as half: **99.4%**.
 | 8 | CRM & Sales Management | §14.15 | 8 | 8 | 0 | 0 | 0 |
 | 9 | Project & Delivery Management | §15.18 | 8 | 8 | 0 | 0 | 0 |
 | 10 | Commercial Billing & Subscription | §16.15 | 7 | 7 | 0 | 0 | 0 |
-| 11 | Notifications & Communication | §17.13 | 7 | 7 | 0 | 0 | 0 |
+| 11 | Notifications & Communication | §17.13 | 7 | 5 | 2 | 0 | 0 |
 | 12 | File & Document Management | §18.14 | 7 | 7 | 0 | 0 | 0 |
 | 13 | AI Intelligence Layer | §19.14 | 7 | 7 | 0 | 0 | 0 |
 | 14 | Audit, Compliance & Security Monitoring | §20.14 | 7 | 7 | 0 | 0 | 0 |
@@ -195,10 +195,10 @@ Counting a Partial as half: **99.4%**.
 | ID | Criterion | Status | Evidence or gap |
 | --- | --- | :---: | --- |
 | SRS-11.1 | Notifications are generated for all defined business events | ✅ | 43 of the 84 catalogue events are wired to real triggers, including payment, invoice due and overdue reminders, Discovery Calls, project stage and assignment, incidents and operator access. The remaining events belong to features that are Milestone 4 (telephony, outbound, integration authorisation), to project deadlines (no project due date exists yet) and to review reminders. They are listed in the delivery document. |
-| SRS-11.2 | Email and in-app notifications are delivered successfully | ✅ | Admin bell, client and developer in-app feeds, and email per the catalogue policy; delivery failures recorded. |
+| SRS-11.2 | Email and in-app notifications are delivered successfully | 🔶 | In app delivery verified live. Email delivery through the Zoho mailboxes is left open until the sending mailbox is connected, then verified end to end. |
 | SRS-11.3 | User notification preferences are respected | ✅ | Per user, category and channel: honoured for email, developer in-app and, at read time, the shared client feed. Security cannot be switched off. |
 | SRS-11.4 | Communication history is maintained | ✅ | Append only emission log plus the email delivery log, shown in Governance, Communication history. |
-| SRS-11.5 | Notification templates function correctly | ✅ | Versioned templates per event, channel and language (Dutch and English, English fallback) under OPD-001, edited by a Super Admin. A shared branded email shell (logo links to the homepage, same header and footer) is used for invitation, purchase and published report emails, and the published report email uses the active email template. The AWF-01 to AWF-09 document was not received. |
+| SRS-11.5 | Notification templates function correctly | 🔶 | Template manager, versions, languages and the branded email shell are built and tested. Left open until emails are sent through the connected Zoho mailbox and checked. |
 | SRS-11.6 | Delivery failures are recorded | ✅ | emailDeliveryFailures |
 | SRS-11.7 | Security notifications are always delivered according to platform policy | ✅ | shouldDeliver ignores any opt out for the security category; the preference screen shows it locked. |
 

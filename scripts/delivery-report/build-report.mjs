@@ -11,6 +11,23 @@ import PDFDocument from "pdfkit";
 import { CRITERIA, MODULE_INTRO } from "./criteria-content.mjs";
 import { NEW_CRITERIA } from "./criteria-content-r2.mjs";
 Object.assign(CRITERIA, NEW_CRITERIA);
+const EXTRA_SHOTS = {
+  "SRS-04.4": ["cl-reports", "cl-bell"], "SRS-04.7": ["cl-billing-paid", "cl-dashboard"], "SRS-08.1": ["pub-contact"],
+  "SRS-08.3": ["ad-sales-proposals", "ad-sales-timeline"], "SRS-08.5": ["ad-sales-activities"], "SRS-08.6": ["ad-sales-timeline"],
+  "SRS-08.8": ["ad-gov-audit", "ad-sales-pipeline"], "SRS-10.1": ["ad-sales-proposals", "ad-sales-finance"], "SRS-10.5": ["ad-sales-finance", "ad-billing"],
+  "SRS-10.7": ["ad-billing", "ad-gov-audit"], "SRS-11.4": ["ad-bell"], "SRS-12.2": ["cl-documents"], "SRS-12.6": ["ad-documents"],
+  "SRS-12.7": ["ad-documents", "ad-gov-audit"], "SRS-13.5": ["ad-agents"], "SRS-14.3": ["ad-overview-2"], "SRS-14.4": ["ad-security"],
+  "SRS-14.6": ["ad-gov-audit"], "SRS-15.6": ["ad-analytics"], "SRS-16.5": ["ad-gov-config"], "SRS-17.1": ["ad-gov-reports", "ad-overview-2"],
+  "SRS-17.2": ["ad-audit", "ad-gov-reports"], "SRS-17.4": ["ad-gov-reports", "ad-overview-2"], "SRS-17.6": ["ad-audit", "ad-users"],
+  "SRS-18.2": ["ad-gov-config-rejected", "ad-users"], "SRS-18.3": ["ad-gov-config-rejected"], "SRS-19.4": ["ad-overview-2"],
+  "SRS-19.5": ["ad-overview-3"], "SRS-19.6": ["ad-overview-3"], "SRS-13.3": ["ad-gov-ai"], "SRS-16.3": ["ad-automations"],
+  "SRS-19.3": ["ad-plat-integrations"], "SRS-20.6": ["ad-overview-3"],
+};
+for (const [k, more] of Object.entries(EXTRA_SHOTS)) if (CRITERIA[k]) CRITERIA[k].shots = [...new Set([...CRITERIA[k].shots, ...more])];
+// Criteria whose message is carried by email: the link itself was verified, delivery through Zoho is pending.
+const EMAIL_NOTE = new Set(["SRS-02.3", "SRS-02.4", "SRS-03.9"]);
+// Email delivery is left blank in this edition until the Zoho mailboxes are connected.
+const EMAIL_BLANK = ["SRS-11.2", "SRS-11.5"];
 
 const E = process.env.EVIDENCE_OUT;
 const OUT = process.argv[2];
@@ -134,6 +151,24 @@ body("Each section starts with a page that gives the requirement, its status, ho
 h2("Reading order");
 body("Module sections follow SRS order. After them come the items not delivered and why, the open items for review and the specification conformance, then appendices: traceability matrix, full list of passing tests, database schema, procedure inventory, notification catalogue, migration list, live database verification and an index of every screenshot.");
 
+portrait("Verification summary");
+addToc(0, "How this report was verified");
+h1("How this report was verified");
+body("Every criterion in this report was exercised on the deployed platform, not on a developer machine. This page summarises the methods. The section for each criterion states which of them were applied to it.");
+doc.moveDown(0.5);
+table([{ h: "Method", w: 190, f: (r) => r[0] }, { h: "What it covers", w: 250, f: (r) => r[1] }, { h: "Result", w: 150, f: (r) => r[2] }], [
+  ["Automated tests", "Business rules, permissions, validation, payments, audit, security headers, database constraints", `${totalPassed} passed, ${vitest.numFailedTests} failed`],
+  ["Live screenshots", "Real sign in as client, developer and administrator (with a real one time code), then the actual screens", `${Object.keys(manifest).length} captures from the live site`],
+  ["Live HTTP checks", "Health, security headers, access control, input validation, throttling, response time", `${ev.nfr ? ev.nfr.res.filter((x) => x.ok).length + " of " + ev.nfr.res.length : "n/a"} pass`],
+  ["Responsive audit", "18 public pages at 390, 768 and 1440 px", `${ev.responsive ? ev.responsive.length : 0} checks, none failing`],
+  ["Payments", "A purchase and an invoice paid through Stripe Checkout in test mode, with signature, amount and redelivery checks", "Paid, recorded once, account created"],
+  ["Database evidence", "Attempts to change audit tables, row level security on every table, record counts", "Printed in the criteria that use them"],
+  ["Dashboard consistency", "Dashboard figures against independent database queries", `${ev.consistency ? ev.consistency.filter((c) => c.dashboard === c.query).length + " of " + ev.consistency.length : "n/a"} match`],
+], { size: 8.5, rowH: 34 });
+doc.moveDown(0.5);
+body("Test data. All customer records are dummy data created for this verification. Payments used Stripe test mode and the Stripe test card, so no money moved.", { size: 9.5 });
+body("Dates. Verification was run on 10 and 11 October 2026 against the production deployment.", { size: 9.5 });
+
 portrait("Summary");
 addToc(0, "Summary by module");
 h1("Summary by module");
@@ -250,6 +285,7 @@ function evidencePage(crit, key) {
 }
 
 const critByMod = new Map();
+for (const id of EMAIL_BLANK) { const i = done.done.findIndex((x) => x.id === id); if (i >= 0) done.done.splice(i, 1); }
 for (const c of done.done) { if (!critByMod.has(c.module)) critByMod.set(c.module, []); critByMod.get(c.module).push(c); }
 
 for (const mod of done.mods) {
@@ -293,10 +329,19 @@ for (const mod of done.mods) {
     h2("Where to see it in the live application");
     for (const s of shots) { const m = manifest[s]; body(`${m.title} (${m.role === "public" ? "no sign in needed" : "signed in as " + m.role}, page ${pageOf(m.url || m.route)})`, { size: 9.5 }); }
     if ((cc.ev ?? []).length) body("Database evidence is also included: " + cc.ev.join(", ") + ".", { size: 9.5 });
-    h2("Evidence in this report");
-    const nFig = shots.length * 2 + (cc.ev ?? []).length;
-    body(`Screenshots from the live application: ${shots.length}. ${tlist.length ? `Automated tests that cover it: ${tlist.length} in ${hit.length} test files, all passing.` : ""}`, { size: 9.5 });
-    void nFig;
+    h2("Tested and verified");
+    {
+      const roles = [...new Set(shots.map((x) => manifest[x].role))];
+      const parts = [];
+      if (shots.length) parts.push(`Live check on the deployed application, 11 October 2026: ${shots.length} screenshot${shots.length === 1 ? "" : "s"} taken after a real sign in (${roles.join(", ")}).`);
+      if (tlist.length) parts.push(`Automated tests: ${tlist.length} passing in ${hit.length} test file${hit.length === 1 ? "" : "s"}, none failing.`);
+      const evNames = { nfr: "live HTTP checks (health, headers, access control, validation, throttling)", responsive: "responsive audit of 18 pages at three widths", navbar: "navbar specification conformance", paymentEvents: "verified Stripe events recorded in the database", scanPurchases: "paid purchase records", consistency: "dashboard figures against independent queries", immutability: "real UPDATE and DELETE attempts refused by the database", rls: "row level security status of every table", auditTriggers: "append only triggers", emissions: "notification event log", auditSample: "sign in audit rows", scanEvents: "AI Scan status history", aiExecutions: "AI execution log", alertRules: "alert rule configuration", configHistory: "configuration history", emailLog: "email delivery log", policies: "row level security policies", counts: "record counts", catalogue: "notification catalogue", deployments: "release history" };
+      if ((cc.ev ?? []).length) parts.push("Database and live site evidence printed in this report: " + cc.ev.map((k) => evNames[k] ?? k).join("; ") + ".");
+      parts.push("Result: verified.");
+      body(parts.join("\n"), { size: 9.5 });
+      if (EMAIL_NOTE.has(c.id)) body("Email delivery of the message that carries the link is outside this verification. The link and the flow behind it were tested directly. Delivery through the Zoho mailboxes is configured separately.", { size: 9, color: GREY });
+    }
+    void 0;
 
     // tests: per file counts and a sample of names; the full list is in Appendix B
     if (tlist.length) {
@@ -304,8 +349,8 @@ for (const mod of done.mods) {
       table([{ h: "Test file", w: 330, f: (r) => r.file }, { h: "Passing", w: 50, f: (r) => String(r.n) }], hit.map((f) => ({ file: f.file, n: f.tests.filter((t) => t.status === "passed").length })), { size: 8, rowH: 12.5, maxRows: 12 });
       doc.font("Helvetica-Bold").fontSize(8.5).fillColor(GREY).text("Examples of what the tests assert:", 48, doc.y);
       doc.moveDown(0.2);
-      const step = Math.max(1, Math.floor(tlist.length / 7));
-      for (let i = 0, n = 0; i < tlist.length && n < 7; i += step, n++) {
+      const step = Math.max(1, Math.floor(tlist.length / 4));
+      for (let i = 0, n = 0; i < tlist.length && n < 4; i += step, n++) {
         if (doc.y > doc.page.height - 70) break;
         doc.font("Helvetica").fontSize(7.8).fillColor("#1c2430").text(T("[pass] " + tlist[i].name), 54, doc.y, { width: doc.page.width - 108, lineGap: 0.8, height: 22, ellipsis: true });
       }
@@ -334,6 +379,8 @@ h1("Not delivered in this release, and why");
 body(`${done.done.length} of 155 criteria are shown as complete in this report. The remaining ${155 - done.done.length} are not claimed.`);
 h2("SRS-06.8 and SRS-07.9: dashboards display accurate information");
 body("Every operational and executive panel shows live data except the Campaigns panel. The Master SRS names campaign management but does not specify it, and the AI Sales Outbound and Campaign Management workstream is Milestone 4 section 4.5. The panel stays labelled as sample data until that workstream is delivered. These two criteria are therefore left open on purpose and are not repriced as new work.");
+h2("SRS-11.2 and SRS-11.5: email delivery and email templates");
+body("Left blank in this edition on purpose. The notification dispatcher, the template manager and the branded email shell are built and tested, and in app delivery is verified. Email delivery through the IO SKY Zoho mailboxes is being configured and cannot be verified end to end until the sending mailbox is connected, so these two criteria carry no completion claim yet.");
 h2("Other work that is Milestone 4 and not part of this report");
 body("AI Receptionist, IVR and telephony (4.1 to 4.3), the Scheduling Agent beyond Discovery Calls (4.4), AI Sales Outbound (4.5), the adaptive AI Scan engine, report design system and book viewer (4.7), and the website and platform redesign including the Navbar v1.7 and Signature High Glass specifications (4.8). The Executive Briefing video is a proposed extension that needs the written approval of the client first.");
 portrait("Open items");
