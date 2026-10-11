@@ -12,17 +12,17 @@ This replaces the per module counts in `SRS_TRACEABILITY.md`, which were estimat
 
 ---
 
-## Status: 151 of 155 criteria complete (97.4%)
+## Status: 153 of 155 criteria complete (98.7%)
 
 | Status | Criteria | Share |
 | --- | ---: | ---: |
-| ✅ Done | 151 | 97.4% |
-| 🔶 Partial | 4 | 2.6% |
+| ✅ Done | 153 | 98.7% |
+| 🔶 Partial | 2 | 1.3% |
 | ⏭ Not started | 0 | 0.0% |
 | ⛔ Blocked | 0 | 0.0% |
 | **Total** | **155** | **100%** |
 
-Counting a Partial as half: **98.7%**.
+Counting a Partial as half: **99.4%**.
 
 ## Per module
 
@@ -33,8 +33,8 @@ Counting a Partial as half: **98.7%**.
 | 3 | AI Scan Platform | §9.11 | 9 | 9 | 0 | 0 | 0 |
 | 4 | Client Portal | §10.17 | 10 | 10 | 0 | 0 | 0 |
 | 5 | Developer Portal | §11.15 | 8 | 8 | 0 | 0 | 0 |
-| 6 | Admin Portal | §12.17 | 10 | 9 | 1 | 0 | 0 |
-| 7 | Super Admin Portal | §13.18 | 10 | 9 | 1 | 0 | 0 |
+| 6 | Admin Portal | §12.17 | 10 | 10 | 0 | 0 | 0 |
+| 7 | Super Admin Portal | §13.18 | 10 | 10 | 0 | 0 | 0 |
 | 8 | CRM & Sales Management | §14.15 | 8 | 8 | 0 | 0 | 0 |
 | 9 | Project & Delivery Management | §15.18 | 8 | 8 | 0 | 0 | 0 |
 | 10 | Commercial Billing & Subscription | §16.15 | 7 | 7 | 0 | 0 | 0 |
@@ -133,7 +133,7 @@ Counting a Partial as half: **98.7%**.
 | SRS-06.5 | Projects can be managed successfully | ✅ | create, update, milestones |
 | SRS-06.6 | Developers can be assigned to projects | ✅ | Delivery screen: create project (privacy safe name), assign, end, tasks, notify, audit. Idempotent, active developers only. |
 | SRS-06.7 | Billing information is available | ✅ | billing, createInvoice |
-| SRS-06.8 | Operational dashboards display accurate information | 🔶 | Executive Overview now shows real compliance, AI governance, alerts, automation, pipeline, health and pending work. Only the Campaigns panel and Campaigns page remain labelled sample data; there is no campaign module. |
+| SRS-06.8 | Operational dashboards display accurate information | ✅ | Verified 11 October 2026. Every panel reads live data. The Campaigns panel and page now show attribution computed from captured leads by campaign tag and source, matched against independent queries. Outbound sending is the Milestone 4 AI Sales Outbound workstream. |
 | SRS-06.9 | Notifications function correctly | ✅ | Admin bell with unread count, mark read, and catalogue events with de-duplication. |
 | SRS-06.10 | All required audit events are recorded | ✅ | Same enforced coverage for every admin mutation. |
 
@@ -149,7 +149,7 @@ Counting a Partial as half: **98.7%**.
 | SRS-07.6 | Audit logs are searchable | ✅ | Audit search by text, outcome and date, paged, CSV export with formula defusing; the export is itself audited. |
 | SRS-07.7 | Platform configuration changes are validated | ✅ | admin.updateSetting validates (ranges, on/off, derived values locked) and records every attempt in config_history. No second approver step. |
 | SRS-07.8 | Integration settings can be managed | ✅ | Webhooks, plus a provider panel (database, Supabase, Stripe, OpenAI, email, Twilio) showing configured state and a Super Admin connection test. Keys are held in the environment and never shown. |
-| SRS-07.9 | Executive dashboards display accurate information | 🔶 | As above: all panels are live except Campaigns. |
+| SRS-07.9 | Executive dashboards display accurate information | ✅ | Verified 11 October 2026. All executive panels are live, including campaign attribution. Outbound campaign sending is Milestone 4 section 4.5 and is stated as such on the Campaigns page. |
 | SRS-07.10 | All platform wide actions are recorded in the audit log | ✅ | recordAdminEvent |
 
 ## Module 8: CRM & Sales Management (§14.15)
