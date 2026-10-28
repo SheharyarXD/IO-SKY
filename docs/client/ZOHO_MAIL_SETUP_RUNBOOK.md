@@ -138,10 +138,12 @@ After verification Zoho shows the MX, SPF and DKIM values for iosky.co in the sa
 | Mailbox 4, Personal | existing user `leeroy.correiadjalo@iosky.nl`. The client wants `lcorreiad@iosky.nl` with the display name "Leeroy Correia Djalo \| IO SKY". Add it as an alias and make it the mailbox address when ready |
 | Mailbox 5, Outbound | the existing user `loubna.maghnouj@iosky.nl` occupies the fifth licence. The final iosky.co sender is confirmed by the client on 12 October 2026 |
 | Domains | iosky.nl verified, MX not yet pointed. iosky.co added, ownership not yet verified |
-| Folders on support@ | Support, Contact, Info created |
-| Folders on projects@ and security@ | still to create |
-| Server side filters | still to create on all three shared mailboxes |
-| Time zone | new users default to Asia/Karachi. Set Europe/Amsterdam in each mailbox under Settings, System |
+| Folders | support@: Support, Contact, Info. projects@: Projects, Development, Engineering. security@: Security, Privacy, Billing. All created |
+| Server side filters | Done on all three shared mailboxes: one filter per address, condition To/Cc contains the address, action move to the matching folder (9 filters) |
+| Send Mail As | Checked on all three mailboxes: every alias is listed with its display name |
+| First sign in | Done once per mailbox on 28 October 2026. Temporary passwords were replaced and the new ones are held by the engagement lead, not in this repository |
+| Mail flow | Still not testable. Public DNS has no MX, SPF, DKIM or DMARC records yet, so the filters have not been exercised by a real message |
+| Time zone | new users default to Asia/Karachi. Set Europe/Amsterdam in each mailbox under Settings, System. Not changed yet, left for the mailbox owner |
 
 Zoho limits sign in attempts per day. Sign in once per mailbox and do all work in that session.
 New users must change their temporary password at the first sign in, and the welcome tour must be dismissed before the
