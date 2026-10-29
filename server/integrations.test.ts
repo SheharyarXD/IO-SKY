@@ -82,6 +82,13 @@ describe("lead evaluation (SRS 14.16)", () => {
     expect(res.ok).toBe(false);
     expect(invokeLLM).not.toHaveBeenCalled();
   });
+  it("G01: does not call the model when there is no permission verdict at all (fails closed)", async () => {
+    gov.gate = null as never;
+    const invokeLLM = vi.fn();
+    const res = await evaluateLead(lead, { invokeLLM: invokeLLM as any });
+    expect(res).toMatchObject({ ok: false, reason: expect.stringContaining("could not be verified") });
+    expect(invokeLLM).not.toHaveBeenCalled();
+  });
   it("records nothing when the model answer is unusable", async () => {
     const invokeLLM = vi.fn(async () => ({ choices: [{ message: { content: "sorry" } }] }) as any);
     const res = await evaluateLead(lead, { invokeLLM });

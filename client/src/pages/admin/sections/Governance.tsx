@@ -193,6 +193,24 @@ function AiGovernance() {
           emptyLabel="No AI agents are registered. An agent can only act once it is registered with explicit permissions."
         />
       </Panel>
+      <Panel title="Registry details (SRS 19.17)">
+        <DataTable
+          columns={[
+            { key: "key", header: "Agent", render: (r: NonNullable<typeof agents.data>[number]) => <span className="font-mono">{r.key}</span> },
+            { key: "businessFunction", header: "Business function", render: (r: NonNullable<typeof agents.data>[number]) => r.businessFunction ?? <span className="text-white/40">not set</span> },
+            { key: "supportedModules", header: "Modules", render: (r: NonNullable<typeof agents.data>[number]) => (r.supportedModules.length ? r.supportedModules.join(", ") : <span className="text-white/40">none</span>) },
+            { key: "tools", header: "Tools", render: (r: NonNullable<typeof agents.data>[number]) => (r.tools.length ? r.tools.join(", ") : <span className="text-white/40">none</span>) },
+            { key: "knowledgeSources", header: "Knowledge sources", render: (r: NonNullable<typeof agents.data>[number]) => (r.knowledgeSources.length ? r.knowledgeSources.join(", ") : <span className="text-white/40">none</span>) },
+            { key: "maxAuthority", header: "Max authority", render: (r: NonNullable<typeof agents.data>[number]) => r.maxAuthority.replace(/_/g, " ") },
+            { key: "responsibleAdmin", header: "Responsible admin", render: (r: NonNullable<typeof agents.data>[number]) => (r.responsibleAdmin ? r.responsibleAdmin.name ?? r.responsibleAdmin.email ?? `user ${r.responsibleAdmin.id}` : <span className="text-white/40">unassigned</span>) },
+            { key: "registryVersion", header: "Registry", render: (r: NonNullable<typeof agents.data>[number]) => `v${r.registryVersion}` },
+            { key: "missingFields", header: "Complete?", render: (r: NonNullable<typeof agents.data>[number]) => (r.missingFields.length === 0 ? <StatusPill tone="ok" label="complete" /> : <span className="text-[11.5px] text-amber-300/90" title={r.missingFields.join(", ")}>missing {r.missingFields.length}: {r.missingFields.join(", ")}</span>) },
+          ]}
+          rows={agents.data ?? []}
+          emptyLabel="No AI agents are registered."
+        />
+        <p className="mt-3 text-[11.5px] text-white/45">An agent that names a tool or knowledge source it does not need to list is fine to leave empty. Missing fields are the SRS 19.17 minimum that nobody has filled in yet.</p>
+      </Panel>
       <Panel title="Waiting for a human decision">
         <DataTable
           columns={[
@@ -237,17 +255,34 @@ function AiGovernance() {
           { name: "requiresHumanApproval", label: "Human approval", type: "select", required: true, initial: "yes", options: [{ value: "yes", label: "Required" }, { value: "no", label: "Not required" }] },
           { name: "status", label: "Status", type: "select", required: true, initial: "active", options: [{ value: "active", label: "Active" }, { value: "disabled", label: "Disabled" }] },
           { name: "purpose", label: "Purpose", type: "textarea" },
+          { name: "businessFunction", label: "Business function", placeholder: "AI Scan report drafting", hint: "Leave a registry field blank to keep its current value." },
+          { name: "supportedModules", label: "Supported modules", placeholder: "ai_scan, crm", hint: "Comma separated: lower case, digits, underscores." },
+          { name: "capabilities", label: "Authorized capabilities", placeholder: "draft_scan_report" },
+          { name: "tools", label: "Available tools", placeholder: "search_documents", hint: "Comma separated. The agent runtime refuses a tool that is not listed." },
+          { name: "knowledgeSources", label: "Knowledge sources", placeholder: "ai_scan_reports, business_rules", hint: "From: ai_scan_reports, client_documentation, project_documentation, technical_documentation, internal_procedures, knowledge_base_articles, product_documentation, business_rules, operational_data, platform_configuration." },
+          { name: "maxAuthority", label: "Maximum authority", type: "select", initial: "", options: [{ value: "", label: "(unchanged)" }, { value: "read_only", label: "Read only" }, { value: "draft_only", label: "Draft only" }, { value: "act_with_approval", label: "Act with approval" }, { value: "act_autonomously", label: "Act autonomously" }] },
+          { name: "responsibleAdminUserId", label: "Responsible admin (user id)", placeholder: "12", hint: "Must be an admin or super admin." },
+          { name: "escalationRules", label: "Escalation rules", type: "textarea", hint: "When the agent must hand over to a person, and to whom." },
         ]}
-        onSubmit={(v) =>
-          upsert.mutateAsync({
+        onSubmit={(v) => {
+          const list = (x: string | undefined) => (x && x.trim() ? x.split(",").map((s) => s.trim()).filter(Boolean) : undefined);
+          return upsert.mutateAsync({
             key: v.key,
             name: v.name,
             purpose: v.purpose || undefined,
             permissions: v.permissions.split(",").map((s) => s.trim()).filter(Boolean),
             requiresHumanApproval: v.requiresHumanApproval === "yes",
             status: v.status as "active",
-          })
-        }
+            businessFunction: v.businessFunction?.trim() || undefined,
+            supportedModules: list(v.supportedModules),
+            capabilities: list(v.capabilities),
+            tools: list(v.tools),
+            knowledgeSources: list(v.knowledgeSources),
+            maxAuthority: v.maxAuthority || undefined,
+            responsibleAdminUserId: v.responsibleAdminUserId?.trim() ? Number(v.responsibleAdminUserId) : undefined,
+            escalationRules: v.escalationRules?.trim() || undefined,
+          });
+        }}
       />
       <FormCard
         title="Add a prompt version (super admin)"

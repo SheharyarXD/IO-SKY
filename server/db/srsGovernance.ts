@@ -44,6 +44,7 @@ import {
 } from "../../shared/srsRules";
 import { getDb } from "./connection";
 import { resolveReleaseCommit } from "../_core/releaseIdentity";
+import { missingRegistryFields, parseStringList } from "../../shared/aiAgentRegistry";
 
 // ---------------------------------------------------------------------------
 // Admin notifications
@@ -131,7 +132,17 @@ export async function setNotificationPreference(args: {
 // AI registry, prompts and execution history
 // ---------------------------------------------------------------------------
 
-export type AiAgentView = Omit<AiAgent, "permissionsJson"> & { permissions: string[]; activePromptVersion: number | null };
+export type AiAgentView = Omit<AiAgent, "permissionsJson" | "capabilitiesJson" | "supportedModulesJson" | "toolsJson" | "knowledgeSourcesJson"> & {
+  permissions: string[];
+  capabilities: string[];
+  supportedModules: string[];
+  tools: string[];
+  knowledgeSources: string[];
+  activePromptVersion: number | null;
+  responsibleAdmin: { id: number; name: string | null; email: string | null } | null;
+  /** SRS 19.17 minimum fields still empty. Empty list means the registry entry is complete. */
+  missingFields: string[];
+};
 
 function parsePermissions(json: string): string[] {
   try {
@@ -148,13 +159,30 @@ export async function listAiAgents(): Promise<AiAgentView[]> {
   const agents = await db.select().from(aiAgents).orderBy(asc(aiAgents.key));
   const active = await db.select().from(aiPromptVersions).where(eq(aiPromptVersions.isActive, true));
   const byAgent = new Map(active.map((p) => [p.agentKey, p.version]));
-  return agents.map(({ permissionsJson, ...a }) => ({
-    ...a,
-    permissions: parsePermissions(permissionsJson),
-    activePromptVersion: byAgent.get(a.key) ?? null,
-  }));
+  const adminIds = [...new Set(agents.map((a) => a.responsibleAdminUserId).filter((x): x is number => x !== null))];
+  const admins = adminIds.length ? await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(inArray(users.id, adminIds)) : [];
+  const adminById = new Map(admins.map((u) => [u.id, u]));
+  return agents.map(({ permissionsJson, capabilitiesJson, supportedModulesJson, toolsJson, knowledgeSourcesJson, ...a }) => {
+    const view = {
+      ...a,
+      permissions: parsePermissions(permissionsJson),
+      capabilities: parseStringList(capabilitiesJson),
+      supportedModules: parseStringList(supportedModulesJson),
+      tools: parseStringList(toolsJson),
+      knowledgeSources: parseStringList(knowledgeSourcesJson),
+      activePromptVersion: byAgent.get(a.key) ?? null,
+      responsibleAdmin: a.responsibleAdminUserId !== null ? adminById.get(a.responsibleAdminUserId) ?? { id: a.responsibleAdminUserId, name: null, email: null } : null,
+    };
+    return { ...view, missingFields: missingRegistryFields(view) };
+  });
 }
 
+/**
+ * Create or update a registry entry. The SRS 19.17 fields are optional: a field
+ * that is not supplied is left as it is, so an older caller cannot blank them.
+ * Every upsert bumps `registryVersion` (Version Information). A responsible
+ * admin must be an admin or super admin.
+ */
 export async function upsertAiAgent(args: {
   key: string;
   name: string;
@@ -162,9 +190,32 @@ export async function upsertAiAgent(args: {
   permissions: string[];
   requiresHumanApproval: boolean;
   status: "active" | "disabled";
-}): Promise<AiAgent | null> {
+  businessFunction?: string | null;
+  capabilities?: string[];
+  supportedModules?: string[];
+  tools?: string[];
+  knowledgeSources?: string[];
+  escalationRules?: string | null;
+  maxAuthority?: string;
+  responsibleAdminUserId?: number | null;
+}): Promise<AiAgent | "invalid_responsible_admin" | null> {
   const db = await getDb();
   if (!db) return null;
+  if (args.responsibleAdminUserId !== undefined && args.responsibleAdminUserId !== null) {
+    const u = (await db.select({ role: users.role }).from(users).where(eq(users.id, args.responsibleAdminUserId)).limit(1))[0];
+    if (!u || (u.role !== "admin" && u.role !== "super_admin")) return "invalid_responsible_admin";
+  }
+  const list = (v: string[] | undefined) => (v === undefined ? {} : [...new Set(v)]);
+  const optional = {
+    ...(args.businessFunction !== undefined ? { businessFunction: args.businessFunction } : {}),
+    ...(args.capabilities !== undefined ? { capabilitiesJson: JSON.stringify(list(args.capabilities)) } : {}),
+    ...(args.supportedModules !== undefined ? { supportedModulesJson: JSON.stringify(list(args.supportedModules)) } : {}),
+    ...(args.tools !== undefined ? { toolsJson: JSON.stringify(list(args.tools)) } : {}),
+    ...(args.knowledgeSources !== undefined ? { knowledgeSourcesJson: JSON.stringify(list(args.knowledgeSources)) } : {}),
+    ...(args.escalationRules !== undefined ? { escalationRules: args.escalationRules } : {}),
+    ...(args.maxAuthority !== undefined ? { maxAuthority: args.maxAuthority } : {}),
+    ...(args.responsibleAdminUserId !== undefined ? { responsibleAdminUserId: args.responsibleAdminUserId } : {}),
+  };
   const values = {
     key: args.key,
     name: args.name,
@@ -172,11 +223,12 @@ export async function upsertAiAgent(args: {
     permissionsJson: JSON.stringify([...new Set(args.permissions)]),
     requiresHumanApproval: args.requiresHumanApproval,
     status: args.status,
+    ...optional,
   };
   const rows = await db
     .insert(aiAgents)
     .values(values)
-    .onConflictDoUpdate({ target: aiAgents.key, set: { ...values, updatedAt: new Date() } })
+    .onConflictDoUpdate({ target: aiAgents.key, set: { ...values, registryVersion: sql`${aiAgents.registryVersion} + 1`, updatedAt: new Date() } })
     .returning();
   return rows[0] ?? null;
 }
@@ -254,7 +306,8 @@ export async function authoriseAndRecordAgentAction(args: {
 }): Promise<AgentRunResult | null> {
   const db = await getDb();
   if (!db) return null;
-  const row = (await db.select().from(aiAgents).where(eq(aiAgents.key, args.agentKey)).limit(1))[0];
+  // Only the columns the decision needs, so the permission check does not depend on later registry columns.
+  const row = (await db.select({ status: aiAgents.status, permissionsJson: aiAgents.permissionsJson, requiresHumanApproval: aiAgents.requiresHumanApproval }).from(aiAgents).where(eq(aiAgents.key, args.agentKey)).limit(1))[0];
   const verdict = authoriseAgentAction(
     row ? { status: row.status, permissions: parsePermissions(row.permissionsJson), requiresHumanApproval: row.requiresHumanApproval } : null,
     args.action,

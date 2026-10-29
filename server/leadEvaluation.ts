@@ -76,7 +76,9 @@ export async function evaluateLead(
     basePrompt: DEFAULT_LEAD_PROMPT,
   });
   const gate = await authoriseAndRecordAgentAction({ agentKey: LEAD_AGENT_KEY, action: "evaluate_lead", subjectRef: `lead:${lead.id}`, detail: null });
-  if (gate && gate.outcome === "blocked_by_permission") return { ok: false, reason: `The lead qualifier is not permitted to run (${gate.reason.replace(/_/g, " ")}).` };
+  // G01: fail closed. No verdict (no registry or database) means permission could not be verified, so the model is not called.
+  if (!gate) return { ok: false, reason: "The lead qualifier could not be run because its permission could not be verified." };
+  if (gate.outcome === "blocked_by_permission") return { ok: false, reason: `The lead qualifier is not permitted to run (${gate.reason.replace(/_/g, " ")}).` };
   const prompt = (await getActivePrompt(LEAD_AGENT_KEY))?.body ?? DEFAULT_LEAD_PROMPT;
   const facts = [`Name: ${lead.fullName}`, `Company: ${lead.company ?? "unknown"}`, `Source: ${lead.source}`, `Stated interest: ${lead.interest ?? "none"}`, `Note: ${lead.note ?? "none"}`].join("\n");
   const invoke = deps.invokeLLM ?? defaultInvoke;

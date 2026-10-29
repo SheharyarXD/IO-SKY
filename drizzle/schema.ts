@@ -2507,6 +2507,22 @@ export const aiAgents = pgTable("ai_agents", {
   status: varchar("status", { length: 16 }).default("active").notNull(),
   permissionsJson: text("permissionsJson").default("[]").notNull(),
   requiresHumanApproval: boolean("requiresHumanApproval").default(true).notNull(),
+  // SRS 19.17 registry fields (task G02, migration 0038).
+  /** Assigned Business Function. */
+  businessFunction: varchar("businessFunction", { length: 160 }),
+  /** Authorized Capabilities (descriptive; the enforced list is permissionsJson). */
+  capabilitiesJson: text("capabilitiesJson").default("[]").notNull(),
+  supportedModulesJson: text("supportedModulesJson").default("[]").notNull(),
+  /** Available Tools. The runtime (G03) refuses any tool not listed here. */
+  toolsJson: text("toolsJson").default("[]").notNull(),
+  /** Accessible Knowledge Sources, from the SRS 19.20 list. */
+  knowledgeSourcesJson: text("knowledgeSourcesJson").default("[]").notNull(),
+  escalationRules: text("escalationRules"),
+  /** SRS 19.18 Maximum Operational Authority: read_only | draft_only | act_with_approval | act_autonomously. Defaults to the least. */
+  maxAuthority: varchar("maxAuthority", { length: 24 }).default("read_only").notNull(),
+  responsibleAdminUserId: integer("responsibleAdminUserId").references(() => users.id),
+  /** Version Information: bumped on every registry change. The prompt has its own versions. */
+  registryVersion: integer("registryVersion").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

@@ -77,6 +77,7 @@ import {
 import { recordAdminEvent } from "./admin";
 import { emitNotification } from "../notificationDispatcher";
 import { resolveNotificationLink } from "../../shared/notificationLinks";
+import { KNOWLEDGE_SOURCES, REGISTRY_LIMITS, validateRegistryFields } from "../../shared/aiAgentRegistry";
 import { EXPORT_DATASETS, INVITABLE_ROLES, mayViewCompanyRevenue, INVITATION_TTL_DAYS, canInviteRole, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
 import { AI_SCAN_AGENT_KEY, createInvitation, decideLatestAiExecutionForSubject, listInvitations, revokeInvitation, listDeployments, readComplianceInputs, readExportDataset, readMonthlyHistory } from "../db";
 import { fireTrigger } from "../workflowEngine";
@@ -462,12 +463,24 @@ export const adminOpsRouter = router({
         permissions: z.array(z.string().trim().min(1).max(96)).max(50),
         requiresHumanApproval: z.boolean().default(true),
         status: z.enum(["active", "disabled"]).default("active"),
+        // SRS 19.17 registry fields (G02). Optional: a field that is not sent is left unchanged.
+        businessFunction: z.string().trim().max(REGISTRY_LIMITS.businessFunction).nullable().optional(),
+        capabilities: z.array(z.string().trim()).max(REGISTRY_LIMITS.capabilities).optional(),
+        supportedModules: z.array(z.string().trim()).max(REGISTRY_LIMITS.modules).optional(),
+        tools: z.array(z.string().trim()).max(REGISTRY_LIMITS.tools).optional(),
+        knowledgeSources: z.array(z.string().trim()).max(KNOWLEDGE_SOURCES.length).optional(),
+        escalationRules: z.string().trim().max(REGISTRY_LIMITS.escalation).nullable().optional(),
+        maxAuthority: z.string().trim().max(24).optional(),
+        responsibleAdminUserId: z.number().int().positive().nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const check = validateRegistryFields(input);
+      if (!check.ok) fail("BAD_REQUEST", check.errors.join(" "));
       const a = await upsertAiAgent({ ...input, purpose: input.purpose ?? null });
+      if (a === "invalid_responsible_admin") fail("BAD_REQUEST", "The responsible admin must be an existing admin or super admin.");
       if (!a) fail("INTERNAL_SERVER_ERROR", "Could not save the agent.");
-      await recordAdminEvent({ ctx, reason: `admin.ai_agent.upsert(${a.key}:${a.status})` });
+      await recordAdminEvent({ ctx, reason: `admin.ai_agent.upsert(${a.key}:${a.status}:registry v${a.registryVersion})` });
       return a;
     }),
 

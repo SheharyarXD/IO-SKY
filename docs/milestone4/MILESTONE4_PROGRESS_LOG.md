@@ -150,6 +150,18 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Decisions needed: retention of abandoned rows and of stored message content; whether an admin screen for the queue is wanted (the endpoint exists); the default policy numbers.
 - Next: G02, then G03.
 
+## G02 AI Agent Registry minimum fields (and the lead qualifier's fail-open gate)
+
+- Previous status: NOT_STARTED (audit: C). New status: TESTED_LOCAL. Database behaviour unverified.
+- Gap: `ai_agents` held 5 of the 13 minimum fields in SRS 19.17 (it had no business function, supported modules, capabilities, tools, knowledge sources, escalation rules, maximum authority, responsible admin or registry version).
+- Change: `shared/aiAgentRegistry.ts` defines the controlled vocabularies (knowledge sources from SRS 19.20; authority levels read_only, draft_only, act_with_approval, act_autonomously from 19.18), validation (clean identifiers, no duplicates, limits, an agent that requires human approval cannot have autonomous authority) and `missingRegistryFields`. `ai_agents` gets nine columns (migration 0038, additive, NOT applied; it also records what the two agents that already run actually do, from their code, and leaves responsible admin empty because only a person can assign it). `upsertAiAgent` takes the new fields as optional so an older caller cannot blank them, bumps `registryVersion` on every change and requires the responsible admin to be an admin or super admin. `listAiAgents` returns parsed lists, the admin and what is still missing. The admin page shows a registry-details table with a Complete? column and the form takes the new fields; editing stays Super Admin only. The permission check now selects only the columns it needs.
+- Same batch, G01 follow-up: the lead qualifier's gate had the fail-open shape (`gate && gate.outcome === ...` let a null verdict through). It now refuses without a verdict; regression test added.
+- Files: see the register row.
+- Tests: `aiAgentRegistry.test.ts` 17 (rules, completeness, data layer with a fake query builder), `aiAgentRegistry.router.test.ts` 6, `integrations.test.ts` +1. Full suite 1382 passed, 57 skipped, 0 failed; typecheck and build clean.
+- **Deployment order:** apply migration 0038 before deploying this code. Drizzle reads and inserts every `ai_agents` column, so without it the registry page errors and, because the gate fails closed, AI Scans and the lead qualifier are refused. The permission check itself no longer depends on the new columns, but the default-agent inserts do.
+- Decisions needed: whether "Authorized Capabilities" and "Assigned Permissions" are the same list (they are kept separate: permissions are enforced, capabilities descriptive); who the responsible admin for each agent is.
+- Next: G03.
+
 ---
 
 ## Status translation rules used for the import

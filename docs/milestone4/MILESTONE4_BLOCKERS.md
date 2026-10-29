@@ -34,6 +34,15 @@ Each entry names the exact missing item, who owes it, why it blocks, and what ca
 | 16 | M4-01 report download logging needs a new audit table and a migration | A migration file can be written, but it is not applied to production without authorization |
 | 17 | M4-03 run the real-database suites on an isolated database | Depends on item 6 |
 
+## Migration order (written, none applied by this repository)
+
+| File | Task | Required before deploying the code? | If the code runs without it |
+|---|---|---|---|
+| `drizzle/0037_email_outbox.sql` | N03 | No | The retry queue and worker are quiet no-ops and log once. Failed emails are still logged as before. |
+| `drizzle/0038_ai_agent_registry_fields.sql` | G02 | **Yes** | The registry page errors, and because the AI permission gate fails closed, AI Scans and the lead qualifier are refused (Drizzle reads and inserts every `ai_agents` column). |
+
+Apply each to a non-production database first, then production, in this order, then deploy. Neither is needed for the tests, which are database-free.
+
 ## Dependency of the seven items marked BLOCKED_EXTERNAL that are code-heavy
 
 R01, R02, R03, R05 are marked blocked because they need the telephony account, but the voice scope is baseline according to the 15 October reconciliation and the 29 October audit. The adapter interface, signature verification and session state machine can be built and tested without the account once the voice scope is confirmed and the next unit of work is chosen. They are not started in this session because the first priority was the six defects.

@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 12
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 13
 - Live verification pending: 20
 - In progress: 0
-- Not started: 50
+- Not started: 49
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -86,7 +86,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 
 ### 3. AI agents and orchestration (0 of 16 verified)
 
-- [ ] `G02`: Registry fields (P1, BASELINE, NOT_STARTED)
+- [ ] `G02`: Registry fields (P1, BASELINE, TESTED_LOCAL)
 - [ ] `G03`: Shared agent runtime (P1, BASELINE, NOT_STARTED)
 - [ ] `G05`: Permission-aware knowledge store and retrieval (P1, BASELINE, NOT_STARTED)
 - [ ] `G09`: Per-agent Technical Operator scope enforcement at tool, (P1, BASELINE, NOT_STARTED)
