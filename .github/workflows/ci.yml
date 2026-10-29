@@ -47,18 +47,25 @@ jobs:
       - name: Typecheck
         run: pnpm run check
 
-      # RM-96: the full backend suite runs against whatever stack the
-      # environment provides. Supabase-dependent files skip cleanly when the
-      # secrets below are absent (they probe for reachability, not just for
-      # env-var presence) — so this job is green on a fork PR with no secrets
-      # and exercises the real database on trunk once secrets are configured.
+      # RM-96 / M4-05: the full backend suite. Database-dependent files skip
+      # cleanly unless an isolated test database is configured through the
+      # TEST_* secrets below, so this job is green on a fork PR with no secrets
+      # and exercises a real (non-production) database once they exist.
       - name: Test
         run: pnpm run test
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          # M4-05: database tests run only against an ISOLATED test database.
+          # vitest.config.ts blanks DATABASE_URL and SUPABASE_*, and refuses a
+          # TEST_DATABASE_URL that is the production database. Without the
+          # TEST_* secrets this job is database-free and the live suites skip.
+          ALLOW_DB_TESTS: ${{ secrets.TEST_DATABASE_URL != '' && '1' || '' }}
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.TEST_SUPABASE_PUBLISHABLE_KEY }}
+          TEST_SUPABASE_SECRET_KEY: ${{ secrets.TEST_SUPABASE_SECRET_KEY }}
+          # Lets the guard compare against, and refuse, the production project.
+          PRODUCTION_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PRODUCTION_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
   security-suite:
@@ -88,10 +95,18 @@ jobs:
       - name: Auth, RBAC and tenant-isolation suite
         run: pnpm run test:security
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          # M4-05: database tests run only against an ISOLATED test database.
+          # vitest.config.ts blanks DATABASE_URL and SUPABASE_*, and refuses a
+          # TEST_DATABASE_URL that is the production database. Without the
+          # TEST_* secrets this job is database-free and the live suites skip.
+          ALLOW_DB_TESTS: ${{ secrets.TEST_DATABASE_URL != '' && '1' || '' }}
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.TEST_SUPABASE_PUBLISHABLE_KEY }}
+          TEST_SUPABASE_SECRET_KEY: ${{ secrets.TEST_SUPABASE_SECRET_KEY }}
+          # Lets the guard compare against, and refuse, the production project.
+          PRODUCTION_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PRODUCTION_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
   artifact-scan:

@@ -94,6 +94,17 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Database verification: not needed. Remaining: confirm on a deployed instance after the next release; `builtAt` stays "unknown" unless the pipeline passes `BUILD_TIMESTAMP`.
 - Next: nothing selected yet (see the register for the next independent baseline tasks).
 
+## M4-05 Test runs must never reach the production database
+
+- Previous status: did not exist (found during this work). New status: TESTED_LOCAL, P0.
+- Defect: the test files load `.env` with `dotenv/config`, so a plain `npx vitest run` ran the live-database suites against the project's Supabase database, locally and in CI.
+- Change: `vitest.config.ts` forces `DATABASE_URL` and `SUPABASE_*` blank in every worker (dotenv does not override a defined variable). Opt-in requires `ALLOW_DB_TESTS=1` and `TEST_DATABASE_URL`, which is refused if it names the same endpoint or Supabase project as any production URL. `client/src/test/setup.ts` fails a worker that receives a database URL without the opt-in. CI vitest jobs pass `TEST_*` secrets only; the production secret is passed as `PRODUCTION_DATABASE_URL` for the guard to refuse. `docs/TESTING_SAFETY.md` documents it and gives read-only SQL for leftover probe rows.
+- Files: `shared/testDbSafety.ts`, `vitest.config.ts`, `client/src/test/setup.ts`, `.github/workflows/ci.yml`, `docs/TESTING_SAFETY.md`.
+- Tests: `server/testDbSafety.test.ts` 15, fabricated URLs only. Plain full run: 1277 passed, 57 skipped, 0 failed.
+- Database verification: none attempted, by design. Leftover rows from earlier runs were not investigated against production, as instructed.
+- Remaining: CI workflow unproven until it runs; create a `TEST_DATABASE_URL` secret for an isolated database to restore DB coverage in CI; e2e job and provider keys are outside this gate.
+- Next: N13, Z14.
+
 ---
 
 ## Status translation rules used for the import

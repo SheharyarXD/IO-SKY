@@ -7,6 +7,11 @@
  * guards rather than unconditional DOM work.
  */
 import { afterEach, expect, vi } from "vitest";
+import { assertWorkerEnvironmentSafe } from "../../../shared/testDbSafety";
+
+// M4-05: fail the whole run if a database URL reached this worker without the
+// isolated-database opt-in (for example a run that bypassed vitest.config.ts).
+assertWorkerEnvironmentSafe(process.env);
 
 const isDom = typeof document !== "undefined";
 

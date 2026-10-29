@@ -8,9 +8,9 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 ## Overall progress
 
-- Total unique tasks: 192
-- Already verified (COMPLETED_VERIFIED): 4 of 192 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 7
+- Total unique tasks: 193
+- Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 8
 - Live verification pending: 20
 - In progress: 0
 - Not started: 54
@@ -21,9 +21,9 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 Tasks classified BASELINE or ALREADY_DELIVERED (no separate development charge).
 
-- Total baseline tasks: 88
+- Total baseline tasks: 89
 - Completed (verified): 4
-- Remaining (not blocked): 77
+- Remaining (not blocked): 78
 - Blocked (external): 6
 - Awaiting client decision: 1
 
@@ -284,8 +284,9 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `I07`: Release identity in /health/version (commit, build time) (P2, BASELINE, TESTED_LOCAL)
 - [ ] `I08`: Capacity and performance measurement under representative load (P2, BASELINE, NOT_STARTED)
 
-### 16. Integration tests, security tests, documentation and handover (0 of 10 verified)
+### 16. Integration tests, security tests, documentation and handover (0 of 11 verified)
 
+- [ ] `M4-05`: Test runs must never reach the production database (P0, BASELINE, TESTED_LOCAL)
 - [ ] `T01`: Complete Appendix G traceability matrix for new (P1, BASELINE, NOT_STARTED)
 - [ ] `T03`: Execute and record ACC-01..ACC-36 evidence (P1, BASELINE, NOT_STARTED)
 - [ ] `T04`: Execute and record F-01..F-34 negative tests (P1, BASELINE, NOT_STARTED)

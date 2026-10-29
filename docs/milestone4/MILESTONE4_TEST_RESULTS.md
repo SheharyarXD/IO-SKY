@@ -4,7 +4,11 @@ Records what was actually run, with the result. Skipped tests are listed separat
 
 Environment: Windows 10, Node v24.19.0, vitest 2.1.9. No provider credentials were used for any call (no AI, telephony, email, Stripe or video request was made).
 
-## Read this first: the default test command reaches the live database
+## FIXED by M4-05 (see the end of this section): the default test command now skips the database
+
+The text below records the problem as it was found. Since M4-05, `vitest.config.ts` blanks the database variables in every worker, so a plain `npx vitest run` is database-free and the live suites skip. Database tests run only with `ALLOW_DB_TESTS=1` and an isolated `TEST_DATABASE_URL` that is refused if it is the production database. See `docs/TESTING_SAFETY.md`.
+
+## What was found: the default test command reached the live database
 
 `npx vitest run` is **not** database-free. Several test files start with `import "dotenv/config"`, which loads the repository `.env`; that file holds the Supabase `DATABASE_URL`. A shell with no `DATABASE_URL` therefore still runs the live-database suites. CI does the same on purpose (`.github/workflows/ci.yml` injects the secret).
 
@@ -25,6 +29,12 @@ Consequences, stated plainly:
 3. To run without touching the database, blank the variable: `DATABASE_URL= npx vitest run` (bash) or `$env:DATABASE_URL=""; npx vitest run` (PowerShell). dotenv does not override a variable that is already defined, even when empty; this was checked. The live suites then skip with a "Skipping" message.
 
 All runs after this was discovered used the blank variable.
+
+### M4-05 verification (no real database was connected to)
+
+- Plain `npx vitest run`, real `.env` present: 94 files passed, 6 skipped; **1,277 passed, 57 skipped, 0 failed**. All six database suites skipped with their "Skipping" messages.
+- Config checks with fabricated URLs: a shell `DATABASE_URL` is blank inside the workers (asserted by `server/testDbSafety.test.ts`, 15 tests); an opt-in whose test URL equals the production endpoint or Supabase project is refused at config load; a valid fabricated isolated URL is accepted.
+- Not verified: the GitHub Actions workflow change has not run. Leftover probe rows from earlier runs remain unchecked; an authorized operator can run the read-only SQL in `docs/TESTING_SAFETY.md`.
 
 ## Results
 
