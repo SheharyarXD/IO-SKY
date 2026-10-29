@@ -43,6 +43,7 @@ import {
   type NotificationChannel,
 } from "../../shared/srsRules";
 import { getDb } from "./connection";
+import { resolveReleaseCommit } from "../_core/releaseIdentity";
 
 // ---------------------------------------------------------------------------
 // Admin notifications
@@ -731,7 +732,7 @@ export async function recordDeployment(): Promise<void> {
     const db = await getDb();
     if (!db) return;
     await db.insert(deployments).values({
-      commitSha: process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT ?? process.env.SOURCE_COMMIT ?? null,
+      commitSha: resolveReleaseCommit(),
       environment: process.env.NODE_ENV ?? "development",
       nodeVersion: process.version,
     });

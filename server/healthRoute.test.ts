@@ -136,9 +136,22 @@ describe("RM-76: version (/health/version)", () => {
   });
 
   it("says 'unknown' rather than inventing a commit when unset", async () => {
-    delete process.env.GIT_COMMIT_SHA;
+    for (const k of ["GIT_COMMIT_SHA", "RAILWAY_GIT_COMMIT_SHA", "GIT_COMMIT", "SOURCE_COMMIT"]) delete process.env[k];
     const res = await request(buildApp(), "/health/version");
     expect(res.body.commit).toBe("unknown");
+  });
+
+  it("I07: reports the commit Railway injects when the Dockerfile placeholder is still 'unknown'", async () => {
+    const saved = { a: process.env.GIT_COMMIT_SHA, b: process.env.RAILWAY_GIT_COMMIT_SHA };
+    process.env.GIT_COMMIT_SHA = "unknown";
+    process.env.RAILWAY_GIT_COMMIT_SHA = "0123456789abcdef";
+    try {
+      const res = await request(buildApp(), "/health/version");
+      expect(res.body.commit).toBe("0123456789abcdef");
+    } finally {
+      if (saved.a === undefined) delete process.env.GIT_COMMIT_SHA; else process.env.GIT_COMMIT_SHA = saved.a;
+      if (saved.b === undefined) delete process.env.RAILWAY_GIT_COMMIT_SHA; else process.env.RAILWAY_GIT_COMMIT_SHA = saved.b;
+    }
   });
 });
 

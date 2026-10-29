@@ -13,6 +13,7 @@ import {
 } from "../../drizzle/schema";
 import { escapeLike, type ExportDataset } from "../../shared/srsRules";
 import { getDb } from "./connection";
+import { resolveReleaseCommit } from "../_core/releaseIdentity";
 
 // ---------------------------------------------------------------------------
 // Audit search
@@ -124,7 +125,7 @@ export async function readPlatformHealth(): Promise<PlatformHealth> {
   const base: PlatformHealth = {
     generatedAt: Date.now(),
     release: {
-      commit: process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT ?? process.env.SOURCE_COMMIT ?? null,
+      commit: resolveReleaseCommit(),
       startedAt: STARTED_AT,
       nodeVersion: process.version,
       environment: process.env.NODE_ENV ?? "development",

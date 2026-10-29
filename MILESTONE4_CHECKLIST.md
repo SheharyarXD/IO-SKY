@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 192
 - Already verified (COMPLETED_VERIFIED): 4 of 192 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 6
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 7
 - Live verification pending: 20
 - In progress: 0
-- Not started: 55
+- Not started: 54
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -281,7 +281,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `M4-03`: Verify P0 data-layer changes against an isolated PostgreSQL (P1, BASELINE, BLOCKED_EXTERNAL)
 - [ ] `I02`: Staging test of prompts, voice, IVR, scheduling (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `I04`: Guided restore (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
-- [ ] `I07`: Release identity in /health/version (commit, build time) (P2, BASELINE, NOT_STARTED)
+- [ ] `I07`: Release identity in /health/version (commit, build time) (P2, BASELINE, TESTED_LOCAL)
 - [ ] `I08`: Capacity and performance measurement under representative load (P2, BASELINE, NOT_STARTED)
 
 ### 16. Integration tests, security tests, documentation and handover (0 of 10 verified)

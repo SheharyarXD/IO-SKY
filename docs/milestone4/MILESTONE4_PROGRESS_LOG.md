@@ -84,6 +84,16 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Type check clean. Full suite 1297 passed, 15 skipped, 0 failed with the live database reachable; 1255 passed, 57 skipped, 0 failed with `DATABASE_URL=` blank. Production build succeeds. Details in `MILESTONE4_TEST_RESULTS.md`.
 - Seven existing tests failed after the first pass and were corrected for the right reasons: five were operator fixtures with no grants (intended behaviour change), one audit-coverage scan (renamed the factory so the scan keeps working), one coverage manifest (registered the new suite). No test was deleted or weakened.
 
+## I07 Release identity in /health/version
+
+- Previous status: NOT_STARTED (audit: C, P2). New status: TESTED_LOCAL.
+- Defect: `/health/version` read only `GIT_COMMIT_SHA`, which the Dockerfile defaults to the literal `"unknown"`, so it reported "unknown" even on Railway, which injects `RAILWAY_GIT_COMMIT_SHA` at runtime. Two other modules (deployment record, platform health panel) already used the Railway variable separately.
+- Change: one resolver, `resolveReleaseCommit`, used by all three. The first real value among `GIT_COMMIT_SHA`, `RAILWAY_GIT_COMMIT_SHA`, `GIT_COMMIT`, `SOURCE_COMMIT` wins; placeholder, empty or unset gives null and the route says "unknown" rather than inventing a value.
+- Files: `server/_core/releaseIdentity.ts` (new), `server/_core/healthRoute.ts`, `server/db/srsGovernance.ts`, `server/db/srsOps.ts`.
+- Tests: `releaseIdentity.test.ts` 5 new; `healthRoute.test.ts` 1 new route-level case and the existing "unknown" test hardened to clear all four variables. Run with `DATABASE_URL=` blank: full suite 1262 passed, 57 skipped, 0 failed.
+- Database verification: not needed. Remaining: confirm on a deployed instance after the next release; `builtAt` stays "unknown" unless the pipeline passes `BUILD_TIMESTAMP`.
+- Next: nothing selected yet (see the register for the next independent baseline tasks).
+
 ---
 
 ## Status translation rules used for the import

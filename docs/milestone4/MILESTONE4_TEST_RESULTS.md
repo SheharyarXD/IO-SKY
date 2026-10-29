@@ -35,6 +35,7 @@ All runs after this was discovered used the blank variable.
 | Full suite after the six fixes | live database reachable | 96 files passed, 2 skipped; **1,297 passed, 15 skipped, 0 failed** (about 40 s) |
 | Full suite after the six fixes | `DATABASE_URL=` blank | 92 files passed, 6 skipped; **1,255 passed, 57 skipped, 0 failed** |
 | Production build `npm run build` | n/a | vite 28 s, `dist/index.js` 952.7 kB, no errors |
+| Full suite after I07 (release identity) | `DATABASE_URL=` blank | 93 files passed, 6 skipped; **1,262 passed, 57 skipped, 0 failed** |
 
 The 57 skipped tests in blank mode are: dbConstraints 9, rls.negative 18, concurrency 9, queryPerformance 6, legal 9, requireAcceptances 6. None of them is counted as passed in that row.
 
@@ -53,6 +54,7 @@ Net change from the historical run: +142 passing tests, 0 removed. A first full 
 | `server/admin.revenueAccess.test.ts` | 13 | C09 every role across summary, financial summary, history, export, scheduled report |
 | `server/bookings.reschedule.test.ts` | 22 | S01 end-state of slots, booking, reminders; conflicts; rollback; idempotency; cancel |
 | `server/db.bookings.slots.test.ts` | 11 | S01 slot takeover, conditional confirm, reminder plan (fake query builder) |
+| `server/releaseIdentity.test.ts` | 5 | I07 commit and build timestamp resolution; `healthRoute.test.ts` +1 route case |
 
 Existing suites updated, not weakened: `admin.summary.test.ts` (an Admin now receives null revenue; it had asserted numeric revenue), `ops.test.ts` and `admin.srsOps.test.ts` (operator fixtures now hold grants), `bookings.test.ts` and `bookingAdmin.test.ts` (mock gained `updateBookingStatus`), `aiScans.test.ts` (healthy registry in the db mock), `workflowCoverage.test.ts` (new suite registered).
 

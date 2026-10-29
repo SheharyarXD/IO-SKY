@@ -27,6 +27,7 @@
  */
 import type { Express, Request, Response } from "express";
 import { getDb } from "../db/connection";
+import { resolveBuildTimestamp, resolveReleaseCommit } from "./releaseIdentity";
 import { sql } from "drizzle-orm";
 
 /** Process start, used to report uptime. */
@@ -131,8 +132,8 @@ export function registerHealthRoutes(app: Express) {
       .json({
         // Set by the build/deploy pipeline; "unknown" locally is honest rather
         // than a fabricated value.
-        commit: process.env.GIT_COMMIT_SHA ?? "unknown",
-        builtAt: process.env.BUILD_TIMESTAMP ?? "unknown",
+        commit: resolveReleaseCommit() ?? "unknown",
+        builtAt: resolveBuildTimestamp() ?? "unknown",
         environment: process.env.NODE_ENV ?? "development",
       });
   });
