@@ -12,8 +12,8 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
 - Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 30
 - Live verification pending: 20
-- In progress: 3
-- Not started: 29
+- In progress: 4
+- Not started: 28
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -92,7 +92,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `G09`: Per-agent Technical Operator scope enforcement at tool, (P1, BASELINE, TESTED_LOCAL)
 - [ ] `G12`: Agent registry reconciliation (P1, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)
 - [ ] `G04`: Multi-provider priority, fallback, budget limits (P2, BASELINE, TESTED_LOCAL)
-- [ ] `G06`: Prompt, voice and script configuration UI with (P2, BASELINE, NOT_STARTED)
+- [ ] `G06`: Prompt, voice and script configuration UI with (P2, BASELINE, IN_PROGRESS)
 - [ ] `G07`: Staging evaluation harness with baseline comparison before (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `G08`: Controlled improvement lifecycle (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `G10`: AI Support Agent runtime and tools (P2, BASELINE, NOT_STARTED)

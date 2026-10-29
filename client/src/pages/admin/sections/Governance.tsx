@@ -284,6 +284,7 @@ function AiGovernance() {
           });
         }}
       />
+      <PromptTools agents={agents.data ?? []} />
       <FormCard
         title="Add a prompt version (super admin)"
         submitLabel="Save as new version"
@@ -344,6 +345,96 @@ function BackupPolicyPanel() {
           <p className="text-xs text-muted-foreground">To change a value, use "Change a setting" below (super admin). Every change is validated and kept in the history.</p>
         </div>
       )}
+    </Panel>
+  );
+}
+
+function PromptTools({ agents }: { agents: Array<{ key: string; name: string }> }) {
+  const [agentKey, setAgentKey] = useState("");
+  const [from, setFrom] = useState<number | null>(null);
+  const [to, setTo] = useState<number | null>(null);
+  const [draft, setDraft] = useState("");
+  const [samplesText, setSamplesText] = useState("");
+  const versions = trpc.adminOps.aiPromptVersions.useQuery({ agentKey }, { enabled: agentKey !== "" });
+  const list = versions.data ?? [];
+  const compare = trpc.adminOps.comparePromptVersions.useQuery({ agentKey, from: from ?? 1, to: to ?? 1 }, { enabled: agentKey !== "" && from !== null && to !== null });
+  // sample values: one "name=value" per line
+  const samples = Object.fromEntries(
+    samplesText
+      .split("\n")
+      .map((l) => l.split("="))
+      .filter((p) => p.length >= 2 && p[0].trim())
+      .map((p) => [p[0].trim(), p.slice(1).join("=").trim()]),
+  );
+  const preview = trpc.adminOps.previewPrompt.useQuery(
+    draft.trim() ? { body: draft, samples } : { agentKey, version: to ?? from ?? 1, samples },
+    { enabled: draft.trim() !== "" || (agentKey !== "" && (to !== null || from !== null)) },
+  );
+  const sel = "h-8 rounded-md border border-white/[0.1] bg-transparent px-2 text-[12px]";
+  const versionSelect = (value: number | null, set: (v: number | null) => void, label: string) => (
+    <select className={sel} aria-label={label} value={value ?? ""} onChange={(e) => set(e.target.value ? Number(e.target.value) : null)}>
+      <option value="">{label}</option>
+      {list.map((v) => (
+        <option key={v.version} value={v.version}>
+          v{v.version}
+          {v.isActive ? " (active)" : ""}
+        </option>
+      ))}
+    </select>
+  );
+  return (
+    <Panel title="Compare and preview prompts (no model is called)">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <select className={sel} aria-label="Agent" value={agentKey} onChange={(e) => { setAgentKey(e.target.value); setFrom(null); setTo(null); }}>
+            <option value="">Choose an agent</option>
+            {agents.map((a) => (
+              <option key={a.key} value={a.key}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+          {versionSelect(from, setFrom, "From version")}
+          {versionSelect(to, setTo, "To version")}
+        </div>
+        {compare.data ? (
+          <div>
+            <p className="mb-1 text-[12px] text-white/65">
+              {compare.data.identical ? "These versions are identical." : `${compare.data.added} line${compare.data.added === 1 ? "" : "s"} added, ${compare.data.removed} removed, ${compare.data.unchanged} unchanged.`}
+              {compare.data.truncated ? " Only the first 2000 lines were compared." : ""}
+            </p>
+            <pre className="max-h-72 overflow-auto rounded border border-white/10 p-2 text-[12px] leading-5">
+              {compare.data.ops.map((o, i) => (
+                <div key={i} className={o.type === "added" ? "bg-emerald-500/10 text-emerald-200" : o.type === "removed" ? "bg-red-500/10 text-red-200" : "text-white/60"}>
+                  {o.type === "added" ? "+ " : o.type === "removed" ? "- " : "  "}
+                  {o.text}
+                </div>
+              ))}
+            </pre>
+          </div>
+        ) : null}
+        <div className="grid gap-2 md:grid-cols-2">
+          <label className="text-[12px] text-white/65">
+            Draft text to preview (optional: leave empty to preview the chosen version)
+            <textarea className="mt-1 h-28 w-full rounded border border-white/10 bg-transparent p-2 text-[12px]" value={draft} onChange={(e) => setDraft(e.target.value)} />
+          </label>
+          <label className="text-[12px] text-white/65">
+            Sample values, one name=value per line, for placeholders such as {"{{customer_name}}"}
+            <textarea className="mt-1 h-28 w-full rounded border border-white/10 bg-transparent p-2 text-[12px]" value={samplesText} onChange={(e) => setSamplesText(e.target.value)} />
+          </label>
+        </div>
+        {preview.data ? (
+          <div>
+            <p className="mb-1 text-[12px] text-white/65">
+              About {preview.data.estimatedTokens} tokens (an estimate).
+              {preview.data.unresolved.length ? ` No sample value for: ${preview.data.unresolved.join(", ")}.` : ""}
+              {preview.data.warnings.includes("very_long") ? " This prompt is very long." : ""}
+              {preview.data.warnings.includes("unclosed_placeholder") ? " A placeholder looks unfinished." : ""}
+            </p>
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded border border-white/10 p-2 text-[12px] leading-5">{preview.data.rendered}</pre>
+          </div>
+        ) : null}
+      </div>
     </Panel>
   );
 }

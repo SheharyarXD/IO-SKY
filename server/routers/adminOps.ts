@@ -83,6 +83,7 @@ import { FAQ_AUDIENCES, FAQ_STATUSES, reviewWarnings, validateFaqDraft } from ".
 import { createFaq, decideFaq, editFaq, listFaqEvents, listFaqForReview } from "../db/faq";
 import { addTeamMember, createTeam, listTeams, removeTeamMember, setTeamArchived, setTeamMemberRole, setTeamPrimaryContact, type TeamOutcome } from "../db/developerTeams";
 import { MEMBER_REFUSAL_TEXT, TEAM_ROLES } from "../../shared/teamRules";
+import { diffPrompts, PROMPT_LIMITS, renderPreview } from "../../shared/promptTools";
 import { createRelease, getReleaseFacts, linkDeveloperProject, listActiveAssignedDeveloperIds, listReleases, revokeRelease, unlinkDeveloperProject } from "../db/documentHandoff";
 const message_alreadyReleased = "This document is already released to that project.";
 import { KNOWLEDGE_SOURCES, REGISTRY_LIMITS, validateRegistryFields } from "../../shared/aiAgentRegistry";
@@ -681,6 +682,50 @@ export const adminOpsRouter = router({
       if (!a) fail("INTERNAL_SERVER_ERROR", "Could not save the agent.");
       await recordAdminEvent({ ctx, reason: `admin.ai_agent.upsert(${a.key}:${a.status}:registry v${a.registryVersion})` });
       return a;
+    }),
+
+  /**
+   * G06: what changed between two saved versions of an agent's prompt, line by line. Local only: no model is
+   * called and nothing is sent to a provider.
+   */
+  comparePromptVersions: adminProcedure
+    .input(z.object({ agentKey: z.string().max(64), from: z.number().int().positive(), to: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      const versions = await listPromptVersions(input.agentKey);
+      const a = versions.find((v) => v.version === input.from);
+      const b = versions.find((v) => v.version === input.to);
+      if (!a || !b) fail("NOT_FOUND", "One of those prompt versions does not exist.");
+      const diff = diffPrompts(a.body, b.body);
+      return {
+        from: { version: a.version, isActive: a.isActive, createdAt: a.createdAt, changeNote: a.changeNote },
+        to: { version: b.version, isActive: b.isActive, createdAt: b.createdAt, changeNote: b.changeNote },
+        ...diff,
+      };
+    }),
+
+  /**
+   * G06: a prompt with sample values filled in, for checking wording before it is activated. Takes either a saved
+   * version or draft text. Local only: nothing is sent to a model, so a preview costs nothing.
+   */
+  previewPrompt: adminProcedure
+    .input(
+      z
+        .object({
+          agentKey: z.string().max(64).optional(),
+          version: z.number().int().positive().optional(),
+          body: z.string().max(PROMPT_LIMITS.body).optional(),
+          samples: z.record(z.string().max(32), z.string().max(PROMPT_LIMITS.sampleValue)).default({}),
+        })
+        .refine((v) => (v.body !== undefined) !== (v.agentKey !== undefined && v.version !== undefined), { message: "give either draft text, or an agent and a version" }),
+    )
+    .query(async ({ input }) => {
+      let body = input.body;
+      if (body === undefined) {
+        const v = (await listPromptVersions(input.agentKey!)).find((x) => x.version === input.version);
+        if (!v) fail("NOT_FOUND", "That prompt version does not exist.");
+        body = v.body;
+      }
+      return renderPreview(body, input.samples);
     }),
 
   addPromptVersion: superAdminProcedure

@@ -287,6 +287,10 @@ Added shared/crmFilters.ts (one matching rule), listLeadsFiltered, the audited a
 
 Added shared/profileRules.ts and extended the customer timeline with discovery calls, AI Scans, projects and files, plus a summary and a staff-only customerProfile endpoint and summary line in the Sales page. Metadata only: no file content, links or scan answers. 15 new tests with a mutation check. Lead and organization are still not linked in the data, which limits what a single lookup can show.
 
+## G06 - prompt compare and preview (IN_PROGRESS)
+
+Added shared/promptTools.ts (line diff, safe placeholder preview, warnings, token estimate), the comparePromptVersions and previewPrompt reads and a Compare and preview panel in Governance. Local only, no model call. Tests found and fixed an inherited-property lookup bug. Voice and script configuration are not built (no such model exists), so the task stays IN_PROGRESS. 21 new tests with a mutation check.
+
 ---
 
 ## Status translation rules used for the import
