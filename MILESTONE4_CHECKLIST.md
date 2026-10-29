@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 9
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 10
 - Live verification pending: 20
 - In progress: 0
-- Not started: 53
+- Not started: 52
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -81,7 +81,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `Z07`: Ten editable Admin presets (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `Z08`: Effective access preview for Super Admin (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `Z12`: GitHub repository, branch, PR-review, temporary access and (P2, PAID_M4_PROPOSED, BLOCKED_EXTERNAL)
-- [ ] `Z14`: Log UNAUTHORIZED attempts policy (SRS-02.9) (P2, BASELINE, NOT_STARTED)
+- [ ] `Z14`: Log UNAUTHORIZED attempts policy (SRS-02.9) (P2, BASELINE, TESTED_LOCAL)
 - [ ] `Z02`: Policy (P3, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 
 ### 3. AI agents and orchestration (0 of 16 verified)

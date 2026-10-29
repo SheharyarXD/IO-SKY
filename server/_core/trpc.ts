@@ -4,6 +4,7 @@ import superjson from "superjson";
 import type { TrpcContext } from "./context";
 import type { User } from "../../drizzle/schema";
 import { shouldAuditMutation } from "../../shared/srsRules";
+import { DenialAuditThrottle } from "./denialThrottle";
 import { operatorMayPerform, type OpsOperation, type ScopeGrant } from "../../shared/platformRules";
 
 const t = initTRPC.context<TrpcContext>().create({
@@ -14,36 +15,55 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 /**
- * SRS 8.16: "Unauthorized access attempts are denied and logged."
+ * SRS 8.16: "Unauthorized access attempts are denied and logged." (Z14)
  *
- * Wraps every privileged procedure. When a signed-in caller is refused with
- * FORBIDDEN, by this procedure's own role check or by any gate inside it, one
- * row is written to the audit log. UNAUTHORIZED (no session) is deliberately
- * not logged: an expired tab polling the API would otherwise write a row every
- * few seconds into a table that is now append-only and cannot be pruned.
- * The write is fire and forget so a slow audit insert never delays the refusal.
+ * Wraps every privileged procedure. A refusal (FORBIDDEN, or UNAUTHORIZED for a
+ * caller with no session) is written to the audit log, for signed-in callers
+ * and for anonymous ones. The table is append-only and cannot be pruned, so the
+ * writes are bounded by DenialAuditThrottle: one row per actor and endpoint per
+ * window (the next row says how many similar attempts were not written) plus a
+ * per-minute budget. Anonymous rows carry the IP and user agent but no
+ * identity. The session probes that portal pages poll for visitors who are not
+ * signed in are not access attempts and are not recorded. The write is fire and
+ * forget so a slow audit insert never delays the refusal.
  */
+const denialThrottle = new DenialAuditThrottle();
+
+/** Test helper: the throttle is process-wide state. */
+export function resetDenialAuditThrottleForTests(): void {
+  denialThrottle.reset();
+}
+
+const SESSION_PROBE_PATHS: ReadonlySet<string> = new Set(["admin.gateStatus", "developer.gateStatus", "ops.gateStatus"]);
+
 const auditDenials = t.middleware(async ({ ctx, path, next }) => {
   const result = await next();
-  if (!result.ok && result.error.code === "FORBIDDEN" && ctx.user) {
-    void (async () => {
-      try {
-        const [{ appendLoginAudit }, { getRequestMeta }] = await Promise.all([import("../db"), import("./requestMeta")]);
-        const { ip, userAgent } = getRequestMeta(ctx.req);
-        await appendLoginAudit({
-          userId: ctx.user!.id,
-          identifier: ctx.user!.email ?? null,
-          provider: "authz",
-          outcome: "blocked",
-          reason: `denied:${path}`.slice(0, 200),
-          ip,
-          userAgent,
-        });
-      } catch (err) {
-        console.error("[authz] could not record a denied access attempt:", err);
-      }
-    })();
-  }
+  if (result.ok) return result;
+  const code = result.error.code;
+  if (code !== "FORBIDDEN" && code !== "UNAUTHORIZED") return result;
+  const signedIn = Boolean(ctx.user);
+  if (!signedIn && SESSION_PROBE_PATHS.has(path)) return result;
+  void (async () => {
+    try {
+      const [{ appendLoginAudit }, { getRequestMeta }] = await Promise.all([import("../db"), import("./requestMeta")]);
+      const { ip, userAgent } = getRequestMeta(ctx.req);
+      const actor = signedIn ? `u${ctx.user!.id}` : `ip:${ip ?? "unknown"}`;
+      const decision = denialThrottle.decide(signedIn ? "signed_in" : "anonymous", `${actor}|${path}|${code}`, Date.now());
+      if (!decision.record) return;
+      const note = decision.suppressed > 0 ? ` (+${decision.suppressed} similar)` : "";
+      await appendLoginAudit({
+        userId: signedIn ? ctx.user!.id : null,
+        identifier: signedIn ? (ctx.user!.email ?? null) : null,
+        provider: "authz",
+        outcome: "blocked",
+        reason: `${signedIn ? "denied" : "denied-anon"}:${path}${signedIn || code === "FORBIDDEN" ? "" : ":unauthenticated"}${note}`.slice(0, 200),
+        ip,
+        userAgent,
+      });
+    } catch (err) {
+      console.error("[authz] could not record a denied access attempt:", err);
+    }
+  })();
   return result;
 });
 /**

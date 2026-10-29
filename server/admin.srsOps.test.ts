@@ -59,6 +59,7 @@ vi.mock("./db", async (importOriginal) => {
 });
 
 import { appRouter } from "./routers";
+import { resetDenialAuditThrottleForTests } from "./_core/trpc";
 import type { TrpcContext } from "./_core/context";
 
 type U = NonNullable<TrpcContext["user"]>;
@@ -102,6 +103,8 @@ describe("authority boundaries", () => {
 });
 
 describe("denied access is recorded (SRS 8.16)", () => {
+  // The denial throttle is process-wide (Z14); each case needs a clean window.
+  beforeEach(() => resetDenialAuditThrottleForTests());
   it("writes one blocked audit row when a signed in user is refused", async () => {
     await expect(as("client").adminOps.opportunities({})).rejects.toMatchObject({ code: "FORBIDDEN" });
     await new Promise((r) => setTimeout(r, 20));

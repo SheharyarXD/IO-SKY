@@ -116,6 +116,17 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Remaining: not seen in a browser; middle-click or open-in-new-tab bypasses the check, but the destination still enforces its own data permissions. Decision needed only if per-resource deep links (a specific invoice id) are introduced.
 - Next: Z14.
 
+## Z14 Audit unauthorized access attempts safely
+
+- Previous status: NOT_STARTED (audit: C, policy decision). New status: TESTED_LOCAL.
+- Gap: SRS 8.16 says unauthorized attempts are "denied and logged", but only a signed-in caller's FORBIDDEN was recorded. Anonymous probes of privileged endpoints and UNAUTHORIZED were deliberately not logged because the audit table is append-only and cannot be pruned.
+- Change: `auditDenials` now records anonymous and UNAUTHORIZED refusals too, through `DenialAuditThrottle`: one row per actor and endpoint per 10 minutes (the next row reports `+N similar`), at most 10 anonymous and 60 signed-in rows a minute per instance, 5000 keys in memory. Anonymous rows carry IP and user agent, no identity. The three `gateStatus` session probes are exempt. The signed-in row text `denied:<path>` is unchanged.
+- Files: `server/_core/denialThrottle.ts` (new), `server/_core/trpc.ts`.
+- Tests: `denialThrottle.test.ts` 14 (6 throttle with an injected clock, 8 through the real routers including a 100-address flood capped at 10 rows); `admin.srsOps.test.ts` resets the process-wide throttle for its denial group.
+- Database verification: not used (audit writes are mocked).
+- Decisions needed (made as safe defaults, reversible): log anonymous attempts at all; the window and budgets; retention of anonymous IP and user agent, which no document defines. Public endpoints and the REST auth routes are not covered. The throttle is per instance, so several instances multiply the cap.
+- Next: S07.
+
 ---
 
 ## Status translation rules used for the import
