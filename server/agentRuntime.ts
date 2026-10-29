@@ -29,6 +29,7 @@ import type { z } from "zod";
 import { authorityDecision, type ToolEffect } from "../shared/aiAgentRegistry";
 import { operatorMayOnAgent } from "../shared/agentOperatorScopes";
 import type { ScopeGrant } from "../shared/platformRules";
+import type { Audience } from "../shared/knowledgeAccess";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,7 +58,15 @@ export type RunContext = {
    * permissions, tools and organisation scope.
    */
   actorRole?: string | null;
+  /**
+   * Who the run is serving, for knowledge access (G05): public (an unauthenticated caller), client (a signed-in
+   * customer) or internal (platform staff). Anything not stated is treated as public.
+   */
+  audience?: Audience;
 };
+
+/** What a tool receives: the run's context plus which agent and subject it is running for. */
+export type ToolContext = RunContext & { agentKey: string; subjectRef: string };
 
 export type AgentTool<I = unknown, O = unknown> = {
   name: string;
@@ -72,7 +81,7 @@ export type AgentTool<I = unknown, O = unknown> = {
   knowledgeSource?: string;
   /** True when the tool reads or changes organisation data. */
   organizationScoped: boolean;
-  execute(input: I, ctx: RunContext): Promise<O>;
+  execute(input: I, ctx: ToolContext): Promise<O>;
 };
 
 const TOOL_NAME = /^[a-z][a-z0-9_]{1,63}$/;
@@ -355,7 +364,7 @@ export async function runAgent(input: RunInput, deps: RuntimeDeps): Promise<RunR
       }
 
       try {
-        const out = await tool.execute(parsed.data, input.ctx);
+        const out = await tool.execute(parsed.data, { ...input.ctx, agentKey: agent.key, subjectRef: input.subjectRef });
         trace.push({ name: tool.name, outcome: "executed" });
         // The record keeps names and sizes, not argument values, so personal data is not copied into the history.
         await deps.record({ agentKey: agent.key, action: `tool:${tool.name}`.slice(0, 120), subjectRef: input.subjectRef, detail: `args=${Object.keys((args as Record<string, unknown>) ?? {}).join(",")}` }).catch(() => null);

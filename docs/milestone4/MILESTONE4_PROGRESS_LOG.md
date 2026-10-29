@@ -183,6 +183,17 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Remaining: apply 0039 on a non-production database; no operator UI for the new endpoints; verification against a real database.
 - Next: G05.
 
+## G05 Permission-aware agent knowledge access
+
+- Previous status: NOT_STARTED (audit: D). New status: TESTED_LOCAL.
+- Gap: SRS 19.20 requires agents to retrieve only what the requesting user or agent is authorised to access, with organisation isolation. No retrieval layer existed at all.
+- What exists to retrieve from: only `client_documents` (metadata). There are no knowledge-base, FAQ, procedure or rules tables and no extracted file text, so the store is the reusable piece and one real provider sits behind it; the other nine SRS sources are honestly 'unavailable'.
+- Change: `shared/knowledgeAccess.ts` (pure): per-source policy (organisation-scoped or not, minimum audience), `authorizeRetrieval`, `filterRetrieved`, `audienceForRole`. `server/knowledgeStore.ts`: `retrieveKnowledge` reads the agent's registry entry on every call (revocation is immediate; unreadable/missing/disabled denies), checks source grant, audience and organisation, calls the provider, then re-filters what it returned (other organisations' items dropped and recorded; above-audience items withheld), clips snippets, strips the organisation id and records counts only. `knowledgeTools` exposes one read-only tool per source to the shared runtime. `server/knowledgeProviders.ts`: `client_documentation` over the existing `searchDocuments`, with the document matrix applied (approved AND matrix-visible for client audience; fails closed). The runtime now passes agent key and subject to tools and the run context carries an `audience` (default public).
+- Tests: `knowledgeStore.test.ts` 30 (policy, filtering, every denial reason, revocation, fail-closed registry, misbehaving provider, audit has no query text, document provider, end to end through `runAgent`). Mutation check: trusting the provider fails 4 tests.
+- Database verification: none needed; `searchDocuments` is unchanged.
+- Remaining: content extraction for documents; data and providers for the other nine sources; confirmation of the per-source minimum audiences; developer visibility by assignment (J09/J10).
+- Next: S02.
+
 ---
 
 ## Status translation rules used for the import

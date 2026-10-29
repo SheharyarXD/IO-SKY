@@ -6,6 +6,7 @@
  */
 import type { InvokeParams, InvokeResult, Message, Tool } from "./_core/llm";
 import type { AgentMessage, AgentModel, ModelTurn, RuntimeDeps, ToolRegistry, ToolSpec } from "./agentRuntime";
+import type { KnowledgeDeps, KnowledgeProvider } from "./knowledgeStore";
 
 /** Adapt the platform's LLM wrapper (OpenAI chat format) to the runtime's provider-independent model interface. */
 export function llmAgentModel(invoke: (p: InvokeParams) => Promise<InvokeResult>, opts: { complexity?: InvokeParams["complexity"]; purpose: string }): AgentModel {
@@ -54,6 +55,22 @@ export async function realRuntimeDeps(model: AgentModel, tools: ToolRegistry): P
     actorGrants: async (userId) => (await import("./db/platformGovernance")).getScopeGrants(userId),
     model,
     tools,
+  };
+}
+
+/** Knowledge retrieval backed by the real registry, history and the providers that have data (G05). */
+export async function realKnowledgeDeps(): Promise<KnowledgeDeps> {
+  const [gov, ops, plat, prov] = await Promise.all([import("./db/srsGovernance"), import("./db/srsOps"), import("./db/platformGovernance"), import("./knowledgeProviders")]);
+  const providers = new Map<string, KnowledgeProvider>([
+    ["client_documentation", prov.clientDocumentationProvider({ searchDocuments: ops.searchDocuments, clientVisibleDocumentTypes: plat.clientVisibleDocumentTypes })],
+  ]);
+  return {
+    loadAgent: async (key) => {
+      const a = await gov.getAiAgentDefinition(key);
+      return a ? { status: a.status, knowledgeSources: a.knowledgeSources } : null;
+    },
+    record: (a) => gov.recordAgentResult(a),
+    providers,
   };
 }
 
