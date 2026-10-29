@@ -34,14 +34,17 @@ Each entry names the exact missing item, who owes it, why it blocks, and what ca
 | 16 | M4-01 report download logging needs a new audit table and a migration | A migration file can be written, but it is not applied to production without authorization |
 | 17 | M4-03 run the real-database suites on an isolated database | Depends on item 6 |
 
-## Migration order (written, none applied by this repository)
+## Migration order (written, NONE applied by this repository)
 
-| File | Task | Required before deploying the code? | If the code runs without it |
+| File | Task | Must be applied BEFORE deploying the code? | If the code runs without it |
 |---|---|---|---|
-| `drizzle/0037_email_outbox.sql` | N03 | No | The retry queue and worker are quiet no-ops and log once. Failed emails are still logged as before. |
+| `drizzle/0037_email_outbox.sql` | N03 | No | The email retry queue and worker are quiet no-ops and log once. Failed emails are still logged as before. |
 | `drizzle/0038_ai_agent_registry_fields.sql` | G02 | **Yes** | The registry page errors, and because the AI permission gate fails closed, AI Scans and the lead qualifier are refused (Drizzle reads and inserts every `ai_agents` column). |
+| `drizzle/0039_operator_scope_length.sql` | G09 | No | Granting an agent scope whose key makes it longer than 32 characters fails with a database error. Nothing else changes. |
+| `drizzle/0040_report_download_audit.sql` | M4-01 | No | Report downloads are not audited (logged once). Downloads and refusals work as before. |
+| `drizzle/0041_document_handoff.sql` | J09, J10 | No (fails closed) | No document can be released and developers see none. Client uploads and every existing feature are unaffected. |
 
-Apply each to a non-production database first, then production, in this order, then deploy. Neither is needed for the tests, which are database-free.
+Independent except 0038. Apply each to a non-production database first, verify, then production, then deploy. The tests do not need any of them (they are database-free). The SQL of 0037, 0040 and 0041 (claim query, append-only triggers, partial unique index, the developer access joins) has never run against PostgreSQL: that verification is task M4-03 and needs the isolated database.
 
 ## Dependency of the seven items marked BLOCKED_EXTERNAL that are code-heavy
 
