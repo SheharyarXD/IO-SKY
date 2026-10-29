@@ -113,6 +113,9 @@ function withDerivedRows(rows: PlatformSetting[]): PlatformSetting[] {
 const POLICY_SETTINGS = [
   { section: "security", key: "security.session_hours", title: "Session length (hours)", description: "How long a new sign in lasts, from 1 to 24. Applies to sessions created after the change.", value: "12" },
   { section: "security", key: "security.password_min_length", title: "Minimum password length", description: "Minimum characters for a new password, from 8 to 128. Applies to accounts activated after the change.", value: "12" },
+  { section: "notifications", key: "notifications.email_retry_max_attempts", title: "Email retry: total sends", description: "How many times a failing email is sent in all, including the first, from 1 to 10. A permanent failure (bad address) is never retried.", value: "5" },
+  { section: "notifications", key: "notifications.email_retry_base_minutes", title: "Email retry: first wait (minutes)", description: "Wait before the second send, from 1 to 1440. Each later wait is three times longer.", value: "5" },
+  { section: "notifications", key: "notifications.email_retry_max_delay_minutes", title: "Email retry: longest wait (minutes)", description: "Upper limit for any single wait between sends, from 5 to 10080.", value: "360" },
 ];
 
 const MAINTENANCE_SETTING = {
@@ -130,7 +133,7 @@ export async function listPlatformSettings(): Promise<PlatformSetting[]> {
   if (existing.length > 0) {
     // Settings added after the first seed (the maintenance toggle) would
     // otherwise never exist on a database that was seeded earlier.
-    if (!existing.some((r) => r.key === "operations.maintenance_mode") || !existing.some((r) => r.key === "security.session_hours")) {
+    if (!existing.some((r) => r.key === "operations.maintenance_mode") || !existing.some((r) => r.key === "security.session_hours") || !existing.some((r) => r.key === "notifications.email_retry_max_attempts")) {
       await db.insert(platformSettings).values([MAINTENANCE_SETTING, ...POLICY_SETTINGS]).onConflictDoNothing();
       return withDerivedRows(await db.select().from(platformSettings).orderBy(asc(platformSettings.section)));
     }

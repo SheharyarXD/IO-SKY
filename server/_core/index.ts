@@ -19,6 +19,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./staticServer";
 import { dispatchDueBookingReminders } from "./bookingReminders";
+import { runEmailRetryPass } from "../emailOutbox";
 import { registerMaintenanceMode, startOperationsJobs } from "./operations";
 import { recordDeployment } from "../db";
 
@@ -185,6 +186,14 @@ async function startServer() {
     dispatchDueBookingReminders().catch((err) =>
       console.warn("[bookingReminders] dispatch tick failed:", err),
     );
+  }, REMINDER_INTERVAL_MS).unref();
+
+  // N03: retry failed emails on the policy schedule and escalate the ones that
+  // cannot be delivered. Passes never overlap in-process, rows are claimed with a
+  // lease so several instances do not send the same message, and the worker is a
+  // quiet no-op without a database or before migration 0037 is applied.
+  setInterval(() => {
+    runEmailRetryPass().catch((err) => console.warn("[emailOutbox] retry pass failed:", err));
   }, REMINDER_INTERVAL_MS).unref();
 }
 

@@ -47,3 +47,4 @@ export * from "./srsGovernance";
 export * from "./srsOps";
 export * from "./srsExtras";
 export * from "./accounts";
+export * from "./emailOutbox";

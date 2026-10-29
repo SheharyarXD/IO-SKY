@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 11
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 12
 - Live verification pending: 20
 - In progress: 0
-- Not started: 51
+- Not started: 50
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -206,7 +206,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 
 - [ ] `N09`: DNS (P0, EXTERNAL_DEPENDENCY, BLOCKED_EXTERNAL)
 - [ ] `N02`: Wire remaining catalogue events (43 of 84 (P1, BASELINE, NOT_STARTED)
-- [ ] `N03`: Persistent retry and escalation worker for failed (P1, BASELINE, NOT_STARTED)
+- [ ] `N03`: Persistent retry and escalation worker for failed (P1, BASELINE, TESTED_LOCAL)
 - [ ] `N08`: Zoho SMTP sending for no-reply with Reply-To (P1, EXTERNAL_DEPENDENCY, BLOCKED_EXTERNAL)
 - [ ] `N10`: Real inbound routing, folder placement and Outlook (P1, EXTERNAL_DEPENDENCY, BLOCKED_EXTERNAL)
 - [ ] `N13`: Notification deep links revalidate permission on open (P1, BASELINE, TESTED_LOCAL)

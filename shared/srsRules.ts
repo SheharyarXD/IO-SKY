@@ -180,6 +180,10 @@ const INTEGER_RANGES: Record<string, [number, number]> = {
   "security.password_min_length": [8, 128],
   "storage.retention_days": [1, 3650],
   "observability.audit_retention_days": [365, 3650],
+  // N03: email retry policy
+  "notifications.email_retry_max_attempts": [1, 10],
+  "notifications.email_retry_base_minutes": [1, 1440],
+  "notifications.email_retry_max_delay_minutes": [5, 10080],
 };
 
 export function validateSettingValue(key: string, value: string): CloseCheck {

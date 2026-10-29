@@ -322,7 +322,39 @@ export async function sendBookingConfirmation(
     status: result.ok ? "sent" : "failed",
     errorMessage: result.ok ? null : result.error ?? null,
   });
+  if (!result.ok && result.transport !== "console") {
+    await queueForRetry({ kind: "booking", messageType: "booking-confirmation", recipient: to, subject, relatedRef: input.publicRef, payload: input, error: result.error ?? null });
+  }
   return result;
+}
+
+/**
+ * N03: a failed send is handed to the persistent retry queue. Best effort and
+ * loaded lazily: recording a retry must never break, delay or recurse into the
+ * send it is about (the retry worker calls the attempt functions directly, not
+ * these wrappers, so a retry that fails again is not queued a second time).
+ */
+async function queueForRetry(args: {
+  kind: "simple" | "booking";
+  messageType: InsertEmailDeliveryLog["messageType"];
+  recipient: string;
+  subject: string;
+  relatedRef: string | null;
+  payload: unknown;
+  error: string | null;
+}): Promise<void> {
+  try {
+    const { queueFailedEmail } = await import("./emailOutbox");
+    await queueFailedEmail(args);
+  } catch (err) {
+    console.warn("[email] could not queue the failed message for retry:", err);
+  }
+}
+
+/** Used by the retry worker: send a stored Discovery Call confirmation again, exactly as first rendered. */
+export async function retryBookingConfirmation(input: BookingEmailInput): Promise<BookingEmailResult> {
+  const subject = fill(bookingStrings(normaliseLocale(input.locale)).subject, { ref: input.publicRef });
+  return attemptSendBookingConfirmation(input, subject, input.email);
 }
 
 async function attemptSendBookingConfirmation(
@@ -603,7 +635,23 @@ export async function dispatchSimpleEmail(args: {
     status: result.ok ? "sent" : "failed",
     errorMessage: result.ok ? null : result.error ?? null,
   });
+  if (!result.ok && result.transport !== "console") {
+    await queueForRetry({
+      kind: "simple",
+      messageType: args.messageType,
+      recipient: args.to,
+      subject: args.subject,
+      relatedRef: args.relatedRef ?? null,
+      payload: { html: args.html, text: args.text, refHeader: args.refHeader },
+      error: result.error ?? null,
+    });
+  }
   return result;
+}
+
+/** Used by the retry worker: send a stored generic message again. */
+export async function retrySimpleEmail(args: { to: string; subject: string; html: string; text: string; refHeader: string }): Promise<GenericEmailResult> {
+  return attemptDispatchSimpleEmail(args);
 }
 
 async function attemptDispatchSimpleEmail(args: {

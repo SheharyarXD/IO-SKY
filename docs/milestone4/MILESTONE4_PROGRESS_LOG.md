@@ -138,6 +138,18 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Remaining: a repeated create after success is refused rather than answered with the original booking (a real idempotency key needs a column and a migration, not written); rows left `pending` by a crash are not swept; calendar-provider events and the scheduling agent are separate tasks.
 - Next: N03.
 
+## N03 Persistent retry and escalation for failed emails
+
+- Previous status: NOT_STARTED (audit: D, "logging only"). New status: TESTED_LOCAL, with database behaviour unverified.
+- Gap: a failed send was logged (`email_delivery_log`) and forgotten. SRS 17.11 requires retry "according to configurable policies" and the 29 Oct document requires "visible failure and retry states". Nobody was told when a customer never received a message.
+- Change: `shared/emailRetryPolicy.ts` (pure): classifies an error as transient or permanent, backoff (default 5 sends in all, waits 5, 15, 45, 135 minutes, cap 6 h), and three platform settings that configure it, validated by the existing configuration rules and seeded for existing installs. `server/emailOutbox.ts`: `queueFailedEmail` records the first failure with the content needed to resend it (permanent failures are abandoned at once and keep no content); `processEmailRetries` retries what is due, logs each attempt to the delivery log, updates the booking record when a confirmation finally goes out, and abandons plus escalates a permanent or exhausted message with an `INTEGRATION_FAILURE` admin notification (masked recipient, once per message). `server/db/emailOutbox.ts`: leased claim with `FOR UPDATE SKIP LOCKED`. `server/email.ts`: both send paths hand a provider failure to the queue (best effort, loaded lazily, never recursing). A 5-minute interval runs the worker. Read-only `adminOps.emailRetries` lists states without content.
+- Migration: `drizzle/0037_email_outbox.sql`, additive (one table, two indexes, RLS on). Written, **not applied**. Without it the queue and worker are quiet no-ops and log once.
+- Files: see the register row.
+- Tests: `emailRetry.test.ts` 21 (policy, settings, worker with injected dependencies, queueing), `email.queueing.test.ts` 8 (both send paths, console mode, queueing failure, no recursion). Provider calls are stubbed; no email was sent. Full suite 1358 passed, 57 skipped, 0 failed; typecheck and build clean.
+- Database verification: none. The claim SQL has been reviewed, not run; apply the migration to a non-production database and run a pass there before enabling in production.
+- Decisions needed: retention of abandoned rows and of stored message content; whether an admin screen for the queue is wanted (the endpoint exists); the default policy numbers.
+- Next: G02, then G03.
+
 ---
 
 ## Status translation rules used for the import

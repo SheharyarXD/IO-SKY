@@ -39,6 +39,7 @@ import {
   getDeveloperProfileById,
   listAdminNotifications,
   getAdminNotificationById,
+  listEmailOutbox,
   listAiAgents,
   listAiExecutions,
   listAlertRules,
@@ -122,6 +123,9 @@ export const adminOpsRouter = router({
       rows: await listAdminNotifications(input.limit, input.unreadOnly),
       unread: await countUnreadAdminNotifications(),
     })),
+
+  /** N03: failed emails waiting for a retry, or given up on. States only, never the message content. */
+  emailRetries: adminProcedure.query(async () => listEmailOutbox(100)),
 
   unreadNotificationCount: adminProcedure.query(async () => ({ unread: await countUnreadAdminNotifications() })),
 

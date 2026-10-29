@@ -515,6 +515,49 @@ export const emailDeliveryLog = pgTable(
 export type EmailDeliveryLog = typeof emailDeliveryLog.$inferSelect;
 export type InsertEmailDeliveryLog = typeof emailDeliveryLog.$inferInsert;
 
+/**
+ * Failed emails waiting to be retried (task N03, migration 0037). One row per
+ * failed message, created when the first send fails. `payload` holds what is
+ * needed to send it again and is cleared when the row reaches a final state
+ * (sent or abandoned), so message content is not kept longer than the retry.
+ * status: queued | processing | sent | abandoned.
+ */
+export const emailOutbox = pgTable(
+  "email_outbox",
+  {
+    id: serial("id").primaryKey(),
+    /** "simple" (generic message) or "booking" (Discovery Call confirmation, re-rendered with its calendar file). */
+    kind: varchar("kind", { length: 16 }).notNull(),
+    messageType: emailMessageTypeEnum("messageType").notNull(),
+    recipient: varchar("recipient", { length: 320 }).notNull(),
+    subject: varchar("subject", { length: 500 }),
+    relatedRef: varchar("relatedRef", { length: 64 }),
+    payload: text("payload"),
+    status: varchar("status", { length: 16 }).default("queued").notNull(),
+    /** Sends made so far, including the first failed one. */
+    attempts: integer("attempts").default(1).notNull(),
+    maxAttempts: integer("maxAttempts").notNull(),
+    nextAttemptAt: timestamp("nextAttemptAt"),
+    /** Lease: a row being processed is not claimed again until this passes. */
+    lockedUntil: timestamp("lockedUntil"),
+    lastError: text("lastError"),
+    /** transient | permanent */
+    lastErrorClass: varchar("lastErrorClass", { length: 16 }),
+    /** permanent | exhausted, set when the row is abandoned. */
+    abandonReason: varchar("abandonReason", { length: 16 }),
+    escalatedAt: timestamp("escalatedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => [
+    index("email_outbox_due_idx").on(table.status, table.nextAttemptAt),
+    index("email_outbox_related_ref_idx").on(table.relatedRef),
+  ],
+);
+
+export type EmailOutbox = typeof emailOutbox.$inferSelect;
+export type InsertEmailOutbox = typeof emailOutbox.$inferInsert;
+
 /* -----------------------------------------------------------------------
  * CLIENT PORTAL (multi-tenant, organization-scoped)
  * Every record below carries `organizationId`. The clientProcedure
