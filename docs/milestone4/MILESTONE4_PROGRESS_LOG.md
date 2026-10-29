@@ -255,6 +255,10 @@ Added shared/faqRules.ts (workflow, separation of duties, edit-resets-approval, 
 
 Added shared/discoveryQualification.ts (sanitising, card and credential scrubbing, completeness assessment, appointment block compose/parse/replace), server/discoveryCapture.ts (the tool and a factory sharing one per-conversation lead scope with the CRM tools) and updateBookingNote. The qualification is recorded on the prospect record and on the caller's own live appointment, or on neither if the appointment does not match. 22 new tests including a mutation check. No agent is operational and no migration is needed.
 
+## R15 - active-call context memory (TESTED_LOCAL)
+
+Added server/callContext.ts: a bounded, expiring, per-conversation fact store and three agent tools, independent of recording, transcription and the execution log. Facts come from a fixed key set, are cleaned and scrubbed, and are presented to the model as unverified. 18 new tests with a mutation check. No agent is operational; conversation recovery across sessions and persistence are not built.
+
 ---
 
 ## Status translation rules used for the import
