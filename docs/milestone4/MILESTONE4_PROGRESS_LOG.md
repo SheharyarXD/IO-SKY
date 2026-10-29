@@ -194,6 +194,15 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Remaining: content extraction for documents; data and providers for the other nine sources; confirmation of the per-source minimum audiences; developer visibility by assignment (J09/J10).
 - Next: S02.
 
+## S02 AI scheduling agent tool API
+
+- Previous status: NOT_STARTED (audit: C, "engine exists, no agent tools"). New status: TESTED_LOCAL.
+- Refactor first: the booking create, cancel and reschedule logic lived inside tRPC procedures, so tools could only have duplicated it. It was moved verbatim to `server/bookingService.ts` and the router became a thin caller; the schema moved to `server/routers/bookingSchemas.ts` so the RM-93 validator-coverage scan still sees it. All 76 existing booking tests pass unchanged, which is the evidence that nothing about the website changed.
+- Tools (`server/schedulingTools.ts`, `shared/schedulingRules.ts`): `scheduling_find_slots`, `scheduling_get_booking` (read) and `scheduling_book`, `scheduling_reschedule`, `scheduling_cancel` (act). Structured results with stable codes; times returned as UTC and local wall-clock in a validated IANA zone; 14-day window cap and 30-minute floor; an existing booking needs reference AND email and a mismatch looks like not found; lookup returns no personal data and reports a pending booking as 'requested'; changing tools need `callerConfirmed: true`, are approval-gated by the runtime, and are idempotent per request id.
+- Tests: `schedulingTools.test.ts` 30, including the real website schema accepting the tool's payload, the runtime ending `awaiting_approval` for a default agent, an autonomous agent booking, and permission and authority refusals. Mutation check: always-owned fails 2. Full suite 1511 passed, 57 skipped, 0 failed; typecheck and build clean.
+- Remaining: register an agent with these tools and the scheduling permissions once the agent is specified; calendar provider integration (S03/S04) and the duration policy (S05) are separate decisions; persistent idempotency key would need a migration.
+- Next: R18.
+
 ---
 
 ## Status translation rules used for the import

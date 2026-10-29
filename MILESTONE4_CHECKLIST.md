@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 16
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 17
 - Live verification pending: 20
 - In progress: 0
-- Not started: 46
+- Not started: 45
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -132,7 +132,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 
 ### 5. AI Scheduling (0 of 7 verified)
 
-- [ ] `S02`: Scheduling agent tool API (P1, BASELINE, NOT_STARTED)
+- [ ] `S02`: Scheduling agent tool API (P1, BASELINE, TESTED_LOCAL)
 - [ ] `S07`: Requested versus confirmed tracking with idempotent triggers, (P1, BASELINE, TESTED_LOCAL)
 - [ ] `S08`: Booking confirmation delivered for real over iosky.nl (P1, EXTERNAL_DEPENDENCY, BLOCKED_EXTERNAL)
 - [ ] `S03`: Calendar provider integration (Google or Microsoft) for (P2, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)
