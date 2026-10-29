@@ -49,3 +49,4 @@ export * from "./srsExtras";
 export * from "./accounts";
 export * from "./emailOutbox";
 export * from "./documentHandoff";
+export * from "./faq";

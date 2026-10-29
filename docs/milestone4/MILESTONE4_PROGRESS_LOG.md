@@ -247,6 +247,10 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 
 Added shared/identityPolicy.ts: verification state machine (start rate limit, pending and verified lifetimes, lockout, replay and wrong-interaction refusal, invalidation, audit event names) and authorizeOperation for Level 1/2/3. The shared agent runtime now evaluates each tool's identityRequirement on every call using an injectable clock, so a verification that expires mid-run stops the next call, and tells the model the safe next step. Level 3 always refuses, even for a verified caller and an autonomous agent. CRM tools moved from the old verification flag to the real identity view. 22 new tests plus updated CRM tests. R11 (the flow that creates a verification) is not built and nothing is persisted.
 
+## R17 - approved FAQ store with grounded answers (TESTED_LOCAL)
+
+Added shared/faqRules.ts (workflow, separation of duties, edit-resets-approval, deterministic matcher with ambiguity and weak-match refusal, authoring checks and reviewer warnings), server/db/faq.ts, server/faqStore.ts (knowledge provider and the answer_faq tool), admin endpoints, schema and migration 0042. An assistant can answer a general question only with an approved entry's stored text, or must decline. 27 new tests including a mutation check. The store ships empty and there is no admin page yet.
+
 ---
 
 ## Status translation rules used for the import

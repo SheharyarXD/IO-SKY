@@ -60,9 +60,10 @@ export async function realRuntimeDeps(model: AgentModel, tools: ToolRegistry): P
 
 /** Knowledge retrieval backed by the real registry, history and the providers that have data (G05). */
 export async function realKnowledgeDeps(): Promise<KnowledgeDeps> {
-  const [gov, ops, plat, prov] = await Promise.all([import("./db/srsGovernance"), import("./db/srsOps"), import("./db/platformGovernance"), import("./knowledgeProviders")]);
+  const [gov, ops, plat, prov, faq, faqDb] = await Promise.all([import("./db/srsGovernance"), import("./db/srsOps"), import("./db/platformGovernance"), import("./knowledgeProviders"), import("./faqStore"), import("./db/faq")]);
   const providers = new Map<string, KnowledgeProvider>([
     ["client_documentation", prov.clientDocumentationProvider({ searchDocuments: ops.searchDocuments, clientVisibleDocumentTypes: plat.clientVisibleDocumentTypes })],
+    ["knowledge_base_articles", faq.faqProvider({ listApproved: faqDb.listApprovedFaq })],
   ]);
   return {
     loadAgent: async (key) => {

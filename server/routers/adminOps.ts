@@ -78,6 +78,8 @@ import { recordAdminEvent } from "./admin";
 import { emitNotification } from "../notificationDispatcher";
 import { resolveNotificationLink } from "../../shared/notificationLinks";
 import { evaluateRelease } from "../../shared/documentHandoff";
+import { FAQ_AUDIENCES, FAQ_STATUSES, reviewWarnings, validateFaqDraft } from "../../shared/faqRules";
+import { createFaq, decideFaq, editFaq, listFaqEvents, listFaqForReview } from "../db/faq";
 import { createRelease, getReleaseFacts, linkDeveloperProject, listActiveAssignedDeveloperIds, listReleases, revokeRelease, unlinkDeveloperProject } from "../db/documentHandoff";
 const message_alreadyReleased = "This document is already released to that project.";
 import { KNOWLEDGE_SOURCES, REGISTRY_LIMITS, validateRegistryFields } from "../../shared/aiAgentRegistry";
@@ -207,6 +209,53 @@ export const adminOpsRouter = router({
       if (!r) fail("NOT_FOUND", "No active release with that id.");
       await recordAdminEvent({ ctx, reason: `admin.handoff.revoke(release=${input.releaseId}:doc=${r.documentId}:dev=${r.developerProjectId})` });
       return { ok: true as const };
+    }),
+
+  // ---- Approved FAQ store (R17): the only wording the assistants may answer general questions from ----------
+
+  faqEntries: adminProcedure
+    .input(z.object({ status: z.enum(FAQ_STATUSES).optional() }).default({}))
+    .query(async ({ input }) => (await listFaqForReview(input.status)).map((e) => ({ ...e, warnings: reviewWarnings(e.answer) }))),
+
+  faqHistory: adminProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => listFaqEvents(input.id)),
+
+  createFaq: adminProcedure
+    .input(z.object({ question: z.string().trim().min(5).max(300), answer: z.string().trim().min(5).max(2000), keywords: z.array(z.string().trim().min(1).max(40)).max(20).default([]), audience: z.enum(FAQ_AUDIENCES).default("public") }))
+    .mutation(async ({ ctx, input }) => {
+      const problems = validateFaqDraft(input);
+      if (problems.length) fail("BAD_REQUEST", `FAQ entry is not valid: ${problems.join(", ")}.`);
+      const r = await createFaq({ ...input, userId: ctx.user.id });
+      if (!r) fail("INTERNAL_SERVER_ERROR", "Could not save the FAQ entry.");
+      await recordAdminEvent({ ctx, reason: `admin.faq.create(faq=${r.id})` });
+      return { id: r.id };
+    }),
+
+  editFaq: adminProcedure
+    .input(z.object({ id: z.number().int().positive(), question: z.string().trim().min(5).max(300).optional(), answer: z.string().trim().min(5).max(2000).optional(), keywords: z.array(z.string().trim().min(1).max(40)).max(20).optional(), audience: z.enum(FAQ_AUDIENCES).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await editFaq({ ...input, userId: ctx.user.id });
+      if (!r) fail("NOT_FOUND", "No such FAQ entry.");
+      if (r.changed) await recordAdminEvent({ ctx, reason: `admin.faq.edit(faq=${input.id}:status=${r.status}:version=${r.version})` });
+      return r;
+    }),
+
+  decideFaq: adminProcedure
+    .input(z.object({ id: z.number().int().positive(), action: z.enum(["submit", "approve", "reject", "retire", "restore"]) }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await decideFaq({ id: input.id, action: input.action, userId: ctx.user.id, role: ctx.user.role });
+      if (!r.ok) {
+        const message: Record<string, [Parameters<typeof fail>[0], string]> = {
+          not_found: ["NOT_FOUND", "No such FAQ entry."],
+          invalid_transition: ["PRECONDITION_FAILED", "That step is not available for the entry's current status."],
+          self_approval: ["FORBIDDEN", "A different person must approve wording you wrote or last changed."],
+          not_staff: ["FORBIDDEN", "Only IO SKY staff can review FAQ entries."],
+          unavailable: ["INTERNAL_SERVER_ERROR", "The FAQ store is unavailable."],
+        };
+        if (r.reason === "self_approval") await recordAdminEvent({ ctx, reason: `admin.faq.self_approval_blocked(faq=${input.id})` });
+        fail(...message[r.reason]);
+      }
+      await recordAdminEvent({ ctx, reason: `admin.faq.${input.action}(faq=${input.id}:status=${r.status}:version=${r.version})` });
+      return r;
     }),
 
   documentReleases: adminProcedure

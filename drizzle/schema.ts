@@ -2970,3 +2970,42 @@ export const projectLifecycleEvents = pgTable("project_lifecycle_events", {
   note: varchar("note", { length: 500 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+
+/**
+ * The approved FAQ store the AI assistants answer from (task R17). status: draft | in_review | approved | retired.
+ * Only approved entries are ever spoken; editing an approved entry returns it to draft (see shared/faqRules.ts).
+ */
+export const faqEntries = pgTable(
+  "faq_entries",
+  {
+    id: serial("id").primaryKey(),
+    question: varchar("question", { length: 300 }).notNull(),
+    answer: varchar("answer", { length: 2000 }).notNull(),
+    /** JSON-encoded array of strings (portable text, like the other JSON columns). */
+    keywords: text("keywords").default("[]").notNull(),
+    audience: varchar("audience", { length: 10 }).default("public").notNull(),
+    status: varchar("status", { length: 12 }).default("draft").notNull(),
+    version: integer("version").default(1).notNull(),
+    lastEditedByUserId: integer("lastEditedByUserId").references(() => users.id),
+    approvedByUserId: integer("approvedByUserId").references(() => users.id),
+    approvedAt: timestamp("approvedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (t) => [index("faq_entries_status_idx").on(t.status)],
+);
+
+/** Append-only history of every FAQ change and decision. */
+export const faqEvents = pgTable(
+  "faq_events",
+  {
+    id: serial("id").primaryKey(),
+    faqId: integer("faqId").notNull().references(() => faqEntries.id, { onDelete: "cascade" }),
+    event: varchar("event", { length: 40 }).notNull(),
+    version: integer("version").notNull(),
+    actorUserId: integer("actorUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("faq_events_faq_idx").on(t.faqId, t.createdAt)],
+);
+export type FaqEntryRow = typeof faqEntries.$inferSelect;
