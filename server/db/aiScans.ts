@@ -11,6 +11,8 @@ import {
   type AiScan,
   type AiScanStatusEvent,
   type InsertAiScan,
+  type InsertReportDownloadAudit,
+  reportDownloadAudit,
 } from "../../drizzle/schema";
 import { canMoveReport, type ReportStatus } from "../../shared/srsRules";
 import { getDb } from "./connection";
@@ -38,6 +40,27 @@ export async function getAiScanByToken(
     .where(eq(aiScans.reportToken, reportToken))
     .limit(1);
   return rows[0] ?? null;
+}
+
+let downloadAuditWarned = false;
+
+/**
+ * Record a report access (task M4-01, SRS 9.10). Best effort by design: if the
+ * audit write fails, or migration 0040 has not been applied yet, the customer's
+ * own download is not blocked; the failure is logged once. The row holds no
+ * report content and never the access token.
+ */
+export async function appendReportDownloadAudit(row: InsertReportDownloadAudit): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await db.insert(reportDownloadAudit).values(row);
+  } catch (err) {
+    if (!downloadAuditWarned) {
+      downloadAuditWarned = true;
+      console.warn("[reportDownloadAudit] could not record a report access (is migration 0040 applied?):", err instanceof Error ? err.message : err);
+    }
+  }
 }
 
 export async function getAiScanById(id: number): Promise<AiScan | null> {

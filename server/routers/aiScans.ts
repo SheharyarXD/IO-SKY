@@ -23,11 +23,13 @@ import { guardAiScanRun } from "../aiGovernance";
 import { dispatchSimpleEmail, escapeHtml } from "../email";
 import { emitNotification } from "../notificationDispatcher";
 import { TRPCError } from "@trpc/server";
-import { randomBytes } from "crypto";
+import { createHash, randomBytes } from "crypto";
+import { DenialAuditThrottle } from "../_core/denialThrottle";
 import { z } from "zod";
 import {
   createAiScan,
   createLead,
+  appendReportDownloadAudit,
   deleteAiScanDraft,
   getAiScanByToken,
   loadAiScanDraft,
@@ -545,7 +547,7 @@ export const aiScansRouter = router({
           message: "Report not found or no longer available.",
         });
       }
-      assertScanReportAccess(scan, ctx.user);
+      await authorizeReportAccess(ctx, scan, "view");
 
       // BR-016: nothing is shown until the report is Published. A missing
       // reportStatus is treated as published only so rows from before the
@@ -594,7 +596,7 @@ export const aiScansRouter = router({
           message: "Report not found or no longer available.",
         });
       }
-      assertScanReportAccess(scan, ctx.user);
+      const access = await authorizeReportAccess(ctx, scan, "pdf_download");
       if (scan.status !== "ready" || !scan.reportPayload || !isReportVisibleToCustomer(scan.reportStatus ?? "published")) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
@@ -609,6 +611,7 @@ export const aiScansRouter = router({
       if (scan.reportPdfKey) {
         try {
           const url = await storageGetSignedUrl("ai-scan-reports", scan.reportPdfKey);
+          await access.record();
           return { url, filename: pdfFilename(shortRef) };
         } catch {
           // fall through and regenerate if the cached object is unreachable
@@ -640,6 +643,7 @@ export const aiScansRouter = router({
       await setAiScanReportPdfKey(scan.id, storedKey);
 
       const url = await storageGetSignedUrl("ai-scan-reports", storedKey);
+      await access.record();
       return { url, filename: pdfFilename(shortRef) };
     }),
 });
@@ -649,17 +653,63 @@ export const aiScansRouter = router({
  * decideScanReportAccess for the rule (paid scans: signed in owner or staff;
  * free guest scans: the emailed link).
  */
-function assertScanReportAccess(
-  scan: { tier: string; email: string },
-  user: { email: string | null; role: string } | null,
-): void {
-  const decision = decideScanReportAccess(scan, user);
-  if (decision === "login_required") {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign in with the account that ordered this scan to view the report." });
+type ReportScan = { id: number; tier: string; email: string; reportToken: string; reportStatus: string | null; publishedAt: Date | null };
+type ReportCtx = { user: { id: number; email: string | null; role: string; organizationId?: number | null } | null; req: Parameters<typeof getRequestMeta>[0] };
+
+/** Denied attempts are recorded, but bounded: one row per source and report per window, plus a per-minute budget. */
+const deniedAccessThrottle = new DenialAuditThrottle({ windowMs: 10 * 60_000, maxKeys: 2000, budgetPerMinute: { anonymous: 20, signed_in: 20 } });
+
+/** A short hash prefix that tells links apart without being usable as one. */
+function tokenFingerprint(token: string): string {
+  return createHash("sha256").update(token).digest("hex").slice(0, 12);
+}
+
+type AccessKind = "staff" | "owner" | "guest_link";
+
+/** Auditing must never change the outcome of the request it records: a denial stays a denial, a download still happens. */
+async function safeAudit(row: Parameters<typeof appendReportDownloadAudit>[0]): Promise<void> {
+  try {
+    await appendReportDownloadAudit(row);
+  } catch (err) {
+    console.warn("[reportDownloadAudit] audit write failed:", err instanceof Error ? err.message : err);
   }
-  if (decision === "forbidden") {
+}
+
+/**
+ * SRS 9.10: validate customer ownership before granting report access, and keep
+ * the audit trail (M4-01). See decideScanReportAccess for the rule (paid scans:
+ * signed in owner or staff; free guest scans: the emailed link). Returns who is
+ * asking so a later download can be recorded; records a refusal itself.
+ */
+async function authorizeReportAccess(ctx: ReportCtx, scan: ReportScan, action: "view" | "pdf_download"): Promise<{ kind: AccessKind; record: () => Promise<void> }> {
+  const decision = decideScanReportAccess(scan, ctx.user);
+  const { ip, userAgent } = getRequestMeta(ctx.req);
+  const base = {
+    scanId: scan.id,
+    action,
+    actorUserId: ctx.user?.id ?? null,
+    actorRole: ctx.user?.role ?? null,
+    organizationId: ctx.user?.organizationId ?? null,
+    tokenFingerprint: tokenFingerprint(scan.reportToken),
+    reportStatus: scan.reportStatus,
+    reportPublishedAt: scan.publishedAt,
+    tier: scan.tier,
+    ip,
+    userAgent,
+  };
+  if (decision !== "allow") {
+    const signedIn = Boolean(ctx.user);
+    const d = deniedAccessThrottle.decide(signedIn ? "signed_in" : "anonymous", `${scan.id}|${signedIn ? `u${ctx.user!.id}` : `ip:${ip ?? "?"}`}|${action}`, Date.now());
+    if (d.record) {
+      await safeAudit({ ...base, outcome: "denied", denyReason: decision, actorKind: signedIn ? "other_account" : "anonymous" });
+    }
+    if (decision === "login_required") {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign in with the account that ordered this scan to view the report." });
+    }
     throw new TRPCError({ code: "FORBIDDEN", message: "This report belongs to a different account." });
   }
+  const kind: AccessKind = ctx.user ? (ctx.user.role === "admin" || ctx.user.role === "super_admin" ? "staff" : "owner") : "guest_link";
+  return { kind, record: () => safeAudit({ ...base, outcome: "allowed", denyReason: null, actorKind: kind }) };
 }
 
 function pdfFilename(publicRef: string): string {

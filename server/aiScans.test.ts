@@ -16,7 +16,8 @@ vi.mock("./db", () => {
   const state: {
     leads: Array<Record<string, unknown>>;
     aiScans: Array<Record<string, unknown>>;
-  } = { leads: [], aiScans: [] };
+    downloads: Array<Record<string, unknown>>;
+  } = { leads: [], aiScans: [], downloads: [] };
   return {
     __state: state,
     createLead: vi.fn(async (input: Record<string, unknown>) => {
@@ -32,6 +33,7 @@ vi.mock("./db", () => {
     getAiScanByToken: vi.fn(async (token: string) => {
       return state.aiScans.find((s) => s.reportToken === token) ?? null;
     }),
+    appendReportDownloadAudit: vi.fn(async (row: Record<string, unknown>) => void state.downloads.push(row)),
     getAiScanById: vi.fn(async (id: number) => {
       return state.aiScans.find((s) => s.id === id) ?? null;
     }),

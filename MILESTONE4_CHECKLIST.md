@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 18
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 19
 - Live verification pending: 20
 - In progress: 0
-- Not started: 44
+- Not started: 43
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -174,7 +174,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 ### 8. AI Scan reports and expert review (0 of 13 verified)
 
 - [ ] `P07`: Review and Publish as independent permissions enforced (P0, BASELINE, NOT_STARTED)
-- [ ] `M4-01`: Log every AI Scan report download (P1, BASELINE, NOT_STARTED)
+- [ ] `M4-01`: Log every AI Scan report download (P1, BASELINE, TESTED_LOCAL)
 - [ ] `M4-02`: Decide delivery of free guest scan reports without a bare public link (P1, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)
 - [ ] `P01`: Fixed version-controlled chapter templates per tier, roadmap (P1, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)
 - [ ] `P02`: Book-style viewer (P1, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)

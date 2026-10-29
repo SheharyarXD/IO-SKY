@@ -2650,6 +2650,46 @@ export const aiScanStatusEvents = pgTable(
 );
 export type AiScanStatusEvent = typeof aiScanStatusEvents.$inferSelect;
 
+/**
+ * Who retrieved or tried to retrieve an AI Scan report (task M4-01, SRS 9.10
+ * "Log all report downloads"). Append only (migration 0040). Holds no report
+ * content and never the access token itself, only a short fingerprint of it.
+ */
+export const reportDownloadAudit = pgTable(
+  "report_download_audit",
+  {
+    id: serial("id").primaryKey(),
+    scanId: integer("scanId").notNull().references(() => aiScans.id, { onDelete: "cascade" }),
+    /** view | pdf_download */
+    action: varchar("action", { length: 16 }).notNull(),
+    /** allowed | denied */
+    outcome: varchar("outcome", { length: 8 }).notNull(),
+    /** login_required | forbidden, when denied. */
+    denyReason: varchar("denyReason", { length: 24 }),
+    /** staff | owner | guest_link | anonymous | other_account */
+    actorKind: varchar("actorKind", { length: 16 }).notNull(),
+    actorUserId: integer("actorUserId").references(() => users.id),
+    actorRole: varchar("actorRole", { length: 32 }),
+    organizationId: integer("organizationId"),
+    /** First characters of a hash of the link token, to tell links apart. Never the token. */
+    tokenFingerprint: varchar("tokenFingerprint", { length: 16 }),
+    /** Report state when it was accessed, which identifies the version released. */
+    reportStatus: varchar("reportStatus", { length: 32 }),
+    reportPublishedAt: timestamp("reportPublishedAt"),
+    tier: varchar("tier", { length: 16 }),
+    ip: varchar("ip", { length: 64 }),
+    userAgent: text("userAgent"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [
+    index("report_download_audit_scan_idx").on(t.scanId, t.createdAt),
+    index("report_download_audit_actor_idx").on(t.actorUserId),
+    index("report_download_audit_created_idx").on(t.createdAt),
+  ],
+);
+export type ReportDownloadAudit = typeof reportDownloadAudit.$inferSelect;
+export type InsertReportDownloadAudit = typeof reportDownloadAudit.$inferInsert;
+
 // Migration 0026: call outcomes, developer task comments, questionnaire drafts.
 
 export const bookingOutcomes = pgTable(

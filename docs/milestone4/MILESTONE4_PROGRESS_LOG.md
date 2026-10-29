@@ -213,6 +213,16 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Not done and not claimed: voice, speech, conversation, identity verification (R10/R11), a unique index on lead email, registering an agent with these tools. Verification flag semantics need client confirmation.
 - Next: M4-01.
 
+## M4-01 AI Scan report download auditing
+
+- Previous status: NOT_STARTED (found while fixing P0-02: SRS 9.10 requires "Log all report downloads"). New status: TESTED_LOCAL.
+- Change: new append-only table `report_download_audit` (migration 0040, written, NOT applied) following the existing audit convention (`audit_is_append_only`, RLS forced, cascade only from the parent scan). `authorizeReportAccess` replaces the P0-02 assertion: it makes the same ownership decision, records a refused view or download (bounded by the existing throttle) and returns a recorder that the two PDF return paths call after the signed URL exists. Rows carry who, what, release and when, plus a hash prefix of the link; never the token, the URL or report content.
+- Decision recorded: best effort. An audit failure is logged once and never blocks the customer or changes a refusal. Stricter fail-closed auditing is the client's call.
+- Tests: `reportDownloadAudit.test.ts` 14 (allowed rows for owner, staff and guest link; cached and generated paths; nothing sensitive in rows; denials with reasons; throttling; unpublished, failed-URL and unknown-token cases; audit failures do not change the outcome). Mutation check: removing the audit calls fails 4. Full suite 0 failed; typecheck and build clean.
+- Deployment order: independent. The code can ship before the migration; it then does nothing and logs once.
+- Remaining: apply 0040 on a non-production database; verify the trigger and cascade there; a view of the audit in the admin portal (not built).
+- Next: J09, J10, J08.
+
 ---
 
 ## Status translation rules used for the import
