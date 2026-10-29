@@ -291,6 +291,10 @@ Added shared/profileRules.ts and extended the customer timeline with discovery c
 
 Added shared/promptTools.ts (line diff, safe placeholder preview, warnings, token estimate), the comparePromptVersions and previewPrompt reads and a Compare and preview panel in Governance. Local only, no model call. Tests found and fixed an inherited-property lookup bug. Voice and script configuration are not built (no such model exists), so the task stays IN_PROGRESS. 21 new tests with a mutation check.
 
+## B07 - quotation edit and branded PDF (IN_PROGRESS)
+
+Added shared/quoteDocument.ts and server/quotePdf.ts, updateQuote (draft only, conditional write), a validity-date rule on sending and accepting, a quoteDocument read returning branded HTML and PDF, and a PDF button on the Quotes table. 19 new tests with a mutation check. Sending by email is not built because the email layer cannot attach files, so the task stays IN_PROGRESS.
+
 ---
 
 ## Status translation rules used for the import

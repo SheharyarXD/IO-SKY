@@ -31,6 +31,8 @@ import {
   createOpportunity,
   createProposal,
   createQuote,
+  updateQuote,
+  getQuoteWithCustomer,
   createScheduledReport,
   createSubscription,
   customerTimeline,
@@ -84,6 +86,8 @@ import { createFaq, decideFaq, editFaq, listFaqEvents, listFaqForReview } from "
 import { addTeamMember, createTeam, listTeams, removeTeamMember, setTeamArchived, setTeamMemberRole, setTeamPrimaryContact, type TeamOutcome } from "../db/developerTeams";
 import { MEMBER_REFUSAL_TEXT, TEAM_ROLES } from "../../shared/teamRules";
 import { diffPrompts, PROMPT_LIMITS, renderPreview } from "../../shared/promptTools";
+import { buildQuoteDocument, renderQuoteHtml } from "../../shared/quoteDocument";
+import { renderQuotePdf } from "../quotePdf";
 import { createRelease, getReleaseFacts, linkDeveloperProject, listActiveAssignedDeveloperIds, listReleases, revokeRelease, unlinkDeveloperProject } from "../db/documentHandoff";
 const message_alreadyReleased = "This document is already released to that project.";
 import { KNOWLEDGE_SOURCES, REGISTRY_LIMITS, validateRegistryFields } from "../../shared/aiAgentRegistry";
@@ -516,6 +520,44 @@ export const adminOpsRouter = router({
       await recordAdminEvent({ ctx, reason: `admin.quote.create(${q.publicRef})` });
       return q;
     }),
+
+  /** B07: edit a DRAFT quotation. The total is recomputed from the lines. A sent quotation cannot be edited. */
+  updateQuote: adminProcedure
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+        title: z.string().trim().min(1).max(200).optional(),
+        organizationId: z.number().int().positive().nullable().optional(),
+        opportunityId: z.number().int().positive().nullable().optional(),
+        currency: currency.optional(),
+        validUntil: isoDate.nullable().optional(),
+        lines: z
+          .array(z.object({ description: z.string().trim().min(1).max(300), quantity: z.number().int().positive().max(100000), unitCents: z.number().int().min(0).max(1_000_000_000) }))
+          .min(1)
+          .max(100)
+          .optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...patch } = input;
+      const res = await updateQuote(id, patch).catch((e: Error) => fail("BAD_REQUEST", e.message));
+      if (!res) fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
+      if (!res.ok) fail(res.code, res.reason);
+      await recordAdminEvent({ ctx, reason: `admin.quote.update(${res.quote.publicRef}:${Object.keys(patch).join(",")})` });
+      return res.quote;
+    }),
+
+  /**
+   * B07: the quotation as a branded document: standalone HTML and a PDF (base64). Staff only; nothing is emailed.
+   * The total is recomputed from the lines, and no tax is calculated.
+   */
+  quoteDocument: adminProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ ctx, input }) => {
+    const found = await getQuoteWithCustomer(input.id);
+    if (!found) fail("NOT_FOUND", "Quotation not found.");
+    const doc = buildQuoteDocument(found.quote, found.customer);
+    await recordAdminEvent({ ctx, reason: `admin.quote.document(${found.quote.publicRef})` });
+    return { ref: doc.ref, filename: `${doc.ref}.pdf`, html: renderQuoteHtml(doc), pdfBase64: (await renderQuotePdf(doc)).toString("base64"), totalCents: doc.totalCents };
+  }),
 
   moveQuote: adminProcedure
     .input(z.object({ id: z.number().int().positive(), to: z.enum(DOCUMENT_STATUSES) }))

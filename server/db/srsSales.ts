@@ -38,6 +38,7 @@ import {
   type QuoteLine,
 } from "../../shared/srsRules";
 import { callEntry, fileEntry, projectEntry, scanEntry, sortTimeline, summarizeProfile, type TimelineEntry, type ProfileSummary } from "../../shared/profileRules";
+import { MOVE_BLOCK_TEXT, quoteIsEditable, quoteMoveBlockedReason } from "../../shared/quoteDocument";
 import { getDb } from "./connection";
 
 // ---------------------------------------------------------------------------
@@ -321,6 +322,45 @@ export async function createQuote(args: {
   return rows[0] ?? null;
 }
 
+/** Edit a quotation. Only a draft can be edited; the total is recomputed from the lines. */
+export async function updateQuote(
+  id: number,
+  patch: { title?: string; lines?: QuoteLine[]; validUntil?: string | null; currency?: string; organizationId?: number | null; opportunityId?: number | null },
+): Promise<{ ok: true; quote: Quote } | { ok: false; reason: string; code: "NOT_FOUND" | "PRECONDITION_FAILED" } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const row = (await db.select().from(quotes).where(eq(quotes.id, id)).limit(1))[0];
+  if (!row) return { ok: false, code: "NOT_FOUND", reason: "Quotation not found." };
+  if (!quoteIsEditable(row.status)) return { ok: false, code: "PRECONDITION_FAILED", reason: "Only a draft quotation can be edited. Create a new quotation to correct one that has been sent." };
+  const set: Partial<typeof quotes.$inferInsert> = { updatedAt: new Date() };
+  if (patch.title !== undefined) set.title = patch.title;
+  if (patch.currency !== undefined) set.currency = patch.currency;
+  if (patch.validUntil !== undefined) set.validUntil = patch.validUntil;
+  if (patch.organizationId !== undefined) set.organizationId = patch.organizationId;
+  if (patch.opportunityId !== undefined) set.opportunityId = patch.opportunityId;
+  if (patch.lines !== undefined) {
+    set.totalCents = computeQuoteTotal(patch.lines); // throws on an invalid line; nothing is written
+    set.linesJson = JSON.stringify(patch.lines);
+  }
+  // The status condition makes the write fail if the quotation was sent between the read and now.
+  const updated = await db.update(quotes).set(set).where(and(eq(quotes.id, id), eq(quotes.status, "draft"))).returning();
+  if (!updated[0]) return { ok: false, code: "PRECONDITION_FAILED", reason: "The quotation changed while you were editing it; reload and retry." };
+  return { ok: true, quote: updated[0] };
+}
+
+export async function getQuoteWithCustomer(id: number): Promise<{ quote: Quote; customer: string | null } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const quote = (await db.select().from(quotes).where(eq(quotes.id, id)).limit(1))[0];
+  if (!quote) return null;
+  let customer: string | null = null;
+  if (quote.organizationId) {
+    const { organizations } = await import("../../drizzle/schema");
+    customer = (await db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, quote.organizationId)).limit(1))[0]?.name ?? null;
+  }
+  return { quote, customer };
+}
+
 export async function listQuotes(): Promise<Quote[]> {
   const db = await getDb();
   if (!db) return [];
@@ -338,6 +378,9 @@ export async function moveQuote(
   if (!canMoveDocument(row.status as DocumentStatus, to)) {
     return { ok: false, code: "PRECONDITION_FAILED", reason: `Cannot move a ${row.status} quotation to ${to}.` };
   }
+  // A quotation is not sent or accepted after the date it said it was valid until.
+  const blocked = quoteMoveBlockedReason({ validUntil: row.validUntil }, to, new Date().toISOString().slice(0, 10));
+  if (blocked) return { ok: false, code: "PRECONDITION_FAILED", reason: MOVE_BLOCK_TEXT[blocked] };
   const updated = await db.update(quotes).set({ status: to }).where(and(eq(quotes.id, id), eq(quotes.status, row.status))).returning();
   if (!updated[0]) return { ok: false, code: "PRECONDITION_FAILED", reason: "Quotation changed; reload and retry." };
   return { ok: true, quote: updated[0] };

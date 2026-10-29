@@ -290,6 +290,20 @@ function Quotes() {
   const q = trpc.adminOps.quotes.useQuery();
   const create = trpc.adminOps.createQuote.useMutation({ onSuccess: () => utils.adminOps.quotes.invalidate() });
   const move = trpc.adminOps.moveQuote.useMutation({ onSuccess: () => utils.adminOps.quotes.invalidate() });
+  const download = async (id: number) => {
+    try {
+      const d = await utils.adminOps.quoteDocument.fetch({ id });
+      const bytes = Uint8Array.from(atob(d.pdfBase64), (c) => c.charCodeAt(0));
+      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = d.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
   const STATUSES: DocumentStatus[] = ["sent", "accepted", "rejected", "expired"];
   const cols: DataColumn<NonNullable<typeof q.data>[number]>[] = [
     { key: "publicRef", header: "Ref", render: (r) => <span className="font-mono text-white/55">{r.publicRef}</span> },
@@ -301,6 +315,7 @@ function Quotes() {
       header: "Move to",
       render: (r) => (
         <div className="flex gap-1">
+          <SmallButton onClick={() => void download(r.id)}>PDF</SmallButton>
           {STATUSES.filter((s) => canMoveDocument(r.status as DocumentStatus, s)).map((s) => (
             <SmallButton key={s} onClick={() => move.mutateAsync({ id: r.id, to: s }).catch((e) => toast.error(e.message))}>
               {s}
