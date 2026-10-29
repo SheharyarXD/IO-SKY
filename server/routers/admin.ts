@@ -85,6 +85,10 @@ import {
   endDeveloperAssignment,
   createDeveloperTask,
   assignDeveloperTask,
+  reassignDeveloperTask,
+  replaceProjectDeveloper,
+  listTaskAssignmentHistory,
+  listProjectAssignmentHistory,
   appendAdminDeveloperMessage,
   listAllDeveloperTasks,
   listAllDeveloperAssignments,
@@ -103,6 +107,7 @@ import { notifyClient } from "../notifications";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import { mayViewCompanyRevenue } from "../../shared/srsRules";
 import { assessBackupPolicy, isBackupKey, readDeclared } from "../../shared/backupPolicy";
+import { REFUSAL_TEXT } from "../../shared/taskAssignmentRules";
 import { generatePublicRef } from "../_core/publicRef";
 import {
   organizations,
@@ -1801,7 +1806,7 @@ export const adminRouter = router({
   endDeveloperAssignment: adminProcedure
     .input(z.object({ projectId: z.number().int().positive(), developerId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
-      const ended = await endDeveloperAssignment(input);
+      const ended = await endDeveloperAssignment({ ...input, actorUserId: ctx.user.id });
       if (!ended) {
         throw new TRPCError({ code: "NOT_FOUND", message: "No active assignment to end." });
       }
@@ -1816,6 +1821,58 @@ export const adminRouter = router({
       });
       return { ok: true as const };
     }),
+
+  /**
+   * J04: move one task from one developer to another. Both assignment rows are kept, the reason is required
+   * and recorded, a finished task is refused, and the new holder must already be on the project.
+   */
+  reassignDeveloperTask: adminProcedure
+    .input(z.object({ taskId: z.number().int().positive(), fromDeveloperId: z.number().int().positive(), toDeveloperId: z.number().int().positive(), reason: z.string().trim().min(3).max(500) }))
+    .mutation(async ({ ctx, input }) => {
+      const to = await getDeveloperProfileById(input.toDeveloperId);
+      if (!to) throw new TRPCError({ code: "NOT_FOUND", message: "Developer not found." });
+      if (to.status !== "active") throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Developer is ${to.status}.` });
+      const outcome = await reassignDeveloperTask({ ...input, actorUserId: ctx.user.id });
+      if (outcome === "task_not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Task not found." });
+      if (outcome === "unavailable") throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The assignment history is unavailable, so nothing was changed." });
+      if (outcome !== "ok") throw new TRPCError({ code: "PRECONDITION_FAILED", message: REFUSAL_TEXT[outcome] });
+      await notifyDeveloper({ developerId: input.toDeveloperId, kind: "task", title: "A task was assigned to you", body: null, href: "/developer-workspace/tasks", priority: "normal" }).catch(() => undefined);
+      await notifyDeveloper({ developerId: input.fromDeveloperId, kind: "task", title: "A task was reassigned", body: "A task you held was moved to another developer.", href: "/developer-workspace/tasks", priority: "normal" }).catch(() => undefined);
+      await recordAdminEvent({ ctx, reason: `admin.developer_task.reassign(task=${input.taskId}:${input.fromDeveloperId}->${input.toDeveloperId})` });
+      return { ok: true as const };
+    }),
+
+  /**
+   * J04: replace a developer on a project. The outgoing developer loses the project and all its tasks at once,
+   * the incoming one takes the same role and the unfinished tasks, finished tasks stay in the history under
+   * the person who did them. All or nothing.
+   */
+  replaceProjectDeveloper: adminProcedure
+    .input(z.object({ projectId: z.number().int().positive(), outgoingDeveloperId: z.number().int().positive(), incomingDeveloperId: z.number().int().positive(), reason: z.string().trim().min(3).max(500) }))
+    .mutation(async ({ ctx, input }) => {
+      const incoming = await getDeveloperProfileById(input.incomingDeveloperId);
+      if (!incoming) throw new TRPCError({ code: "NOT_FOUND", message: "Developer not found." });
+      if (incoming.status !== "active") throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Developer is ${incoming.status} and cannot be assigned work.` });
+      const project = (await listAllDeveloperProjects()).find((p) => p.id === input.projectId);
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
+      if (project.status === "completed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This project is completed." });
+      const r = await replaceProjectDeveloper({ ...input, actorUserId: ctx.user.id });
+      if (!r.ok) {
+        if (r.reason === "project_not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Project not found." });
+        if (r.reason === "unavailable" || r.reason === "incoming_not_available") throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The replacement could not be recorded, so nothing was changed." });
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: REFUSAL_TEXT[r.reason] });
+      }
+      await emitNotification({ event: "PROJECT_ASSIGNED", audience: { type: "developer", developerId: input.incomingDeveloperId }, dedupeRef: `project:${input.projectId}:${input.incomingDeveloperId}:${Date.now()}`, title: `New project assignment: ${project.name}`, body: `You were assigned to ${project.code}${r.transferred.length ? ` with ${r.transferred.length} open task(s)` : ""}.`, href: "/developer-workspace/projects" });
+      await notifyDeveloper({ developerId: input.outgoingDeveloperId, kind: "project", title: `You were removed from ${project.name}`, body: null, href: "/developer-workspace/projects", priority: "normal" }).catch(() => undefined);
+      await appendDeveloperAudit({ developerId: input.outgoingDeveloperId, event: "assignment.replaced_out", detail: `projectId=${input.projectId}; by=${ctx.user.id}` });
+      await appendDeveloperAudit({ developerId: input.incomingDeveloperId, event: "assignment.replaced_in", detail: `projectId=${input.projectId}; by=${ctx.user.id}` });
+      await recordAdminEvent({ ctx, reason: `admin.developer.replace(project=${input.projectId}:${input.outgoingDeveloperId}->${input.incomingDeveloperId}:moved=${r.transferred.length}:kept=${r.keptWithOutgoing.length})` });
+      return { ok: true as const, transferredTasks: r.transferred.length, finishedTasksKept: r.keptWithOutgoing.length };
+    }),
+
+  taskAssignmentHistory: adminProcedure.input(z.object({ taskId: z.number().int().positive() })).query(async ({ input }) => listTaskAssignmentHistory(input.taskId)),
+
+  projectAssignmentHistory: adminProcedure.input(z.object({ projectId: z.number().int().positive() })).query(async ({ input }) => listProjectAssignmentHistory(input.projectId)),
 
   createDeveloperTask: adminProcedure
     .input(
@@ -1853,7 +1910,7 @@ export const adminRouter = router({
       if (developer.status !== "active") {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Developer is ${developer.status}.` });
       }
-      const outcome = await assignDeveloperTask(input);
+      const outcome = await assignDeveloperTask({ ...input, actorUserId: ctx.user.id });
       if (outcome === "task_not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Task not found." });
       if (outcome === "not_on_project") {
         throw new TRPCError({

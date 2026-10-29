@@ -49,6 +49,47 @@ function useDevOptions() {
   return rows.filter((d) => d.status === "active").map((d) => ({ value: String(d.id), label: `${d.fullName} (DEV-${d.id})` }));
 }
 
+const EVENT_LABEL: Record<string, string> = {
+  assigned: "Assigned",
+  released: "Released",
+  reassigned_out: "Moved away",
+  reassigned_in: "Moved to",
+  replaced_out: "Replaced (left)",
+  replaced_in: "Replaced (joined)",
+};
+
+type HistoryRow = { id: number; event: string; developerName: string | null; counterpartName: string | null; reason: string | null; createdAt: string | Date; taskId: number | null };
+
+function HistoryTable({ rows, empty }: { rows: HistoryRow[]; empty: string }) {
+  const cols: DataColumn<HistoryRow>[] = [
+    { key: "createdAt", header: "When", render: (r) => shortDateTime(r.createdAt) },
+    { key: "event", header: "What", render: (r) => EVENT_LABEL[r.event] ?? r.event },
+    { key: "taskId", header: "Task", render: (r) => (r.taskId ? `T-${r.taskId}` : "Whole project") },
+    { key: "developerName", header: "Developer", render: (r) => r.developerName ?? "n/a" },
+    { key: "counterpartName", header: "With", render: (r) => r.counterpartName ?? "" },
+    { key: "reason", header: "Reason", render: (r) => r.reason ?? "" },
+  ];
+  return <DataTable columns={cols} rows={rows} emptyLabel={empty} />;
+}
+
+function ProjectHistory({ projects }: { projects: Array<{ id: number; code: string; name: string }> }) {
+  const [id, setId] = useState<number | null>(null);
+  const q = trpc.admin.projectAssignmentHistory.useQuery({ projectId: id ?? 0 }, { enabled: id !== null });
+  return (
+    <Panel title="Assignment history (kept for every move)">
+      <select className="mb-3 rounded border border-white/15 bg-transparent px-2 py-1 text-sm" value={id ?? ""} onChange={(e) => setId(e.target.value ? Number(e.target.value) : null)}>
+        <option value="">Choose a project</option>
+        {projects.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.code}: {p.name}
+          </option>
+        ))}
+      </select>
+      {id === null ? <p className="text-sm text-white/55">Choose a project to see who held its work and why it moved.</p> : <HistoryTable rows={(q.data ?? []) as HistoryRow[]} empty="No assignment changes are recorded for this project yet." />}
+    </Panel>
+  );
+}
+
 function Assign() {
   const utils = trpc.useUtils();
   const projects = trpc.admin.developerProjects.useQuery();
@@ -57,6 +98,7 @@ function Assign() {
   const create = trpc.admin.createDeveloperProject.useMutation({ onSuccess: () => utils.admin.developerProjects.invalidate() });
   const assign = trpc.admin.assignDeveloperToProject.useMutation({ onSuccess: () => utils.admin.developerAssignments.invalidate() });
   const end = trpc.admin.endDeveloperAssignment.useMutation({ onSuccess: () => utils.admin.developerAssignments.invalidate() });
+  const replace = trpc.admin.replaceProjectDeveloper.useMutation({ onSuccess: () => { utils.admin.developerAssignments.invalidate(); utils.admin.developerTasks.invalidate(); utils.admin.projectAssignmentHistory.invalidate(); } });
   const projectOptions = (projects.data ?? []).filter((p) => p.status !== "completed").map((p) => ({ value: String(p.id), label: `${p.code}: ${p.name}` }));
 
   const cols: DataColumn<NonNullable<typeof assignments.data>[number] & { id: string }>[] = [
@@ -92,6 +134,19 @@ function Assign() {
         onSubmit={(v) => assign.mutateAsync({ projectId: Number(v.projectId), developerId: Number(v.developerId), assignmentRole: v.assignmentRole as "lead" })}
       />
       <FormCard
+        title="Replace a developer on a project"
+        submitLabel="Replace developer"
+        successMessage="Developer replaced. Unfinished tasks moved; finished work stays in the history."
+        fields={[
+          { name: "projectId", label: "Project", type: "select", required: true, options: projectOptions },
+          { name: "outgoing", label: "Developer leaving", type: "select", required: true, options: devOptions, hint: "They lose the project and all its tasks at once." },
+          { name: "incoming", label: "Developer taking over", type: "select", required: true, options: devOptions, hint: "Takes the same role and the unfinished tasks." },
+          { name: "reason", label: "Reason", required: true, hint: "Kept in the assignment history." },
+        ]}
+        onSubmit={(v) => replace.mutateAsync({ projectId: Number(v.projectId), outgoingDeveloperId: Number(v.outgoing), incomingDeveloperId: Number(v.incoming), reason: v.reason })}
+      />
+      <ProjectHistory projects={projects.data ?? []} />
+      <FormCard
         title="Create a developer project"
         submitLabel="Create project"
         fields={[
@@ -113,6 +168,7 @@ function Tasks() {
   const devOptions = useDevOptions();
   const createTask = trpc.admin.createDeveloperTask.useMutation({ onSuccess: () => utils.admin.developerTasks.invalidate() });
   const assignTask = trpc.admin.assignDeveloperTask.useMutation({ onSuccess: () => utils.admin.developerTasks.invalidate() });
+  const moveTask = trpc.admin.reassignDeveloperTask.useMutation({ onSuccess: () => { utils.admin.developerTasks.invalidate(); utils.admin.projectAssignmentHistory.invalidate(); utils.admin.taskAssignmentHistory.invalidate(); } });
   const comment = trpc.adminOps.commentOnTask.useMutation();
   const cols: DataColumn<NonNullable<typeof tasks.data>[number]>[] = [
     { key: "id", header: "Ref", width: "64px", render: (r) => <span className="font-mono text-white/55">T-{r.id}</span> },
@@ -147,6 +203,18 @@ function Tasks() {
           { name: "developerId", label: "Developer", type: "select", required: true, options: devOptions, hint: "The developer must already be on the task's project." },
         ]}
         onSubmit={(v) => assignTask.mutateAsync({ taskId: Number(v.taskId), developerId: Number(v.developerId) })}
+      />
+      <FormCard
+        title="Move a task to another developer"
+        submitLabel="Move task"
+        successMessage="Task moved. Both developers were told and the move is in the history."
+        fields={[
+          { name: "taskId", label: "Task", type: "select", required: true, options: (tasks.data ?? []).filter((t) => t.status !== "done").map((t) => ({ value: String(t.id), label: `T-${t.id} ${t.projectCode}: ${t.title}` })), hint: "A finished task stays with the person who did it." },
+          { name: "from", label: "Currently held by", type: "select", required: true, options: devOptions },
+          { name: "to", label: "Move to", type: "select", required: true, options: devOptions, hint: "Must already be on the task's project." },
+          { name: "reason", label: "Reason", required: true, hint: "Kept in the assignment history." },
+        ]}
+        onSubmit={(v) => moveTask.mutateAsync({ taskId: Number(v.taskId), fromDeveloperId: Number(v.from), toDeveloperId: Number(v.to), reason: v.reason })}
       />
       <FormCard
         title="Answer or comment on a task"

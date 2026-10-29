@@ -16,7 +16,7 @@
  * developer_audit, developer_security_events, developer_support_tickets,
  * developer_notifications.
  */
-import { and, desc, eq, ne, or } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, or } from "drizzle-orm";
 import {
   developerAccessRequests,
   developerAccessScopes,
@@ -32,6 +32,8 @@ import {
   developerSubmissions,
   developerSupportTickets,
   developerTaskAssignments,
+  developerAssignmentEvents,
+  type DeveloperAssignmentEvent,
   developerTasks,
   users,
   type DeveloperAccessScope,
@@ -51,6 +53,7 @@ import {
   type InsertDeveloperAudit,
   type InsertDeveloperSubmission,
 } from "../../drizzle/schema";
+import { cleanReason, planReassignment, planReplacement, type AssignmentEvent, type ReassignRefusal, type ReplaceRefusal } from "../../shared/taskAssignmentRules";
 import { getDb } from "./connection";
 
 // ---------------------------------------------------------------------------
@@ -1071,6 +1074,7 @@ export async function assignDeveloperToProject(args: {
 export async function endDeveloperAssignment(args: {
   projectId: number;
   developerId: number;
+  actorUserId?: number | null;
 }): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
@@ -1092,6 +1096,12 @@ export async function endDeveloperAssignment(args: {
       .from(developerTasks)
       .where(eq(developerTasks.projectId, args.projectId));
     for (const t of taskIds) {
+      const wasActive = await tx
+        .select({ id: developerTaskAssignments.id })
+        .from(developerTaskAssignments)
+        .where(and(eq(developerTaskAssignments.taskId, t.id), eq(developerTaskAssignments.developerId, args.developerId), eq(developerTaskAssignments.status, "active")))
+        .limit(1);
+      if (wasActive.length > 0) await recordAssignmentEventBestEffort(tx, { projectId: args.projectId, taskId: t.id, developerId: args.developerId, event: "released", actorUserId: args.actorUserId ?? null, reason: "developer removed from the project" });
       await tx
         .update(developerTaskAssignments)
         .set({ status: "released" })
@@ -1138,6 +1148,7 @@ export async function createDeveloperTask(args: {
 export async function assignDeveloperTask(args: {
   taskId: number;
   developerId: number;
+  actorUserId?: number | null;
 }): Promise<"assigned" | "already" | "task_not_found" | "not_on_project" | null> {
   const db = await getDb();
   if (!db) return null;
@@ -1174,13 +1185,153 @@ export async function assignDeveloperTask(args: {
         .update(developerTaskAssignments)
         .set({ status: "active" })
         .where(eq(developerTaskAssignments.id, existing[0].id));
+      await recordAssignmentEventBestEffort(tx, { projectId: task.projectId, taskId: task.id, developerId: args.developerId, event: "assigned", actorUserId: args.actorUserId ?? null, reason: null });
       return "assigned" as const;
     }
     await tx
       .insert(developerTaskAssignments)
       .values({ taskId: args.taskId, developerId: args.developerId });
+    await recordAssignmentEventBestEffort(tx, { projectId: task.projectId, taskId: task.id, developerId: args.developerId, event: "assigned", actorUserId: args.actorUserId ?? null, reason: null });
     return "assigned" as const;
   });
+}
+
+
+// ---------------------------------------------------------------------------
+// Assignment history, reassignment and replacement (task J04)
+// ---------------------------------------------------------------------------
+
+type Tx = Parameters<Parameters<NonNullable<Awaited<ReturnType<typeof getDb>>>["transaction"]>[0]>[0];
+
+type EventRow = { projectId: number; taskId: number | null; developerId: number; counterpartDeveloperId?: number | null; event: AssignmentEvent; actorUserId: number | null; reason: string | null };
+
+/** History that must exist: used by the operations that only make sense with a record. */
+async function recordAssignmentEvent(tx: Tx, e: EventRow): Promise<void> {
+  await tx.insert(developerAssignmentEvents).values({ ...e, counterpartDeveloperId: e.counterpartDeveloperId ?? null });
+}
+
+/**
+ * History for operations that already existed. If the table is missing (migration 0043 not applied) the
+ * insert fails inside its own savepoint, so the assignment itself still goes through.
+ */
+async function recordAssignmentEventBestEffort(tx: Tx, e: EventRow): Promise<void> {
+  try {
+    await tx.transaction(async (sp) => {
+      await recordAssignmentEvent(sp as unknown as Tx, e);
+    });
+  } catch (err) {
+    console.warn("[assignmentHistory] could not record event:", (err as Error).message);
+  }
+}
+
+export type ReassignOutcome = "ok" | "task_not_found" | ReassignRefusal | "unavailable";
+
+/** Move one task from one developer to another, keeping both rows and recording why. */
+export async function reassignDeveloperTask(args: { taskId: number; fromDeveloperId: number; toDeveloperId: number; actorUserId: number; reason: string }): Promise<ReassignOutcome> {
+  const db = await getDb();
+  if (!db) return "unavailable";
+  return db.transaction(async (tx) => {
+    const task = (await tx.select().from(developerTasks).where(eq(developerTasks.id, args.taskId)).limit(1))[0];
+    if (!task) return "task_not_found" as const;
+    const held = await tx
+      .select({ id: developerTaskAssignments.id })
+      .from(developerTaskAssignments)
+      .where(and(eq(developerTaskAssignments.taskId, args.taskId), eq(developerTaskAssignments.developerId, args.fromDeveloperId), eq(developerTaskAssignments.status, "active")))
+      .limit(1);
+    const onProject = await tx
+      .select({ id: developerProjectAssignments.id })
+      .from(developerProjectAssignments)
+      .where(and(eq(developerProjectAssignments.projectId, task.projectId), eq(developerProjectAssignments.developerId, args.toDeveloperId), eq(developerProjectAssignments.status, "active")))
+      .limit(1);
+    const plan = planReassignment({ taskStatus: task.status, fromDeveloperId: args.fromDeveloperId, toDeveloperId: args.toDeveloperId, fromHoldsTask: held.length > 0, toOnProject: onProject.length > 0, reason: args.reason });
+    if (!plan.ok) return plan.reason;
+    const reason = cleanReason(args.reason);
+    await tx.update(developerTaskAssignments).set({ status: "released" }).where(eq(developerTaskAssignments.id, held[0]!.id));
+    const existing = (await tx.select().from(developerTaskAssignments).where(and(eq(developerTaskAssignments.taskId, args.taskId), eq(developerTaskAssignments.developerId, args.toDeveloperId))).limit(1))[0];
+    if (existing) await tx.update(developerTaskAssignments).set({ status: "active" }).where(eq(developerTaskAssignments.id, existing.id));
+    else await tx.insert(developerTaskAssignments).values({ taskId: args.taskId, developerId: args.toDeveloperId });
+    await recordAssignmentEvent(tx, { projectId: task.projectId, taskId: task.id, developerId: args.fromDeveloperId, counterpartDeveloperId: args.toDeveloperId, event: "reassigned_out", actorUserId: args.actorUserId, reason });
+    await recordAssignmentEvent(tx, { projectId: task.projectId, taskId: task.id, developerId: args.toDeveloperId, counterpartDeveloperId: args.fromDeveloperId, event: "reassigned_in", actorUserId: args.actorUserId, reason });
+    return "ok" as const;
+  });
+}
+
+export type ReplaceOutcome = { ok: true; transferred: number[]; keptWithOutgoing: number[]; released: number[] } | { ok: false; reason: ReplaceRefusal | "project_not_found" | "incoming_not_available" | "unavailable" };
+
+/**
+ * Replace a developer on a project: end their assignment, give the incoming developer the same role, release
+ * all of the outgoing developer's task assignments (BR-018) and hand over those not finished. Finished tasks
+ * stay attributed to the outgoing developer in the history. One transaction, so a failure changes nothing.
+ */
+export async function replaceProjectDeveloper(args: { projectId: number; outgoingDeveloperId: number; incomingDeveloperId: number; actorUserId: number; reason: string }): Promise<ReplaceOutcome> {
+  const db = await getDb();
+  if (!db) return { ok: false, reason: "unavailable" };
+  return db.transaction(async (tx): Promise<ReplaceOutcome> => {
+    const project = (await tx.select().from(developerProjects).where(eq(developerProjects.id, args.projectId)).limit(1))[0];
+    if (!project) return { ok: false, reason: "project_not_found" };
+    const outgoing = (
+      await tx
+        .select()
+        .from(developerProjectAssignments)
+        .where(and(eq(developerProjectAssignments.projectId, args.projectId), eq(developerProjectAssignments.developerId, args.outgoingDeveloperId), eq(developerProjectAssignments.status, "active")))
+        .limit(1)
+    )[0];
+    const tasks = await tx.select({ id: developerTasks.id, status: developerTasks.status }).from(developerTasks).where(eq(developerTasks.projectId, args.projectId));
+    const taskIds = tasks.map((t) => t.id);
+    const activeHeld = taskIds.length === 0 ? [] : await tx.select({ id: developerTaskAssignments.id, taskId: developerTaskAssignments.taskId }).from(developerTaskAssignments).where(and(eq(developerTaskAssignments.developerId, args.outgoingDeveloperId), eq(developerTaskAssignments.status, "active"), inArray(developerTaskAssignments.taskId, taskIds)));
+    const statusOf = new Map(tasks.map((t) => [t.id, t.status as string]));
+    const plan = planReplacement({ outgoingDeveloperId: args.outgoingDeveloperId, incomingDeveloperId: args.incomingDeveloperId, outgoingOnProject: Boolean(outgoing), heldTasks: activeHeld.map((h) => ({ taskId: h.taskId, status: statusOf.get(h.taskId) ?? "planned" })), reason: args.reason });
+    if (!plan.ok) return { ok: false, reason: plan.reason };
+    const reason = cleanReason(args.reason);
+    const outgoingRow = outgoing!;
+
+    // 1. The outgoing developer's project assignment ends; nothing is deleted.
+    await tx.update(developerProjectAssignments).set({ status: "ended", endMs: Date.now(), updatedAt: new Date() }).where(eq(developerProjectAssignments.id, outgoingRow.id));
+    // 2. The incoming developer takes the same role (a lead is replaced by a lead).
+    const existing = (await tx.select().from(developerProjectAssignments).where(and(eq(developerProjectAssignments.projectId, args.projectId), eq(developerProjectAssignments.developerId, args.incomingDeveloperId))).limit(1))[0];
+    if (existing) await tx.update(developerProjectAssignments).set({ status: "active", assignmentRole: outgoingRow.assignmentRole, endMs: null, updatedAt: new Date() }).where(eq(developerProjectAssignments.id, existing.id));
+    else await tx.insert(developerProjectAssignments).values({ projectId: args.projectId, developerId: args.incomingDeveloperId, assignmentRole: outgoingRow.assignmentRole, startMs: Date.now(), createdByUserId: args.actorUserId });
+    await recordAssignmentEvent(tx, { projectId: args.projectId, taskId: null, developerId: args.outgoingDeveloperId, counterpartDeveloperId: args.incomingDeveloperId, event: "replaced_out", actorUserId: args.actorUserId, reason });
+    await recordAssignmentEvent(tx, { projectId: args.projectId, taskId: null, developerId: args.incomingDeveloperId, counterpartDeveloperId: args.outgoingDeveloperId, event: "replaced_in", actorUserId: args.actorUserId, reason });
+
+    // 3. Every task the outgoing developer held is released; unfinished ones are handed over.
+    for (const h of activeHeld) {
+      await tx.update(developerTaskAssignments).set({ status: "released" }).where(eq(developerTaskAssignments.id, h.id));
+      await recordAssignmentEvent(tx, { projectId: args.projectId, taskId: h.taskId, developerId: args.outgoingDeveloperId, counterpartDeveloperId: plan.transfer.includes(h.taskId) ? args.incomingDeveloperId : null, event: "released", actorUserId: args.actorUserId, reason });
+    }
+    for (const taskId of plan.transfer) {
+      const had = (await tx.select().from(developerTaskAssignments).where(and(eq(developerTaskAssignments.taskId, taskId), eq(developerTaskAssignments.developerId, args.incomingDeveloperId))).limit(1))[0];
+      if (had) await tx.update(developerTaskAssignments).set({ status: "active" }).where(eq(developerTaskAssignments.id, had.id));
+      else await tx.insert(developerTaskAssignments).values({ taskId, developerId: args.incomingDeveloperId });
+      await recordAssignmentEvent(tx, { projectId: args.projectId, taskId, developerId: args.incomingDeveloperId, counterpartDeveloperId: args.outgoingDeveloperId, event: "assigned", actorUserId: args.actorUserId, reason });
+    }
+    return { ok: true, transferred: plan.transfer, keptWithOutgoing: plan.stayWithOutgoing, released: plan.release };
+  });
+}
+
+/** The history of one task, newest first, with the names involved. */
+export async function listTaskAssignmentHistory(taskId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(developerAssignmentEvents).where(eq(developerAssignmentEvents.taskId, taskId)).orderBy(desc(developerAssignmentEvents.createdAt), desc(developerAssignmentEvents.id)).limit(200);
+  return withNames(rows);
+}
+
+/** The project-level history (replacements and every task move), newest first. */
+export async function listProjectAssignmentHistory(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(developerAssignmentEvents).where(eq(developerAssignmentEvents.projectId, projectId)).orderBy(desc(developerAssignmentEvents.createdAt), desc(developerAssignmentEvents.id)).limit(300);
+  return withNames(rows);
+}
+
+async function withNames(rows: DeveloperAssignmentEvent[]) {
+  const db = await getDb();
+  if (!db || rows.length === 0) return [];
+  const ids = [...new Set(rows.flatMap((r) => [r.developerId, r.counterpartDeveloperId].filter((x): x is number => x !== null)))];
+  const names = await db.select({ id: developerProfiles.id, fullName: developerProfiles.fullName }).from(developerProfiles).where(inArray(developerProfiles.id, ids));
+  const nameOf = new Map(names.map((n) => [n.id, n.fullName]));
+  return rows.map((r) => ({ ...r, developerName: nameOf.get(r.developerId) ?? null, counterpartName: r.counterpartDeveloperId ? (nameOf.get(r.counterpartDeveloperId) ?? null) : null }));
 }
 
 /** Admin reply into a developer's thread (the missing half of BR-012). */

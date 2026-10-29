@@ -3009,3 +3009,25 @@ export const faqEvents = pgTable(
   (t) => [index("faq_events_faq_idx").on(t.faqId, t.createdAt)],
 );
 export type FaqEntryRow = typeof faqEntries.$inferSelect;
+
+/**
+ * Append-only history of who held developer work and why it moved (task J04). Rows are never updated or
+ * deleted; a released assignment elsewhere stays as a row and this table says when, by whom and why.
+ */
+export const developerAssignmentEvents = pgTable(
+  "developer_assignment_events",
+  {
+    id: serial("id").primaryKey(),
+    projectId: integer("projectId").notNull().references(() => developerProjects.id, { onDelete: "cascade" }),
+    taskId: integer("taskId").references(() => developerTasks.id, { onDelete: "cascade" }),
+    developerId: integer("developerId").notNull().references(() => developerProfiles.id, { onDelete: "cascade" }),
+    counterpartDeveloperId: integer("counterpartDeveloperId").references(() => developerProfiles.id, { onDelete: "set null" }),
+    /** assigned | released | reassigned_out | reassigned_in | replaced_out | replaced_in */
+    event: varchar("event", { length: 20 }).notNull(),
+    actorUserId: integer("actorUserId").references(() => users.id),
+    reason: varchar("reason", { length: 500 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("developer_assignment_events_task_idx").on(t.taskId, t.createdAt), index("developer_assignment_events_project_idx").on(t.projectId, t.createdAt), index("developer_assignment_events_developer_idx").on(t.developerId, t.createdAt)],
+);
+export type DeveloperAssignmentEvent = typeof developerAssignmentEvents.$inferSelect;

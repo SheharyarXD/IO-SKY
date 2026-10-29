@@ -44,8 +44,9 @@ Each entry names the exact missing item, who owes it, why it blocks, and what ca
 | `drizzle/0040_report_download_audit.sql` | M4-01 | No | Report downloads are not audited (logged once). Downloads and refusals work as before. |
 | `drizzle/0041_document_handoff.sql` | J09, J10 | No (fails closed) | No document can be released and developers see none. Client uploads and every existing feature are unaffected. |
 | `drizzle/0042_faq_store.sql` | R17 | No (fails closed) | The FAQ source returns nothing, so an agent says it does not have the information. The admin FAQ endpoints error. No other feature depends on it. |
+| `drizzle/0043_developer_assignment_events.sql` | J04 | No (fails closed) | Task moves and developer replacements are refused (they will not run without a record). Existing assign and unassign carry on and skip the history (best effort in a savepoint). Nothing else depends on it. |
 
-Independent except 0038. Apply each to a non-production database first, verify, then production, then deploy. The tests do not need any of them (they are database-free). The SQL of 0037, 0040, 0041 and 0042 (claim query, append-only triggers, partial unique index, the developer access joins) has never run against PostgreSQL: that verification is task M4-03 and needs the isolated database.
+Independent except 0038. Apply each to a non-production database first, verify, then production, then deploy. The tests do not need any of them (they are database-free). The SQL of 0037, 0040, 0041, 0042 and 0043 (claim query, append-only triggers, partial unique index, the developer access joins) has never run against PostgreSQL: that verification is task M4-03 and needs the isolated database.
 
 ## Dependency of the seven items marked BLOCKED_EXTERNAL that are code-heavy
 
