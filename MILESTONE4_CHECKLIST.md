@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 24
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 25
 - Live verification pending: 20
 - In progress: 0
-- Not started: 38
+- Not started: 37
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -120,7 +120,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `R16`: Adaptive conversation orchestration (P1, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)
 - [ ] `R17`: Approved FAQ store with grounded answers, no (P1, BASELINE, TESTED_LOCAL)
 - [ ] `R18`: Receptionist CRM tools (P1, BASELINE, TESTED_LOCAL)
-- [ ] `R19`: Discovery qualification capture persisted to CRM and (P1, BASELINE, NOT_STARTED)
+- [ ] `R19`: Discovery qualification capture persisted to CRM and (P1, BASELINE, TESTED_LOCAL)
 - [ ] `R21`: Callback task lifecycle (P1, BASELINE, NOT_STARTED)
 - [ ] `R04`: Super Admin editor for greetings, scripts, voices, (P2, BASELINE, NOT_STARTED)
 - [ ] `R09`: Handover summary in caller language, surrounding UI (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)

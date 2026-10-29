@@ -101,6 +101,14 @@ export async function getBookingByPublicRef(
   return rows[0] ?? null;
 }
 
+/** Replace a booking's note (used to attach the AI-recorded qualification). Returns false when nothing was updated. */
+export async function updateBookingNote(id: number, note: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const rows = await db.update(bookings).set({ note }).where(eq(bookings.id, id)).returning({ id: bookings.id });
+  return rows.length > 0;
+}
+
 export async function updateBookingStatus(
   id: number,
   status: "pending" | "confirmed" | "cancelled" | "completed",

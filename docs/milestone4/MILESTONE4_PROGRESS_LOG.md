@@ -251,6 +251,10 @@ Added shared/identityPolicy.ts: verification state machine (start rate limit, pe
 
 Added shared/faqRules.ts (workflow, separation of duties, edit-resets-approval, deterministic matcher with ambiguity and weak-match refusal, authoring checks and reviewer warnings), server/db/faq.ts, server/faqStore.ts (knowledge provider and the answer_faq tool), admin endpoints, schema and migration 0042. An assistant can answer a general question only with an approved entry's stored text, or must decline. 27 new tests including a mutation check. The store ships empty and there is no admin page yet.
 
+## R19 - discovery qualification capture to CRM and appointment (TESTED_LOCAL)
+
+Added shared/discoveryQualification.ts (sanitising, card and credential scrubbing, completeness assessment, appointment block compose/parse/replace), server/discoveryCapture.ts (the tool and a factory sharing one per-conversation lead scope with the CRM tools) and updateBookingNote. The qualification is recorded on the prospect record and on the caller's own live appointment, or on neither if the appointment does not match. 22 new tests including a mutation check. No agent is operational and no migration is needed.
+
 ---
 
 ## Status translation rules used for the import

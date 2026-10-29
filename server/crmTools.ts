@@ -240,7 +240,7 @@ export function crmTools(deps: CrmDeps): AgentTool[] {
 }
 
 /** The tools wired to the real CRM. Imported lazily so tests need no database. */
-export async function realCrmTools(): Promise<AgentTool[]> {
+export async function realCrmTools(shared: { idempotency: IdempotencyStore; leadScope: RunLeadScope } = { idempotency: new IdempotencyStore(), leadScope: new RunLeadScope() }): Promise<AgentTool[]> {
   const [crm, sales] = await Promise.all([import("./db/crm"), import("./db/srsSales")]);
   return crmTools({
     now: () => Date.now(),
@@ -250,7 +250,6 @@ export async function realCrmTools(): Promise<AgentTool[]> {
     getLeadById: crm.getLeadById,
     fillLeadBlanks: crm.fillLeadBlanks,
     createActivity: sales.createActivity,
-    idempotency: new IdempotencyStore(),
-    leadScope: new RunLeadScope(),
+    ...shared,
   });
 }
