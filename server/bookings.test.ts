@@ -84,7 +84,13 @@ vi.mock("./db", () => {
     // Native booking adapter helpers (in-memory stubs)
     tryHoldBookingSlot: vi.fn(async () => ({ ok: true as const, id: 1 })),
     confirmBookingSlot: vi.fn(async () => true),
-    updateBookingStatus: vi.fn(async () => undefined),
+    // Models the real helper: the stored booking changes status.
+    updateBookingStatus: vi.fn(async (id: number, status: string) => {
+      const row = state.bookings.find((b) => b.id === id);
+      if (row) row.status = status;
+    }),
+    getBookingById: vi.fn(async (id: number) => state.bookings.find((b) => b.id === id) ?? null),
+    isHeldSlotValid: vi.fn(async () => true),
     cancelBookingSlot: vi.fn(async () => undefined),
     insertBookingAnswers: vi.fn(async () => undefined),
     scheduleBookingReminders: vi.fn(async () => undefined),

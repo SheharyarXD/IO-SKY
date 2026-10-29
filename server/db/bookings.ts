@@ -393,6 +393,32 @@ export async function tryHoldBookingSlot(input: {
   }
 }
 
+/**
+ * Is this hold still the caller's, and does it match the time and service being
+ * booked? Checked BEFORE a booking row is written (S07): a stale, foreign or
+ * mismatched hold must not leave a booking behind, and a hold on one time must
+ * not be used to book another.
+ */
+export async function isHeldSlotValid(input: {
+  slotId: number;
+  holdToken: string;
+  consultationType: string;
+  slotStartMs: number;
+}): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const rows = await db.select().from(bookingSlotsTable).where(eq(bookingSlotsTable.id, input.slotId)).limit(1);
+  const slot = rows[0];
+  return Boolean(
+    slot &&
+      slot.status === "held" &&
+      slot.holdToken !== null &&
+      slot.holdToken === input.holdToken &&
+      slot.consultationType === input.consultationType &&
+      Number(slot.slotStartMs) === input.slotStartMs,
+  );
+}
+
 export async function confirmBookingSlot(input: {
   slotId: number;
   holdToken: string;

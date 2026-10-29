@@ -127,6 +127,17 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Decisions needed (made as safe defaults, reversible): log anonymous attempts at all; the window and budgets; retention of anonymous IP and user agent, which no document defines. Public endpoints and the REST auth routes are not covered. The throttle is per instance, so several instances multiply the cap.
 - Next: S07.
 
+## S07 Requested versus confirmed scheduling, idempotent triggers
+
+- Previous status: NOT_STARTED (audit: C, "duplicate-event test missing"). New status: TESTED_LOCAL.
+- Defects found: `bookings.create` wrote the booking as `confirmed` before the slot was committed, so a lost slot left a "confirmed" booking with no slot; it did not check that a supplied hold matched the requested time and service; a repeated submission created a second booking row; guest and admin cancel could fire a second owner message and notification; the reminder worker would remind about any booking that was not cancelled.
+- Change: the booking is created `pending` with a `requested` event; the hold is validated first (`isHeldSlotValid`: token, time, service) so a stale, foreign or mismatched hold leaves nothing behind; after the atomic slot confirm the booking becomes `confirmed` with a `confirmed` event, and only then do the email, notifications, reminders and CRM lead run. A lost slot closes the request as cancelled with `confirmation_failed`; a failed status write releases the slot. Guest and admin cancel are idempotent. The reminder worker skips anything not `confirmed`.
+- Files: `server/routers/bookings.ts`, `server/routers/bookingAdmin.ts`, `server/db/bookings.ts`, `server/_core/bookingReminders.ts`.
+- Tests: new `bookings.scheduling.test.ts` 11 (stateful model, asserts the order of side effects); `bookingReminders.test.ts` +1; the legacy `bookings.test.ts` and `bookingAdmin.test.ts` mocks now model status updates and lookups. Mutation check: bypassing the hold validation fails 2 tests. Full suite 1327 passed, 57 skipped, 0 failed; typecheck and build clean.
+- Database verification: not used. `isHeldSlotValid` is a single-row select, tested through the in-memory model only.
+- Remaining: a repeated create after success is refused rather than answered with the original booking (a real idempotency key needs a column and a migration, not written); rows left `pending` by a crash are not swept; calendar-provider events and the scheduling agent are separate tasks.
+- Next: N03.
+
 ---
 
 ## Status translation rules used for the import

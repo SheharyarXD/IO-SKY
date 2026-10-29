@@ -181,6 +181,8 @@ export const bookingAdminRouter = router({
     .mutation(async ({ ctx, input }) => {
       const booking = await getBookingByPublicRef(input.publicRef);
       if (!booking) throw new TRPCError({ code: "NOT_FOUND" });
+      // S07 / F-20: cancelling an already cancelled booking changes nothing and sends nothing.
+      if (booking.status === "cancelled") return { ok: true as const };
       await cancelBookingSlot(booking.id);
       await updateBookingStatus(booking.id, "cancelled");
       await appendBookingEvent({

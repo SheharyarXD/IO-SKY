@@ -55,7 +55,13 @@ vi.mock("./db", () => {
       return { ok: true as const, id };
     }),
     confirmBookingSlot: vi.fn(async () => true),
-    updateBookingStatus: vi.fn(async () => undefined),
+    updateBookingStatus: vi.fn(async (id: number, status: string) => {
+      const row = state.bookings.find((b) => b.id === id);
+      if (row) row.status = status;
+    }),
+    // Any booking id the token tests use exists and is confirmed, as a real one would be.
+    getBookingById: vi.fn(async (id: number) => state.bookings.find((b) => b.id === id) ?? { id, status: "confirmed" }),
+    isHeldSlotValid: vi.fn(async () => true),
     cancelBookingSlot: vi.fn(),
     insertBookingAnswers: vi.fn(),
     scheduleBookingReminders: vi.fn(),

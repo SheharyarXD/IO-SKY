@@ -96,6 +96,19 @@ describe("dispatchDueBookingReminders", () => {
     expect(summary.skipped).toBe(1);
   });
 
+  // S07: only a confirmed, committed appointment is reminded about.
+  it("does not remind about a request that was never confirmed (pending) or a completed call", async () => {
+    for (const status of ["pending", "completed"]) {
+      sendMock.mockClear();
+      bookingsById[1] = makeBooking({ status });
+      dueReminders = [{ id: 20, bookingId: 1, kind: "reminder_24h" }];
+      const summary = await dispatchDueBookingReminders();
+      expect(sendMock, status).not.toHaveBeenCalled();
+      expect(summary.skipped, status).toBe(1);
+      expect(markSentCalls.at(-1)).toMatchObject({ id: 20 });
+    }
+  });
+
   it("includes the meeting URL only when callType is video", async () => {
     bookingsById[1] = makeBooking({ callType: "video", meetingUrl: "https://meet.example.com/abc" });
     dueReminders = [{ id: 13, bookingId: 1, kind: "reminder_24h" }];

@@ -29,6 +29,7 @@ import {
   createLead,
   getBookingById,
   getBookingByPublicRef,
+  isHeldSlotValid,
   insertBookingAnswers,
   listRecentBookings,
   markBookingEmailSent,
@@ -231,6 +232,14 @@ export const bookingsRouter = router({
         }
         slotId = held.slotId;
         holdToken = held.holdToken;
+      } else if (!(await isHeldSlotValid({ slotId, holdToken, consultationType: input.serviceId, slotStartMs: input.slotStartMs }))) {
+        // S07 / F-20: a stale, foreign or mismatched hold (including the second
+        // submission of a double click, whose hold the first one consumed) is
+        // refused before any booking row exists, so nothing is duplicated.
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This time is no longer held for you. Please pick a time again.",
+        });
       }
 
       const publicRef = generatePublicRef();
@@ -249,7 +258,10 @@ export const bookingsRouter = router({
         note: input.note?.trim() || null,
         utmSource: input.utmSource?.trim() || null,
         utmCampaign: input.utmCampaign?.trim() || null,
-        status: "confirmed",
+        // S07: this is a REQUEST until the slot is committed. It becomes
+        // "confirmed" only after the scheduling system holds the slot for it,
+        // and no email or notification goes out before that.
+        status: "pending",
         locale: input.locale ?? null,
         ip,
         userAgent,
@@ -266,8 +278,16 @@ export const bookingsRouter = router({
         });
       }
 
+      await appendBookingEvent({
+        bookingId: booking.id,
+        event: "requested",
+        detail: JSON.stringify({ serviceId: input.serviceId, slotStartMs: input.slotStartMs }),
+      });
+
       // Lock the slot to this booking. If confirmation fails the user lost
-      // the race — surface a clean error.
+      // the race — surface a clean error. The request is closed out as
+      // cancelled so a requested-but-never-confirmed booking cannot linger as
+      // a real appointment, and nothing has been sent.
       const adapter = getBookingAdapter();
       const confirmed = await adapter.confirm({
         slotId,
@@ -277,11 +297,25 @@ export const bookingsRouter = router({
         consultationType: input.serviceId,
       });
       if (!confirmed.ok) {
+        await updateBookingStatus(booking.id, "cancelled").catch(() => null);
+        await appendBookingEvent({ bookingId: booking.id, event: "confirmation_failed", detail: "slot not committed" });
         throw new TRPCError({
           code: "CONFLICT",
           message: "Slot was reassigned. Please pick another time.",
         });
       }
+      // The authoritative state change. Only after it succeeds is the booking
+      // confirmed, and only then do the confirmation email, reminders,
+      // notifications and CRM lead follow.
+      try {
+        await updateBookingStatus(booking.id, "confirmed");
+      } catch (err) {
+        console.error("[bookings.create] could not mark the booking confirmed:", err);
+        await cancelBookingSlot(booking.id).catch(() => null);
+        await appendBookingEvent({ bookingId: booking.id, event: "confirmation_failed", detail: "status update failed" });
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Booking could not be confirmed. Please try again." });
+      }
+      await appendBookingEvent({ bookingId: booking.id, event: "confirmed", detail: JSON.stringify({ slotId }) });
 
       // Persist preparation answers as structured rows for the admin view.
       if (input.preparation) {
@@ -437,6 +471,11 @@ export const bookingsRouter = router({
       if (!verified.ok) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: `Invalid token (${verified.reason}).` });
       }
+      // S07 / F-20: a repeated cancel (a second click, a re-opened email link) is
+      // a no-op, not a second owner email or notification.
+      const existing = await getBookingById(verified.bookingId);
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
+      if (existing.status === "cancelled") return { ok: true as const, alreadyCancelled: true as const };
       await cancelBookingSlot(verified.bookingId);
       // The reminder worker suppresses reminders for a cancelled booking only
       // when the booking itself says so; freeing the slot alone left them firing.
@@ -451,7 +490,7 @@ export const bookingsRouter = router({
         title: `IO SKY · Booking ${verified.bookingId} cancelled by guest`,
         content: input.reason ?? "(no reason provided)",
       }).catch(() => null);
-      return { ok: true as const };
+      return { ok: true as const, alreadyCancelled: false as const };
     }),
 
   /**

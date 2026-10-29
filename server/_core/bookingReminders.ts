@@ -75,6 +75,13 @@ export async function dispatchDueBookingReminders(
       summary.skipped++;
       continue;
     }
+    if (booking.status !== "confirmed") {
+      // S07: only a confirmed, committed appointment is reminded about. A
+      // request that was never confirmed (pending) or one already completed is not.
+      await markBookingReminderSent(reminder.id, `skipped: booking is ${booking.status}`);
+      summary.skipped++;
+      continue;
+    }
 
     const service = CONSULTATION_CATALOG[booking.serviceId as keyof typeof CONSULTATION_CATALOG];
     const cancelToken = makeBookingActionToken({ bookingId: booking.id, action: "cancel" });
