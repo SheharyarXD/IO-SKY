@@ -283,6 +283,10 @@ Added shared/providerRouting.ts and server/llmRouter.ts, refactored server/_core
 
 Added shared/crmFilters.ts (one matching rule), listLeadsFiltered, the audited admin.crmLeads read and working filter controls on the CRM page, replacing toolbar labels that did nothing. Filters AND together across the nine attributes a lead has. Owner, qualification verdict and opportunity stage are not covered because the data is not on the lead, so the task stays IN_PROGRESS. 18 new tests with a mutation check.
 
+## C03 - contextual customer profile (TESTED_LOCAL)
+
+Added shared/profileRules.ts and extended the customer timeline with discovery calls, AI Scans, projects and files, plus a summary and a staff-only customerProfile endpoint and summary line in the Sales page. Metadata only: no file content, links or scan answers. 15 new tests with a mutation check. Lead and organization are still not linked in the data, which limits what a single lookup can show.
+
 ---
 
 ## Status translation rules used for the import

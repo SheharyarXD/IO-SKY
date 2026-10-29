@@ -34,6 +34,7 @@ import {
   createScheduledReport,
   createSubscription,
   customerTimeline,
+  customerProfile,
   decideAiExecution,
   evaluateAlertRules,
   getDeveloperProfileById,
@@ -132,6 +133,14 @@ function fail(code: "NOT_FOUND" | "PRECONDITION_FAILED" | "BAD_REQUEST" | "INTER
 }
 
 export const adminOpsRouter = router({
+  /** C03: one customer's timeline (CRM history, calls, scans, projects, files) with a summary. Staff only. */
+  customerProfile: adminProcedure
+    .input(z.object({ leadId: z.number().int().positive().optional(), organizationId: z.number().int().positive().optional() }))
+    .query(async ({ input }) => {
+      if (!input.leadId && !input.organizationId) fail("BAD_REQUEST", "Provide a lead or an organization.");
+      return customerProfile(input);
+    }),
+
   // =========================================================================
   // Admin notification feed (SRS 12.15)
   // =========================================================================

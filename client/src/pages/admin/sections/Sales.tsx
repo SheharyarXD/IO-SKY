@@ -183,7 +183,8 @@ function Activities() {
   const complete = trpc.adminOps.completeActivity.useMutation({ onSuccess: () => utils.adminOps.followUps.invalidate() });
   const outcome = trpc.adminOps.recordCallOutcome.useMutation({ onSuccess: () => utils.adminOps.followUps.invalidate() });
   const [lookup, setLookup] = useState<{ leadId?: number; organizationId?: number } | null>(null);
-  const timeline = trpc.adminOps.customerTimeline.useQuery(lookup ?? { leadId: 1 }, { enabled: lookup !== null });
+  const profile = trpc.adminOps.customerProfile.useQuery(lookup ?? { leadId: 1 }, { enabled: lookup !== null });
+  const timeline = { data: profile.data?.timeline };
   const now = Date.now();
   return (
     <>
@@ -257,6 +258,18 @@ function Activities() {
       />
       {lookup ? (
         <Panel title="History">
+          {profile.data ? (
+            <p className="mb-3 text-[12px] text-white/65">
+              {profile.data.summary.total} record{profile.data.summary.total === 1 ? "" : "s"}
+              {profile.data.summary.daysSinceLastActivity !== null ? `, last activity ${profile.data.summary.daysSinceLastActivity} day${profile.data.summary.daysSinceLastActivity === 1 ? "" : "s"} ago` : ""}
+              {profile.data.summary.upcomingCalls > 0 ? `, ${profile.data.summary.upcomingCalls} upcoming call${profile.data.summary.upcomingCalls === 1 ? "" : "s"}` : ""}
+              {" · "}
+              {Object.entries(profile.data.summary.byType)
+                .filter(([, n]) => n > 0)
+                .map(([t, n]) => `${n} ${t}`)
+                .join(", ")}
+            </p>
+          ) : null}
           <DataTable
             columns={[
               { key: "at", header: "When", render: (r: NonNullable<typeof timeline.data>[number] & { id: string }) => shortDateTime(r.at) },

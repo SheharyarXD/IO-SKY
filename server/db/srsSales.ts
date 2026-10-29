@@ -11,6 +11,9 @@ import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { mayViewCompanyRevenue } from "../../shared/srsRules";
 import {
+  aiScans,
+  bookings,
+  clientDocuments,
   clientInvoices,
   clientProjects,
   crmActivities,
@@ -34,6 +37,7 @@ import {
   type OpportunityStage,
   type QuoteLine,
 } from "../../shared/srsRules";
+import { callEntry, fileEntry, projectEntry, scanEntry, sortTimeline, summarizeProfile, type TimelineEntry, type ProfileSummary } from "../../shared/profileRules";
 import { getDb } from "./connection";
 
 // ---------------------------------------------------------------------------
@@ -212,13 +216,7 @@ export async function listOpenFollowUps(limit = 100): Promise<CrmActivity[]> {
     .limit(limit);
 }
 
-export type TimelineEntry = {
-  at: Date;
-  type: "activity" | "opportunity" | "proposal" | "lead";
-  title: string;
-  detail: string | null;
-  ref: string;
-};
+export type { TimelineEntry, ProfileSummary };
 
 /**
  * The complete history for one customer (SRS 14.9). Pass the lead, the
@@ -257,9 +255,33 @@ export async function customerTimeline(args: { leadId?: number; organizationId?:
   }
   if (args.leadId) {
     const lead = (await db.select().from(leads).where(eq(leads.id, args.leadId)).limit(1))[0];
-    if (lead) out.push({ at: lead.createdAt, type: "lead", title: "Lead captured", detail: null, ref: `lead:${lead.id}` });
+    if (lead) {
+      out.push({ at: lead.createdAt, type: "lead", title: "Lead captured", detail: null, ref: `lead:${lead.id}` });
+      // Calls and scans that belong to the same person: by the lead's own email and by the scan's lead link.
+      const [calls, scans] = await Promise.all([
+        db.select({ id: bookings.id, serviceId: bookings.serviceId, slotStartMs: bookings.slotStartMs, status: bookings.status, createdAt: bookings.createdAt }).from(bookings).where(sql`lower(${bookings.email}) = ${lead.email.trim().toLowerCase()}`).limit(100),
+        db.select({ id: aiScans.id, tier: aiScans.tier, status: aiScans.status, createdAt: aiScans.createdAt }).from(aiScans).where(eq(aiScans.leadId, lead.id)).limit(50),
+      ]);
+      for (const c of calls) out.push(callEntry(c));
+      for (const s of scans) out.push(scanEntry(s));
+    }
   }
-  return out.sort((a, b) => b.at.getTime() - a.at.getTime());
+  if (args.organizationId) {
+    // Projects and files of the organization: what they are, never what is in them.
+    const [projects, files] = await Promise.all([
+      db.select({ id: clientProjects.id, name: clientProjects.name, phase: clientProjects.phase, status: clientProjects.status, createdAt: clientProjects.createdAt }).from(clientProjects).where(eq(clientProjects.organizationId, args.organizationId)).limit(100),
+      db.select({ id: clientDocuments.id, name: clientDocuments.name, category: clientDocuments.category, version: clientDocuments.version, status: clientDocuments.status, createdAt: clientDocuments.createdAt }).from(clientDocuments).where(eq(clientDocuments.organizationId, args.organizationId)).limit(200),
+    ]);
+    for (const p of projects) out.push(projectEntry(p));
+    for (const f of files) out.push(fileEntry(f));
+  }
+  return sortTimeline(out);
+}
+
+/** The timeline plus a summary of the relationship (C03). */
+export async function customerProfile(args: { leadId?: number; organizationId?: number }, now: Date = new Date()): Promise<{ summary: ProfileSummary; timeline: TimelineEntry[] }> {
+  const timeline = await customerTimeline(args);
+  return { summary: summarizeProfile(timeline, now), timeline };
 }
 
 // ---------------------------------------------------------------------------
