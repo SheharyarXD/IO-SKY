@@ -279,6 +279,10 @@ Added shared/teamRules.ts, migration 0044 and schema, server/db/developerTeams.t
 
 Added shared/providerRouting.ts and server/llmRouter.ts, refactored server/_core/llm.ts so invokeLLM routes through them only when a provider list or a budget is configured, added readLlmSpend and the admin.aiProviderRouting read. Fallback is for provider failures only, a rejected request is never replayed to another vendor, a circuit breaker avoids dead providers, and a configured budget fails closed. 37 new tests with a mutation check; legacy behaviour unchanged. Nothing live was exercised.
 
+## C01 - combinable CRM lead filters (IN_PROGRESS)
+
+Added shared/crmFilters.ts (one matching rule), listLeadsFiltered, the audited admin.crmLeads read and working filter controls on the CRM page, replacing toolbar labels that did nothing. Filters AND together across the nine attributes a lead has. Owner, qualification verdict and opportunity stage are not covered because the data is not on the lead, so the task stays IN_PROGRESS. 18 new tests with a mutation check.
+
 ---
 
 ## Status translation rules used for the import

@@ -12,8 +12,8 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
 - Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 29
 - Live verification pending: 20
-- In progress: 2
-- Not started: 31
+- In progress: 3
+- Not started: 30
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -220,7 +220,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 
 ### 11. CRM, AI Advisor and dashboards (0 of 8 verified)
 
-- [ ] `C01`: Combinable CRM filters across all listed attributes (P2, BASELINE, NOT_STARTED)
+- [ ] `C01`: Combinable CRM filters across all listed attributes (P2, BASELINE, IN_PROGRESS)
 - [ ] `C02`: Lead source separate from lifecycle status (P2, ALREADY_DELIVERED, LIVE_VERIFICATION_PENDING)
 - [ ] `C03`: Contextual profile with history, calls, scans, projects, (P2, BASELINE, NOT_STARTED)
 - [ ] `C04`: Origin filters for Receptionist and Outbound (P2, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)

@@ -6,9 +6,9 @@
  * routes every interactive button through `useAuditedAction` so the
  * audit trail captures every operator gesture.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { LEAD_STATUSES, activeFilterCount, type LeadFilter } from "@shared/crmFilters";
 import OperationalPage, {
-  DefaultToolbar,
   DataTable,
   SideCard,
   StatusPill,
@@ -39,8 +39,65 @@ function ageInDays(d: string | Date) {
   return Math.max(0, Math.round((Date.now() - ms) / (24 * 3600 * 1000)));
 }
 
+const fieldClass = "h-8 rounded-md border border-white/[0.1] bg-transparent px-2 text-[12px] text-white/85 placeholder:text-white/35";
+
+function FilterBar({ value, onChange, sources }: { value: LeadFilter; onChange: (f: LeadFilter) => void; sources: string[] }) {
+  const set = (patch: Partial<LeadFilter>) => {
+    const next: Record<string, unknown> = { ...value, ...patch };
+    for (const k of Object.keys(next)) {
+      const v = next[k];
+      if (v === "" || v === undefined || (Array.isArray(v) && v.length === 0)) delete next[k];
+    }
+    onChange(next as LeadFilter);
+  };
+  const n = activeFilterCount(value);
+  return (
+    <div className="flex flex-wrap items-center gap-2" role="search" aria-label="Filter leads">
+      <input className={`${fieldClass} w-56`} placeholder="Search name, email, company" value={value.q ?? ""} onChange={(e) => set({ q: e.target.value })} />
+      <select className={fieldClass} aria-label="Stage" value={value.statuses?.[0] ?? ""} onChange={(e) => set({ statuses: e.target.value ? [e.target.value as (typeof LEAD_STATUSES)[number]] : undefined })}>
+        <option value="">Any stage</option>
+        {LEAD_STATUSES.map((st) => (
+          <option key={st} value={st}>
+            {st}
+          </option>
+        ))}
+      </select>
+      <select className={fieldClass} aria-label="Source" value={value.sources?.[0] ?? ""} onChange={(e) => set({ sources: e.target.value ? [e.target.value] : undefined })}>
+        <option value="">Any source</option>
+        {sources.map((src) => (
+          <option key={src} value={src}>
+            {src.replace(/_/g, " ")}
+          </option>
+        ))}
+      </select>
+      <input className={`${fieldClass} w-36`} placeholder="Company" value={value.company ?? ""} onChange={(e) => set({ company: e.target.value })} />
+      <input className={`${fieldClass} w-36`} placeholder="Campaign" value={value.utmCampaign ?? ""} onChange={(e) => set({ utmCampaign: e.target.value })} />
+      <select className={fieldClass} aria-label="Phone" value={value.hasPhone === undefined ? "" : value.hasPhone ? "yes" : "no"} onChange={(e) => set({ hasPhone: e.target.value === "" ? undefined : e.target.value === "yes" })}>
+        <option value="">Phone: any</option>
+        <option value="yes">Has phone</option>
+        <option value="no">No phone</option>
+      </select>
+      <label className="flex items-center gap-1 text-[11.5px] text-white/55">
+        From
+        <input type="date" className={fieldClass} value={value.createdFrom ?? ""} onChange={(e) => set({ createdFrom: e.target.value })} />
+      </label>
+      <label className="flex items-center gap-1 text-[11.5px] text-white/55">
+        To
+        <input type="date" className={fieldClass} value={value.createdTo ?? ""} onChange={(e) => set({ createdTo: e.target.value })} />
+      </label>
+      {n > 0 ? (
+        <button type="button" className="h-8 rounded-md border border-white/[0.1] px-3 text-[12px] text-white/75 hover:text-white" onClick={() => onChange({})}>
+          Clear {n} filter{n === 1 ? "" : "s"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export default function CrmLeads() {
   const query = trpc.admin.crm.useQuery(undefined, { staleTime: 30_000 });
+  const [filter, setFilter] = useState<LeadFilter>({});
+  const filtered = trpc.admin.crmLeads.useQuery(filter, { staleTime: 10_000, placeholderData: (prev) => prev });
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
   const createLead = trpc.admin.createLead.useMutation({
@@ -126,14 +183,12 @@ export default function CrmLeads() {
           tagline="Lead qualification queue powered by AI Scan signals, contact submissions and inbound discovery calls."
           kpis={kpis}
           toolbar={
-            <DefaultToolbar
-              searchPlaceholder="Search leads, companies, owners…"
-              filters={["Stage", "Source", "Owner"]}
-              primaryAction={{
-                label: "New lead",
-                onClick: onNewLead,
-              }}
-            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <FilterBar value={filter} onChange={setFilter} sources={Array.from(new Set(((d.rows ?? []) as unknown as LeadRow[]).map((r) => r.source))).sort()} />
+              <button type="button" className="h-8 rounded-md bg-[#F58A1F] px-3 text-[12px] font-medium text-black" onClick={onNewLead}>
+                New lead
+              </button>
+            </div>
           }
           primary={
             (d.rows ?? []).length === 0 ? (
@@ -141,7 +196,16 @@ export default function CrmLeads() {
                 No leads yet. New AI Scan submissions and contact form replies will appear here.
               </div>
             ) : (
-              <DataTable columns={COLUMNS} rows={(d.rows as unknown as LeadRow[])} />
+              <div className="space-y-2">
+                {filtered.data ? (
+                  <p className="text-[11.5px] text-white/55">
+                    {filtered.data.matched} lead{filtered.data.matched === 1 ? "" : "s"} match
+                    {filtered.data.matched > filtered.data.rows.length ? `, showing the newest ${filtered.data.rows.length}` : ""}
+                    {filtered.data.truncated ? `. Only the most recent ${filtered.data.scanned} leads were searched.` : "."}
+                  </p>
+                ) : null}
+                <DataTable columns={COLUMNS} rows={((filtered.data?.rows ?? d.rows) as unknown as LeadRow[])} emptyLabel="No leads match these filters." />
+              </div>
             )
           }
           aside={

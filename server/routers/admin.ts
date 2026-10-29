@@ -92,6 +92,7 @@ import {
   appendAdminDeveloperMessage,
   listAllDeveloperTasks,
   listAllDeveloperAssignments,
+  listLeadsFiltered,
   applyConfigChange,
   listAiAgents,
   ensureOperationsSettings,
@@ -109,6 +110,10 @@ import { mayViewCompanyRevenue } from "../../shared/srsRules";
 import { assessBackupPolicy, isBackupKey, readDeclared } from "../../shared/backupPolicy";
 import { REFUSAL_TEXT } from "../../shared/taskAssignmentRules";
 import { llmRoutingStatus } from "../_core/llm";
+import { activeFilterCount, leadFilterSchema } from "../../shared/crmFilters";
+
+/** The CRM filter, optional. Declared here so the input-validation scan can see it is a zod schema. */
+const leadFilterInput = z.union([leadFilterSchema, z.undefined()]);
 import { generatePublicRef } from "../_core/publicRef";
 import {
   organizations,
@@ -1283,6 +1288,12 @@ export const adminRouter = router({
   crm: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.crm" });
     return readCrm();
+  }),
+  /** C01: leads matching any combination of filters. Every condition given must hold. */
+  crmLeads: adminProcedure.input(leadFilterInput).query(async ({ ctx, input }) => {
+    const filter = input ?? {};
+    await recordAdminEvent({ ctx, reason: `admin.read.crm_leads(filters=${activeFilterCount(filter)})` });
+    return listLeadsFiltered(filter);
   }),
   clients: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.read.clients" });

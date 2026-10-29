@@ -17,6 +17,7 @@ import {
   type InsertLead,
   type Lead,
 } from "../../drizzle/schema";
+import { filterLeads, LEAD_QUERY, type LeadFilter } from "../../shared/crmFilters";
 import { getDb } from "./connection";
 
 // ---------------------------------------------------------------------------
@@ -85,6 +86,19 @@ export async function fillLeadBlanks(id: number, patch: { company?: string; phon
   if (Object.keys(set).length === 0) return [];
   const updated = await db.update(leads).set({ ...set, updatedAt: new Date() }).where(and(...conds)).returning({ id: leads.id });
   return updated.length ? Object.keys(set) : [];
+}
+
+/**
+ * Leads matching a combined filter (C01). The most recent LEAD_QUERY.scan leads are read and the shared rule
+ * decides which match, so the result is exactly what the rule says; `truncated` is true when older leads were
+ * not looked at. Returns at most LEAD_QUERY.return rows, newest first.
+ */
+export async function listLeadsFiltered(filter: LeadFilter): Promise<{ rows: Lead[]; matched: number; scanned: number; truncated: boolean }> {
+  const db = await getDb();
+  if (!db) return { rows: [], matched: 0, scanned: 0, truncated: false };
+  const all = await db.select().from(leads).orderBy(desc(leads.createdAt)).limit(LEAD_QUERY.scan);
+  const hits = filterLeads(all, filter);
+  return { rows: hits.slice(0, LEAD_QUERY.return), matched: hits.length, scanned: all.length, truncated: all.length >= LEAD_QUERY.scan };
 }
 
 export async function listRecentLeads(limit = 100): Promise<Lead[]> {
