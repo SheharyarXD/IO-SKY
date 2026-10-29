@@ -131,3 +131,38 @@ export function missingRegistryFields(a: RegistryRowLike): string[] {
   if (a.activePromptVersion === null) missing.push("active prompt (version information)");
   return missing;
 }
+
+// ---------------------------------------------------------------------------
+// Authority (SRS 19.18 "Maximum Operational Authority", G03)
+// ---------------------------------------------------------------------------
+
+/** What a tool does: read data, produce a draft a person uses, or act (change state outside the agent). */
+export type ToolEffect = "read" | "draft" | "act";
+
+export type AuthorityDecision = "execute" | "needs_approval" | "deny";
+
+/**
+ * May an agent with this maximum authority run a tool with this effect?
+ *
+ *   read   any level: reading permitted data changes nothing
+ *   draft  needs draft_only or more: the output is a draft a person uses
+ *   act    only act_autonomously executes, and only if the agent does not also
+ *          require human approval. act_with_approval (or an agent that requires
+ *          approval) is not executed: it becomes a request for a human decision.
+ *          Below that the action is refused.
+ *
+ * Unknown values are refused, never treated as permissive.
+ */
+export function authorityDecision(maxAuthority: string, requiresHumanApproval: boolean, effect: ToolEffect): AuthorityDecision {
+  const level = (AUTHORITY_LEVELS as readonly string[]).indexOf(maxAuthority);
+  if (level < 0) return "deny";
+  if (effect === "read") return "execute";
+  if (effect === "draft") return level >= 1 ? "execute" : "deny";
+  if (effect === "act") {
+    if (level === 3) return requiresHumanApproval ? "needs_approval" : "execute";
+    if (level === 2) return "needs_approval";
+    return "deny";
+  }
+  return "deny";
+}
+

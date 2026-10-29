@@ -233,6 +233,39 @@ export async function upsertAiAgent(args: {
   return rows[0] ?? null;
 }
 
+/** What the agent runtime needs about one agent: its limits, not its description. Null when it is not registered. */
+export async function getAiAgentDefinition(key: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const row = (
+    await db
+      .select({
+        key: aiAgents.key,
+        status: aiAgents.status,
+        permissionsJson: aiAgents.permissionsJson,
+        requiresHumanApproval: aiAgents.requiresHumanApproval,
+        toolsJson: aiAgents.toolsJson,
+        knowledgeSourcesJson: aiAgents.knowledgeSourcesJson,
+        maxAuthority: aiAgents.maxAuthority,
+        escalationRules: aiAgents.escalationRules,
+      })
+      .from(aiAgents)
+      .where(eq(aiAgents.key, key))
+      .limit(1)
+  )[0];
+  if (!row) return null;
+  return {
+    key: row.key,
+    status: row.status,
+    permissions: parsePermissions(row.permissionsJson),
+    requiresHumanApproval: row.requiresHumanApproval,
+    tools: parseStringList(row.toolsJson),
+    knowledgeSources: parseStringList(row.knowledgeSourcesJson),
+    maxAuthority: row.maxAuthority,
+    escalationRules: row.escalationRules,
+  };
+}
+
 /**
  * Prompts are versioned, never edited in place (SRS 19.9): every change is a
  * new row, so an output can always be traced to the exact prompt that made it.

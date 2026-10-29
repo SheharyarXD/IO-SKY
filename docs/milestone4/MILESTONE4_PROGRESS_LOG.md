@@ -162,6 +162,17 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Decisions needed: whether "Authorized Capabilities" and "Assigned Permissions" are the same list (they are kept separate: permissions are enforced, capabilities descriptive); who the responsible admin for each agent is.
 - Next: G03.
 
+## G03 Shared permission-aware agent runtime (framework only)
+
+- Previous status: NOT_STARTED (audit: C, "only two single-shot calls exist"). New status: TESTED_LOCAL.
+- Change: `server/agentRuntime.ts` is one tool-calling loop for every agent. The model, tool registry and every side effect (registry lookup, permission check, history, escalation) are injected, so it has no provider, database or network dependency and is tested with a scripted model. A run starts only when the agent is registered, active and the permission check returns a verdict. Each tool call is checked in order: registered in code, listed on the agent's registry entry, arguments valid, organisation scope (the run's organisation is the only one reachable), knowledge source allowed, effect within maximum authority (`authorityDecision` in `shared/aiAgentRegistry.ts`), then the per-tool permission, which fails closed. An action that needs a human decision is never executed: the run ends `awaiting_approval` and escalates. Final output is validated against a schema, repaired once, then escalated instead of returned. Step and tool-call limits escalate; a model error becomes a `failed` result. The history stores tool names, never argument values. `server/agentRuntimeWiring.ts` supplies the real dependencies (registry loader, existing permission check and history, `AI_HUMAN_INTERVENTION_REQUIRED` and `AI_OPERATION_FAILED` admin notifications) and an adapter from the existing LLM wrapper.
+- Files: see the register row.
+- Tests: `agentRuntime.test.ts` 32 (authority matrix, organisation-id scan, the gate, the loop, scope, knowledge, authority, per-tool permission, output validation, limits and failures, tool registry, the LLM adapter with a stub). Mutation checks: disabling the organisation check fails 1 test and disabling the approval gate fails 1. Full suite 1416 passed, 57 skipped, 0 failed; typecheck and build clean.
+- What this does NOT make true: no agent runs on it, no business tool is registered, no model is called. It does not make any agent operational. Not built: resuming a run after approval, memory across runs, knowledge retrieval, per-run cost budgets.
+- Database verification: `getAiAgentDefinition` is a single-row select, covered only through the injected interface. Needs migration 0038.
+- Decisions needed: which agents move onto it first, and their tools (G12 to G17, client decision); the approve-then-execute flow.
+- Next: nothing selected in this batch; see the register.
+
 ---
 
 ## Status translation rules used for the import
