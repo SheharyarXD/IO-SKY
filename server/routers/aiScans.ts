@@ -18,7 +18,7 @@
 
 import { createCheckoutSession, isStripeConfigured } from "../_core/stripe";
 import { attachScanPurchaseSession, createScanPurchase } from "../db/payments";
-import { isReportVisibleToCustomer } from "../../shared/srsRules";
+import { decideScanReportAccess, isReportVisibleToCustomer } from "../../shared/srsRules";
 import { guardAiScanRun } from "../aiGovernance";
 import { dispatchSimpleEmail, escapeHtml } from "../email";
 import { emitNotification } from "../notificationDispatcher";
@@ -537,7 +537,7 @@ export const aiScansRouter = router({
    */
   getReport: publicProcedure
     .input(getReportInput)
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const scan = await getAiScanByToken(input.token);
       if (!scan) {
         throw new TRPCError({
@@ -545,6 +545,7 @@ export const aiScansRouter = router({
           message: "Report not found or no longer available.",
         });
       }
+      assertScanReportAccess(scan, ctx.user);
 
       // BR-016: nothing is shown until the report is Published. A missing
       // reportStatus is treated as published only so rows from before the
@@ -580,12 +581,12 @@ export const aiScansRouter = router({
 
   /**
    * Generate (or reuse) a branded executive PDF for a ready report and return
-   * a short-lived signed download URL. Token-gated exactly like getReport so
-   * the same unguessable link governs access — no extra auth surface.
+   * a short-lived signed download URL. Gated exactly like getReport (ownership
+   * for paid scans, SRS 9.10), so the PDF never opens to a bare link.
    */
   getReportPdf: publicProcedure
     .input(getReportInput)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const scan = await getAiScanByToken(input.token);
       if (!scan) {
         throw new TRPCError({
@@ -593,6 +594,7 @@ export const aiScansRouter = router({
           message: "Report not found or no longer available.",
         });
       }
+      assertScanReportAccess(scan, ctx.user);
       if (scan.status !== "ready" || !scan.reportPayload || !isReportVisibleToCustomer(scan.reportStatus ?? "published")) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
@@ -641,6 +643,24 @@ export const aiScansRouter = router({
       return { url, filename: pdfFilename(shortRef) };
     }),
 });
+
+/**
+ * SRS 9.10: validate customer ownership before granting report access. See
+ * decideScanReportAccess for the rule (paid scans: signed in owner or staff;
+ * free guest scans: the emailed link).
+ */
+function assertScanReportAccess(
+  scan: { tier: string; email: string },
+  user: { email: string | null; role: string } | null,
+): void {
+  const decision = decideScanReportAccess(scan, user);
+  if (decision === "login_required") {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign in with the account that ordered this scan to view the report." });
+  }
+  if (decision === "forbidden") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "This report belongs to a different account." });
+  }
+}
 
 function pdfFilename(publicRef: string): string {
   return `IO-SKY-AI-Scan-${publicRef}.pdf`;

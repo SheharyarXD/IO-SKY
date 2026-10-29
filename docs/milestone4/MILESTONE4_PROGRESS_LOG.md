@@ -1,0 +1,106 @@
+# Milestone 4 progress log
+
+Append-only. One entry per task advanced. Dates are the session date; times are those of the recorded test run. The canonical task state is `MILESTONE4_TASK_REGISTER.csv`; this file records what was done and how it was checked.
+
+Branch: `milestone4-implementation` (created from `main` at `c5bf579`). Nothing has been pushed or deployed. No database migration was added or applied. No Stripe, telephony, email or AI provider was contacted by any code I wrote or ran.
+
+**Correction, recorded because it matters.** The plain `npx vitest run` is not database-free. The test files load the repository `.env` (`import "dotenv/config"`), which holds the project's Supabase `DATABASE_URL`, so the live-database suites (RM-108, RM-110, RM-111, RM-113) ran against that database in this session's full runs, and in the 29 October audit run that I wrongly described as having skipped them. They are read-only, roll back, or write only marker-tagged probe rows that they delete. I did not know this until late in the session. An attempt to check for leftover probe rows was refused by the permission system and was not retried by another route. After discovering it, every further run used `DATABASE_URL=` (blank), which makes those suites skip. See `MILESTONE4_TEST_RESULTS.md`.
+
+What the new tests do: every test I wrote is fully mocked and needs no database. Database behaviour of the changes is verified in two limited ways, stated per entry: the fake query builder (logic only), and the existing RM-113 live suite, which ran with the changed `tryHoldBookingSlot` and passed.
+
+---
+
+## Session setup, 2026-10-29
+
+- Created the branch, moved the September specification tracker to `docs/milestone4/archive/MILESTONE4_CHECKLIST_SPEC_BASELINE_2026-09.md` with `git mv` (history kept), and created the new root `MILESTONE4_CHECKLIST.md`, the register, this log, the blockers file and the test results file.
+- Imported the 188 audit tasks unchanged by ID, translated their status and scope into the Milestone 4 vocabulary (rules at the foot of this file), and added four tasks found while working: M4-01 to M4-04. Total 192.
+- Source documents checked: the 29 Oct consolidated clarifications PDF (read in the earlier audit pass), the Master SRS v1.1 PDF (text extracted this session and the clauses behind the six fixes read directly: 5.7, 9.10, 12.5, 13.5, 13.8, 14.7, 18.8, 19.18). **Not available:** the remainder of Document 2 after its section 20, and Document 3 (Executive Briefing). Nothing in this log relies on them.
+
+---
+
+## G01 (P0-01) AI permission gate fails open
+
+- Previous status: NOT_STARTED (audit: C). New status: TESTED_LOCAL.
+- Change: `guardAiScanRun` now returns `allowed:false` when the registry set-up throws, when the permission lookup throws, when there is no verdict (no database), and when the managed prompt cannot be read. An explicit refusal still blocks. A permitted run is unchanged. The caller already marks the scan failed and notifies admins.
+- Files: `server/aiGovernance.ts`, `server/aiGovernance.test.ts`, `server/aiScans.test.ts`.
+- Tests: `aiGovernance.test.ts` 10/10 pass (5 new). The previous test that asserted the permissive behaviour was replaced. Three older `aiScans.test.ts` cases had only passed because their db mock had no registry and the gate failed open; the mock now provides a healthy registry.
+- Database verification: not possible. Live AI: none.
+- Remaining: none for the code defect. Verification against a real registry on staging.
+- Next: P08.
+
+## P08 (P0-02) AI Scan report ownership
+
+- Previous: NOT_STARTED (audit: D). New: TESTED_LOCAL, **partial against the audit wording**.
+- Change: new rule `decideScanReportAccess` (SRS 9.10). Paid-tier reports (growth, elite) open only for the signed-in account whose email matches the scan, or for admin and super_admin. Anonymous callers get UNAUTHORIZED, other accounts FORBIDDEN, for `getReport` and `getReportPdf`. The result page shows a sign-in prompt. Free guest scans keep the emailed link because no account exists for them.
+- Files: `shared/srsRules.ts`, `server/routers/aiScans.ts`, `client/src/pages/AIScanResult.tsx`, tests below.
+- Tests: `aiScans.test.ts` 7 new ownership tests (anonymous, cross-tenant, developer and operator, owner with different email case, staff, free guest, unpublished); `srsRules.test.ts` 2 new.
+- Database verification: not possible.
+- Remaining: M4-02 (decide free guest delivery), M4-01 (log every download, needs a migration), colleagues of the same organisation are not yet owners.
+- Next: J11.
+
+## J11 (P0-03) Document matrix fails open
+
+- Previous: NOT_STARTED (audit: C). New: TESTED_LOCAL.
+- Change: the three client document paths (list, search, signed download) now use `clientVisibleDocumentTypes()`, an allow-list that returns `null` when the matrix cannot be read; `clientMayViewDocument` hides typed documents when the list is null or lacks the type. Untyped documents keep their organisation-scoped visibility.
+- Files: `shared/platformRules.ts`, `server/db/platformGovernance.ts`, `server/routers/clientPortal.ts`.
+- Tests: `platformRules.test.ts` 4 new; new `documentMatrix.failClosed.test.ts` 5 (no database, query throws, connection throws, mixed rows, unseeded matrix).
+- Database verification: not possible; the query is a plain select.
+- Remaining: confirm that untyped documents stay visible. The matrix has no expiry, so "expired permissions" does not apply here.
+- Next: Z09.
+
+## Z09 (P0-04) Technical Operator authorization
+
+- Previous: NOT_STARTED (audit: C). New: TESTED_LOCAL.
+- Change: `OPS_OPERATION_SCOPES` maps each operator operation to the scopes that open it; `scopedOpsProcedure(operation)` enforces it. Applied to system health, email delivery log, Security Center events and acknowledge (ops router), and to platform health, deployments, incidents (list, create, update), alert rules, evaluate alerts and compliance (adminOps router). Grants are read on every call, so revocation and expiry apply on the next call; a failed lookup refuses. Admins and Super Admins are unaffected. Denials are logged by the existing audited wrapper.
+- Files: `shared/platformRules.ts`, `server/_core/trpc.ts`, `server/routers/ops.ts`, `server/routers/adminOps.ts`.
+- Tests: new `ops.scopes.test.ts` 66; `platformRules.test.ts` 7 new; fixtures in `ops.test.ts` and `admin.srsOps.test.ts` now give operators the grants they need. `auditCoverage` kept passing by naming the factory `scopedOpsProcedure`, so its scan still sees every mutation.
+- Database verification: not possible.
+- Remaining: M4-04, the client confirms the mapping. An operator with no relevant grant now loses those console panels, which is the intended effect.
+- Next: C09.
+
+## C09 (P0-05) Admin dashboard revenue
+
+- Previous: NOT_STARTED (audit: C). New: TESTED_LOCAL.
+- Change: company revenue is Super Admin only (`mayViewCompanyRevenue`). `admin.summary` returns null revenue and an empty daily series to an Admin; `adminOps.financialSummary` withholds paid totals and recurring revenue; `adminOps.history` withholds monthly paid revenue; the scheduled billing report no longer prints paid or recurring figures. Pages show "Restricted" instead of a number. Admins keep outstanding and overdue invoices and invoice-level exports.
+- Files: `shared/srsRules.ts`, `server/routers/admin.ts`, `server/routers/adminOps.ts`, `server/db/srsSales.ts`, `server/_core/operations.ts`, `client/src/pages/admin/sections/ExecutiveOverview.tsx`, `client/src/pages/admin/sections/Sales.tsx`.
+- Tests: new `admin.revenueAccess.test.ts` 13 across Super Admin, Admin, Technical Operator, Client, Developer and anonymous callers; `admin.summary.test.ts` updated (it had asserted that an Admin receives numeric revenue). The type checker located every page that consumed the old shape. `workflowCoverage` manifest updated with the new suite.
+- Database verification: not possible.
+- Remaining: a scheduled revenue digest for the Super Admin does not exist and was not added.
+- Next: S01.
+
+## S01 (P0-06) Guest reschedule
+
+- Previous: NOT_STARTED (audit: C). New: TESTED_LOCAL.
+- Defects found: after the new slot was confirmed the code cancelled every slot of the booking, including the new one, so the chosen time became free for anyone; the booking row kept the old time and timezone; the old reminders stayed queued and would send the old time; a cancelled slot row could never be re-booked because the unique index ignores status; guest and admin cancel freed the slot but never marked the booking cancelled, so reminders kept firing.
+- Change: hold and confirm the new slot, move the booking and its reminders, then release only the other slot rows; roll back the new slot if the booking update fails; idempotent retry; refuse cancelled, completed, past and under-30-minute requests; one updated confirmation email and one admin notification; slot takeover now also covers released slots, with conditional updates so only one racer wins; confirm is a single conditional update; both cancel paths set the booking to cancelled.
+- Files: `server/routers/bookings.ts`, `server/routers/bookingAdmin.ts`, `server/db/bookings.ts`.
+- Tests: new `bookings.reschedule.test.ts` 22 and `db.bookings.slots.test.ts` 11; legacy booking mocks extended. Re-introducing the original call makes 4 of the 22 fail, which shows the suite detects the defect.
+- Database verification: partial. The takeover and conditional confirm are tested against a fake query builder (logic only). The existing RM-113 suite (`server/concurrency.test.ts`) ran against the live database in the full runs with the changed `tryHoldBookingSlot` and passed: unique hold under 10 parallel callers, independent slots, expired-hold takeover, and one row after 5 racing takeovers. It does not cover the new released-slot takeover or `confirmBookingSlot`, and it ran on the live database rather than an isolated one, so M4-03 stays open.
+- Remaining: M4-03. New times are not checked against availability windows on reschedule, as on create.
+- Next: batch verification, then P07.
+
+## Batch verification after the six fixes
+
+- Type check clean. Full suite 1297 passed, 15 skipped, 0 failed with the live database reachable; 1255 passed, 57 skipped, 0 failed with `DATABASE_URL=` blank. Production build succeeds. Details in `MILESTONE4_TEST_RESULTS.md`.
+- Seven existing tests failed after the first pass and were corrected for the right reasons: five were operator fixtures with no grants (intended behaviour change), one audit-coverage scan (renamed the factory so the scan keeps working), one coverage manifest (registered the new suite). No test was deleted or weakened.
+
+---
+
+## Status translation rules used for the import
+
+| Audit status | Milestone 4 status |
+|---|---|
+| A done and verified | COMPLETED_VERIFIED |
+| B implemented, not live verified | LIVE_VERIFICATION_PENDING |
+| C partial or D not implemented, scope S1, S2, S6 | NOT_STARTED (the audit status column keeps C or D) |
+| C or D, scope S4 or S5 | AWAITING_CLIENT_DECISION: not started without written authorization |
+| E externally blocked | BLOCKED_EXTERNAL |
+| F needs clarification | AWAITING_CLIENT_DECISION |
+
+| Audit scope | Commercial classification |
+|---|---|
+| S1, S2 | BASELINE, or ALREADY_DELIVERED when the audit status is A or B |
+| S3 | PAID_M4_APPROVED (none exist) |
+| S4 | PAID_M4_PROPOSED |
+| S5 | SCOPE_DISPUTED |
+| S6 | EXTERNAL_DEPENDENCY |

@@ -1,8 +1,8 @@
 /*
  * AI governance gate for the AI Scan engine (SRS 19, BR-009): a disabled agent
  * stops the run, the managed prompt is what the model receives, the language
- * instruction cannot be edited away, and a registry outage never takes customer
- * scans down.
+ * instruction cannot be edited away, and the gate fails closed: when permission
+ * cannot be verified the model is not called (SRS 19.18).
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -52,9 +52,42 @@ describe("guardAiScanRun", () => {
     expect(await guardAiScanRun(1)).toEqual({ allowed: true });
   });
 
-  it("does not take scans down when the registry itself fails", async () => {
+  // P0-01 / G01: the gate fails closed. Every path where permission cannot be
+  // verified must refuse the run rather than call the model unchecked.
+  it("blocks the run when the registry cannot be set up", async () => {
     m.ensureDefaultAiAgents.mockRejectedValueOnce(new Error("db down"));
-    expect(await guardAiScanRun(1)).toEqual({ allowed: true });
+    const g = await guardAiScanRun(1);
+    expect(g.allowed).toBe(false);
+    expect((g as { reason: string }).reason).toContain("could not be verified");
+    expect(m.authoriseAndRecordAgentAction).not.toHaveBeenCalled();
+    expect(m.getActivePrompt).not.toHaveBeenCalled();
+  });
+
+  it("blocks the run when the permission lookup throws", async () => {
+    m.authoriseAndRecordAgentAction.mockRejectedValueOnce(new Error("registry lookup failed"));
+    const g = await guardAiScanRun(2);
+    expect(g.allowed).toBe(false);
+    expect(m.getActivePrompt).not.toHaveBeenCalled();
+  });
+
+  it("blocks the run when there is no verdict at all (no database)", async () => {
+    m.authoriseAndRecordAgentAction.mockResolvedValueOnce(null);
+    const g = await guardAiScanRun(3);
+    expect(g.allowed).toBe(false);
+    expect((g as { reason: string }).reason).toContain("no registry verdict");
+    expect(m.getActivePrompt).not.toHaveBeenCalled();
+  });
+
+  it("blocks the run when the managed prompt cannot be read after authorisation", async () => {
+    m.authoriseAndRecordAgentAction.mockResolvedValueOnce({ outcome: "completed", executionId: 9, promptVersion: 1 });
+    m.getActivePrompt.mockRejectedValueOnce(new Error("prompt table unreachable"));
+    expect((await guardAiScanRun(4)).allowed).toBe(false);
+  });
+
+  it("still allows a legitimate, permitted run (no regression)", async () => {
+    m.authoriseAndRecordAgentAction.mockResolvedValueOnce({ outcome: "completed", executionId: 10, promptVersion: 2 });
+    m.getActivePrompt.mockResolvedValueOnce({ version: 2, body: "Managed." });
+    expect(await guardAiScanRun(5)).toEqual({ allowed: true, basePrompt: "Managed.", promptVersion: 2 });
   });
 });
 

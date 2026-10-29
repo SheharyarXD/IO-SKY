@@ -84,6 +84,7 @@ vi.mock("./db", () => {
     // Native booking adapter helpers (in-memory stubs)
     tryHoldBookingSlot: vi.fn(async () => ({ ok: true as const, id: 1 })),
     confirmBookingSlot: vi.fn(async () => true),
+    updateBookingStatus: vi.fn(async () => undefined),
     cancelBookingSlot: vi.fn(async () => undefined),
     insertBookingAnswers: vi.fn(async () => undefined),
     scheduleBookingReminders: vi.fn(async () => undefined),

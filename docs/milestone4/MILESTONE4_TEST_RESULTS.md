@@ -1,0 +1,72 @@
+# Milestone 4 test results
+
+Records what was actually run, with the result. Skipped tests are listed separately and are never counted as passed. A simulated or stubbed test is not evidence of a live integration.
+
+Environment: Windows 10, Node v24.19.0, vitest 2.1.9. No provider credentials were used for any call (no AI, telephony, email, Stripe or video request was made).
+
+## Read this first: the default test command reaches the live database
+
+`npx vitest run` is **not** database-free. Several test files start with `import "dotenv/config"`, which loads the repository `.env`; that file holds the Supabase `DATABASE_URL`. A shell with no `DATABASE_URL` therefore still runs the live-database suites. CI does the same on purpose (`.github/workflows/ci.yml` injects the secret).
+
+What those suites do, from their own source:
+
+| Suite | Effect on the live database |
+|---|---|
+| `dbConstraints.test.ts` (RM-108) | Catalog reads; two enforcement probes inside a transaction that always rolls back |
+| `queryPerformance.test.ts` (RM-111) | Read-only queries |
+| `concurrency.test.ts` (RM-113, RM-110) | Inserts `booking_slots` rows tagged `consultationType = 'rm113-concurrency-probe'` and deletes them in `afterEach`; reads |
+| `rls.negative.test.ts` (RM-60) | Needs Supabase API keys; skipped when they are absent |
+| `legal.test.ts`, `requireAcceptances.test.ts` | Skipped in both modes shown below |
+
+Consequences, stated plainly:
+
+1. My earlier 29 October audit summary said the suite ran with the database disabled and that no production data was touched. That was wrong. The live-database suites ran then, and in this session's full runs (twice, plus one subset run of those suites).
+2. I have **not** confirmed that no probe rows remain. I tried a read-only count restricted to the two probe markers; the permission system refused it and I did not retry another way. Run this yourself, read-only, to close it: `SELECT count(*) FROM booking_slots WHERE "consultationType" = 'rm113-concurrency-probe';` and `SELECT count(*) FROM users WHERE "openId" LIKE 'rm108-orphan-%';`. Both should be 0.
+3. To run without touching the database, blank the variable: `DATABASE_URL= npx vitest run` (bash) or `$env:DATABASE_URL=""; npx vitest run` (PowerShell). dotenv does not override a variable that is already defined, even when empty; this was checked. The live suites then skip with a "Skipping" message.
+
+All runs after this was discovered used the blank variable.
+
+## Results
+
+| Check | Mode | Result |
+|---|---|---|
+| Historical 29 Oct audit run (before any change) | live database reachable | 91 files passed, 2 skipped; 1,155 passed, 15 skipped, 0 failed |
+| Type check `npx tsc --noEmit` | n/a | exit 0, no errors |
+| Full suite after the six fixes | live database reachable | 96 files passed, 2 skipped; **1,297 passed, 15 skipped, 0 failed** (about 40 s) |
+| Full suite after the six fixes | `DATABASE_URL=` blank | 92 files passed, 6 skipped; **1,255 passed, 57 skipped, 0 failed** |
+| Production build `npm run build` | n/a | vite 28 s, `dist/index.js` 952.7 kB, no errors |
+
+The 57 skipped tests in blank mode are: dbConstraints 9, rls.negative 18, concurrency 9, queryPerformance 6, legal 9, requireAcceptances 6. None of them is counted as passed in that row.
+
+Net change from the historical run: +142 passing tests, 0 removed. A first full run after the fixes had 7 failures, all caused by intended behaviour changes or by suites that scan source files; they were corrected as described in the progress log, not skipped or deleted.
+
+### New or extended test files (all fully mocked; none needs a database)
+
+| File | Tests | Covers |
+|---|---|---|
+| `server/aiGovernance.test.ts` | 10 (5 new) | G01 fail-closed gate, failure paths, no regression |
+| `server/aiScans.test.ts` | +7 | P08 ownership: anonymous, cross-tenant, developer and operator, owner, staff, free guest, unpublished |
+| `server/srsRules.test.ts` | +2 | report access decision |
+| `server/platformRules.test.ts` | +11 | document visibility rule (4), operator operation scopes (7) |
+| `server/documentMatrix.failClosed.test.ts` | 5 | J11 lookup failure modes |
+| `server/ops.scopes.test.ts` | 66 | Z09 per operation: no grant, wrong scope, expired, revoked, lookup failure, revocation, admin unaffected, other roles refused |
+| `server/admin.revenueAccess.test.ts` | 13 | C09 every role across summary, financial summary, history, export, scheduled report |
+| `server/bookings.reschedule.test.ts` | 22 | S01 end-state of slots, booking, reminders; conflicts; rollback; idempotency; cancel |
+| `server/db.bookings.slots.test.ts` | 11 | S01 slot takeover, conditional confirm, reminder plan (fake query builder) |
+
+Existing suites updated, not weakened: `admin.summary.test.ts` (an Admin now receives null revenue; it had asserted numeric revenue), `ops.test.ts` and `admin.srsOps.test.ts` (operator fixtures now hold grants), `bookings.test.ts` and `bookingAdmin.test.ts` (mock gained `updateBookingStatus`), `aiScans.test.ts` (healthy registry in the db mock), `workflowCoverage.test.ts` (new suite registered).
+
+### Mutation check
+
+For S01 the original defect was re-introduced (cancel by booking id after confirming the new slot). 4 of the 22 reschedule tests failed, then the fix was restored and all passed. The other fixes were not mutation-tested.
+
+## What the database suites did and did not prove about these changes
+
+- `concurrency.test.ts` (RM-113) ran with the changed `tryHoldBookingSlot` in the live-database full runs and passed. That is real-SQL evidence for: one winner among 10 parallel holds, independent slots, expired-hold takeover, and a single row after 5 racing takeovers.
+- It does **not** exercise the new released (cancelled) slot takeover, `confirmBookingSlot`, the document matrix read or the report lookups. Those are verified by fakes only.
+- None of this was on an isolated database, so M4-03 (verification on an isolated database) stays open, together with the question of leftover probe rows above.
+
+## What this does not prove
+
+- No live AI call, telephony, email delivery, Stripe live mode or video generation has been run. Mailbox configuration does not prove delivery.
+- Browser behaviour of the changed pages (`AIScanResult`, `ExecutiveOverview`, `Sales`) was type checked and built but not exercised in a browser.

@@ -101,10 +101,11 @@ describe("admin.summary RBAC", () => {
     expect(audit.userAgent).toBe("vitest");
     expect(audit.ip).toBe("127.0.0.1");
 
-    // Payload shape powering the Executive Overview UI.
+    // Payload shape powering the Executive Overview UI. Company revenue is Super Admin only
+    // (SRS 13.5), so an Admin gets null revenue figures; see admin.revenueAccess.test.ts.
     expect(result.kpis).toMatchObject({
-      revenueMTD: expect.any(Number),
-      revenueDelta: expect.any(Number),
+      revenueMTD: null,
+      revenueDelta: null,
       activeClients: expect.any(Number),
       aiScans: expect.any(Number),
       openProjects: expect.any(Number),
@@ -126,7 +127,7 @@ describe("admin.summary when DB is offline", () => {
     // state must be indistinguishable from a real "genuinely zero
     // activity" state, and both must render as 0, not a fake positive
     // number dressed up as a believable KPI.
-    const caller = appRouter.createCaller(makeCtx("admin"));
+    const caller = appRouter.createCaller(makeCtx("super_admin"));
     const r = await caller.admin.summary();
     expect(r.kpis.revenueMTD).toBe(0);
     expect(r.kpis.activeClients).toBe(0);

@@ -4,6 +4,7 @@ import superjson from "superjson";
 import type { TrpcContext } from "./context";
 import type { User } from "../../drizzle/schema";
 import { shouldAuditMutation } from "../../shared/srsRules";
+import { operatorMayPerform, type OpsOperation, type ScopeGrant } from "../../shared/platformRules";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -416,6 +417,38 @@ export const opsProcedure = audited.use(
     });
   }),
 );
+
+/**
+ * scopedOpsProcedure(operation): an ops procedure that also enforces the Technical
+ * Operator's granted scopes at the backend (SRS 5.7, 13.8, GOV-06, task Z09).
+ * Admins and Super Admins pass as before. A Technical Operator needs an active
+ * grant (not revoked, not expired) that opens this operation. The grants are
+ * read on every call, so a revocation or expiry takes effect immediately, and
+ * a failed lookup refuses the call rather than letting it through. A refusal is
+ * FORBIDDEN, which the audited wrapper records.
+ */
+export function scopedOpsProcedure(operation: OpsOperation) {
+  return opsProcedure.use(
+    t.middleware(async opts => {
+      const { ctx, next } = opts;
+      const role = ctx.user?.role ?? "";
+      if (role === "technical_operator") {
+        let grants: ScopeGrant[];
+        try {
+          const { getScopeGrants } = await import("../db/platformGovernance");
+          grants = await getScopeGrants(ctx.user!.id);
+        } catch (err) {
+          console.error("[scopedOpsProcedure] scope lookup failed, refusing the operation:", err);
+          throw new TRPCError({ code: "FORBIDDEN", message: "Your technical scopes could not be verified." });
+        }
+        if (!operatorMayPerform(role, grants, operation)) {
+          throw new TRPCError({ code: "FORBIDDEN", message: `This operation needs a technical scope granted by a Super Admin (${operation.replace(/_/g, " ")}).` });
+        }
+      }
+      return next();
+    }),
+  );
+}
 
 /**
  * requireAcceptances(kinds) — server-side enforcement that the calling

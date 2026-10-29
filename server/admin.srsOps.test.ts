@@ -36,6 +36,19 @@ const m = vi.hoisted(() => ({
   readPlatformHealth: vi.fn(),
 }));
 
+// Operators in this suite hold the scopes that open incidents and platform health. Per operation
+// scope enforcement is covered in ops.scopes.test.ts.
+vi.mock("./db/platformGovernance", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    getScopeGrants: vi.fn(async () => [
+      { scope: "infrastructure", expiresAt: null, revokedAt: null },
+      { scope: "security", expiresAt: null, revokedAt: null },
+    ]),
+  };
+});
+
 vi.mock("./db", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {

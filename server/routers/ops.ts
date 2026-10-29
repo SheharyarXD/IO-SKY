@@ -19,10 +19,8 @@
 import { z } from "zod";
 import { and, count, gte, ne, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { mayUseSecurityCenter } from "../../shared/platformRules";
-import { getScopeGrants } from "../db/platformGovernance";
 import {
-  opsProcedure,
+  scopedOpsProcedure,
   protectedProcedure,
   isOpsRole,
   evaluatePrivilegedMfaGate,
@@ -74,18 +72,6 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   }
 }
 
-/**
- * The Security Center is not implied by the Technical Operator role. An operator needs an
- * active, unexpired "security" scope granted by a Super Admin (SRS 15.4).
- */
-async function requireSecurityScope(user: { id: number; role: string }) {
-  if (user.role !== "technical_operator") return;
-  const grants = await getScopeGrants(user.id);
-  if (!mayUseSecurityCenter(user.role, grants)) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "The Security Center needs a security scope granted by a Super Admin." });
-  }
-}
-
 export const opsRouter = router({
   /**
    * Milestone 2 §2.5 — hard MFA gate status for the ops console. See
@@ -108,7 +94,7 @@ export const opsRouter = router({
    * logins (24h), security event volume by severity (24h), MFA enrollment
    * posture. No customer/financial figures anywhere in this shape.
    */
-  systemHealth: opsProcedure.query(async ({ ctx }) => {
+  systemHealth: scopedOpsProcedure("system_health").query(async ({ ctx }) => {
     await recordOpsEvent({ ctx, reason: "ops.read.system_health" });
     const db = await getDb();
     if (!db) {
@@ -187,23 +173,21 @@ export const opsRouter = router({
   }),
 
   /** Full recent email delivery log — same data adminProcedure exposes, ops-safe (no PII beyond a recipient email address already visible to the sender). */
-  emailDeliveryLog: opsProcedure.query(async ({ ctx }) => {
+  emailDeliveryLog: scopedOpsProcedure("email_log").query(async ({ ctx }) => {
     await recordOpsEvent({ ctx, reason: "ops.read.email_delivery_log" });
     return safe(() => listEmailDeliveryLog(200), []);
   }),
 
   /** Security Center — recent platform-wide security events for investigation. */
-  securityEvents: opsProcedure.query(async ({ ctx }) => {
-    await requireSecurityScope(ctx.user);
+  securityEvents: scopedOpsProcedure("security").query(async ({ ctx }) => {
     await recordOpsEvent({ ctx, reason: "ops.read.security_events" });
     return safe(() => listRecentSecurityEvents(100), []);
   }),
 
   /** Security Center — acknowledge (mark reviewed) a single security event. */
-  acknowledgeSecurityEvent: opsProcedure
+  acknowledgeSecurityEvent: scopedOpsProcedure("security")
     .input(z.object({ eventId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
-      await requireSecurityScope(ctx.user);
       const updated = await acknowledgeDeveloperSecurityEvent(input.eventId, ctx.user.id);
       if (!updated) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Security event not found." });

@@ -101,6 +101,7 @@ import { notifyDeveloper } from "../notifications";
 import { dispatchWebhooksForTrigger } from "../webhookDispatcher";
 import { notifyClient } from "../notifications";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
+import { mayViewCompanyRevenue } from "../../shared/srsRules";
 import { generatePublicRef } from "../_core/publicRef";
 import {
   organizations,
@@ -177,8 +178,10 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 // ---------------------------------------------------------------------------
 
 export interface AdminSummaryKpis {
-  revenueMTD: number;
-  revenueDelta: number;
+  /** Company revenue: null unless the caller is a Super Admin (SRS 13.5). */
+  revenueMTD: number | null;
+  /** Null unless the caller is a Super Admin. */
+  revenueDelta: number | null;
   activeClients: number;
   /** 0 when no real month-over-month comparison basis exists yet (see buildSummary()). */
   activeClientsDelta: number;
@@ -211,9 +214,21 @@ export interface AdminSummary {
     occurredAtMs: number;
   }>;
   liveFeed: Array<{ id: string; message: string; occurredAtMs: number }>;
-  /** Real day-by-day paid revenue for the current month, sorted ascending by day. Empty when no invoices have been paid yet. */
+  /** Real day-by-day paid revenue for the current month, sorted ascending by day. Empty when no invoices have been paid yet, and always empty for an Admin. */
   revenueByDay: Array<{ day: string; amountCents: number }>;
+  /** True only for a Super Admin. When false every revenue figure above is withheld by the server. */
+  revenueVisible: boolean;
   generatedAtMs: number;
+}
+
+/**
+ * SRS 13.5 / 12.5: the Executive Overview is shared by Admin and Super Admin,
+ * but company revenue is Super Admin only. The figures are removed on the
+ * server, not hidden in the page, so they never reach an Admin's browser.
+ */
+export function shapeSummaryForRole(summary: AdminSummary, role: string | null | undefined): AdminSummary {
+  if (mayViewCompanyRevenue(role)) return { ...summary, revenueVisible: true };
+  return { ...summary, kpis: { ...summary.kpis, revenueMTD: null, revenueDelta: null }, revenueByDay: [], revenueVisible: false };
 }
 
 async function buildSummary(): Promise<AdminSummary> {
@@ -254,6 +269,7 @@ async function buildSummary(): Promise<AdminSummary> {
       recentActivity: [],
       liveFeed: [],
       revenueByDay: [],
+      revenueVisible: true,
       generatedAtMs: now,
     };
   }
@@ -452,6 +468,7 @@ async function buildSummary(): Promise<AdminSummary> {
     recentActivity: activity.slice(0, 12),
     liveFeed: feed,
     revenueByDay: revenueByDayThisMonth,
+    revenueVisible: true,
     generatedAtMs: now,
   };
 }
@@ -1214,7 +1231,7 @@ export const adminRouter = router({
   // -- Executive Overview --------------------------------------------------
   summary: adminProcedure.query(async ({ ctx }) => {
     await recordAdminEvent({ ctx, reason: "admin.summary" });
-    return buildSummary();
+    return shapeSummaryForRole(await buildSummary(), ctx.user.role);
   }),
 
   liveFeed: adminProcedure.query(async ({ ctx }) => {

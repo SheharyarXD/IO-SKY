@@ -324,9 +324,9 @@ export default function ExecutiveOverview() {
       <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         <KpiTile
           label="Total Revenue (MTD)"
-          value={kpis ? `€${kpis.revenueMTD.toLocaleString()}` : "—"}
+          value={kpis ? (kpis.revenueMTD === null ? "Restricted" : `€${kpis.revenueMTD.toLocaleString()}`) : "—"}
           delta={kpis?.revenueDelta ?? 0}
-          caption={kpis ? `vs ${kpis.compareLabel}` : "awaiting first billing cycle"}
+          caption={kpis ? (kpis.revenueMTD === null ? "Super Admin only" : `vs ${kpis.compareLabel}`) : "awaiting first billing cycle"}
           Icon={Receipt}
           trend={trendOrange}
         />
@@ -392,9 +392,9 @@ export default function ExecutiveOverview() {
           </div>
           <div className="mt-2 flex items-end gap-2">
             <div className="font-display font-semibold text-[26px] tracking-tight">
-              {kpis ? `€${kpis.revenueMTD.toLocaleString()}` : "—"}
+              {kpis ? (kpis.revenueMTD === null ? "Restricted" : `€${kpis.revenueMTD.toLocaleString()}`) : "—"}
             </div>
-            {kpis && (
+            {kpis && kpis.revenueDelta !== null && (
               <span
                 className={cn(
                   "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-mono",
@@ -408,9 +408,13 @@ export default function ExecutiveOverview() {
               </span>
             )}
           </div>
-          <div className="text-[11px] text-white/45">{kpis ? `vs ${kpis.compareLabel}` : "awaiting first billing cycle"}</div>
+          <div className="text-[11px] text-white/45">{kpis ? (kpis.revenueMTD === null ? "Company revenue is shown to the Super Admin only." : `vs ${kpis.compareLabel}`) : "awaiting first billing cycle"}</div>
           <div className="mt-3 relative h-[150px] rounded-[12px] bg-[radial-gradient(circle_at_70%_30%,rgba(245,138,31,0.08)_0%,rgba(11,16,32,0)_70%)] border border-white/[0.04] overflow-hidden">
-            <RevenueTrendChart points={data?.revenueByDay ?? []} />
+            {data?.revenueVisible === false ? (
+              <div className="absolute inset-0 flex items-center justify-center text-[11.5px] text-white/45">Revenue intelligence is available to the Super Admin.</div>
+            ) : (
+              <RevenueTrendChart points={data?.revenueByDay ?? []} />
+            )}
           </div>
           <div className="mt-2 flex items-center gap-3 text-[10.5px] font-mono text-white/55">
             <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#F58A1F]" /> MTD Revenue (cumulative, real)</span>

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  clientMayViewDocument,
   mayUseSecurityCenter,
+  OPERATOR_SCOPES,
+  OPS_OPERATION_SCOPES,
+  operatorMayPerform,
+  type OpsOperation,
   pickLocale,
   placeholdersIn,
   renderTemplate,
@@ -86,5 +91,64 @@ describe("AI model routing (SRS 19.6, 19.25)", () => {
     expect(estimateCostMicros("m", 1000, 500, prices)).toBe(6000);
     expect(estimateCostMicros("other", 1000, 500, prices)).toBeNull();
     expect(parsePrices("not json")).toEqual({});
+  });
+});
+
+// P0-03 / J11, SRS 18.8, GOV-08: the matrix lookup fails closed.
+describe("client document visibility fails closed (GOV-08)", () => {
+  const allowed = new Set(["proposal", "invoice"]);
+  it("shows a typed document only when the matrix opens its type to clients", () => {
+    expect(clientMayViewDocument({ documentType: "proposal" }, allowed)).toBe(true);
+    expect(clientMayViewDocument({ documentType: "internal_note" }, allowed)).toBe(false);
+  });
+  it("hides a type that has no matrix row at all", () => {
+    expect(clientMayViewDocument({ documentType: "brand_new_type" }, allowed)).toBe(false);
+    expect(clientMayViewDocument({ documentType: "proposal" }, new Set())).toBe(false);
+  });
+  it("hides every typed document while the matrix cannot be read (null)", () => {
+    expect(clientMayViewDocument({ documentType: "proposal" }, null)).toBe(false);
+  });
+  it("leaves untyped documents on their organisation scoped visibility", () => {
+    expect(clientMayViewDocument({ documentType: null }, allowed)).toBe(true);
+    expect(clientMayViewDocument({ documentType: undefined }, null)).toBe(true);
+  });
+});
+
+describe("operator operation scopes (GOV-06, Z09)", () => {
+  const g = (scope: string, o: { expiresAt?: Date | null; revokedAt?: Date | null } = {}) => ({ scope, expiresAt: o.expiresAt ?? null, revokedAt: o.revokedAt ?? null });
+  const ops = Object.keys(OPS_OPERATION_SCOPES) as OpsOperation[];
+  it("maps every operation to at least one real scope", () => {
+    for (const op of ops) {
+      expect(OPS_OPERATION_SCOPES[op].length).toBeGreaterThan(0);
+      for (const s of OPS_OPERATION_SCOPES[op]) expect(OPERATOR_SCOPES).toContain(s);
+    }
+  });
+  it("never lets the role alone open an operation", () => {
+    for (const op of ops) expect(operatorMayPerform("technical_operator", [], op)).toBe(false);
+  });
+  it("opens an operation only for a listed, active scope", () => {
+    expect(operatorMayPerform("technical_operator", [g("infrastructure")], "system_health")).toBe(true);
+    expect(operatorMayPerform("technical_operator", [g("security")], "system_health")).toBe(false);
+    expect(operatorMayPerform("technical_operator", [g("ui_ux")], "security")).toBe(false);
+  });
+  it("honours expiry and revocation", () => {
+    const now = new Date("2026-10-30T12:00:00Z");
+    expect(operatorMayPerform("technical_operator", [g("security", { expiresAt: new Date("2026-10-30T11:59:59Z") })], "security", now)).toBe(false);
+    expect(operatorMayPerform("technical_operator", [g("security", { expiresAt: new Date("2026-10-30T12:00:01Z") })], "security", now)).toBe(true);
+    expect(operatorMayPerform("technical_operator", [g("security", { revokedAt: new Date("2026-10-30T11:00:00Z") })], "security", now)).toBe(false);
+  });
+  it("lets another valid grant carry the operation when one grant is revoked", () => {
+    expect(operatorMayPerform("technical_operator", [g("infrastructure", { revokedAt: new Date() }), g("backend")], "email_log")).toBe(true);
+  });
+  it("does not scope limit admins and refuses every other role", () => {
+    for (const op of ops) {
+      expect(operatorMayPerform("admin", [], op)).toBe(true);
+      expect(operatorMayPerform("super_admin", [], op)).toBe(true);
+      expect(operatorMayPerform("client", [g("infrastructure"), g("security")], op)).toBe(false);
+      expect(operatorMayPerform("developer", [g("infrastructure"), g("security")], op)).toBe(false);
+    }
+  });
+  it("refuses an unknown operation", () => {
+    expect(operatorMayPerform("technical_operator", [g("infrastructure"), g("security")], "not_a_real_op" as OpsOperation)).toBe(false);
   });
 });

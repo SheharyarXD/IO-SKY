@@ -337,6 +337,42 @@ export function isReportVisibleToCustomer(status: string | null | undefined): bo
   return status === "published";
 }
 
+/**
+ * SRS 13.5 / BR-025: company-wide revenue (month-to-date revenue, its trend,
+ * paid totals, recurring revenue) belongs to the Super Admin Executive
+ * Dashboard. Admins see outstanding invoices (SRS 12.5) and the invoices
+ * themselves, never the company revenue aggregates. Anything else is refused.
+ */
+export function mayViewCompanyRevenue(role: string | null | undefined): boolean {
+  return role === "super_admin";
+}
+
+export type ReportAccessDecision = "allow" | "login_required" | "forbidden";
+
+/**
+ * SRS 9.10: report access is restricted to authorised users and the customer's
+ * ownership is validated before access is granted.
+ *
+ *  - IO SKY staff (admin, super_admin) are authorised users.
+ *  - A paid scan (growth, elite) belongs to the account whose email matches the
+ *    scan; purchase creates that account, so a signed in owner is always
+ *    possible. Holding the link is not enough, so a forwarded or leaked link
+ *    does not open another organisation's report.
+ *  - A free scan has no account behind it. The unguessable emailed link is the
+ *    delivery mechanism for that guest flow and stays valid on its own.
+ */
+export function decideScanReportAccess(
+  scan: { tier: string; email: string | null | undefined },
+  viewer: { email?: string | null; role?: string | null } | null,
+): ReportAccessDecision {
+  if (scan.tier === "free") return "allow";
+  if (!viewer) return "login_required";
+  if (viewer.role === "admin" || viewer.role === "super_admin") return "allow";
+  const owner = (scan.email ?? "").trim().toLowerCase();
+  const who = (viewer.email ?? "").trim().toLowerCase();
+  return owner !== "" && who !== "" && owner === who ? "allow" : "forbidden";
+}
+
 /** Steps only a human may take. The engine can never approve or publish. */
 export function isHumanOnlyReportStep(to: ReportStatus): boolean {
   return to === "approved" || to === "revision_required" || to === "published" || to === "archived";

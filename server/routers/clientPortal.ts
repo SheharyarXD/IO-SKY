@@ -45,7 +45,8 @@ import { createAdminNotification, decideProjectApproval, listApprovalsForOrganiz
 import { generatePublicRef } from "../_core/publicRef";
 import { createCheckoutSession, isStripeConfigured } from "../_core/stripe";
 import { setInvoiceCheckoutSession } from "../db/payments";
-import { clientHiddenDocumentTypes } from "../db/platformGovernance";
+import { clientVisibleDocumentTypes } from "../db/platformGovernance";
+import { clientMayViewDocument } from "../../shared/platformRules";
 
 const supportTicketSchema = z.object({
   subject: z.string().min(3).max(200),
@@ -111,9 +112,10 @@ export const clientPortalRouter = router({
   }),
 
   documents: clientProcedure.query(async ({ ctx }) => {
-    const [rows, hidden] = await Promise.all([listClientDocuments(ctx.organizationId), clientHiddenDocumentTypes().catch(() => new Set<string>())]);
-    // OPD-003: a document whose type the matrix does not open to clients is not shown to them.
-    return rows.filter((d) => !d.documentType || !hidden.has(d.documentType));
+    const [rows, allowed] = await Promise.all([listClientDocuments(ctx.organizationId), clientVisibleDocumentTypes()]);
+    // OPD-003 / GOV-08: a document whose type the matrix does not open to clients is not shown to them,
+    // and an unreadable matrix hides typed documents rather than exposing them.
+    return rows.filter((d) => clientMayViewDocument(d, allowed));
   }),
 
   messages: clientProcedure.query(async ({ ctx }) => {
@@ -490,7 +492,7 @@ export const clientPortalRouter = router({
     .mutation(async ({ ctx, input }) => {
       const doc = await getClientDocumentById(ctx.organizationId, input.id);
       if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
-      if (doc.documentType && (await clientHiddenDocumentTypes().catch(() => new Set<string>())).has(doc.documentType)) {
+      if (!clientMayViewDocument(doc, await clientVisibleDocumentTypes())) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
       }
       let url: string;
@@ -901,8 +903,8 @@ export const clientPortalRouter = router({
   searchDocuments: clientProcedure
     .input(z.object({ q: z.string().trim().min(2).max(100), category: z.string().max(96).optional() }))
     .query(async ({ ctx, input }) => {
-      const [rows, hidden] = await Promise.all([searchDocuments({ organizationId: ctx.organizationId, q: input.q, category: input.category }), clientHiddenDocumentTypes().catch(() => new Set<string>())]);
-      return rows.filter((d) => !d.documentType || !hidden.has(d.documentType));
+      const [rows, allowed] = await Promise.all([searchDocuments({ organizationId: ctx.organizationId, q: input.q, category: input.category }), clientVisibleDocumentTypes()]);
+      return rows.filter((d) => clientMayViewDocument(d, allowed));
     }),
 
   /** Where each of this account's AI Scans is in the review workflow. */

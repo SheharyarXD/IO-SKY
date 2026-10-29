@@ -7,7 +7,7 @@
  *   2. Native IO SKY Booking System helpers (availability, slots, reminders,
  *      events, timezone preferences).
  */
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, lte, ne, sql } from "drizzle-orm";
 import {
   adminAvailability as adminAvailabilityTable,
   availabilityWindows as availabilityWindowsTable,
@@ -358,13 +358,17 @@ export async function tryHoldBookingSlot(input: {
         )
         .limit(1);
       const existing = rows[0];
-      if (
-        existing &&
-        existing.status === "held" &&
-        existing.holdExpiresAtMs != null &&
-        existing.holdExpiresAtMs <= Date.now()
-      ) {
-        await db
+      // A slot can be taken over in two cases: its hold lapsed, or the booking
+      // that owned it was cancelled or rescheduled away (status "cancelled").
+      // The unique index covers (type, start) whatever the status, so without
+      // the second case a freed time could never be booked again.
+      // Each takeover is a conditional update, so of two racing callers only
+      // the one whose update still matches the row wins.
+      const expiredHold =
+        existing?.status === "held" && existing.holdExpiresAtMs != null && existing.holdExpiresAtMs <= Date.now();
+      const released = existing?.status === "cancelled";
+      if (existing && (expiredHold || released)) {
+        const won = await db
           .update(bookingSlotsTable)
           .set({
             holdToken: input.holdToken,
@@ -372,8 +376,16 @@ export async function tryHoldBookingSlot(input: {
             bookingId: null,
             status: "held",
           })
-          .where(eq(bookingSlotsTable.id, existing.id));
-        return { ok: true, id: existing.id };
+          .where(
+            and(
+              eq(bookingSlotsTable.id, existing.id),
+              released
+                ? eq(bookingSlotsTable.status, "cancelled")
+                : and(eq(bookingSlotsTable.status, "held"), lte(bookingSlotsTable.holdExpiresAtMs, Date.now())),
+            ),
+          )
+          .returning({ id: bookingSlotsTable.id });
+        if (won.length > 0) return { ok: true, id: existing.id };
       }
       return { ok: false, reason: "taken" };
     }
@@ -388,16 +400,9 @@ export async function confirmBookingSlot(input: {
 }): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
-  const rows = await db
-    .select()
-    .from(bookingSlotsTable)
-    .where(eq(bookingSlotsTable.id, input.slotId))
-    .limit(1);
-  const slot = rows[0];
-  if (!slot) return false;
-  if (slot.status === "booked") return false;
-  if (slot.holdToken !== input.holdToken) return false;
-  await db
+  // One conditional update instead of read-then-write: the hold must still be
+  // held by this token, so two confirmations can never both succeed.
+  const won = await db
     .update(bookingSlotsTable)
     .set({
       status: "booked",
@@ -405,8 +410,15 @@ export async function confirmBookingSlot(input: {
       holdToken: null,
       holdExpiresAtMs: null,
     })
-    .where(eq(bookingSlotsTable.id, input.slotId));
-  return true;
+    .where(
+      and(
+        eq(bookingSlotsTable.id, input.slotId),
+        eq(bookingSlotsTable.status, "held"),
+        eq(bookingSlotsTable.holdToken, input.holdToken),
+      ),
+    )
+    .returning({ id: bookingSlotsTable.id });
+  return won.length > 0;
 }
 
 export async function cancelBookingSlot(bookingId: number): Promise<void> {
@@ -432,6 +444,36 @@ export async function cancelBookingSlotById(slotId: number): Promise<void> {
     .update(bookingSlotsTable)
     .set({ status: "cancelled" })
     .where(eq(bookingSlotsTable.id, slotId));
+}
+
+/**
+ * Release every slot a booking holds EXCEPT the one it is moving to. A
+ * reschedule confirms the new slot against the booking first, so cancelling by
+ * bookingId alone (cancelBookingSlot) would cancel the new slot too and free
+ * the time the guest just chose.
+ */
+export async function cancelOtherBookingSlots(bookingId: number, keepSlotId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(bookingSlotsTable)
+    .set({ status: "cancelled" })
+    .where(and(eq(bookingSlotsTable.bookingId, bookingId), ne(bookingSlotsTable.id, keepSlotId)));
+}
+
+/** Move a booking to its new time. Returns false when nothing was updated. */
+export async function updateBookingSlotTime(
+  id: number,
+  patch: { slotStartMs: number; timezone: string },
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const rows = await db
+    .update(bookings)
+    .set({ slotStartMs: patch.slotStartMs, timezone: patch.timezone })
+    .where(eq(bookings.id, id))
+    .returning({ id: bookings.id });
+  return rows.length > 0;
 }
 
 /**
@@ -464,22 +506,50 @@ export async function listBookingAnswers(bookingId: number) {
     .where(eq(bookingAnswersTable.bookingId, bookingId));
 }
 
+/**
+ * The reminder rows a booking needs for a given start time. Offsets already in
+ * the past are not backfilled (Discovery Call spec 12). The confirmation row is
+ * only planned for a new booking; a reschedule sends its own confirmation.
+ */
+export function planBookingReminders(
+  bookingId: number,
+  slotStartMs: number,
+  now: number,
+  opts: { withConfirmation: boolean },
+): InsertBookingReminder[] {
+  const rows: InsertBookingReminder[] = [];
+  if (opts.withConfirmation) rows.push({ bookingId, kind: "confirmation", scheduledForMs: now });
+  const at24h = slotStartMs - 24 * 3600_000;
+  if (at24h > now) rows.push({ bookingId, kind: "reminder_24h", scheduledForMs: at24h });
+  const at1h = slotStartMs - 1 * 3600_000;
+  if (at1h > now) rows.push({ bookingId, kind: "reminder_1h", scheduledForMs: at1h });
+  return rows;
+}
+
+/**
+ * Re-plan a booking's reminders after a reschedule. Unsent rows computed from
+ * the old time are marked superseded (the worker's own convention, so they
+ * stop showing as due without being sent), and rows for the new time are
+ * added. Reminders already sent are left alone.
+ */
+export async function replaceBookingReminders(bookingId: number, slotStartMs: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(bookingRemindersTable)
+    .set({ sentAt: new Date(), errorDetail: "superseded: booking rescheduled" })
+    .where(and(eq(bookingRemindersTable.bookingId, bookingId), isNull(bookingRemindersTable.sentAt)));
+  const rows = planBookingReminders(bookingId, slotStartMs, Date.now(), { withConfirmation: false });
+  if (rows.length > 0) await db.insert(bookingRemindersTable).values(rows);
+}
+
 export async function scheduleBookingReminders(
   bookingId: number,
   slotStartMs: number,
 ): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  const now = Date.now();
-  const rows: InsertBookingReminder[] = [
-    { bookingId, kind: "confirmation", scheduledForMs: now },
-  ];
-  const at24h = slotStartMs - 24 * 3600_000;
-  if (at24h > now)
-    rows.push({ bookingId, kind: "reminder_24h", scheduledForMs: at24h });
-  const at1h = slotStartMs - 1 * 3600_000;
-  if (at1h > now)
-    rows.push({ bookingId, kind: "reminder_1h", scheduledForMs: at1h });
+  const rows = planBookingReminders(bookingId, slotStartMs, Date.now(), { withConfirmation: true });
   await db.insert(bookingRemindersTable).values(rows);
 }
 

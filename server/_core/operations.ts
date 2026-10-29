@@ -94,9 +94,8 @@ export async function buildReportBody(kind: string): Promise<{ subject: string; 
         ? [
             `Outstanding: ${eur(f.outstandingCents)} across ${f.openInvoices} invoices`,
             `Overdue: ${eur(f.overdueCents)} across ${f.overdueInvoices} invoices`,
-            `Paid in the last 30 days: ${eur(f.paidLast30DaysCents)}`,
-            `Paid in the last 90 days: ${eur(f.paidLast90DaysCents)}`,
-            `Monthly recurring revenue: ${eur(f.monthlyRecurringCents)} from ${f.activeSubscriptions} subscriptions`,
+            // Paid totals and recurring revenue are company revenue (SRS 13.5); a scheduled report can be
+            // addressed to any recipient, so they are not included here.
           ]
         : ["Database unavailable."],
     };

@@ -55,6 +55,7 @@ vi.mock("./db", () => {
       return { ok: true as const, id };
     }),
     confirmBookingSlot: vi.fn(async () => true),
+    updateBookingStatus: vi.fn(async () => undefined),
     cancelBookingSlot: vi.fn(),
     insertBookingAnswers: vi.fn(),
     scheduleBookingReminders: vi.fn(),

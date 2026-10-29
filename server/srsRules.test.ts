@@ -191,7 +191,7 @@ describe("LIKE escaping", () => {
   });
 });
 
-import { canMoveReport, isReportVisibleToCustomer, isHumanOnlyReportStep, REPORT_STATUSES } from "../shared/srsRules";
+import { canMoveReport, decideScanReportAccess, isReportVisibleToCustomer, isHumanOnlyReportStep, REPORT_STATUSES } from "../shared/srsRules";
 
 describe("AI Scan report lifecycle (SRS 9.6)", () => {
   it("has exactly the nine statuses the SRS names", () => {
@@ -220,6 +220,21 @@ describe("AI Scan report lifecycle (SRS 9.6)", () => {
   it("shows the customer only a published report", () => {
     for (const s of REPORT_STATUSES) expect(isReportVisibleToCustomer(s)).toBe(s === "published");
     expect(isReportVisibleToCustomer(null)).toBe(false);
+  });
+  it("decides report access by ownership for paid scans (SRS 9.10)", () => {
+    const paid = { tier: "growth", email: "Owner@Acme.test" };
+    expect(decideScanReportAccess(paid, null)).toBe("login_required");
+    expect(decideScanReportAccess(paid, { email: "owner@acme.test", role: "client" })).toBe("allow");
+    expect(decideScanReportAccess(paid, { email: "other@x.test", role: "client" })).toBe("forbidden");
+    expect(decideScanReportAccess(paid, { email: "other@x.test", role: "technical_operator" })).toBe("forbidden");
+    expect(decideScanReportAccess(paid, { email: "s@iosky.test", role: "admin" })).toBe("allow");
+    expect(decideScanReportAccess(paid, { email: "s@iosky.test", role: "super_admin" })).toBe("allow");
+    // A viewer or scan without an email can never match.
+    expect(decideScanReportAccess(paid, { email: null, role: "client" })).toBe("forbidden");
+    expect(decideScanReportAccess({ tier: "elite", email: "" }, { email: "", role: "client" })).toBe("forbidden");
+  });
+  it("keeps the emailed link valid for a free guest scan", () => {
+    expect(decideScanReportAccess({ tier: "free", email: "g@x.test" }, null)).toBe("allow");
   });
   it("marks approve, revise, publish and archive as human only", () => {
     expect(["approved", "revision_required", "published", "archived"].every((s) => isHumanOnlyReportStep(s as never))).toBe(true);

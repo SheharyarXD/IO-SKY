@@ -395,12 +395,18 @@ function Finance() {
   const q = trpc.adminOps.financialSummary.useQuery();
   const f = q.data;
   if (!f) return <div className="text-[12.5px] text-white/55">{q.isLoading ? "Loading…" : "Financial data is unavailable."}</div>;
+  // Company revenue is Super Admin only (SRS 13.5): the server withholds it from an Admin, and the page
+  // does not offer rows for it.
   const rows: Array<[string, string]> = [
     ["Outstanding", `${money(f.outstandingCents)} across ${f.openInvoices} invoices`],
     ["Overdue", `${money(f.overdueCents)} across ${f.overdueInvoices} invoices`],
-    ["Paid, last 30 days", money(f.paidLast30DaysCents)],
-    ["Paid, last 90 days", money(f.paidLast90DaysCents)],
-    ["Monthly recurring revenue", `${money(f.monthlyRecurringCents)} from ${f.activeSubscriptions} subscriptions`],
+    ...(f.revenueVisible
+      ? ([
+          ["Paid, last 30 days", money(f.paidLast30DaysCents)],
+          ["Paid, last 90 days", money(f.paidLast90DaysCents)],
+          ["Monthly recurring revenue", `${money(f.monthlyRecurringCents)} from ${f.activeSubscriptions} subscriptions`],
+        ] as Array<[string, string]>)
+      : []),
   ];
   return (
     <>
@@ -420,7 +426,9 @@ function Finance() {
         columns={[
           { key: "month", header: "Month" },
           { key: "leads", header: "New leads", align: "right" },
-          { key: "paidCents", header: "Paid revenue", align: "right", render: (r: NonNullable<typeof history.data>[number] & { id: string }) => money(r.paidCents) },
+          ...(f.revenueVisible
+            ? [{ key: "paidCents", header: "Paid revenue", align: "right" as const, render: (r: NonNullable<typeof history.data>[number] & { id: string }) => money(r.paidCents) }]
+            : []),
           { key: "wonDeals", header: "Deals won", align: "right" },
         ]}
         rows={(history.data ?? []).map((h) => ({ ...h, id: h.month }))}

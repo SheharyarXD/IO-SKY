@@ -31,8 +31,12 @@ const {
 }));
 
 vi.mock("./db/platformGovernance", () => ({
-  // Operators in these tests hold an active security scope; scope rules are tested in platformRules.test.ts.
-  getScopeGrants: vi.fn(async () => [{ scope: "security", expiresAt: null, revokedAt: null }]),
+  // Operators in these tests hold active security and infrastructure scopes. Scope rules are tested in
+  // platformRules.test.ts and the per-operation enforcement in ops.scopes.test.ts.
+  getScopeGrants: vi.fn(async () => [
+    { scope: "security", expiresAt: null, revokedAt: null },
+    { scope: "infrastructure", expiresAt: null, revokedAt: null },
+  ]),
 }));
 
 vi.mock("./db", async (importOriginal) => {

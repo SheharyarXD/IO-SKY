@@ -91,12 +91,24 @@ export async function updateDocumentMatrixRow(
   return rows[0] ?? null;
 }
 
-/** Types a client may not see. Empty when the matrix cannot be read, so a failure never hides documents. */
-export async function clientHiddenDocumentTypes(): Promise<Set<string>> {
-  const rows = await listDocumentMatrix();
-  const hidden = new Set<string>();
-  for (const r of rows) if (!roleMayAccessDocumentType("client", r)) hidden.add(r.documentType);
-  return hidden;
+/**
+ * Allow-list of document types the matrix opens to clients (SRS 18.8, GOV-08).
+ * Returns null when the matrix cannot be read (no database, or the query
+ * fails), and callers treat null as "nothing typed is visible": the lookup
+ * fails closed, never open.
+ */
+export async function clientVisibleDocumentTypes(): Promise<Set<string> | null> {
+  try {
+    const db = await getDb();
+    if (!db) return null;
+    const rows = await db.select().from(documentMatrix);
+    const visible = new Set<string>();
+    for (const r of rows) if (roleMayAccessDocumentType("client", r)) visible.add(r.documentType);
+    return visible;
+  } catch (err) {
+    console.error("[platformGovernance] document matrix unreadable, hiding typed documents from clients:", err);
+    return null;
+  }
 }
 
 export async function setClientDocumentType(documentId: number, documentType: string | null): Promise<boolean> {

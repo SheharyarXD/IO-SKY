@@ -36,6 +36,7 @@ const WORKFLOW_COVERAGE: Record<string, string> = {
   "Support ticketing": "server/admin.createSupportTicket.test.ts",
   "Reports & projects bridge": "server/admin.reportsProjects.test.ts",
   "Executive overview summary": "server/admin.summary.test.ts",
+  "Company revenue visible to the Super Admin only (SRS 13.5)": "server/admin.revenueAccess.test.ts",
   "Admin action / audited buttons": "server/admin.modules.test.ts",
   "Developer access granting": "server/admin.grantDeveloperAccess.test.ts",
   "Developer project, task and message delivery": "server/admin.developerDelivery.test.ts",

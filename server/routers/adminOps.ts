@@ -8,7 +8,7 @@
  *
  * Authority:
  *   - adminProcedure      day to day operation
- *   - opsProcedure        incidents and alerts (technical operators too)
+ *   - scopedOpsProcedure(op)       incidents, alerts and health (technical operators too, by granted scope)
  *   - superAdminProcedure platform configuration and AI governance
  *
  * Every mutation writes an audit row through recordAdminEvent, and every state
@@ -16,7 +16,7 @@
  */
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { adminProcedure, opsProcedure, router, superAdminProcedure } from "../_core/trpc";
+import { adminProcedure, scopedOpsProcedure, router, superAdminProcedure } from "../_core/trpc";
 import {
   activatePromptVersion,
   addPromptVersion,
@@ -57,6 +57,7 @@ import {
   moveProposal,
   moveQuote,
   readFinancialSummary,
+  shapeFinancialSummaryForRole,
   readPipelineSummary,
   requestProjectApproval,
   reviewTimeEntry,
@@ -73,7 +74,7 @@ import {
 } from "../../shared/srsRules";
 import { recordAdminEvent } from "./admin";
 import { emitNotification } from "../notificationDispatcher";
-import { EXPORT_DATASETS, INVITABLE_ROLES, INVITATION_TTL_DAYS, canInviteRole, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
+import { EXPORT_DATASETS, INVITABLE_ROLES, mayViewCompanyRevenue, INVITATION_TTL_DAYS, canInviteRole, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
 import { AI_SCAN_AGENT_KEY, createInvitation, decideLatestAiExecutionForSubject, listInvitations, revokeInvitation, listDeployments, readComplianceInputs, readExportDataset, readMonthlyHistory } from "../db";
 import { fireTrigger } from "../workflowEngine";
 import { readCampaignOverview } from "../db/campaigns";
@@ -335,7 +336,8 @@ export const adminOpsRouter = router({
       return s;
     }),
 
-  financialSummary: adminProcedure.query(async () => readFinancialSummary()),
+  /** Outstanding and overdue for Admin; paid totals and recurring revenue for Super Admin only (SRS 13.5, 12.5). */
+  financialSummary: adminProcedure.query(async ({ ctx }) => shapeFinancialSummaryForRole(await readFinancialSummary(), ctx.user.role)),
 
   // =========================================================================
   // Delivery: time review, approvals, archive
@@ -497,11 +499,11 @@ export const adminOpsRouter = router({
   // =========================================================================
   // Incidents and alerts (SRS 20, 25), ops
   // =========================================================================
-  incidents: opsProcedure
+  incidents: scopedOpsProcedure("incidents")
     .input(z.object({ category: z.enum(["security", "operational"]).optional(), status: z.enum(["open", "investigating", "resolved", "closed"]).optional() }).default({}))
     .query(async ({ input }) => listIncidents(input)),
 
-  createIncident: opsProcedure
+  createIncident: scopedOpsProcedure("incidents")
     .input(
       z.object({
         category: z.enum(["security", "operational"]),
@@ -529,7 +531,7 @@ export const adminOpsRouter = router({
       return i;
     }),
 
-  updateIncident: opsProcedure
+  updateIncident: scopedOpsProcedure("incidents")
     .input(
       z.object({
         id: z.number().int().positive(),
@@ -551,7 +553,7 @@ export const adminOpsRouter = router({
       return r.incident;
     }),
 
-  alertRules: opsProcedure.query(async () => listAlertRules()),
+  alertRules: scopedOpsProcedure("alerts").query(async () => listAlertRules()),
 
   updateAlertRule: superAdminProcedure
     .input(z.object({ id: z.number().int().positive(), threshold: z.number().int().min(1).max(100000).optional(), windowMinutes: z.number().int().min(1).max(10080).optional(), enabled: z.boolean().optional() }))
@@ -563,7 +565,7 @@ export const adminOpsRouter = router({
     }),
 
   /** Run the evaluator now. The same function runs on a timer in production. */
-  evaluateAlerts: opsProcedure.mutation(async ({ ctx }) => {
+  evaluateAlerts: scopedOpsProcedure("alerts").mutation(async ({ ctx }) => {
     const results = await evaluateAlertRules();
     await recordAdminEvent({ ctx, reason: `ops.alerts.evaluate(fired=${results.filter((r) => r.fired).length})` });
     return results;
@@ -628,7 +630,7 @@ export const adminOpsRouter = router({
       return searchDocuments({ organizationId: null, q: input.q, category: input.category });
     }),
 
-  platformHealth: opsProcedure.query(async () => readPlatformHealth()),
+  platformHealth: scopedOpsProcedure("platform_health").query(async () => readPlatformHealth()),
 
   // =========================================================================
   // AI Scan expert review (SRS 9.6, 12.8, BR-009, BR-016)
@@ -785,15 +787,19 @@ export const adminOpsRouter = router({
   }),
 
   /** Live compliance checks (SRS 20.9): each is a query against current data, not a stored label. */
-  compliance: opsProcedure.query(async () => {
+  compliance: scopedOpsProcedure("compliance").query(async () => {
     // Rules are created on first use; make sure the defaults exist so a fresh install is judged fairly.
     await listAlertRules();
     const checks = evaluateCompliance(await readComplianceInputs());
     return { checks, summary: complianceSummary(checks), generatedAt: Date.now() };
   }),
 
-  /** Twelve months of leads, paid revenue and won deals (SRS 21.10). */
-  history: adminProcedure.query(async () => readMonthlyHistory(12)),
+  /** Twelve months of leads, paid revenue and won deals (SRS 21.10). Paid revenue is withheld from an Admin (SRS 13.5). */
+  history: adminProcedure.query(async ({ ctx }) => {
+    const rows = await readMonthlyHistory(12);
+    const mayRevenue = mayViewCompanyRevenue(ctx.user.role);
+    return rows.map((r) => ({ ...r, paidCents: mayRevenue ? r.paidCents : null }));
+  }),
 
   /** CSV export of a fixed dataset (SRS 21.9). Audited, and formula defused like the audit export. */
   exportDataset: adminProcedure.input(z.object({ dataset: z.enum(EXPORT_DATASETS) })).mutation(async ({ ctx, input }) => {
@@ -802,7 +808,7 @@ export const adminOpsRouter = router({
     return { csv: toCsv(columns, rows), rows: rows.length };
   }),
 
-  deployments: opsProcedure.query(async () => listDeployments(20)),
+  deployments: scopedOpsProcedure("deployments").query(async () => listDeployments(20)),
 
   // =========================================================================
   // Account invitations (SRS 8.7, BR-004): registration is invitation only

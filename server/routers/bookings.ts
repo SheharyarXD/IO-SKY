@@ -24,6 +24,7 @@ import {
   appendBookingEvent,
   cancelBookingSlot,
   cancelBookingSlotById,
+  cancelOtherBookingSlots,
   createBooking,
   createLead,
   getBookingById,
@@ -33,9 +34,12 @@ import {
   markBookingEmailSent,
   markBookingOwnerNotified,
   rememberTimezonePreference,
+  replaceBookingReminders,
   scheduleBookingReminders,
   tryHoldBookingSlot,
   confirmBookingSlot,
+  updateBookingSlotTime,
+  updateBookingStatus,
 } from "../db";
 import { sendBookingConfirmation } from "../email";
 import { notifyOwner } from "../_core/notification";
@@ -434,6 +438,9 @@ export const bookingsRouter = router({
         throw new TRPCError({ code: "UNAUTHORIZED", message: `Invalid token (${verified.reason}).` });
       }
       await cancelBookingSlot(verified.bookingId);
+      // The reminder worker suppresses reminders for a cancelled booking only
+      // when the booking itself says so; freeing the slot alone left them firing.
+      await updateBookingStatus(verified.bookingId, "cancelled");
       await appendBookingEvent({
         bookingId: verified.bookingId,
         event: "cancelled_by_guest",
@@ -447,6 +454,16 @@ export const bookingsRouter = router({
       return { ok: true as const };
     }),
 
+  /**
+   * Guest reschedule from the emailed link (SRS 14.7).
+   *
+   * Order matters: the new time is held and confirmed to this booking first,
+   * the booking row and its reminders move next, and only then are the OTHER
+   * slot rows of the booking released. Cancelling by bookingId after the new
+   * slot was confirmed (the previous code) cancelled the new slot as well, so
+   * the guest believed they were booked while the time was open to anyone, and
+   * the booking row and reminders still pointed at the old time.
+   */
   rescheduleByToken: publicProcedure
     .input(
       z.object({
@@ -464,6 +481,23 @@ export const bookingsRouter = router({
       if (!booking) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found." });
       }
+      if (booking.status === "cancelled" || booking.status === "completed") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This booking can no longer be rescheduled." });
+      }
+      const now = Date.now();
+      if (booking.slotStartMs <= now) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This call has already started or taken place." });
+      }
+      // The same time again (a double click, a retried request) changes nothing,
+      // so it succeeds without a second hold, email or notification.
+      if (input.newSlotStartMs === booking.slotStartMs) {
+        return { ok: true as const, unchanged: true as const, slotStartMs: booking.slotStartMs };
+      }
+      // The scheduler never offers a time under 30 minutes away; hold the same line here.
+      if (input.newSlotStartMs < now + 30 * 60_000) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Please choose a time at least 30 minutes from now." });
+      }
+
       const adapter = getBookingAdapter();
       const held = await adapter.hold({
         consultationType: booking.serviceId,
@@ -484,17 +518,72 @@ export const bookingsRouter = router({
         bookingId: booking.id,
       });
       if (!confirmed) {
+        // Give the held row back so the time is not stranded for the hold TTL.
+        await cancelBookingSlotById(held.slotId).catch(() => null);
         throw new TRPCError({ code: "CONFLICT", message: "Slot was reassigned. Try again." });
       }
-      // Release the old slot row.
-      await cancelBookingSlot(booking.id).catch(() => null);
+
+      // Move the booking itself. If that fails the guest is still booked on the
+      // old slot, which has not been touched: undo the new slot and report it.
+      let moved = false;
+      try {
+        moved = await updateBookingSlotTime(booking.id, { slotStartMs: input.newSlotStartMs, timezone: input.timezone });
+      } catch (err) {
+        console.error("[bookings.rescheduleByToken] could not update the booking:", err);
+      }
+      if (!moved) {
+        await cancelBookingSlotById(held.slotId).catch(() => null);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The booking could not be rescheduled. Your original time is unchanged." });
+      }
+
+      // Release the old slot row(s), keeping the new one. A failure here leaves a
+      // stale blocked time, not a double booking, so it is recorded and not fatal.
+      try {
+        await cancelOtherBookingSlots(booking.id, held.slotId);
+      } catch (err) {
+        console.warn("[bookings.rescheduleByToken] old slot not released:", err);
+        await appendBookingAudit({ bookingId: booking.id, event: "old_slot_release_failed", detail: (err as Error).message }).catch(() => null);
+      }
+      // Reminders computed from the old time are superseded; new ones follow the new time.
+      await replaceBookingReminders(booking.id, input.newSlotStartMs).catch((err) => {
+        console.warn("[bookings.rescheduleByToken] reminders not re-planned:", err);
+      });
+
       await appendBookingEvent({
         bookingId: booking.id,
         event: "rescheduled_by_guest",
-        detail: JSON.stringify({ newSlotStartMs: input.newSlotStartMs, tz: input.timezone }),
+        detail: JSON.stringify({ previousSlotStartMs: booking.slotStartMs, newSlotStartMs: input.newSlotStartMs, tz: input.timezone }),
       });
+      await appendBookingAudit({
+        bookingId: booking.id,
+        event: "rescheduled",
+        detail: JSON.stringify({ from: booking.slotStartMs, to: input.newSlotStartMs }),
+      }).catch(() => null);
+
+      // One updated confirmation to the guest with the new time and fresh links.
+      try {
+        const service = CONSULTATION_CATALOG[booking.serviceId as keyof typeof CONSULTATION_CATALOG];
+        await sendBookingConfirmation({
+          publicRef: booking.publicRef,
+          fullName: booking.fullName,
+          email: booking.email,
+          company: booking.company,
+          serviceId: booking.serviceId,
+          serviceLabel: service?.label ?? booking.serviceId,
+          slotStartMs: input.newSlotStartMs,
+          durationMin: booking.durationMin,
+          timezone: input.timezone,
+          meetingUrl: booking.callType === "video" ? booking.meetingUrl : null,
+          cancelToken: makeBookingActionToken({ bookingId: booking.id, action: "cancel" }),
+          rescheduleToken: makeBookingActionToken({ bookingId: booking.id, action: "reschedule" }),
+          locale: booking.locale,
+        });
+      } catch (err) {
+        console.warn("[bookings.rescheduleByToken] updated confirmation not sent:", err);
+      }
+
       await emitNotification({ event: "DISCOVERY_CALL_RESCHEDULED", audience: { type: "admin" }, dedupeRef: `booking:${booking.id}:rescheduled:${input.newSlotStartMs}`, title: `Discovery Call rescheduled by the guest: ${booking.fullName}`, href: "/admin/strategy-calls" }).catch(() => null);
-      return { ok: true as const };
+      return { ok: true as const, unchanged: false as const, slotStartMs: input.newSlotStartMs };
     }),
 
   listRecent: adminProcedure.query(async () => {

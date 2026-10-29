@@ -44,6 +44,12 @@ vi.mock("./db", () => {
     listRecentAiScans: vi.fn(async () => state.aiScans),
     recordNotificationEvent: vi.fn(async () => true),
     createAdminNotification: vi.fn(async () => null),
+    // A healthy agent registry. The AI gate fails closed (P0-01), so a test that
+    // expects the engine to run must provide one rather than rely on an outage.
+    AI_SCAN_AGENT_KEY: "ai_scan_analyst",
+    ensureDefaultAiAgents: vi.fn(async () => {}),
+    authoriseAndRecordAgentAction: vi.fn(async () => ({ outcome: "completed", executionId: 1, promptVersion: null })),
+    getActivePrompt: vi.fn(async () => null),
   };
 });
 
@@ -52,6 +58,7 @@ vi.mock("./_core/notification", () => ({
 }));
 
 vi.mock("./_core/aiScanScoring", () => ({
+  DEFAULT_SCAN_BASE_PROMPT: "test base prompt",
   scoreAiScan: vi.fn(async () => ({
     ok: true as const,
     report: {
@@ -415,6 +422,74 @@ describe("aiScansRouter.submitQuestionnaire", () => {
     expect(ready.report).not.toBeNull();
     expect(ready.report?.overallScore).toBe(64);
     expect(ready.report?.executiveSummary).toContain("executive summary");
+  });
+
+  // P0-02 / P08, SRS 9.10: a paid report opens only for the account that ordered it.
+  describe("report ownership (SRS 9.10)", () => {
+    const PAID_TOKEN = "p".repeat(48);
+    const withUser = (user: { id: number; email: string; role: string } | null) => ({ ...makeCtx("12.0.0.1"), user }) as unknown as Parameters<typeof aiScansRouter.createCaller>[0];
+    const seedPaid = (tier: "growth" | "elite" = "growth") => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const st = (dbMock as any).__state;
+      st.aiScans.push({
+        id: 900, reportToken: PAID_TOKEN, tier, email: "owner@acme.test", company: "Acme", status: "ready", reportStatus: "published",
+        reportPayload: JSON.stringify({ overallScore: 70, executiveSummary: "Confidential findings.", dimensions: [], opportunities: [], roadmap: [], disclaimers: [] }),
+        createdAt: new Date(),
+      });
+    };
+
+    it("refuses a paid report to an anonymous caller who only holds the link", async () => {
+      seedPaid();
+      const caller = aiScansRouter.createCaller(withUser(null));
+      await expect(caller.getReport({ token: PAID_TOKEN })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+      await expect(caller.getReportPdf({ token: PAID_TOKEN })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    });
+
+    it("refuses another organisation's signed in user (cross-tenant), for both the report and the PDF", async () => {
+      seedPaid("elite");
+      const caller = aiScansRouter.createCaller(withUser({ id: 7, email: "mallory@other.test", role: "client" }));
+      await expect(caller.getReport({ token: PAID_TOKEN })).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(caller.getReportPdf({ token: PAID_TOKEN })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    });
+
+    it("refuses a developer or technical operator who is not the owner", async () => {
+      seedPaid();
+      for (const role of ["developer", "technical_operator", "user"]) {
+        const caller = aiScansRouter.createCaller(withUser({ id: 8, email: "someone@iosky.test", role }));
+        await expect(caller.getReport({ token: PAID_TOKEN })).rejects.toMatchObject({ code: "FORBIDDEN" });
+      }
+    });
+
+    it("shows the report to the owner, matching the email case-insensitively", async () => {
+      seedPaid();
+      const caller = aiScansRouter.createCaller(withUser({ id: 9, email: "Owner@Acme.test", role: "client" }));
+      const r = await caller.getReport({ token: PAID_TOKEN });
+      expect(r.report?.executiveSummary).toBe("Confidential findings.");
+    });
+
+    it("lets IO SKY staff (admin, super_admin) read it", async () => {
+      seedPaid();
+      for (const role of ["admin", "super_admin"]) {
+        const caller = aiScansRouter.createCaller(withUser({ id: 1, email: "staff@iosky.test", role }));
+        expect((await caller.getReport({ token: PAID_TOKEN })).report).not.toBeNull();
+      }
+    });
+
+    it("keeps the emailed link working for a free guest scan (no account exists)", async () => {
+      const guest = aiScansRouter.createCaller(withUser(null));
+      const r = await guest.submitQuestionnaire(questionnaireInput({ email: "guest@example.com" }));
+      const state = (dbMock as unknown as { __state: { aiScans: Array<Record<string, unknown>> } }).__state;
+      state.aiScans.find((x) => x.reportToken === r.reportToken)!.reportStatus = "published";
+      expect((await guest.getReport({ token: r.reportToken as string })).report).not.toBeNull();
+    });
+
+    it("never returns the report body of an unpublished paid scan, even to its owner (BR-016)", async () => {
+      seedPaid();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (dbMock as any).__state.aiScans.find((x: Record<string, unknown>) => x.reportToken === PAID_TOKEN).reportStatus = "awaiting_expert_review";
+      const caller = aiScansRouter.createCaller(withUser({ id: 9, email: "owner@acme.test", role: "client" }));
+      expect((await caller.getReport({ token: PAID_TOKEN })).report).toBeNull();
+    });
   });
 
   it("getReport throws NOT_FOUND for unknown tokens", async () => {

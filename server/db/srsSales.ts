@@ -9,6 +9,7 @@
  */
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
+import { mayViewCompanyRevenue } from "../../shared/srsRules";
 import {
   clientInvoices,
   clientProjects,
@@ -379,6 +380,24 @@ export type FinancialSummary = {
   monthlyRecurringCents: number;
   activeSubscriptions: number;
 };
+
+/**
+ * SRS 13.5 / 12.5: an Admin sees what is outstanding and overdue; paid totals
+ * and recurring revenue are company revenue and stay with the Super Admin.
+ * Withheld on the server so they never reach an Admin's browser.
+ */
+export type FinancialSummaryView = Omit<FinancialSummary, "paidLast30DaysCents" | "paidLast90DaysCents" | "monthlyRecurringCents"> & {
+  paidLast30DaysCents: number | null;
+  paidLast90DaysCents: number | null;
+  monthlyRecurringCents: number | null;
+  revenueVisible: boolean;
+};
+
+export function shapeFinancialSummaryForRole(f: FinancialSummary | null, role: string | null | undefined): FinancialSummaryView | null {
+  if (!f) return null;
+  if (mayViewCompanyRevenue(role)) return { ...f, revenueVisible: true };
+  return { ...f, paidLast30DaysCents: null, paidLast90DaysCents: null, monthlyRecurringCents: null, revenueVisible: false };
+}
 
 export async function readFinancialSummary(now = Date.now()): Promise<FinancialSummary | null> {
   const db = await getDb();

@@ -6,10 +6,12 @@
  * is recorded either way, and the active managed prompt is returned so the
  * engine uses the versioned text rather than a hard coded one.
  *
- * An explicit refusal blocks the run (a super admin disabling the agent is a
- * kill switch). An infrastructure failure does NOT: if the registry cannot be
- * reached the scan proceeds on the built in prompt, because failing every
- * customer scan on a bookkeeping outage would be worse than an unrecorded run.
+ * The gate fails closed (SRS 19.18, BR-009). An explicit refusal blocks the run
+ * (a super admin disabling the agent is a kill switch), and so does any
+ * condition under which permission cannot be verified: a registry error, or no
+ * verdict at all. A blocked run is marked failed and the admin team is notified
+ * by the caller, so the scan can be re-run once the registry is healthy; an
+ * unverified model call is never made.
  */
 import { DEFAULT_SCAN_BASE_PROMPT } from "./_core/aiScanScoring";
 import { AI_SCAN_AGENT_KEY, authoriseAndRecordAgentAction, ensureDefaultAiAgents, getActivePrompt } from "./db";
@@ -27,13 +29,16 @@ export async function guardAiScanRun(scanId: number): Promise<AiGuard> {
       subjectRef: `scan:${scanId}`,
       detail: null,
     });
-    if (verdict && verdict.outcome === "blocked_by_permission") {
+    if (!verdict) {
+      return { allowed: false, reason: "The AI Scan analyst could not be run because its permission could not be verified (no registry verdict)." };
+    }
+    if (verdict.outcome === "blocked_by_permission") {
       return { allowed: false, reason: `The AI Scan analyst is not permitted to run (${verdict.reason.replace(/_/g, " ")}).` };
     }
     const prompt = await getActivePrompt(AI_SCAN_AGENT_KEY);
     return prompt ? { allowed: true, basePrompt: prompt.body, promptVersion: prompt.version } : { allowed: true };
   } catch (err) {
-    console.error("[aiGovernance] registry unavailable, running on the default prompt:", err);
-    return { allowed: true };
+    console.error("[aiGovernance] registry unavailable, blocking the run (fail closed):", err);
+    return { allowed: false, reason: "The AI Scan analyst could not be run because its permission could not be verified (registry unavailable)." };
   }
 }

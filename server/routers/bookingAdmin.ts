@@ -31,6 +31,7 @@ import {
   listCalendarBlocks,
   listRecentBookings,
   setBookingCallType,
+  updateBookingStatus,
 } from "../db";
 import { notifyOwner } from "../_core/notification";
 import { dispatchDueBookingReminders } from "../_core/bookingReminders";
@@ -181,6 +182,7 @@ export const bookingAdminRouter = router({
       const booking = await getBookingByPublicRef(input.publicRef);
       if (!booking) throw new TRPCError({ code: "NOT_FOUND" });
       await cancelBookingSlot(booking.id);
+      await updateBookingStatus(booking.id, "cancelled");
       await appendBookingEvent({
         bookingId: booking.id,
         event: "admin_cancelled",

@@ -68,6 +68,19 @@ export function roleMayAccessDocumentType(role: string, row: { authorizedRoles: 
   return parseRoles(row.authorizedRoles).includes(role);
 }
 
+/**
+ * SRS 18.8 / GOV-08: a client sees a document only when the matrix opens its
+ * type to clients. `allowedTypes` is the allow-list of client-visible types, or
+ * null when the matrix could not be read. The check fails closed: a typed
+ * document whose type is missing from the matrix, or any typed document while
+ * the matrix is unreadable, is hidden. Documents with no type are outside the
+ * matrix and keep their existing organisation-scoped visibility.
+ */
+export function clientMayViewDocument(doc: { documentType: string | null | undefined }, allowedTypes: ReadonlySet<string> | null): boolean {
+  if (!doc.documentType) return true;
+  return allowedTypes !== null && allowedTypes.has(doc.documentType);
+}
+
 // ---- Technical Operator scopes -----------------------------------------------------------------------------------
 
 export const OPERATOR_SCOPES = ["frontend", "backend", "full_stack", "ui_ux", "infrastructure", "security", "database"] as const;
@@ -81,9 +94,37 @@ export function scopeIsActive(g: ScopeGrant, now = new Date()): boolean {
   return true;
 }
 
-/** Security Center access is never implied by the role: it needs an active security scope. Admins keep it. */
-export function mayUseSecurityCenter(role: string, grants: ScopeGrant[], now = new Date()): boolean {
+/**
+ * Every Technical Operator operation and the scopes that open it (SRS 5.7,
+ * 13.8, GOV-06, task Z09). An operator needs at least one ACTIVE (not revoked,
+ * not expired) grant from the list; the role alone opens nothing. Admins and
+ * Super Admins are not scope limited. A new operator endpoint must pick an
+ * operation here, and an operation with no entry is refused.
+ *
+ * The mapping of operation to scope is an engineering reading of the seven
+ * existing scopes and is listed in MILESTONE4_BLOCKERS.md for confirmation.
+ */
+export const OPS_OPERATION_SCOPES = {
+  system_health: ["infrastructure", "backend", "full_stack"],
+  email_log: ["infrastructure", "backend", "full_stack"],
+  platform_health: ["infrastructure", "backend", "full_stack"],
+  deployments: ["infrastructure", "backend", "full_stack"],
+  incidents: ["infrastructure", "security"],
+  alerts: ["infrastructure", "security"],
+  compliance: ["security", "infrastructure"],
+  security: ["security"],
+} as const satisfies Record<string, readonly OperatorScope[]>;
+export type OpsOperation = keyof typeof OPS_OPERATION_SCOPES;
+
+export function operatorMayPerform(role: string, grants: ScopeGrant[], operation: OpsOperation, now = new Date()): boolean {
   if (role === "super_admin" || role === "admin") return true;
   if (role !== "technical_operator") return false;
-  return grants.some((g) => g.scope === "security" && scopeIsActive(g, now));
+  const allowed: readonly string[] | undefined = OPS_OPERATION_SCOPES[operation];
+  if (!allowed) return false;
+  return grants.some((g) => allowed.includes(g.scope) && scopeIsActive(g, now));
+}
+
+/** Security Center access is never implied by the role: it needs an active security scope. Admins keep it. */
+export function mayUseSecurityCenter(role: string, grants: ScopeGrant[], now = new Date()): boolean {
+  return operatorMayPerform(role, grants, "security", now);
 }

@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { getLoginUrl } from "@/const";
 import { useT } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { Download, Loader2 } from "lucide-react";
@@ -94,6 +95,27 @@ export default function AIScanResult() {
     return (
       <Shell>
         <LoadingView />
+      </Shell>
+    );
+  }
+
+  // SRS 9.10: a paid report opens only for the account that ordered it.
+  const errorCode = query.error?.data?.code;
+  if (errorCode === "UNAUTHORIZED" || errorCode === "FORBIDDEN") {
+    return (
+      <Shell>
+        <Alert>
+          <AlertDescription>
+            {errorCode === "UNAUTHORIZED"
+              ? "This report is private to the account that ordered it. Sign in with that account to view it."
+              : "You are signed in with an account that does not own this report. Sign in with the account that ordered the scan."}
+          </AlertDescription>
+        </Alert>
+        <div className="mt-4">
+          <Button asChild>
+            <a href={getLoginUrl(`/ai-scan/result/${token}`)}>Sign in</a>
+          </Button>
+        </div>
       </Shell>
     );
   }
