@@ -84,6 +84,15 @@ vi.mock("./db", () => {
   };
 });
 
+const handoff = vi.hoisted(() => ({
+  listReleasedDocumentsForDeveloper: vi.fn(async () => [] as any[]),
+  getReleasedDocumentForDeveloper: vi.fn(async () => null as any),
+}));
+vi.mock("./db/documentHandoff", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return { ...actual, ...handoff };
+});
+
 vi.mock("./_core/notification", () => ({
   notifyOwner: vi.fn(async () => true),
 }));
@@ -413,6 +422,59 @@ describe("developer router — Notification Center (Milestone 2 §2.7)", () => {
     expect(r).toMatchObject({ status: "archived" });
     const { archiveDeveloperNotification } = await import("./db");
     expect(archiveDeveloperNotification).toHaveBeenCalledWith(100, 5);
+  });
+});
+
+// -------------------------------------------------------------------
+// J10: released client documents. Membership alone confers nothing.
+// -------------------------------------------------------------------
+describe("developer router: released client documents (J10)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const st = gateState();
+    st.gate = { ok: true };
+    st.assignments = [{ projectId: 500, developerId: 100, status: "active" }];
+  });
+
+  it("lists only what the data layer says was released to this developer, by their own id", async () => {
+    handoff.listReleasedDocumentsForDeveloper.mockResolvedValueOnce([{ id: 7, name: "Spec.pdf", developerProjectId: 500 }]);
+    const r = await appRouter.createCaller(makeCtx({})).developer.listReleasedDocuments();
+    expect(r).toEqual([{ id: 7, name: "Spec.pdf", developerProjectId: 500 }]);
+    expect(handoff.listReleasedDocumentsForDeveloper).toHaveBeenCalledWith(100);
+  });
+
+  it("a released document gives a signed link from the client bucket and is audited without the storage key", async () => {
+    handoff.getReleasedDocumentForDeveloper.mockResolvedValueOnce({ id: 7, name: "Spec.pdf", mimeType: "application/pdf", fileKey: "4/documents/123-secret-client-key.pdf", developerProjectId: 500 });
+    const r = await appRouter.createCaller(makeCtx({})).developer.requestReleasedDocumentUrl({ documentId: 7 });
+    expect(r.url).toContain("https://signed.example/4/documents/123-secret-client-key.pdf");
+    expect(r).toMatchObject({ name: "Spec.pdf", mimeType: "application/pdf" });
+    expect(r).not.toHaveProperty("fileKey");
+    expect(handoff.getReleasedDocumentForDeveloper).toHaveBeenCalledWith({ developerId: 100, documentId: 7 });
+    const { appendDeveloperAudit } = await import("./db");
+    const audit = (appendDeveloperAudit as any).mock.calls.at(-1)[0];
+    expect(audit).toMatchObject({ developerId: 100, event: "released_document.downloaded", detail: "documentId=7 developerProjectId=500" });
+    expect(JSON.stringify(audit)).not.toContain("secret-client-key");
+  });
+
+  it("a document that was not released to this developer is refused, no link is created, and it is a high severity security event", async () => {
+    handoff.getReleasedDocumentForDeveloper.mockResolvedValueOnce(null);
+    const storage = await import("./storage");
+    (storage.storageGetSignedUrl as any).mockClear();
+    await expect(appRouter.createCaller(makeCtx({})).developer.requestReleasedDocumentUrl({ documentId: 99 })).rejects.toMatchObject({ code: "FORBIDDEN", message: "document_not_accessible" });
+    expect(storage.storageGetSignedUrl).not.toHaveBeenCalled();
+    const { appendDeveloperSecurityEvent } = await import("./db");
+    expect((appendDeveloperSecurityEvent as any).mock.calls.at(-1)[0]).toMatchObject({ developerId: 100, kind: "unauthorized_route", severity: "high", detail: "documentId=99" });
+  });
+
+  it("the developer gates still apply first: no profile, a client, or an anonymous caller get nothing", async () => {
+    const st = gateState();
+    st.gate = { ok: false, reason: "mfa_required" };
+    await expect(appRouter.createCaller(makeCtx({})).developer.listReleasedDocuments()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    st.gate = { ok: true };
+    await expect(appRouter.createCaller(makeCtx({ role: "client" })).developer.requestReleasedDocumentUrl({ documentId: 7 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(appRouter.createCaller(makeCtx({ authed: false })).developer.listReleasedDocuments()).rejects.toBeTruthy();
+    expect(handoff.getReleasedDocumentForDeveloper).not.toHaveBeenCalled();
+    expect(handoff.listReleasedDocumentsForDeveloper).not.toHaveBeenCalled();
   });
 });
 

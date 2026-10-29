@@ -77,6 +77,9 @@ import {
 import { recordAdminEvent } from "./admin";
 import { emitNotification } from "../notificationDispatcher";
 import { resolveNotificationLink } from "../../shared/notificationLinks";
+import { evaluateRelease } from "../../shared/documentHandoff";
+import { createRelease, getReleaseFacts, linkDeveloperProject, listActiveAssignedDeveloperIds, listReleases, revokeRelease, unlinkDeveloperProject } from "../db/documentHandoff";
+const message_alreadyReleased = "This document is already released to that project.";
 import { KNOWLEDGE_SOURCES, REGISTRY_LIMITS, validateRegistryFields } from "../../shared/aiAgentRegistry";
 import { EXPORT_DATASETS, INVITABLE_ROLES, mayViewCompanyRevenue, INVITATION_TTL_DAYS, canInviteRole, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
 import { AI_SCAN_AGENT_KEY, createInvitation, decideLatestAiExecutionForSubject, listInvitations, revokeInvitation, listDeployments, readComplianceInputs, readExportDataset, readMonthlyHistory } from "../db";
@@ -144,6 +147,71 @@ export const adminOpsRouter = router({
       await markAdminNotificationsRead(ctx.user.id, n.id);
       return { allowed: true as const, href: d.href, home: null, reason: null };
     }),
+
+  // =========================================================================
+  // Controlled document handoff (J09, J10): only IO SKY staff release a client document to developers
+  // =========================================================================
+  linkDeveloperProject: adminProcedure
+    .input(z.object({ developerProjectId: z.number().int().positive(), clientProjectId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await linkDeveloperProject({ ...input, userId: ctx.user.id });
+      if (r === "developer_project_not_found") fail("NOT_FOUND", "Developer project not found.");
+      if (r === "client_project_not_found") fail("NOT_FOUND", "Client project not found.");
+      if (r === "unavailable") fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
+      await recordAdminEvent({ ctx, reason: `admin.handoff.link(dev=${input.developerProjectId}:client=${input.clientProjectId})` });
+      return { ok: true as const };
+    }),
+
+  unlinkDeveloperProject: adminProcedure
+    .input(z.object({ developerProjectId: z.number().int().positive(), clientProjectId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await unlinkDeveloperProject({ ...input, userId: ctx.user.id });
+      if (!r.removed) fail("NOT_FOUND", "No such link.");
+      await recordAdminEvent({ ctx, reason: `admin.handoff.unlink(dev=${input.developerProjectId}:client=${input.clientProjectId}:revoked=${r.revoked})` });
+      return r;
+    }),
+
+  releaseDocumentToDevelopers: adminProcedure
+    .input(z.object({ documentId: z.number().int().positive(), developerProjectId: z.number().int().positive(), note: z.string().trim().max(500).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const facts = await getReleaseFacts(input);
+      if (!facts) fail("NOT_FOUND", "Document or developer project not found.");
+      const verdict = evaluateRelease({ actorRole: ctx.user.role, documentStatus: facts.document.status, documentOrganizationId: facts.document.organizationId, linkedProjectOrganizationIds: facts.linkedProjectOrganizationIds, alreadyReleased: facts.alreadyReleased });
+      if (!verdict.ok) {
+        const message: Record<string, string> = {
+          not_staff: "Only IO SKY staff can release a document.",
+          document_not_approved: "Approve the document in review before releasing it.",
+          not_linked: "Link this developer project to the client project first.",
+          organization_mismatch: "This document belongs to a different client than the project linked to this developer project.",
+          already_released: "This document is already released to that project.",
+        };
+        // A mismatch is the one that matters: it means a wrong selection nearly sent one client's file to another's project.
+        if (verdict.reason === "organization_mismatch") await recordAdminEvent({ ctx, reason: `admin.handoff.release_blocked(doc=${input.documentId}:dev=${input.developerProjectId}:organization_mismatch)` });
+        fail(verdict.reason === "already_released" ? "CONFLICT" : verdict.reason === "not_staff" ? "FORBIDDEN" : "PRECONDITION_FAILED", message[verdict.reason]);
+      }
+      const rel = await createRelease({ documentId: input.documentId, developerProjectId: input.developerProjectId, userId: ctx.user.id, note: input.note ?? null });
+      if (rel === "already_released") fail("CONFLICT", message_alreadyReleased);
+      if (!rel) fail("INTERNAL_SERVER_ERROR", "Could not record the release.");
+      await recordAdminEvent({ ctx, reason: `admin.handoff.release(doc=${input.documentId}:dev=${input.developerProjectId}:release=${rel.id})` });
+      // Tell the developers on that project, without naming the client or the file.
+      for (const developerId of await listActiveAssignedDeveloperIds(input.developerProjectId)) {
+        await notifyDeveloper({ developerId, kind: "document", title: "A document was released to your project", body: "IO SKY released a new document. Open Released documents to view it.", href: "/developer-workspace/projects", priority: "normal" }).catch(() => undefined);
+      }
+      return { ok: true as const, releaseId: rel.id };
+    }),
+
+  revokeDocumentRelease: adminProcedure
+    .input(z.object({ releaseId: z.number().int().positive(), note: z.string().trim().max(500).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await revokeRelease({ releaseId: input.releaseId, userId: ctx.user.id, note: input.note ?? null });
+      if (!r) fail("NOT_FOUND", "No active release with that id.");
+      await recordAdminEvent({ ctx, reason: `admin.handoff.revoke(release=${input.releaseId}:doc=${r.documentId}:dev=${r.developerProjectId})` });
+      return { ok: true as const };
+    }),
+
+  documentReleases: adminProcedure
+    .input(z.object({ developerProjectId: z.number().int().positive().optional(), documentId: z.number().int().positive().optional() }).default({}))
+    .query(async ({ input }) => listReleases(input)),
 
   markNotificationsRead: adminProcedure
     .input(z.object({ id: z.number().int().positive().optional() }))

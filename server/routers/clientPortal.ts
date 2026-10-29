@@ -48,6 +48,7 @@ import { setInvoiceCheckoutSession } from "../db/payments";
 import { clientVisibleDocumentTypes } from "../db/platformGovernance";
 import { resolveNotificationLink } from "../../shared/notificationLinks";
 import { validateUpload } from "../../shared/uploadValidation";
+import { associateDocumentWithProject, listDocumentsForClientProject } from "../db/documentHandoff";
 import { clientMayViewDocument } from "../../shared/platformRules";
 
 const supportTicketSchema = z.object({
@@ -153,6 +154,26 @@ export const clientPortalRouter = router({
    * the caller's CURRENT role must still be allowed there. A refusal is audited
    * and the caller is sent to the portal home instead.
    */
+  /**
+   * J09: file one of the organisation's documents under one of its own projects.
+   * This only organises the client's own vault; it shares nothing. A document
+   * reaches a developer only through an explicit IO SKY release (J10).
+   */
+  associateDocument: clientProcedure
+    .input(z.object({ documentId: z.number().int().positive(), clientProjectId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await associateDocumentWithProject({ documentId: input.documentId, clientProjectId: input.clientProjectId, organizationId: ctx.organizationId, userId: ctx.user.id });
+      if (r === "document_not_found" || r === "project_not_found") throw new TRPCError({ code: "NOT_FOUND", message: r === "document_not_found" ? "Document not found." : "Project not found." });
+      if (r === "unavailable") throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Could not file the document. Please try again." });
+      await appendLoginAudit({ userId: ctx.user.id, identifier: ctx.user.email ?? null, provider: "client-portal", outcome: "success", reason: `document-associate:${input.documentId}:${input.clientProjectId}`, ip: null, userAgent: null }).catch(() => undefined);
+      return { ok: true as const };
+    }),
+
+  /** Documents filed under one of this organisation's projects. */
+  projectDocuments: clientProcedure
+    .input(z.object({ clientProjectId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => listDocumentsForClientProject(ctx.organizationId, input.clientProjectId)),
+
   openNotification: clientProcedure
     .input(z.object({ notificationId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {

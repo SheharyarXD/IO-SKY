@@ -48,3 +48,4 @@ export * from "./srsOps";
 export * from "./srsExtras";
 export * from "./accounts";
 export * from "./emailOutbox";
+export * from "./documentHandoff";

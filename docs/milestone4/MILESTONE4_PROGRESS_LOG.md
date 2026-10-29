@@ -233,6 +233,16 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Remaining: an antivirus integration once the engine is chosen; storing the note needs a column (migration); other upload paths.
 - Next: J09, J10.
 
+## J09 and J10 Controlled document handoff
+
+- Previous status: both NOT_STARTED (audit: J09 C "no project or type on upload", J10 C "verify default-private"). New status: TESTED_LOCAL, SQL unverified. Done together because the release gate (J10) needs the association (J09).
+- Finding that shaped the design: `developer_projects` is organisation-blind on purpose and nothing links it to a client project, so "which client documents may go to which developer project" cannot be derived. Without an explicit link a release would rest on a staff member picking two ids correctly. So staff link a developer project to a client project, and a release is allowed only when the document's organisation equals the linked client project's.
+- Change: new tables `project_documents`, `developer_project_links`, `document_releases`, `document_release_events` (migration 0041, written, NOT applied). Rules in `shared/documentHandoff.ts`; persistence in `server/db/documentHandoff.ts`. Client: `associateDocument` and `projectDocuments` organise the client's own vault and share nothing. Staff: `linkDeveloperProject`, `unlinkDeveloperProject`, `releaseDocumentToDevelopers`, `revokeDocumentRelease`, `documentReleases`. Developer: `listReleasedDocuments` and `requestReleasedDocumentUrl`, which need assignment AND release AND still-approved document, enforced in the query.
+- Default-private is true by construction: no code path exposes a client document to a developer except a staff-created release row.
+- Tests: `documentHandoff.test.ts` 22 and 4 developer cases. Full suite 1619 passed, 57 skipped, 0 failed; typecheck and build clean.
+- Not built: the developer-to-client direction, screens, client visibility of release status, a separate request state for clients.
+- Next: select the next eligible baseline task.
+
 ---
 
 ## Status translation rules used for the import

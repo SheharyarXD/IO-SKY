@@ -2688,6 +2688,76 @@ export const reportDownloadAudit = pgTable(
   ],
 );
 export type ReportDownloadAudit = typeof reportDownloadAudit.$inferSelect;
+
+/**
+ * Controlled document handoff (tasks J09, J10; SRS 15.13, 18.20; 29 Oct Doc 1
+ * Ch10.1: "Documents shared across the client/developer boundary require explicit
+ * IO SKY release; mere project membership does not confer access"). Migration 0041.
+ */
+
+/** A client document filed under one of the client's own projects (J09). */
+export const projectDocuments = pgTable(
+  "project_documents",
+  {
+    id: serial("id").primaryKey(),
+    documentId: integer("documentId").notNull().references(() => clientDocuments.id, { onDelete: "cascade" }),
+    clientProjectId: integer("clientProjectId").notNull().references(() => clientProjects.id, { onDelete: "cascade" }),
+    associatedByUserId: integer("associatedByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("project_documents_unique_idx").on(t.documentId, t.clientProjectId), index("project_documents_project_idx").on(t.clientProjectId)],
+);
+
+/**
+ * Which client project a developer project delivers (set by IO SKY staff only).
+ * Developer projects are organisation-blind by design, so without this link there
+ * is no way to tell whose documents may be released into them; with no link, no
+ * release is possible.
+ */
+export const developerProjectLinks = pgTable(
+  "developer_project_links",
+  {
+    id: serial("id").primaryKey(),
+    developerProjectId: integer("developerProjectId").notNull().references(() => developerProjects.id, { onDelete: "cascade" }),
+    clientProjectId: integer("clientProjectId").notNull().references(() => clientProjects.id, { onDelete: "cascade" }),
+    linkedByUserId: integer("linkedByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("developer_project_links_unique_idx").on(t.developerProjectId, t.clientProjectId)],
+);
+
+/** An explicit IO SKY release of one client document to one developer project. status: released | revoked. */
+export const documentReleases = pgTable(
+  "document_releases",
+  {
+    id: serial("id").primaryKey(),
+    documentId: integer("documentId").notNull().references(() => clientDocuments.id, { onDelete: "cascade" }),
+    developerProjectId: integer("developerProjectId").notNull().references(() => developerProjects.id, { onDelete: "cascade" }),
+    status: varchar("status", { length: 12 }).default("released").notNull(),
+    releasedByUserId: integer("releasedByUserId").references(() => users.id),
+    note: varchar("note", { length: 500 }),
+    releasedAt: timestamp("releasedAt").defaultNow().notNull(),
+    revokedByUserId: integer("revokedByUserId").references(() => users.id),
+    revokedAt: timestamp("revokedAt"),
+  },
+  (t) => [index("document_releases_project_idx").on(t.developerProjectId, t.status), index("document_releases_document_idx").on(t.documentId)],
+);
+
+/** Append-only history of every release and revocation. */
+export const documentReleaseEvents = pgTable(
+  "document_release_events",
+  {
+    id: serial("id").primaryKey(),
+    documentId: integer("documentId").notNull().references(() => clientDocuments.id, { onDelete: "cascade" }),
+    developerProjectId: integer("developerProjectId").notNull().references(() => developerProjects.id, { onDelete: "cascade" }),
+    event: varchar("event", { length: 16 }).notNull(),
+    actorUserId: integer("actorUserId").references(() => users.id),
+    note: varchar("note", { length: 500 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("document_release_events_document_idx").on(t.documentId, t.createdAt)],
+);
+export type DocumentRelease = typeof documentReleases.$inferSelect;
 export type InsertReportDownloadAudit = typeof reportDownloadAudit.$inferInsert;
 
 // Migration 0026: call outcomes, developer task comments, questionnaire drafts.

@@ -45,6 +45,7 @@ import {
 import { storageGetSignedUrl } from "../storage";
 import { appendLoginAudit, getDeveloperNotificationById } from "../db";
 import { resolveNotificationLink } from "../../shared/notificationLinks";
+import { getReleasedDocumentForDeveloper, listReleasedDocumentsForDeveloper } from "../db/documentHandoff";
 import { emitNotification } from "../notificationDispatcher";
 import { TASK_COMMENT_KINDS, checkTimeEntry } from "../../shared/srsRules";
 import { getRequestMeta } from "../_core/requestMeta";
@@ -269,6 +270,35 @@ export const developerRouter = router({
         userAgent: meta.userAgent,
       });
       return { url, name: file.name, mimeType: file.mimeType };
+    }),
+
+  // -----------------------------------------------------------------
+  // Released client documents (J10). Needs an active assignment AND an explicit
+  // IO SKY release AND the document still approved: project membership alone
+  // confers nothing.
+  // -----------------------------------------------------------------
+  listReleasedDocuments: developerProcedure.query(async ({ ctx }) => listReleasedDocumentsForDeveloper(ctx.developer.id)),
+
+  requestReleasedDocumentUrl: developerProcedure
+    .input(z.object({ documentId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const doc = await getReleasedDocumentForDeveloper({ developerId: ctx.developer.id, documentId: input.documentId });
+      if (!doc) {
+        await appendDeveloperSecurityEvent({
+          developerId: ctx.developer.id,
+          kind: "unauthorized_route",
+          severity: "high",
+          message: "Attempt to download a client document that was not released to this developer",
+          detail: `documentId=${input.documentId}`,
+          ...callerMeta(ctx.req),
+        });
+        throw new TRPCError({ code: "FORBIDDEN", message: "document_not_accessible" });
+      }
+      const url = await storageGetSignedUrl("client-portal", doc.fileKey);
+      const meta = callerMeta(ctx.req);
+      // The record names the document and project, never the storage key or the client.
+      await appendDeveloperAudit({ developerId: ctx.developer.id, event: "released_document.downloaded", detail: `documentId=${doc.id} developerProjectId=${doc.developerProjectId}`, ip: meta.ip, userAgent: meta.userAgent });
+      return { url, name: doc.name, mimeType: doc.mimeType };
     }),
 
   // -----------------------------------------------------------------

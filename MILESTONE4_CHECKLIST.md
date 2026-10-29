@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 20
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 22
 - Live verification pending: 20
 - In progress: 0
-- Not started: 42
+- Not started: 40
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -248,8 +248,8 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `J04`: Per-developer tasks and milestones, reassignment, replacement preserving (P1, BASELINE, NOT_STARTED)
 - [ ] `J07`: Mediated messaging (P1, BASELINE, NOT_STARTED)
 - [ ] `J08`: Upload validation, type and size limits, malware (P1, BASELINE, TESTED_LOCAL)
-- [ ] `J09`: Project-document association and controlled handoff (GOV-09) (P1, BASELINE, NOT_STARTED)
-- [ ] `J10`: Cross-boundary release gate between client and developer (P1, BASELINE, NOT_STARTED)
+- [ ] `J09`: Project-document association and controlled handoff (GOV-09) (P1, BASELINE, TESTED_LOCAL)
+- [ ] `J10`: Cross-boundary release gate between client and developer (P1, BASELINE, TESTED_LOCAL)
 - [x] `J01`: Project lifecycle stages with append-only history (P2, ALREADY_DELIVERED, COMPLETED_VERIFIED)
 - [ ] `J02`: Rename project keeping stable ID (P2, ALREADY_DELIVERED, LIVE_VERIFICATION_PENDING)
 - [ ] `J05`: Implementer and Reviewer independent assignment, reviewer read (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
