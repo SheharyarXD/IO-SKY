@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 14
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 15
 - Live verification pending: 20
 - In progress: 0
-- Not started: 48
+- Not started: 47
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -89,7 +89,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `G02`: Registry fields (P1, BASELINE, TESTED_LOCAL)
 - [ ] `G03`: Shared agent runtime (P1, BASELINE, TESTED_LOCAL)
 - [ ] `G05`: Permission-aware knowledge store and retrieval (P1, BASELINE, NOT_STARTED)
-- [ ] `G09`: Per-agent Technical Operator scope enforcement at tool, (P1, BASELINE, NOT_STARTED)
+- [ ] `G09`: Per-agent Technical Operator scope enforcement at tool, (P1, BASELINE, TESTED_LOCAL)
 - [ ] `G12`: Agent registry reconciliation (P1, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)
 - [ ] `G04`: Multi-provider priority, fallback, budget limits (P2, BASELINE, NOT_STARTED)
 - [ ] `G06`: Prompt, voice and script configuration UI with (P2, BASELINE, NOT_STARTED)

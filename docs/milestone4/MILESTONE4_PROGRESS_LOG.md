@@ -173,6 +173,16 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Decisions needed: which agents move onto it first, and their tools (G12 to G17, client decision); the approve-then-execute flow.
 - Next: nothing selected in this batch; see the register.
 
+## G09 Per-agent Technical Operator permissions
+
+- Previous status: NOT_STARTED (audit: C). New status: TESTED_LOCAL.
+- Gap: operator scopes were platform-wide (frontend, backend, infrastructure, security, ...). Nothing tied an operator to an individual AI agent, so authorisation for one agent could not be separated from another (SRS 5.7, 13.8; F-26).
+- Change: agent access is a grant in the existing `operator_scopes` table written `agent:<key>:<action>` with action view, run or approve, so expiry, revocation and the grant audit come for free. `shared/agentOperatorScopes.ts` holds the pure rules. Runtime: an operator actor needs the run grant for this agent at the start and before every tool call (a revocation mid-run stops the next call); a person with an unknown role is refused. API: `ops.myAgents`, `ops.agentExecutions` (view) and `ops.decideAgentExecution` (approve, checked against the execution's own agent; an operator cannot tell a missing id from a forbidden one). Grants: `adminPlatform.grantOperatorScope` accepts a well-formed agent scope only for a registered agent. The decision mutation is on the central audit list.
+- Migration: `drizzle/0039_operator_scope_length.sql` widens the scope column from 32 to 80 characters. Written, NOT applied, independent of 0037 and 0038.
+- Tests: `agentOperatorScopes.test.ts` 23 and 6 runtime cases in `agentRuntime.test.ts`: Agent A does not open Agent B, each action separate, platform scopes never open an agent, expiry and revocation to the second, lookup failure refuses, mid-run revocation, grant endpoint validation. Existing agentRuntime fixtures needed an actor role (a user id without a role is now refused by design). Full suite 1446 passed, 57 skipped, 0 failed; typecheck and build clean.
+- Remaining: apply 0039 on a non-production database; no operator UI for the new endpoints; verification against a real database.
+- Next: G05.
+
 ---
 
 ## Status translation rules used for the import

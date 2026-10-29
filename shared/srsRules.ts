@@ -513,6 +513,7 @@ export function complianceSummary(checks: ComplianceCheck[]): { pass: number; wa
 const AUDITED_MUTATION_PREFIXES = ["bookingAdmin."];
 const AUDITED_MUTATION_PATHS = new Set([
   "ops.acknowledgeSecurityEvent",
+  "ops.decideAgentExecution",
   "clientPortal.sendMessage",
   "clientPortal.createTicket",
   "clientPortal.decideApproval",

@@ -52,6 +52,7 @@ All runs after this was discovered used the blank variable.
 | Full suite after G02 | plain `npx vitest run` (database-free) | 101 files passed, 6 skipped; **1,382 passed, 57 skipped, 0 failed**; typecheck and build clean |
 | Full suite after G03 | plain `npx vitest run` (database-free) | 102 files passed, 6 skipped; **1,416 passed, 57 skipped, 0 failed**; typecheck and build clean |
 | Full suite after I07 (release identity) | `DATABASE_URL=` blank | 93 files passed, 6 skipped; **1,262 passed, 57 skipped, 0 failed** |
+| Full suite after G09 | plain `npx vitest run` (database-free) | 103 files passed, 6 skipped; **1,446 passed, 57 skipped, 0 failed**; typecheck and build clean |
 
 The 57 skipped tests in blank mode are: dbConstraints 9, rls.negative 18, concurrency 9, queryPerformance 6, legal 9, requireAcceptances 6. None of them is counted as passed in that row.
 
