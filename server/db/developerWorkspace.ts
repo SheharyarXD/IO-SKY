@@ -730,6 +730,18 @@ export async function appendDeveloperNotification(args: {
 }
 
 /** Milestone 2 §2.7 — mark one of this developer's notifications read (or unread). Scoped by developerId so cross-developer leakage is structurally impossible. */
+/** One notification of this developer, or null. Ownership is in the query. */
+export async function getDeveloperNotificationById(developerId: number, notificationId: number): Promise<DeveloperNotification | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(developerNotifications)
+    .where(and(eq(developerNotifications.developerId, developerId), eq(developerNotifications.id, notificationId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export async function setDeveloperNotificationRead(
   developerId: number,
   notificationId: number,

@@ -105,6 +105,17 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Remaining: CI workflow unproven until it runs; create a `TEST_DATABASE_URL` secret for an isolated database to restore DB coverage in CI; e2e job and provider keys are outside this gate.
 - Next: N13, Z14.
 
+## N13 Notification links revalidate permission when opened
+
+- Previous status: NOT_STARTED (audit: C). New status: TESTED_LOCAL.
+- Gap: the stored link was navigated with a plain `Link`; nothing on the server re-checked it when clicked.
+- Change: new `openNotification` mutation on the client, developer and admin feeds. It finds the notification inside the caller's own organisation or developer feed, accepts only a same-origin portal path, requires the link to stay in that feed's portal area, and re-checks the caller's current role. A refusal returns the portal home, leaves the item unread and is audited (`appendLoginAudit` blocked for client and developer, `recordAdminEvent` for admin). The bell takes an optional `onOpen`, so existing uses are unchanged.
+- Bug found by the tests: `new URL()` rewrote `/client-portal/../admin` to `/admin` before the traversal check; the check now runs on the raw path.
+- Files: `shared/notificationLinks.ts`, the three routers, three db getters, `NotificationBell.tsx`, both portal layouts, `AdminBell.tsx`.
+- Tests: `notificationLinks.test.ts` 26, `developer.test.ts` +3, `NotificationBell.test.tsx` +2. Full suite 1300 passed, 57 skipped, 0 failed; typecheck and build clean. No database was used.
+- Remaining: not seen in a browser; middle-click or open-in-new-tab bypasses the check, but the destination still enforces its own data permissions. Decision needed only if per-resource deep links (a specific invoice id) are introduced.
+- Next: Z14.
+
 ---
 
 ## Status translation rules used for the import

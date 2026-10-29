@@ -38,6 +38,7 @@ import {
   evaluateAlertRules,
   getDeveloperProfileById,
   listAdminNotifications,
+  getAdminNotificationById,
   listAiAgents,
   listAiExecutions,
   listAlertRules,
@@ -74,6 +75,7 @@ import {
 } from "../../shared/srsRules";
 import { recordAdminEvent } from "./admin";
 import { emitNotification } from "../notificationDispatcher";
+import { resolveNotificationLink } from "../../shared/notificationLinks";
 import { EXPORT_DATASETS, INVITABLE_ROLES, mayViewCompanyRevenue, INVITATION_TTL_DAYS, canInviteRole, complianceSummary, evaluateCompliance } from "../../shared/srsRules";
 import { AI_SCAN_AGENT_KEY, createInvitation, decideLatestAiExecutionForSubject, listInvitations, revokeInvitation, listDeployments, readComplianceInputs, readExportDataset, readMonthlyHistory } from "../db";
 import { fireTrigger } from "../workflowEngine";
@@ -122,6 +124,21 @@ export const adminOpsRouter = router({
     })),
 
   unreadNotificationCount: adminProcedure.query(async () => ({ unread: await countUnreadAdminNotifications() })),
+
+  /** N13 (F-28): re-check the link when an admin notification is opened. */
+  openNotification: adminProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const n = await getAdminNotificationById(input.id);
+      if (!n) fail("NOT_FOUND", "Notification not found.");
+      const d = resolveNotificationLink({ href: n.href, portal: "admin", role: ctx.user.role });
+      if (!d.allowed) {
+        if (d.reason !== "no_link") await recordAdminEvent({ ctx, reason: `admin.notification_link_denied(${d.reason}:${n.id})` });
+        return { allowed: false as const, href: null, home: d.home, reason: d.reason };
+      }
+      await markAdminNotificationsRead(ctx.user.id, n.id);
+      return { allowed: true as const, href: d.href, home: null, reason: null };
+    }),
 
   markNotificationsRead: adminProcedure
     .input(z.object({ id: z.number().int().positive().optional() }))

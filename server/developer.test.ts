@@ -62,6 +62,7 @@ vi.mock("./db", () => {
     listDeveloperNotifications: vi.fn(async () => []),
     setDeveloperNotificationRead: vi.fn(async () => ({ id: 1, readAt: Date.now() })),
     archiveDeveloperNotification: vi.fn(async () => ({ id: 1, status: "archived" })),
+    getDeveloperNotificationById: vi.fn(async () => null),
     listDeveloperFiles: vi.fn(async () => []),
     getApprovedFileForDeveloper: vi.fn(async () => state.accessibleFile),
     getAssignedDeveloperProject: vi.fn(async ({ projectId }: any) =>
@@ -377,6 +378,33 @@ describe("developer router — Notification Center (Milestone 2 §2.7)", () => {
     await expect(
       caller.developer.markNotificationRead({ notificationId: 999 }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  // N13 (F-28): the link is re-checked when a notification is opened.
+  it("opens an in-area link, marks it read, and looks it up inside the developer's own feed", async () => {
+    const { getDeveloperNotificationById, setDeveloperNotificationRead } = await import("./db");
+    (getDeveloperNotificationById as any).mockResolvedValueOnce({ id: 5, developerId: 100, href: "/developer-workspace/tasks" });
+    const r = await appRouter.createCaller(makeCtx({})).developer.openNotification({ notificationId: 5 });
+    expect(r).toEqual({ allowed: true, href: "/developer-workspace/tasks", home: null, reason: null });
+    expect(getDeveloperNotificationById).toHaveBeenCalledWith(100, 5);
+    expect(setDeveloperNotificationRead).toHaveBeenCalledWith(100, 5, true);
+  });
+
+  it("refuses a link into another portal or an external URL, audits it, and does not mark it read", async () => {
+    const { getDeveloperNotificationById, setDeveloperNotificationRead, appendLoginAudit } = await import("./db");
+    for (const href of ["/admin/users", "/client-portal/billing", "https://evil.example/x", "//evil.example"]) {
+      (appendLoginAudit as any).mockClear();
+      (getDeveloperNotificationById as any).mockResolvedValueOnce({ id: 5, developerId: 100, href });
+      const r = await appRouter.createCaller(makeCtx({})).developer.openNotification({ notificationId: 5 });
+      expect(r.allowed, href).toBe(false);
+      expect(r.home).toBe("/developer-workspace");
+      expect(appendLoginAudit, href).toHaveBeenCalledWith(expect.objectContaining({ outcome: "blocked", reason: expect.stringContaining("notification-link-denied") }));
+    }
+    expect(setDeveloperNotificationRead).not.toHaveBeenCalled();
+  });
+
+  it("another developer's notification is not found", async () => {
+    await expect(appRouter.createCaller(makeCtx({})).developer.openNotification({ notificationId: 999 })).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("archives a notification", async () => {

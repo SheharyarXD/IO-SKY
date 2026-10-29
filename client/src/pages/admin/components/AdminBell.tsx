@@ -8,11 +8,13 @@
  */
 import { useState } from "react";
 import { Bell } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 
 export default function AdminBell() {
   const [open, setOpen] = useState(false);
+  const [, navigate] = useLocation();
   const utils = trpc.useUtils();
   const count = trpc.adminOps.unreadNotificationCount.useQuery(undefined, { refetchInterval: 60_000, retry: false });
   const list = trpc.adminOps.notifications.useQuery({ unreadOnly: false, limit: 15 }, { enabled: open });
@@ -21,6 +23,20 @@ export default function AdminBell() {
       utils.adminOps.unreadNotificationCount.invalidate();
       utils.adminOps.notifications.invalidate();
     },
+  });
+  // N13: the server re-checks the link when a notification is opened.
+  const openNotif = trpc.adminOps.openNotification.useMutation({
+    onSuccess: (r) => {
+      utils.adminOps.unreadNotificationCount.invalidate();
+      utils.adminOps.notifications.invalidate();
+      setOpen(false);
+      if (r.allowed) navigate(r.href);
+      else {
+        toast.error("You no longer have access to that item.");
+        if (r.home) navigate(r.home);
+      }
+    },
+    onError: () => toast.error("That notification is no longer available."),
   });
   const unread = count.data?.unread ?? 0;
   return (
@@ -65,8 +81,20 @@ export default function AdminBell() {
                   </div>
                 );
                 return (
-                  <li key={n.id} onClick={() => !n.readAt && mark.mutate({ id: n.id })}>
-                    {n.href ? <Link href={n.href}>{inner}</Link> : inner}
+                  <li key={n.id} onClick={() => !n.href && !n.readAt && mark.mutate({ id: n.id })}>
+                    {n.href ? (
+                      <Link
+                        href={n.href}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          openNotif.mutate({ id: n.id });
+                        }}
+                      >
+                        {inner}
+                      </Link>
+                    ) : (
+                      inner
+                    )}
                   </li>
                 );
               })}

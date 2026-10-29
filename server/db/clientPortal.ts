@@ -757,6 +757,18 @@ export async function appendClientNotification(input: {
 }
 
 /** Milestone 2 §2.7 — mark one of this org's notifications read (or unread if `read: false`). Scoped by organizationId so a client can never touch another tenant's row. */
+/** One notification of this organisation, or null. Ownership is in the query, so another tenant's id is simply not found. */
+export async function getClientNotificationById(organizationId: number, notificationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(clientNotifications)
+    .where(and(eq(clientNotifications.organizationId, organizationId), eq(clientNotifications.id, notificationId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export async function setClientNotificationRead(
   organizationId: number,
   notificationId: number,

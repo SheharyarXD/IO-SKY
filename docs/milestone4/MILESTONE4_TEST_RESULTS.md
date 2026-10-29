@@ -45,6 +45,7 @@ All runs after this was discovered used the blank variable.
 | Full suite after the six fixes | live database reachable | 96 files passed, 2 skipped; **1,297 passed, 15 skipped, 0 failed** (about 40 s) |
 | Full suite after the six fixes | `DATABASE_URL=` blank | 92 files passed, 6 skipped; **1,255 passed, 57 skipped, 0 failed** |
 | Production build `npm run build` | n/a | vite 28 s, `dist/index.js` 952.7 kB, no errors |
+| Full suite after M4-05 and N13 | plain `npx vitest run` (database-free by default) | 95 files passed, 6 skipped; **1,300 passed, 57 skipped, 0 failed**; typecheck and build clean |
 | Full suite after I07 (release identity) | `DATABASE_URL=` blank | 93 files passed, 6 skipped; **1,262 passed, 57 skipped, 0 failed** |
 
 The 57 skipped tests in blank mode are: dbConstraints 9, rls.negative 18, concurrency 9, queryPerformance 6, legal 9, requireAcceptances 6. None of them is counted as passed in that row.

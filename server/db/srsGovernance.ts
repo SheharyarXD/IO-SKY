@@ -86,6 +86,12 @@ export async function countUnreadAdminNotifications(): Promise<number> {
   return Number(r[0]?.n ?? 0);
 }
 
+export async function getAdminNotificationById(id: number): Promise<AdminNotification | null> {
+  const db = await getDb();
+  if (!db) return null;
+  return (await db.select().from(adminNotifications).where(eq(adminNotifications.id, id)).limit(1))[0] ?? null;
+}
+
 export async function markAdminNotificationsRead(userId: number, id?: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;

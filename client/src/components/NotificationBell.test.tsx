@@ -195,3 +195,31 @@ describe("RM-99: priority indicator", () => {
     expect(Array.from(dots).some((d) => d.className.includes("bg-white/30"))).toBe(true);
   });
 });
+
+describe("N13: opening a linked notification", () => {
+  it("hands the click to onOpen (server re-check) and does not mark it read itself", async () => {
+    const onOpen = vi.fn();
+    renderWithProviders(
+      <NotificationBell
+        notifications={items([{ href: "/client-portal/billing" }])}
+        onMarkRead={onMarkRead}
+        onArchive={onArchive}
+        onOpen={onOpen}
+      />,
+    );
+    await openBell();
+    fireEvent.click(screen.getByText("Invoice INV-001 is due"));
+    expect(onOpen).toHaveBeenCalledWith(1);
+    expect(onMarkRead).not.toHaveBeenCalled();
+  });
+
+  it("keeps the previous behaviour when no onOpen is supplied", async () => {
+    renderWithProviders(
+      <NotificationBell notifications={items([{ href: "/client-portal/billing" }])} onMarkRead={onMarkRead} onArchive={onArchive} />,
+    );
+    await openBell();
+    fireEvent.click(screen.getByText("Invoice INV-001 is due"));
+    expect(onMarkRead).toHaveBeenCalledWith(1);
+  });
+});
+

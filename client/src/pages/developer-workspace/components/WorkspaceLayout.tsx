@@ -13,6 +13,7 @@
  */
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
+import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -146,7 +147,7 @@ export default function WorkspaceLayout({
   unreadMessages = 0,
   children,
 }: WorkspaceLayoutProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const utils = trpc.useUtils();
   const notifsQuery = trpc.developer.listNotifications.useQuery(undefined, {
@@ -159,6 +160,18 @@ export default function WorkspaceLayout({
   });
   const archiveNotif = trpc.developer.archiveNotification.useMutation({
     onSuccess: () => utils.developer.listNotifications.invalidate(),
+  });
+  // N13: the server re-checks the link when a notification is opened.
+  const openNotif = trpc.developer.openNotification.useMutation({
+    onSuccess: (r) => {
+      utils.developer.listNotifications.invalidate();
+      if (r.allowed) navigate(r.href);
+      else {
+        toast.error("You no longer have access to that item.");
+        if (r.home) navigate(r.home);
+      }
+    },
+    onError: () => toast.error("That notification is no longer available."),
   });
 
   // Active state matches by exact URL or by being a prefix of a deeper
@@ -321,6 +334,7 @@ export default function WorkspaceLayout({
                     notifications={notifications as any}
                     onMarkRead={(id) => markRead.mutate({ notificationId: id })}
                     onArchive={(id) => archiveNotif.mutate({ notificationId: id })}
+                    onOpen={(id) => openNotif.mutate({ notificationId: id })}
                   />
 
                   <div className="flex items-center gap-2 pl-3 border-l border-white/10">

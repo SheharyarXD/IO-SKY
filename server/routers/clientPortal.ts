@@ -41,11 +41,12 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { notifyOwner } from "../_core/notification";
 import { storageDelete, storageGetSignedUrl, storagePut } from "../storage";
 import { clientProcedure, router } from "../_core/trpc";
-import { createAdminNotification, decideProjectApproval, listApprovalsForOrganization, listAiScanProgressForEmail, listNotificationPreferences, searchDocuments } from "../db";
+import { getClientNotificationById, createAdminNotification, decideProjectApproval, listApprovalsForOrganization, listAiScanProgressForEmail, listNotificationPreferences, searchDocuments } from "../db";
 import { generatePublicRef } from "../_core/publicRef";
 import { createCheckoutSession, isStripeConfigured } from "../_core/stripe";
 import { setInvoiceCheckoutSession } from "../db/payments";
 import { clientVisibleDocumentTypes } from "../db/platformGovernance";
+import { resolveNotificationLink } from "../../shared/notificationLinks";
 import { clientMayViewDocument } from "../../shared/platformRules";
 
 const supportTicketSchema = z.object({
@@ -144,6 +145,27 @@ export const clientPortalRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Notification not found." });
       }
       return updated;
+    }),
+  /**
+   * N13 (F-28): opening a notification re-checks the link. The notification must
+   * belong to this organisation, point at a same-origin client portal path, and
+   * the caller's CURRENT role must still be allowed there. A refusal is audited
+   * and the caller is sent to the portal home instead.
+   */
+  openNotification: clientProcedure
+    .input(z.object({ notificationId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const n = await getClientNotificationById(ctx.organizationId, input.notificationId);
+      if (!n) throw new TRPCError({ code: "NOT_FOUND", message: "Notification not found." });
+      const d = resolveNotificationLink({ href: n.href, portal: "client", role: ctx.user.role });
+      if (!d.allowed) {
+        if (d.reason !== "no_link") {
+          await appendLoginAudit({ userId: ctx.user.id, identifier: ctx.user.email ?? null, provider: "client-portal", outcome: "blocked", reason: `notification-link-denied:${d.reason}:${n.id}`.slice(0, 200), ip: null, userAgent: null }).catch(() => undefined);
+        }
+        return { allowed: false as const, href: null, home: d.home, reason: d.reason };
+      }
+      await setClientNotificationRead(ctx.organizationId, n.id, true);
+      return { allowed: true as const, href: d.href, home: null, reason: null };
     }),
   archiveNotification: clientProcedure
     .input(z.object({ notificationId: z.number().int().positive() }))

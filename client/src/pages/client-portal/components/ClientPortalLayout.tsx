@@ -6,6 +6,7 @@
  */
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
+import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -92,7 +93,7 @@ export default function ClientPortalLayout({
   userEmail,
   children,
 }: ClientPortalLayoutProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const dashboard = trpc.clientPortal.dashboard.useQuery(undefined, {
     refetchOnWindowFocus: false,
@@ -105,6 +106,18 @@ export default function ClientPortalLayout({
   });
   const archiveNotif = trpc.clientPortal.archiveNotification.useMutation({
     onSuccess: () => utils.clientPortal.dashboard.invalidate(),
+  });
+  // N13: the server re-checks the link when a notification is opened.
+  const openNotif = trpc.clientPortal.openNotification.useMutation({
+    onSuccess: (r) => {
+      utils.clientPortal.dashboard.invalidate();
+      if (r.allowed) navigate(r.href);
+      else {
+        toast.error("You no longer have access to that item.");
+        if (r.home) navigate(r.home);
+      }
+    },
+    onError: () => toast.error("That notification is no longer available."),
   });
 
   const orgName = dashboard.data?.organization?.name ?? null;
@@ -284,6 +297,7 @@ export default function ClientPortalLayout({
                     notifications={notifications as any}
                     onMarkRead={(id) => markRead.mutate({ notificationId: id })}
                     onArchive={(id) => archiveNotif.mutate({ notificationId: id })}
+                    onOpen={(id) => openNotif.mutate({ notificationId: id })}
                   />
 
                   <div className="flex items-center gap-2 pl-3 border-l border-white/10">

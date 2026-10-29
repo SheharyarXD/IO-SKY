@@ -43,6 +43,8 @@ import {
   updateUserMfaMethod,
 } from "../db";
 import { storageGetSignedUrl } from "../storage";
+import { appendLoginAudit, getDeveloperNotificationById } from "../db";
+import { resolveNotificationLink } from "../../shared/notificationLinks";
 import { emitNotification } from "../notificationDispatcher";
 import { TASK_COMMENT_KINDS, checkTimeEntry } from "../../shared/srsRules";
 import { getRequestMeta } from "../_core/requestMeta";
@@ -542,6 +544,22 @@ export const developerRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Notification not found." });
       }
       return updated;
+    }),
+  /** N13 (F-28): re-check the link when a notification is opened. See clientPortal.openNotification. */
+  openNotification: developerProcedure
+    .input(z.object({ notificationId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const n = await getDeveloperNotificationById(ctx.developer.id, input.notificationId);
+      if (!n) throw new TRPCError({ code: "NOT_FOUND", message: "Notification not found." });
+      const d = resolveNotificationLink({ href: n.href, portal: "developer", role: ctx.user.role });
+      if (!d.allowed) {
+        if (d.reason !== "no_link") {
+          await appendLoginAudit({ userId: ctx.user.id, identifier: ctx.user.email ?? null, provider: "developer-workspace", outcome: "blocked", reason: `notification-link-denied:${d.reason}:${n.id}`.slice(0, 200), ip: null, userAgent: null }).catch(() => undefined);
+        }
+        return { allowed: false as const, href: null, home: d.home, reason: d.reason };
+      }
+      await setDeveloperNotificationRead(ctx.developer.id, n.id, true);
+      return { allowed: true as const, href: d.href, home: null, reason: null };
     }),
   archiveNotification: developerProcedure
     .input(z.object({ notificationId: z.number().int().positive() }))

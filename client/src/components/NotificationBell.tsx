@@ -38,10 +38,17 @@ export function NotificationBell({
   notifications,
   onMarkRead,
   onArchive,
+  onOpen,
 }: {
   notifications: NotificationItem[];
   onMarkRead: (id: number) => void;
   onArchive: (id: number) => void;
+  /**
+   * N13: when supplied, opening a notification asks the server to re-check the
+   * link (ownership, area and the caller's current role) before navigating. The
+   * handler marks it read and navigates, so onMarkRead is not also called.
+   */
+  onOpen?: (id: number) => void;
 }) {
   const unread = notifications.filter((n) => n.readAt === null || n.readAt === undefined);
 
@@ -118,7 +125,18 @@ export function NotificationBell({
                 </div>
               );
               return n.href ? (
-                <Link key={n.id} href={n.href} onClick={() => isUnread && onMarkRead(n.id)}>
+                <Link
+                  key={n.id}
+                  href={n.href}
+                  onClick={(e) => {
+                    if (onOpen) {
+                      e.preventDefault();
+                      onOpen(n.id);
+                    } else if (isUnread) {
+                      onMarkRead(n.id);
+                    }
+                  }}
+                >
                   {content}
                 </Link>
               ) : (
