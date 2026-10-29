@@ -11,9 +11,10 @@ import { trpc } from "@/lib/trpc";
 import OperationalPage, { DataTable, StatusPill, type DataColumn } from "./_shared/OperationalPage";
 import { FormCard, Panel, SmallButton, TabBar, shortDateTime } from "./_shared/Forms";
 
-type Tab = "assign" | "tasks" | "time" | "approvals" | "messages";
+type Tab = "assign" | "teams" | "tasks" | "time" | "approvals" | "messages";
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "assign", label: "Projects & assignment" },
+  { id: "teams", label: "Teams" },
   { id: "tasks", label: "Tasks" },
   { id: "time", label: "Time review" },
   { id: "approvals", label: "Customer approvals" },
@@ -33,6 +34,7 @@ export function Delivery() {
         <div className="space-y-4">
           <TabBar tabs={TABS} value={tab} onChange={setTab} />
           {tab === "assign" && <Assign />}
+          {tab === "teams" && <Teams />}
           {tab === "tasks" && <Tasks />}
           {tab === "time" && <TimeReview />}
           {tab === "approvals" && <Approvals />}
@@ -156,6 +158,91 @@ function Assign() {
           { name: "brief", label: "Sanitised brief", type: "textarea", hint: "Never include the client name, contacts or financials." },
         ]}
         onSubmit={(v) => create.mutateAsync({ code: v.code, name: v.name, track: v.track as "full-stack", brief: v.brief || undefined })}
+      />
+    </>
+  );
+}
+
+function Teams() {
+  const utils = trpc.useUtils();
+  const teams = trpc.adminOps.teams.useQuery();
+  const devOptions = useDevOptions();
+  const refresh = () => utils.adminOps.teams.invalidate();
+  const create = trpc.adminOps.createTeam.useMutation({ onSuccess: refresh });
+  const add = trpc.adminOps.addTeamMember.useMutation({ onSuccess: refresh });
+  const remove = trpc.adminOps.removeTeamMember.useMutation({ onSuccess: refresh });
+  const primary = trpc.adminOps.setTeamPrimaryContact.useMutation({ onSuccess: refresh });
+  const archive = trpc.adminOps.setTeamArchived.useMutation({ onSuccess: refresh });
+  const rows = teams.data ?? [];
+  const teamOptions = rows.filter((t) => t.status === "active").map((t) => ({ value: String(t.id), label: t.name }));
+  const fail = (e: { message: string }) => toast.error(e.message);
+  return (
+    <>
+      <Panel title="Teams">
+        {rows.length === 0 ? (
+          <p className="text-sm text-white/55">No teams yet.</p>
+        ) : (
+          <div className="space-y-4">
+            {rows.map((t) => (
+              <div key={t.id} className="rounded border border-white/10 p-3">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{t.name}</span>
+                  <StatusPill tone={t.status === "active" ? "ok" : "muted"} label={t.status} />
+                  <span className="text-sm text-white/55">Primary contact: {t.primaryContactName ?? "none"}</span>
+                  <span className="ml-auto">
+                    <SmallButton onClick={() => archive.mutateAsync({ teamId: t.id, archived: t.status === "active" }).then(() => toast.success(t.status === "active" ? "Team archived." : "Team restored.")).catch(fail)}>{t.status === "active" ? "Archive" : "Restore"}</SmallButton>
+                  </span>
+                </div>
+                {t.members.length === 0 ? (
+                  <p className="text-sm text-white/55">No members.</p>
+                ) : (
+                  <ul className="space-y-1 text-sm">
+                    {t.members.map((m) => (
+                      <li key={m.developerId} className="flex flex-wrap items-center gap-2">
+                        <span>{m.fullName}</span>
+                        <StatusPill tone="info" label={m.role} />
+                        {m.primaryContact ? <StatusPill tone="ok" label="primary contact" /> : t.status === "active" ? <SmallButton onClick={() => primary.mutateAsync({ teamId: t.id, developerId: m.developerId }).then(() => toast.success("Primary contact changed.")).catch(fail)}>Make primary contact</SmallButton> : null}
+                        {t.status === "active" ? (
+                          <SmallButton
+                            tone="danger"
+                            onClick={() => {
+                              const successor = m.primaryContact && t.members.length > 1 ? t.members.find((o) => o.developerId !== m.developerId) : undefined;
+                              if (m.primaryContact && successor && !window.confirm(`${successor.fullName} will become the primary contact. Continue?`)) return;
+                              remove.mutateAsync({ teamId: t.id, developerId: m.developerId, successorId: successor?.developerId }).then(() => toast.success("Member removed.")).catch(fail);
+                            }}
+                          >
+                            Remove
+                          </SmallButton>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
+      <FormCard
+        title="Create a team"
+        submitLabel="Create team"
+        successMessage="Team created."
+        fields={[
+          { name: "name", label: "Name", required: true },
+          { name: "description", label: "Description", type: "textarea" },
+        ]}
+        onSubmit={(v) => create.mutateAsync({ name: v.name, description: v.description || undefined })}
+      />
+      <FormCard
+        title="Add a developer to a team"
+        submitLabel="Add"
+        successMessage="Developer added and notified. The first member becomes the primary contact."
+        fields={[
+          { name: "teamId", label: "Team", type: "select", required: true, options: teamOptions },
+          { name: "developerId", label: "Developer", type: "select", required: true, options: devOptions },
+          { name: "role", label: "Role", type: "select", required: true, initial: "member", options: ["lead", "member", "reviewer"].map((v) => ({ value: v, label: v })) },
+        ]}
+        onSubmit={(v) => add.mutateAsync({ teamId: Number(v.teamId), developerId: Number(v.developerId), role: v.role as "member" })}
       />
     </>
   );

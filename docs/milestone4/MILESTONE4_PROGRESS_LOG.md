@@ -271,6 +271,10 @@ Added shared/deadlineRules.ts and server/deadlineSweeps.ts and wired DC-08, PD-0
 
 Added shared/taskAssignmentRules.ts, migration 0043 and schema for an append-only assignment history, transactional reassignDeveloperTask and replaceProjectDeveloper, four admin endpoints and Delivery screen forms and history table. Finished work stays with whoever did it, unfinished work moves, a removed developer loses access immediately, and every move needs a reason. 19 new tests. Per-developer milestones are not built and the SQL has not run against PostgreSQL, so the task stays IN_PROGRESS.
 
+## J03 - developer teams (TESTED_LOCAL)
+
+Added shared/teamRules.ts, migration 0044 and schema, server/db/developerTeams.ts, seven admin endpoints, developer.myTeams and a Teams tab in the admin Delivery screen. Teams keep exactly one primary contact at all times, removal of that contact needs a successor, members are removed not deleted, and a developer sees only their own teams. 21 new tests including a 2000-step invariant check and a mutation check. Team-to-project assignment is not built.
+
 ---
 
 ## Status translation rules used for the import

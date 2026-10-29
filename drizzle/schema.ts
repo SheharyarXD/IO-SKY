@@ -3031,3 +3031,37 @@ export const developerAssignmentEvents = pgTable(
   (t) => [index("developer_assignment_events_task_idx").on(t.taskId, t.createdAt), index("developer_assignment_events_project_idx").on(t.projectId, t.createdAt), index("developer_assignment_events_developer_idx").on(t.developerId, t.createdAt)],
 );
 export type DeveloperAssignmentEvent = typeof developerAssignmentEvents.$inferSelect;
+
+/** A named group of developers (task J03). status: active | archived. Names are unique among active teams. */
+export const developerTeams = pgTable("developer_teams", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 80 }).notNull(),
+  description: varchar("description", { length: 500 }),
+  status: varchar("status", { length: 10 }).default("active").notNull(),
+  createdByUserId: integer("createdByUserId").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type DeveloperTeam = typeof developerTeams.$inferSelect;
+
+/**
+ * A developer's seat in a team. role: lead | member | reviewer. status: active | removed (rows are kept so
+ * the roster history can be read). At most one active seat per developer per team and one active primary
+ * contact per team, both enforced by partial unique indexes in migration 0044.
+ */
+export const developerTeamMembers = pgTable(
+  "developer_team_members",
+  {
+    id: serial("id").primaryKey(),
+    teamId: integer("teamId").notNull().references(() => developerTeams.id, { onDelete: "cascade" }),
+    developerId: integer("developerId").notNull().references(() => developerProfiles.id, { onDelete: "cascade" }),
+    role: varchar("role", { length: 10 }).default("member").notNull(),
+    primaryContact: boolean("primaryContact").default(false).notNull(),
+    status: varchar("status", { length: 10 }).default("active").notNull(),
+    addedByUserId: integer("addedByUserId").references(() => users.id),
+    joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+    removedAt: timestamp("removedAt"),
+  },
+  (t) => [index("developer_team_members_developer_idx").on(t.developerId, t.status)],
+);
+export type DeveloperTeamMember = typeof developerTeamMembers.$inferSelect;

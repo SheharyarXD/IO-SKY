@@ -93,6 +93,14 @@ vi.mock("./db/documentHandoff", async (importOriginal) => {
   return { ...actual, ...handoff };
 });
 
+const teamsDb = vi.hoisted(() => ({
+  listTeamsForDeveloper: vi.fn(async () => [] as any[]),
+}));
+vi.mock("./db/developerTeams", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return { ...actual, ...teamsDb };
+});
+
 vi.mock("./_core/notification", () => ({
   notifyOwner: vi.fn(async () => true),
 }));
@@ -301,6 +309,18 @@ describe("developer router — task + submission", () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  it("myTeams shows only the caller's own teams, with their role and the primary contact", async () => {
+    const caller = appRouter.createCaller(makeCtx({}));
+    teamsDb.listTeamsForDeveloper.mockResolvedValueOnce([
+      { id: 4, name: "Platform", description: null, status: "active", primaryContactName: "Sam Lead", members: [{ developerId: 100, fullName: "Test Dev", role: "reviewer", primaryContact: false, joinedAt: new Date() }, { developerId: 7, fullName: "Sam Lead", role: "lead", primaryContact: true, joinedAt: new Date() }] },
+    ]);
+    const out = await caller.developer.myTeams();
+    expect(teamsDb.listTeamsForDeveloper).toHaveBeenCalledWith(100); // derived from the session, never from input
+    expect(out).toEqual([{ id: 4, name: "Platform", description: null, myRole: "reviewer", primaryContactName: "Sam Lead", members: [{ fullName: "Test Dev", role: "reviewer", primaryContact: false }, { fullName: "Sam Lead", role: "lead", primaryContact: true }] }]);
+    // no internal ids of other developers leave the server
+    expect(JSON.stringify(out)).not.toContain("developerId");
   });
 
   it("blocks submission for an unassigned project", async () => {

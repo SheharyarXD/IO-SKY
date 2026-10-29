@@ -80,6 +80,8 @@ import { resolveNotificationLink } from "../../shared/notificationLinks";
 import { evaluateRelease } from "../../shared/documentHandoff";
 import { FAQ_AUDIENCES, FAQ_STATUSES, reviewWarnings, validateFaqDraft } from "../../shared/faqRules";
 import { createFaq, decideFaq, editFaq, listFaqEvents, listFaqForReview } from "../db/faq";
+import { addTeamMember, createTeam, listTeams, removeTeamMember, setTeamArchived, setTeamMemberRole, setTeamPrimaryContact, type TeamOutcome } from "../db/developerTeams";
+import { MEMBER_REFUSAL_TEXT, TEAM_ROLES } from "../../shared/teamRules";
 import { createRelease, getReleaseFacts, linkDeveloperProject, listActiveAssignedDeveloperIds, listReleases, revokeRelease, unlinkDeveloperProject } from "../db/documentHandoff";
 const message_alreadyReleased = "This document is already released to that project.";
 import { KNOWLEDGE_SOURCES, REGISTRY_LIMITS, validateRegistryFields } from "../../shared/aiAgentRegistry";
@@ -114,6 +116,16 @@ import { notifyDeveloper } from "../notifications";
 
 const currency = z.string().length(3).transform((s) => s.toUpperCase());
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD.");
+
+/** Turn a team operation outcome into the right error, or return when it succeeded. */
+function teamResult(r: TeamOutcome): void {
+  if (r.ok) return;
+  if (r.reason === "team_not_found") fail("NOT_FOUND", "No such team.");
+  if (r.reason === "developer_not_found") fail("NOT_FOUND", "Developer not found.");
+  if (r.reason === "conflict") fail("CONFLICT", "The team changed at the same moment. Reload and try again.");
+  if (r.reason === "unavailable") fail("INTERNAL_SERVER_ERROR", "The team store is unavailable.");
+  fail(r.reason === "team_archived" ? "PRECONDITION_FAILED" : "BAD_REQUEST", MEMBER_REFUSAL_TEXT[r.reason]);
+}
 
 function fail(code: "NOT_FOUND" | "PRECONDITION_FAILED" | "BAD_REQUEST" | "INTERNAL_SERVER_ERROR" | "FORBIDDEN" | "CONFLICT", message: string): never {
   throw new TRPCError({ code, message });
@@ -256,6 +268,67 @@ export const adminOpsRouter = router({
       }
       await recordAdminEvent({ ctx, reason: `admin.faq.${input.action}(faq=${input.id}:status=${r.status}:version=${r.version})` });
       return r;
+    }),
+
+  // ---- Developer teams (J03): create, members, roles, one primary contact ------------------------------------
+
+  teams: adminProcedure.query(async () => listTeams()),
+
+  createTeam: adminProcedure
+    .input(z.object({ name: z.string().trim().min(2).max(80), description: z.string().trim().max(500).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await createTeam({ name: input.name, description: input.description ?? null, userId: ctx.user.id });
+      if (!r.ok) {
+        if (r.reason === "invalid_name") fail("BAD_REQUEST", "Team names use letters, digits, spaces and common punctuation, 2 to 80 characters.");
+        if (r.reason === "name_taken") fail("CONFLICT", "An active team already has that name.");
+        fail("INTERNAL_SERVER_ERROR", "Could not create the team.");
+      }
+      await recordAdminEvent({ ctx, reason: `admin.team.create(team=${r.id})` });
+      return { id: r.id };
+    }),
+
+  addTeamMember: adminProcedure
+    .input(z.object({ teamId: z.number().int().positive(), developerId: z.number().int().positive(), role: z.enum(TEAM_ROLES).default("member") }))
+    .mutation(async ({ ctx, input }) => {
+      teamResult(await addTeamMember({ ...input, userId: ctx.user.id }));
+      await notifyDeveloper({ developerId: input.developerId, kind: "team", title: "You were added to a team", body: null, href: "/developer-workspace", priority: "normal" }).catch(() => undefined);
+      await recordAdminEvent({ ctx, reason: `admin.team.add_member(team=${input.teamId}:dev=${input.developerId}:${input.role})` });
+      return { ok: true as const };
+    }),
+
+  removeTeamMember: adminProcedure
+    .input(z.object({ teamId: z.number().int().positive(), developerId: z.number().int().positive(), successorId: z.number().int().positive().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      teamResult(await removeTeamMember({ ...input, userId: ctx.user.id }));
+      await recordAdminEvent({ ctx, reason: `admin.team.remove_member(team=${input.teamId}:dev=${input.developerId}${input.successorId ? `:successor=${input.successorId}` : ""})` });
+      return { ok: true as const };
+    }),
+
+  setTeamPrimaryContact: adminProcedure
+    .input(z.object({ teamId: z.number().int().positive(), developerId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      teamResult(await setTeamPrimaryContact({ ...input, userId: ctx.user.id }));
+      await recordAdminEvent({ ctx, reason: `admin.team.primary_contact(team=${input.teamId}:dev=${input.developerId})` });
+      return { ok: true as const };
+    }),
+
+  setTeamMemberRole: adminProcedure
+    .input(z.object({ teamId: z.number().int().positive(), developerId: z.number().int().positive(), role: z.enum(TEAM_ROLES) }))
+    .mutation(async ({ ctx, input }) => {
+      teamResult(await setTeamMemberRole({ ...input, userId: ctx.user.id }));
+      await recordAdminEvent({ ctx, reason: `admin.team.role(team=${input.teamId}:dev=${input.developerId}:${input.role})` });
+      return { ok: true as const };
+    }),
+
+  setTeamArchived: adminProcedure
+    .input(z.object({ teamId: z.number().int().positive(), archived: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await setTeamArchived(input);
+      if (r === "not_found") fail("NOT_FOUND", "No such team.");
+      if (r === "name_taken") fail("CONFLICT", "Another active team now has this name. Rename one of them first.");
+      if (r === "unavailable") fail("INTERNAL_SERVER_ERROR", "The team store is unavailable.");
+      await recordAdminEvent({ ctx, reason: `admin.team.${input.archived ? "archive" : "restore"}(team=${input.teamId})` });
+      return { ok: true as const };
     }),
 
   documentReleases: adminProcedure

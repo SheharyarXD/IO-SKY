@@ -46,6 +46,7 @@ import { storageGetSignedUrl } from "../storage";
 import { appendLoginAudit, getDeveloperNotificationById } from "../db";
 import { resolveNotificationLink } from "../../shared/notificationLinks";
 import { blockerResolved, blockerResolvedRef } from "../../shared/deadlineRules";
+import { listTeamsForDeveloper } from "../db/developerTeams";
 import { getReleasedDocumentForDeveloper, listReleasedDocumentsForDeveloper } from "../db/documentHandoff";
 import { emitNotification } from "../notificationDispatcher";
 import { TASK_COMMENT_KINDS, checkTimeEntry } from "../../shared/srsRules";
@@ -185,6 +186,19 @@ export const developerRouter = router({
   // -----------------------------------------------------------------
   // Tasks
   // -----------------------------------------------------------------
+  /** The teams this developer is an active member of: name, their own role, and who the primary contact is. Nothing about other teams. */
+  myTeams: developerProcedure.query(async ({ ctx }) => {
+    const teams = await listTeamsForDeveloper(ctx.developer.id);
+    return teams.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      myRole: t.members.find((m) => m.developerId === ctx.developer.id)?.role ?? "member",
+      primaryContactName: t.primaryContactName,
+      members: t.members.map((m) => ({ fullName: m.fullName, role: m.role, primaryContact: m.primaryContact })),
+    }));
+  }),
+
   listTasks: developerProcedure.query(async ({ ctx }) => {
     return listDeveloperTasks(ctx.developer.id);
   }),

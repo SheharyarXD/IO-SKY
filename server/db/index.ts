@@ -50,3 +50,4 @@ export * from "./accounts";
 export * from "./emailOutbox";
 export * from "./documentHandoff";
 export * from "./faq";
+export * from "./developerTeams";
