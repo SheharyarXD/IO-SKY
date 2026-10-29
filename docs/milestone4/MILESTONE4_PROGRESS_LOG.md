@@ -243,6 +243,10 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Not built: the developer-to-client direction, screens, client visibility of release status, a separate request state for clients.
 - Next: select the next eligible baseline task.
 
+## R10 - three-level identity policy engine (TESTED_LOCAL)
+
+Added shared/identityPolicy.ts: verification state machine (start rate limit, pending and verified lifetimes, lockout, replay and wrong-interaction refusal, invalidation, audit event names) and authorizeOperation for Level 1/2/3. The shared agent runtime now evaluates each tool's identityRequirement on every call using an injectable clock, so a verification that expires mid-run stops the next call, and tells the model the safe next step. Level 3 always refuses, even for a verified caller and an autonomous agent. CRM tools moved from the old verification flag to the real identity view. 22 new tests plus updated CRM tests. R11 (the flow that creates a verification) is not built and nothing is persisted.
+
 ---
 
 ## Status translation rules used for the import

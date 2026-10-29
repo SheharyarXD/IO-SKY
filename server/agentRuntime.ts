@@ -30,6 +30,7 @@ import { authorityDecision, type ToolEffect } from "../shared/aiAgentRegistry";
 import { operatorMayOnAgent } from "../shared/agentOperatorScopes";
 import type { ScopeGrant } from "../shared/platformRules";
 import type { Audience } from "../shared/knowledgeAccess";
+import { authorizeOperation, type AgentIdentityView, type OperationRequirement } from "../shared/identityPolicy";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,10 +65,11 @@ export type RunContext = {
    */
   audience?: Audience;
   /**
-   * Whether the person on the other end has been verified (identity levels, R10/R11). Anything not stated is
-   * unverified: tools then reveal nothing about existing records.
+   * The outcome of identity verification for this interaction (R10): the state and the level it unlocks, never a
+   * credential. Anything not stated is unverified, so only Level 1 (public) tools run. Produced by the verification
+   * flow (R11) from shared/identityPolicy.ts.
    */
-  verification?: "unverified" | "verified";
+  identity?: AgentIdentityView | null;
 };
 
 /** What a tool receives: the run's context plus which agent and subject it is running for. */
@@ -86,6 +88,12 @@ export type AgentTool<I = unknown, O = unknown> = {
   knowledgeSource?: string;
   /** True when the tool reads or changes organisation data. */
   organizationScoped: boolean;
+  /**
+   * The identity level the operation needs (R10). Omitted means Level 1, public. Level 2 needs a live verification
+   * covering the named permission for the run's organisation. Level 3 (bank or payment details, contracts, privileged
+   * settings) is never performed by an AI: such a tool always refuses and points to the portal or an authorised person.
+   */
+  identityRequirement?: OperationRequirement;
   execute(input: I, ctx: ToolContext): Promise<O>;
 };
 
@@ -135,6 +143,8 @@ export type RuntimeDeps = {
   escalate(a: { agentKey: string; kind: EscalationKind; reason: string; subjectRef: string; escalationRules: string | null; detail?: string }): Promise<void>;
   /** The actor's operator grants (operator_scopes), read fresh each time so a revocation applies at once. */
   actorGrants(userId: number): Promise<ScopeGrant[]>;
+  /** Clock for identity expiry; defaults to Date.now. Injected so tests control time. */
+  now?: () => number;
   model: AgentModel;
   tools: ToolRegistry;
 };
@@ -346,6 +356,10 @@ export async function runAgent(input: RunInput, deps: RuntimeDeps): Promise<RunR
         if (input.ctx.organizationId === null) { await refuse("this tool needs an organisation and the run has none"); continue; }
         if (organizationIdsIn(args).some((v) => v !== input.ctx.organizationId)) { await refuse("cross-organisation access is not allowed"); continue; }
       }
+      // R10: the identity level this operation needs, judged against the verification result this run was given,
+      // with the clock read now so a verification that expires mid-run stops the next call.
+      const idDecision = authorizeOperation(tool.identityRequirement ?? { level: 1 }, input.ctx.identity, { organizationId: input.ctx.organizationId }, deps.now?.() ?? Date.now());
+      if (!idDecision.allowed) { await refuse(`identity: ${idDecision.reason} (next step: ${idDecision.next.replace(/_/g, " ")})`); continue; }
       if (tool.knowledgeSource && !agent.knowledgeSources.includes(tool.knowledgeSource)) { await refuse(`this agent may not read ${tool.knowledgeSource}`); continue; }
 
       const decision = authorityDecision(agent.maxAuthority, agent.requiresHumanApproval, tool.effect);

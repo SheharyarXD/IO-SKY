@@ -7,6 +7,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { composeNoteBody, matchedOn, normalizeEmail, phoneKey } from "../shared/crmRules";
 import { crmTools, RunLeadScope, type CrmDeps } from "./crmTools";
+
+// A live Level 2 verification holding the permission the CRM detail view needs (R10).
+const VERIFIED = { state: "verified" as const, organizationId: null, permissions: ["view_own_contact_record"], expiresAt: Date.now() + 3600_000, level: 2 as const };
 import { IdempotencyStore } from "./schedulingTools";
 import { runAgent, ToolRegistry, type AgentDefinition, type AgentModel, type ModelTurn, type RuntimeDeps, type ToolContext } from "./agentRuntime";
 
@@ -115,7 +118,7 @@ describe("crm_find_contact", () => {
 
   it("a verified caller gets prospect details and those records join the conversation's scope", async () => {
     const f = fake();
-    const c = ctx({ verification: "verified" });
+    const c = ctx({ identity: VERIFIED });
     const r = (await exec(f.deps, "crm_find_contact", { email: "PAT@example.com", phone: "0611111111" }, c)) as { matches: Array<Record<string, unknown>> };
     expect(r.matches).toEqual([{ leadId: 10, fullName: "Pat Prospect", company: "Pat BV", status: "new", newProspect: true, matchedOn: ["email", "phone"] }]);
     expect(await exec(f.deps, "crm_add_note", { leadId: 10, text: "Called back", requestId: "req-00000002" }, c)).toMatchObject({ ok: true });
@@ -123,7 +126,7 @@ describe("crm_find_contact", () => {
 
   it("an existing client is never described, even to a verified caller", async () => {
     const f = fake();
-    const r = await exec(f.deps, "crm_find_contact", { email: "client@acme.com" }, ctx({ verification: "verified" }));
+    const r = await exec(f.deps, "crm_find_contact", { email: "client@acme.com" }, ctx({ identity: VERIFIED }));
     expect(r).toEqual({ ok: true, matched: true, existingClient: true, matches: [] });
   });
 
@@ -167,7 +170,7 @@ describe("crm_create_prospect", () => {
 
   it("a verified caller is given the existing record and may work on it", async () => {
     const f = fake();
-    const c = ctx({ verification: "verified" });
+    const c = ctx({ identity: VERIFIED });
     expect(await exec(f.deps, "crm_create_prospect", create({ email: "pat@example.com" }), c)).toEqual({ ok: true, created: false, deduplicated: true, leadId: 10 });
     expect(await exec(f.deps, "crm_add_note", { leadId: 10, text: "x", requestId: "req-00000007" }, c)).toMatchObject({ ok: true });
   });
@@ -254,7 +257,7 @@ describe("notes, follow-ups and detail filling work only inside the conversation
 
   it("fills only empty details and never overwrites", async () => {
     const f = fake();
-    const c = ctx({ verification: "verified" });
+    const c = ctx({ identity: VERIFIED });
     await exec(f.deps, "crm_find_contact", { email: "pat@example.com" }, c); // brings lead 10 into scope
     const r = await exec(f.deps, "crm_fill_lead_details", { leadId: 10, company: "Overwritten BV", phone: "+31 6 99999999", interest: "ai-scan", requestId: "req-00000019" }, c);
     expect(r).toEqual({ ok: true, filled: ["interest"], unchanged: false }); // company and phone were already set
@@ -324,7 +327,7 @@ describe("CRM tools in the shared runtime", () => {
     expect(unverified.seen[1]).toContain('\\"matched\\":true');
     expect(unverified.seen[1]).not.toMatch(/Pat Prospect|Pat BV|leadId/);
 
-    const verified = runTool({}, "crm_find_contact", { email: "pat@example.com" }, { verification: "verified" });
+    const verified = runTool({}, "crm_find_contact", { email: "pat@example.com" }, { identity: VERIFIED });
     await verified.run();
     expect(verified.seen[1]).toContain("Pat Prospect");
     expect(verified.seen[1]).toContain("leadId");

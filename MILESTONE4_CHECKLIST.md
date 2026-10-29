@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 22
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 23
 - Live verification pending: 20
 - In progress: 0
-- Not started: 40
+- Not started: 39
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -105,7 +105,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 
 ### 4. AI Receptionist and IVR (0 of 24 verified)
 
-- [ ] `R10`: Three-level identity policy engine gating tools by (P0, BASELINE, NOT_STARTED)
+- [ ] `R10`: Three-level identity policy engine gating tools by (P0, BASELINE, TESTED_LOCAL)
 - [ ] `R11`: Verification link flow (P0, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `R01`: Voice provider adapter (P1, BASELINE, BLOCKED_EXTERNAL)
 - [ ] `R02`: Realtime media stream, speech-to-text/text-to-speech, barge-in/interruption (P1, BASELINE, BLOCKED_EXTERNAL)

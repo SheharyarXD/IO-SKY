@@ -27,6 +27,7 @@
  */
 import { z } from "zod";
 import { composeNoteBody, matchedOn, normalizeEmail, phoneKey, type Qualification } from "../shared/crmRules";
+import { authorizeOperation } from "../shared/identityPolicy";
 import type { AgentTool, ToolContext } from "./agentRuntime";
 import { IdempotencyStore } from "./schedulingTools";
 import type { CrmActivity, Lead } from "../drizzle/schema";
@@ -68,6 +69,14 @@ export class RunLeadScope {
   }
 }
 
+/** The account permission a verified caller must hold to be shown details of the contact records the assistant surfaces. */
+export const CRM_DETAIL_PERMISSION = "view_own_contact_record";
+
+/** Verified in the R10 sense: a live verification, in this organisation context, holding the permission. */
+function isVerified(ctx: ToolContext, now: number): boolean {
+  return authorizeOperation({ level: 2, permission: CRM_DETAIL_PERMISSION, organizationScoped: false }, ctx.identity, { organizationId: ctx.organizationId }, now).allowed;
+}
+
 const unavailable: CrmResult = { ok: false, code: "unavailable", message: "The CRM could not complete that. Nothing you can rely on was recorded; ask a person to follow up." };
 const outOfScope: CrmResult = { ok: false, code: "not_allowed", message: "That record is not part of this conversation." };
 
@@ -103,7 +112,7 @@ export function crmTools(deps: CrmDeps): AgentTool[] {
         try {
           const [leads, client] = await Promise.all([deps.findLeadsByContact({ email, phoneKey: pk }), email ? deps.isExistingClientEmail(email) : Promise.resolve(false)]);
           const matched = leads.length > 0 || client;
-          if (ctx.verification !== "verified") return { ok: true, matched } as CrmResult<object>;
+          if (!isVerified(ctx, deps.now())) return { ok: true, matched } as CrmResult<object>;
           if (client) return { ok: true, matched: true, existingClient: true, matches: [] } as CrmResult<object>;
           for (const l of leads) deps.leadScope.add(ctx, l.id, deps.now());
           return {
@@ -135,8 +144,8 @@ export function crmTools(deps: CrmDeps): AgentTool[] {
             const dupes = await deps.findLeadsByContact({ email, phoneKey: phoneKey(i.phone) });
             if (dupes.length > 0) {
               // Only a verified caller learns which record; an unverified one cannot be given access to it.
-              if (ctx.verification === "verified") deps.leadScope.add(ctx, dupes[0].id, deps.now());
-              return { ok: true, created: false, deduplicated: true, ...(ctx.verification === "verified" ? { leadId: dupes[0].id } : {}) } as CrmResult<object>;
+              if (isVerified(ctx, deps.now())) deps.leadScope.add(ctx, dupes[0].id, deps.now());
+              return { ok: true, created: false, deduplicated: true, ...(isVerified(ctx, deps.now()) ? { leadId: dupes[0].id } : {}) } as CrmResult<object>;
             }
             const lead = await deps.createLead({
               source: "ai-receptionist", sourceId: null, fullName: i.fullName, email, company: i.company ?? null, phone: i.phone ?? null, interest: i.interest ?? null,
