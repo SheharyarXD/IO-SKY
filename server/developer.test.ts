@@ -277,6 +277,32 @@ describe("developer router — task + submission", () => {
     expect(notifyOwner).toHaveBeenCalledTimes(1);
   });
 
+  it("announces a resolved blocker (PD-13) only when the task leaves 'blocked'", async () => {
+    const dispatcher = await import("./notificationDispatcher");
+    const spy = vi.spyOn(dispatcher, "emitNotification").mockResolvedValue({ delivered: true, eventId: "x" });
+    try {
+      const caller = appRouter.createCaller(makeCtx({}));
+      gateState().taskUpdateResult = { id: 800, projectId: 500, status: "in_progress", previousStatus: "blocked" };
+      const out = await caller.developer.setTaskStatus({ taskId: 800, status: "in_progress" });
+      expect(spy.mock.calls.map((c) => c[0].event)).toEqual(["PROJECT_BLOCKER_RESOLVED"]);
+      expect(spy.mock.calls[0][0].audience).toEqual({ type: "admin" });
+      // the internal previous status is never returned to the developer
+      expect(out).toEqual({ id: 800, projectId: 500, status: "in_progress" });
+
+      spy.mockClear();
+      gateState().taskUpdateResult = { id: 800, projectId: 500, status: "in_review", previousStatus: "in_progress" };
+      await caller.developer.setTaskStatus({ taskId: 800, status: "in_review" });
+      expect(spy).not.toHaveBeenCalled();
+
+      spy.mockClear();
+      gateState().taskUpdateResult = { id: 800, projectId: 500, status: "blocked", previousStatus: "blocked" };
+      await caller.developer.setTaskStatus({ taskId: 800, status: "blocked" });
+      expect(spy.mock.calls.map((c) => c[0].event)).toEqual(["PROJECT_BLOCKER_CREATED"]);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("blocks submission for an unassigned project", async () => {
     gateState().assignments = [{ projectId: 500, developerId: 100, status: "active" }];
     const caller = appRouter.createCaller(makeCtx({}));

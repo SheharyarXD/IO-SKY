@@ -263,6 +263,10 @@ Added server/callContext.ts: a bounded, expiring, per-conversation fact store an
 
 Added shared/backupPolicy.ts (settings, validation, declared-policy assessment), seeded backup.* settings with undeclared defaults, routed their validation through the existing configuration pipeline, added the admin.backupPolicy read endpoint and a Backup policy panel in Governance, Configuration. 15 new tests with a mutation check. Declared values only: nothing is verified against the provider, and the page says so. No migration needed.
 
+## N02 - deadline and blocker notification events (IN_PROGRESS, 3 more events wired)
+
+Added shared/deadlineRules.ts and server/deadlineSweeps.ts and wired DC-08, PD-07 and PD-13 to existing triggers: due CRM follow-ups, missed task deadlines and resolved task blockers. The sweep runs on the existing operations tick with a bounded lookback and dispatcher de-duplication. 17 new tests with a mutation check. 38 events remain unwired and are grouped by what blocks them in the task notes; the task stays IN_PROGRESS.
+
 ---
 
 ## Status translation rules used for the import

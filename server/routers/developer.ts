@@ -45,6 +45,7 @@ import {
 import { storageGetSignedUrl } from "../storage";
 import { appendLoginAudit, getDeveloperNotificationById } from "../db";
 import { resolveNotificationLink } from "../../shared/notificationLinks";
+import { blockerResolved, blockerResolvedRef } from "../../shared/deadlineRules";
 import { getReleasedDocumentForDeveloper, listReleasedDocumentsForDeveloper } from "../db/documentHandoff";
 import { emitNotification } from "../notificationDispatcher";
 import { TASK_COMMENT_KINDS, checkTimeEntry } from "../../shared/srsRules";
@@ -196,11 +197,13 @@ export const developerRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const after = await updateDeveloperTaskStatus({
+      const updated = await updateDeveloperTaskStatus({
         developerId: ctx.developer.id,
         taskId: input.taskId,
         status: input.status,
       });
+      const previousStatus = updated?.previousStatus;
+      const after = updated ? (({ previousStatus: _previous, ...task }) => task)(updated) : null;
       if (!after) {
         await appendDeveloperSecurityEvent({
           developerId: ctx.developer.id,
@@ -222,6 +225,9 @@ export const developerRouter = router({
       });
       if (input.status === "blocked") {
         await emitNotification({ event: "PROJECT_BLOCKER_CREATED", audience: { type: "admin" }, dedupeRef: `task:${input.taskId}:blocked:${Math.floor(Date.now() / 3_600_000)}`, title: `${ctx.developer.profile.fullName} is blocked on task #${input.taskId}`, href: "/admin/delivery", skipAdminFeed: true });
+      }
+      if (blockerResolved(previousStatus, input.status)) {
+        await emitNotification({ event: "PROJECT_BLOCKER_RESOLVED", audience: { type: "admin" }, dedupeRef: blockerResolvedRef(input.taskId, Date.now()), title: `${ctx.developer.profile.fullName} is unblocked on task #${input.taskId}`, href: "/admin/delivery", skipAdminFeed: true });
       }
       await notifyOwner({
         title: "Developer task status changed",

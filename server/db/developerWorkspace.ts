@@ -509,7 +509,7 @@ export async function updateDeveloperTaskStatus(args: {
   developerId: number;
   taskId: number;
   status: "planned" | "in_progress" | "blocked" | "in_review" | "done";
-}): Promise<DeveloperTask | null> {
+}): Promise<(DeveloperTask & { previousStatus: string }) | null> {
   const db = await getDb();
   if (!db) return null;
   // 1. Resolve task -> project.
@@ -555,7 +555,8 @@ export async function updateDeveloperTaskStatus(args: {
     .from(developerTasks)
     .where(eq(developerTasks.id, args.taskId))
     .limit(1);
-  return after[0] ?? null;
+  // The status it had before this change, so the caller can tell a blocker being resolved from any other move.
+  return after[0] ? { ...after[0], previousStatus: task.status } : null;
 }
 
 // ---------------------------------------------------------------------------
