@@ -9,6 +9,8 @@
 // CRM lifecycle (SRS 14.8, 14.15)
 // ---------------------------------------------------------------------------
 
+import { isBackupKey, validateBackupSetting } from "./backupPolicy";
+
 export const OPPORTUNITY_STAGES = [
   "qualification",
   "discovery",
@@ -187,6 +189,7 @@ const INTEGER_RANGES: Record<string, [number, number]> = {
 };
 
 export function validateSettingValue(key: string, value: string): CloseCheck {
+  if (isBackupKey(key)) return validateBackupSetting(key, value);
   if (DERIVED_KEYS.has(key)) {
     return { ok: false, reason: "This value is derived from the running environment and cannot be edited." };
   }

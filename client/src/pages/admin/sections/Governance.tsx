@@ -300,6 +300,54 @@ function AiGovernance() {
   );
 }
 
+function BackupPolicyPanel() {
+  const q = trpc.admin.backupPolicy.useQuery(undefined, { staleTime: 30_000 });
+  const d = q.data;
+  const tone = d?.status === "declared" ? "ok" : d?.status === "attention" ? "err" : "warn";
+  const row = (label: string, value: string | number | boolean | null) => (
+    <div className="flex justify-between gap-4 border-b border-border/50 py-1 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value === null || value === undefined ? "Not declared" : typeof value === "boolean" ? (value ? "On" : "Off") : String(value)}</span>
+    </div>
+  );
+  return (
+    <Panel title="Backup policy (declared, not verified)">
+      {!d ? (
+        <p className="text-sm text-muted-foreground">{q.isLoading ? "Loading." : "The backup policy could not be read."}</p>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <StatusPill tone={tone} label={d.status.replace(/_/g, " ")} />
+            {d.rehearsalDue ? <StatusPill tone="warn" label="restore rehearsal due" /> : null}
+          </div>
+          <p className="text-sm text-muted-foreground">{d.disclosure}</p>
+          <div>
+            {row("Acceptable data loss (hours)", d.declared.rpoHours)}
+            {row("Target recovery time (hours)", d.declared.rtoHours)}
+            {row("Retention (days)", d.declared.retentionDays)}
+            {row("Point in time recovery", d.declared.pitr)}
+            {row("Uploaded files", d.declared.storageProcedure)}
+            {row("Last restore rehearsal", d.declared.rehearsedNever ? "Never" : d.declared.lastRehearsalDate)}
+            {row("Last rehearsal result", d.declared.lastRehearsalResult)}
+            {row("Responsible", d.declared.owner)}
+          </div>
+          {d.findings.length > 0 ? (
+            <ul className="space-y-1 text-sm">
+              {d.findings.map((f) => (
+                <li key={f.code} className="flex gap-2">
+                  <StatusPill tone={f.severity === "high" ? "err" : "warn"} label={f.severity} />
+                  <span>{f.message}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <p className="text-xs text-muted-foreground">To change a value, use "Change a setting" below (super admin). Every change is validated and kept in the history.</p>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 function Configuration() {
   const utils = trpc.useUtils();
   const history = trpc.adminOps.configHistory.useQuery({});
@@ -309,6 +357,7 @@ function Configuration() {
   if (!keys.some((k) => k.value === "operations.maintenance_mode")) keys.push({ value: "operations.maintenance_mode", label: "Maintenance mode (operations.maintenance_mode)" });
   return (
     <>
+      <BackupPolicyPanel />
       <FormCard
         title="Change a setting (super admin)"
         submitLabel="Apply change"

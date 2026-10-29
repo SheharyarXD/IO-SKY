@@ -102,6 +102,7 @@ import { dispatchWebhooksForTrigger } from "../webhookDispatcher";
 import { notifyClient } from "../notifications";
 import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import { mayViewCompanyRevenue } from "../../shared/srsRules";
+import { assessBackupPolicy, isBackupKey, readDeclared } from "../../shared/backupPolicy";
 import { generatePublicRef } from "../_core/publicRef";
 import {
   organizations,
@@ -1969,6 +1970,16 @@ export const adminRouter = router({
       generatedAtMs: Date.now(),
       source: rows.length > 0 ? ("db" as const) : ("unavailable" as const),
     };
+  }),
+  /**
+   * Backup policy as declared in configuration (I03, SRS 25.8): the declared values, what is missing or
+   * inconsistent, and how old the last restore rehearsal is. It never claims a backup exists.
+   */
+  backupPolicy: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.backup_policy" });
+    const rows = await safe(() => listPlatformSettings(), []);
+    const map = new Map(rows.filter((r) => isBackupKey(r.key)).map((r) => [r.key, r.value] as const));
+    return { ...assessBackupPolicy(readDeclared(map)), source: rows.length > 0 ? ("db" as const) : ("unavailable" as const), generatedAtMs: Date.now() };
   }),
   updateSetting: superAdminProcedure
     .input(

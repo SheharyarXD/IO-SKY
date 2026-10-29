@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 26
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 27
 - Live verification pending: 20
 - In progress: 0
-- Not started: 36
+- Not started: 35
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -276,7 +276,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 
 - [ ] `I01`: Isolated protected staging (P0, BASELINE, NOT_STARTED)
 - [ ] `I05`: Restore rehearsal including storage objects (P0, BASELINE, BLOCKED_EXTERNAL)
-- [ ] `I03`: Backup policy visibility and configuration UI (P1, BASELINE, NOT_STARTED)
+- [ ] `I03`: Backup policy visibility and configuration UI (P1, BASELINE, TESTED_LOCAL)
 - [ ] `I06`: Controlled production release approval route (P1, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `M4-03`: Verify P0 data-layer changes against an isolated PostgreSQL (P1, BASELINE, BLOCKED_EXTERNAL)
 - [ ] `I02`: Staging test of prompts, voice, IVR, scheduling (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)

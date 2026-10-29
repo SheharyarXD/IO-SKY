@@ -8,6 +8,7 @@
  */
 import { asc, eq } from "drizzle-orm";
 import { platformSettings, type PlatformSetting } from "../../drizzle/schema";
+import { BACKUP_SETTING_SEEDS } from "../../shared/backupPolicy";
 import { getDb } from "./connection";
 
 /**
@@ -110,7 +111,8 @@ function withDerivedRows(rows: PlatformSetting[]): PlatformSetting[] {
   );
 }
 
-const POLICY_SETTINGS = [
+const POLICY_SETTINGS: Array<{ section: string; key: string; title: string; description: string; value: string }> = [
+  ...BACKUP_SETTING_SEEDS,
   { section: "security", key: "security.session_hours", title: "Session length (hours)", description: "How long a new sign in lasts, from 1 to 24. Applies to sessions created after the change.", value: "12" },
   { section: "security", key: "security.password_min_length", title: "Minimum password length", description: "Minimum characters for a new password, from 8 to 128. Applies to accounts activated after the change.", value: "12" },
   { section: "notifications", key: "notifications.email_retry_max_attempts", title: "Email retry: total sends", description: "How many times a failing email is sent in all, including the first, from 1 to 10. A permanent failure (bad address) is never retried.", value: "5" },
@@ -133,7 +135,7 @@ export async function listPlatformSettings(): Promise<PlatformSetting[]> {
   if (existing.length > 0) {
     // Settings added after the first seed (the maintenance toggle) would
     // otherwise never exist on a database that was seeded earlier.
-    if (!existing.some((r) => r.key === "operations.maintenance_mode") || !existing.some((r) => r.key === "security.session_hours") || !existing.some((r) => r.key === "notifications.email_retry_max_attempts")) {
+    if (!existing.some((r) => r.key === "operations.maintenance_mode") || POLICY_SETTINGS.some((p) => !existing.some((r) => r.key === p.key))) {
       await db.insert(platformSettings).values([MAINTENANCE_SETTING, ...POLICY_SETTINGS]).onConflictDoNothing();
       return withDerivedRows(await db.select().from(platformSettings).orderBy(asc(platformSettings.section)));
     }

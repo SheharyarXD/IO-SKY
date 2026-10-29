@@ -259,6 +259,10 @@ Added shared/discoveryQualification.ts (sanitising, card and credential scrubbin
 
 Added server/callContext.ts: a bounded, expiring, per-conversation fact store and three agent tools, independent of recording, transcription and the execution log. Facts come from a fixed key set, are cleaned and scrubbed, and are presented to the model as unverified. 18 new tests with a mutation check. No agent is operational; conversation recovery across sessions and persistence are not built.
 
+## I03 - backup policy visibility and configuration (TESTED_LOCAL)
+
+Added shared/backupPolicy.ts (settings, validation, declared-policy assessment), seeded backup.* settings with undeclared defaults, routed their validation through the existing configuration pipeline, added the admin.backupPolicy read endpoint and a Backup policy panel in Governance, Configuration. 15 new tests with a mutation check. Declared values only: nothing is verified against the provider, and the page says so. No migration needed.
+
 ---
 
 ## Status translation rules used for the import
