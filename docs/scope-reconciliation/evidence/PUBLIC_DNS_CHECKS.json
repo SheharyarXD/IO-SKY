@@ -1,0 +1,52 @@
+[
+  {
+    "name": "iosky.nl",
+    "type": "MX",
+    "status": 0,
+    "answers": []
+  },
+  {
+    "name": "iosky.nl",
+    "type": "TXT",
+    "status": 0,
+    "answers": [
+      "zoho-verification=zb72195517.zmverify.zoho.eu"
+    ]
+  },
+  {
+    "name": "iosky.co",
+    "type": "MX",
+    "status": 0,
+    "answers": []
+  },
+  {
+    "name": "iosky.co",
+    "type": "TXT",
+    "status": 0,
+    "answers": []
+  },
+  {
+    "name": "_dmarc.iosky.nl",
+    "type": "TXT",
+    "status": 3,
+    "answers": []
+  },
+  {
+    "name": "zmail._domainkey.iosky.nl",
+    "type": "TXT",
+    "status": 3,
+    "answers": []
+  },
+  {
+    "name": "_dmarc.iosky.co",
+    "type": "TXT",
+    "status": 3,
+    "answers": []
+  },
+  {
+    "name": "zmail._domainkey.iosky.co",
+    "type": "TXT",
+    "status": 3,
+    "answers": []
+  }
+]

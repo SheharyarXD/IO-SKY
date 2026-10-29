@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-15",
+  "source_commit": "a1ca0e535775134104dd8527c3d06494e5a3a6e0",
+  "source_document_files": 131,
+  "matrix_rows": 539,
+  "focused_matrix_rows": 283,
+  "forward_verification_exception_rows": 230,
+  "global_business_rule_rows": 26,
+  "classifications": {
+    "B": 332,
+    "C": 41,
+    "D": 12,
+    "E": 11,
+    "A": 143
+  },
+  "acceptance_rows": 155,
+  "acceptance_classifications": {
+    "A": 111,
+    "B": 44
+  },
+  "capability_rows": 128,
+  "srs_numbered_clauses_indexed": 448,
+  "global_rules_principles_and_appendices_indexed": 38,
+  "srs_clauses_directly_linked": 319,
+  "srs_clauses_unlinked": 129,
+  "baseline_person_days": [
+    77,
+    136
+  ],
+  "traceability_review_person_days": [
+    8,
+    16
+  ],
+  "additional_all_packages_person_days": [
+    112,
+    191
+  ],
+  "additional_core_person_days": [
+    66,
+    114
+  ],
+  "tests": {
+    "files": 93,
+    "passed": 1113,
+    "failed": 0,
+    "skipped": 57,
+    "typecheck": "passed"
+  },
+  "unit_of_count": "Review rows, not independent atomic contractual requirements: 155 acceptance claims, 128 focal comparisons, forward verification exceptions and 26 global rules overlap. B verification exceptions do not assert missing code.",
+  "baseline_estimate_limit": "Known scoped closure packages only; unresolved individual agents and evidence exceptions may change engineering estimate. Shared 8\u201316 day traceability review separate."
+}

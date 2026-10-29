@@ -97,7 +97,7 @@ function scripted(turns: ModelTurn[]) {
 const call = (name: string, args: unknown, id = `c_${name}`): ModelTurn => ({ kind: "tool_calls", calls: [{ id, name, arguments: typeof args === "string" ? args : JSON.stringify(args) }] });
 const final = (content: string): ModelTurn => ({ kind: "final", content });
 
-function harness(opts: { agent?: Partial<AgentDefinition> | null; turns: ModelTurn[]; authorise?: RuntimeDeps["authorise"]; loadAgent?: RuntimeDeps["loadAgent"] }) {
+function harness(opts: { agent?: Partial<AgentDefinition> | null; turns: ModelTurn[]; authorise?: RuntimeDeps["authorise"]; loadAgent?: RuntimeDeps["loadAgent"]; actorGrants?: RuntimeDeps["actorGrants"] }) {
   const { reg, executed } = tools();
   const { model, seen } = scripted(opts.turns);
   const recorded: Array<{ action: string; detail: string }> = [];
@@ -108,10 +108,11 @@ function harness(opts: { agent?: Partial<AgentDefinition> | null; turns: ModelTu
     authorise: opts.authorise ?? (async (a) => (authorised.push(a.action), { outcome: "completed" })),
     record: async (a) => (recorded.push({ action: a.action, detail: a.detail }), 77),
     escalate: async (e) => void escalations.push({ kind: e.kind, reason: e.reason }),
+    actorGrants: opts.actorGrants ?? (async () => []),
     model,
     tools: reg,
   };
-  const input: RunInput = { agentKey: "support_scribe", subjectRef: "ticket:12", runPermission: "draft_reply", system: "You help support.", userMessage: "Please help.", ctx: { organizationId: 5, actorUserId: 9 } };
+  const input: RunInput = { agentKey: "support_scribe", subjectRef: "ticket:12", runPermission: "draft_reply", system: "You help support.", userMessage: "Please help.", ctx: { organizationId: 5, actorUserId: 9, actorRole: "admin" } };
   return { deps, input, executed, recorded, escalations, authorised, seen, model };
 }
 
@@ -403,3 +404,64 @@ describe("llmAgentModel adapter", () => {
     expect(sent.toolChoice).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// G09: a Technical Operator reaches only the agents they hold a grant for
+// ---------------------------------------------------------------------------
+
+describe("per-agent operator access in the runtime (G09)", () => {
+  const grant = (scope: string, over: Record<string, unknown> = {}) => ({ scope, expiresAt: null, revokedAt: null, ...over }) as never;
+  const operator = { organizationId: 5, actorUserId: 9, actorRole: "technical_operator" };
+  const turns = [call("get_ticket", { ticketId: 1 }), final("done")];
+
+  it("an operator with a run grant for THIS agent can run it", async () => {
+    const h = harness({ turns, actorGrants: async () => [grant("agent:support_scribe:run")] });
+    expect((await run(h, { ctx: operator })).status).toBe("completed");
+  });
+
+  it("an operator with no grant, a grant for ANOTHER agent, or only view or approve, is blocked and the model is never called", async () => {
+    for (const grants of [[], [grant("agent:other_agent:run")], [grant("agent:support_scribe:view")], [grant("agent:support_scribe:approve")], [grant("backend")]]) {
+      const h = harness({ turns, actorGrants: async () => grants });
+      const r = await run(h, { ctx: operator });
+      expect(r.status, JSON.stringify(grants)).toBe("blocked");
+      expect(h.model.complete).not.toHaveBeenCalled();
+      expect(h.recorded.map((x) => x.action)).toContain("operator_denied:run"); // the refusal is on record
+    }
+  });
+
+  it("an expired or revoked grant does not count", async () => {
+    for (const over of [{ expiresAt: new Date(Date.now() - 1000) }, { revokedAt: new Date() }]) {
+      const h = harness({ turns, actorGrants: async () => [grant("agent:support_scribe:run", over)] });
+      expect((await run(h, { ctx: operator })).status).toBe("blocked");
+    }
+  });
+
+  it("if the grants cannot be read the run is blocked, not allowed", async () => {
+    const h = harness({ turns, actorGrants: async () => { throw new Error("db down"); } });
+    const r = await run(h, { ctx: operator });
+    expect(r).toMatchObject({ status: "blocked", reason: expect.stringContaining("could not be verified") });
+    expect(h.model.complete).not.toHaveBeenCalled();
+  });
+
+  it("a grant revoked MID-RUN stops the next tool call", async () => {
+    let calls = 0;
+    const h = harness({
+      turns: [call("get_ticket", { ticketId: 1 }), call("get_ticket", { ticketId: 2 }), final("done")],
+      actorGrants: async () => (++calls <= 2 ? [grant("agent:support_scribe:run")] : []), // allowed at start and for the first call, revoked after
+    });
+    const r = await run(h, { ctx: operator });
+    expect(h.executed).toEqual(["get_ticket"]); // only the first call ran
+    expect(r.status === "completed" && r.toolCalls.map((t) => t.outcome)).toEqual(["executed", "refused"]);
+    expect(r.status === "completed" && r.toolCalls[1].reason).toContain("operator access to this agent ended");
+  });
+
+  it("a run started by a person whose role is unknown is blocked; system runs, admins and customers are not limited by operator grants", async () => {
+    const unknown = harness({ turns });
+    expect((await run(unknown, { ctx: { organizationId: 5, actorUserId: 9 } })).status).toBe("blocked");
+    for (const ctx of [{ organizationId: 5, actorUserId: null }, { organizationId: 5, actorUserId: 1, actorRole: "admin" }, { organizationId: 5, actorUserId: 1, actorRole: "super_admin" }, { organizationId: 5, actorUserId: 2, actorRole: "client" }]) {
+      const h = harness({ turns, actorGrants: async () => { throw new Error("must not be consulted"); } });
+      expect((await run(h, { ctx })).status, JSON.stringify(ctx)).toBe("completed");
+    }
+  });
+});
+

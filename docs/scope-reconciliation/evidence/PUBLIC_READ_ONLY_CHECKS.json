@@ -1,0 +1,53 @@
+[
+  {
+    "url": "https://io-sky-production.up.railway.app/health",
+    "status": 200,
+    "final_url": "https://io-sky-production.up.railway.app/health",
+    "latency_ms": 2375,
+    "hsts": "max-age=15552000; includeSubDomains",
+    "safe_fields": {
+      "status": "ok"
+    }
+  },
+  {
+    "url": "https://io-sky-production.up.railway.app/health/ready",
+    "status": 200,
+    "final_url": "https://io-sky-production.up.railway.app/health/ready",
+    "latency_ms": 3203,
+    "hsts": "max-age=15552000; includeSubDomains",
+    "safe_fields": {
+      "status": "ready"
+    }
+  },
+  {
+    "url": "https://io-sky-production.up.railway.app/health/version",
+    "status": 200,
+    "final_url": "https://io-sky-production.up.railway.app/health/version",
+    "latency_ms": 7016,
+    "hsts": "max-age=15552000; includeSubDomains",
+    "safe_fields": {
+      "commit": "unknown",
+      "builtAt": "unknown",
+      "environment": "production"
+    }
+  },
+  {
+    "url": "http://io-sky-production.up.railway.app/",
+    "status": 200,
+    "final_url": "https://io-sky-production.up.railway.app/",
+    "latency_ms": 4922,
+    "hsts": "max-age=15552000; includeSubDomains"
+  },
+  {
+    "url": "https://iosky.nl/",
+    "error_type": "HTTPError",
+    "detail": "HTTP Error 404: Not Found"
+  },
+  {
+    "url": "https://iosky.co/",
+    "status": 200,
+    "final_url": "https://iosky.co/",
+    "latency_ms": 1813,
+    "hsts": null
+  }
+]

@@ -320,6 +320,14 @@ export async function listAiExecutions(agentKey?: string, limit = 100): Promise<
   return (agentKey ? q.where(eq(aiExecutions.agentKey, agentKey)) : q).orderBy(desc(aiExecutions.createdAt), desc(aiExecutions.id)).limit(limit);
 }
 
+/** Which agent an execution row belongs to, or null. Used to authorise a decision against THAT agent's grant. */
+export async function getAiExecutionAgentKey(id: number): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const row = (await db.select({ agentKey: aiExecutions.agentKey }).from(aiExecutions).where(eq(aiExecutions.id, id)).limit(1))[0];
+  return row?.agentKey ?? null;
+}
+
 export type AgentRunResult =
   | { outcome: "completed" | "awaiting_approval"; executionId: number | null; promptVersion: number | null }
   | { outcome: "blocked_by_permission"; executionId: number | null; reason: string };

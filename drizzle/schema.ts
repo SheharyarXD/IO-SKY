@@ -2841,7 +2841,8 @@ export const documentMatrix = pgTable("document_matrix", {
 export const operatorScopes = pgTable("operator_scopes", {
   id: serial("id").primaryKey(),
   userId: integer("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
-  scope: varchar("scope", { length: 32 }).notNull(),
+  // Platform scopes (frontend, backend, ...) or an agent scope "agent:<key>:<action>" (task G09, migration 0039).
+  scope: varchar("scope", { length: 80 }).notNull(),
   expiresAt: timestamp("expiresAt"),
   revokedAt: timestamp("revokedAt"),
   grantedByUserId: integer("grantedByUserId").references(() => users.id),

@@ -1,0 +1,5154 @@
+{
+  "date": "2026-10-15",
+  "method": "Service credentials removed from child environment; dotenv redirected to a nonexistent file; no live test fixtures enabled",
+  "passed": 1113,
+  "failed": 0,
+  "skipped": 57,
+  "files": [
+    {
+      "file": "server/accounts.test.ts",
+      "tests": [
+        {
+          "name": "accounts.activationDetails returns the email, role, MFA requirement and live agreements for a valid link",
+          "status": "passed"
+        },
+        {
+          "name": "accounts.activationDetails gives the same answer for an unknown, expired, revoked or used link",
+          "status": "passed"
+        },
+        {
+          "name": "accounts.activate creates the account, records the agreements, audits, and signs the user in",
+          "status": "passed"
+        },
+        {
+          "name": "accounts.activate never stores the password itself",
+          "status": "passed"
+        },
+        {
+          "name": "accounts.activate refuses a weak password before touching the database",
+          "status": "passed"
+        },
+        {
+          "name": "accounts.activate refuses a password built from the invited email",
+          "status": "passed"
+        },
+        {
+          "name": "accounts.activate requires the agreements to be accepted",
+          "status": "passed"
+        },
+        {
+          "name": "accounts.activate rejects a link that went stale between the check and the create, with the generic message",
+          "status": "passed"
+        },
+        {
+          "name": "accounts.activate tells a person who already has an account to sign in",
+          "status": "passed"
+        },
+        {
+          "name": "accounts.activate sends a privileged role on to MFA enrolment",
+          "status": "passed"
+        },
+        {
+          "name": "adminOps.inviteUser lets an admin invite a client and emails the link without returning it",
+          "status": "passed"
+        },
+        {
+          "name": "adminOps.inviteUser stops an admin inviting a privileged role",
+          "status": "passed"
+        },
+        {
+          "name": "adminOps.inviteUser lets a super admin invite an admin",
+          "status": "passed"
+        },
+        {
+          "name": "adminOps.inviteUser needs an organization for a client",
+          "status": "passed"
+        },
+        {
+          "name": "adminOps.inviteUser refuses an address that already has an account",
+          "status": "passed"
+        },
+        {
+          "name": "adminOps.inviteUser reports when the email could not be sent",
+          "status": "passed"
+        },
+        {
+          "name": "adminOps.inviteUser keeps a client out of invitations",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.analytics.test.ts",
+      "tests": [
+        {
+          "name": "admin.analytics (Business Intelligence) returns an honest empty shape (not fabricated seed numbers) when the database is offline",
+          "status": "passed"
+        },
+        {
+          "name": "admin.analytics (Business Intelligence) rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.analytics (Business Intelligence) allows super_admin too (isAdminRole)",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.createInvoice.test.ts",
+      "tests": [
+        {
+          "name": "admin.createInvoice creates an invoice and audits it",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createInvoice rejects a non-positive amount via zod",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createInvoice rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createInvoice surfaces INTERNAL_SERVER_ERROR when the insert fails",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.createLead.test.ts",
+      "tests": [
+        {
+          "name": "admin.createLead creates a lead with source: manual and audits it",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createLead rejects an invalid email via zod",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createLead rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createLead surfaces INTERNAL_SERVER_ERROR when the insert fails",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.createSupportTicket.test.ts",
+      "tests": [
+        {
+          "name": "admin.createSupportTicket creates a ticket with a generated publicRef and audits it",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createSupportTicket rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createSupportTicket surfaces INTERNAL_SERVER_ERROR when the insert fails",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.developerDelivery.test.ts",
+      "tests": [
+        {
+          "name": "admin developer delivery rejects non-admins on every mutation",
+          "status": "passed"
+        },
+        {
+          "name": "admin developer delivery refuses to assign a suspended developer",
+          "status": "passed"
+        },
+        {
+          "name": "admin developer delivery refuses a completed project",
+          "status": "passed"
+        },
+        {
+          "name": "admin developer delivery notifies and audits on a new assignment",
+          "status": "passed"
+        },
+        {
+          "name": "admin developer delivery does not re-notify when the assignment already existed (idempotent)",
+          "status": "passed"
+        },
+        {
+          "name": "admin developer delivery maps a duplicate project code to CONFLICT",
+          "status": "passed"
+        },
+        {
+          "name": "admin developer delivery rejects a lower case project code",
+          "status": "passed"
+        },
+        {
+          "name": "admin developer delivery 404s when ending an assignment that is not active",
+          "status": "passed"
+        },
+        {
+          "name": "admin developer delivery refuses a task for a developer who is not on the project",
+          "status": "passed"
+        },
+        {
+          "name": "admin developer delivery notifies on a task assignment, not on a repeat",
+          "status": "passed"
+        },
+        {
+          "name": "admin developer delivery sends an admin reply and notifies the developer",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.documentLifecycle.test.ts",
+      "tests": [
+        {
+          "name": "admin.reviewDocument approves a document, audits it, and notifies the owning org (Milestone 2 \u00a72.7)",
+          "status": "passed"
+        },
+        {
+          "name": "admin.reviewDocument rejects with a note",
+          "status": "passed"
+        },
+        {
+          "name": "admin.reviewDocument surfaces NOT_FOUND for an unknown document",
+          "status": "passed"
+        },
+        {
+          "name": "admin.reviewDocument rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.setDocumentRetention sets a retention note and audits it",
+          "status": "passed"
+        },
+        {
+          "name": "admin.setDocumentRetention surfaces NOT_FOUND for an unknown document",
+          "status": "passed"
+        },
+        {
+          "name": "admin.listDocumentVersions returns the version chain",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.grantDeveloperAccess.test.ts",
+      "tests": [
+        {
+          "name": "admin.grantDeveloperAccess rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.grantDeveloperAccess 404s for an unknown developer without ever calling createDeveloperAccessScope",
+          "status": "passed"
+        },
+        {
+          "name": "admin.grantDeveloperAccess grants access with an expiry and audits it",
+          "status": "passed"
+        },
+        {
+          "name": "admin.grantDeveloperAccess grants access with no expiry when expiresInDays is omitted",
+          "status": "passed"
+        },
+        {
+          "name": "admin.grantDeveloperAccess surfaces INTERNAL_SERVER_ERROR when the insert fails",
+          "status": "passed"
+        },
+        {
+          "name": "admin.grantDeveloperAccess rejects an invalid access level via zod",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.mfaPosture.test.ts",
+      "tests": [
+        {
+          "name": "admin.mfaPosture returns an honest empty shape (including byRole: []) when the database is offline",
+          "status": "passed"
+        },
+        {
+          "name": "admin.mfaPosture rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.mfaPosture rejects role client",
+          "status": "passed"
+        },
+        {
+          "name": "admin.mfaPosture rejects role developer",
+          "status": "passed"
+        },
+        {
+          "name": "admin.mfaPosture rejects role user",
+          "status": "passed"
+        },
+        {
+          "name": "admin.mfaPosture rejects role technical_operator",
+          "status": "passed"
+        },
+        {
+          "name": "admin.mfaPosture rejects an unauthenticated caller",
+          "status": "passed"
+        },
+        {
+          "name": "admin.mfaPosture allows super_admin as well as admin",
+          "status": "passed"
+        },
+        {
+          "name": "admin.mfaPosture never reports an out-of-range enrolment percentage",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.modules.test.ts",
+      "tests": [
+        {
+          "name": "admin module RBAC admin.crm forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.crm forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.crm allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.clients forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.clients forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.clients allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.aiScans forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.aiScans forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.aiScans allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.reports forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.reports forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.reports allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.projects forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.projects forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.projects allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.billing forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.billing forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.billing allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.documents forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.documents forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.documents allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.developers forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.developers forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.developers allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.security forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.security forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.security allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.campaigns forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.campaigns forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.campaigns allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.agents forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.agents forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.agents allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.automations forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.automations forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.automations allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.analytics forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.analytics forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.analytics allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.users forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.users forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.users allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.audit forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.audit forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.audit allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.settings forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.settings forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.settings allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.support forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.support forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.support allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.mfaPosture forbids unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.mfaPosture forbids role=\"user\"",
+          "status": "passed"
+        },
+        {
+          "name": "admin module RBAC admin.mfaPosture allows role=\"admin\" and writes the read audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin.action audited stub forbids unauthenticated callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.action audited stub forbids role='user'",
+          "status": "passed"
+        },
+        {
+          "name": "admin.action audited stub succeeds for admin and records an audit row keyed by module + action",
+          "status": "passed"
+        },
+        {
+          "name": "admin.viewAs forbids non-admin",
+          "status": "passed"
+        },
+        {
+          "name": "admin.viewAs admin gets a redirect path and audit row",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (adminProcedure) blocks admin/super_admin with no verified MFA factor from every admin.* endpoint",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (adminProcedure) does not block client/developer roles with the MFA message (they never reach adminProcedure at all)",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (adminProcedure) admin.gateStatus reports mfa_required without throwing",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (adminProcedure) admin.gateStatus reports ok once a verified factor exists",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (adminProcedure) admin.gateStatus reports denied for a non-admin role, never mfa_required",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (adminProcedure) an unverified pending factor (verifiedAt still null) does not satisfy the gate",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.platformSettings.test.ts",
+      "tests": [
+        {
+          "name": "admin.settings returns real rows from the platform_settings store",
+          "status": "passed"
+        },
+        {
+          "name": "admin.settings reports source: unavailable when the store is empty (DB offline)",
+          "status": "passed"
+        },
+        {
+          "name": "admin.settings rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.updateSetting rejects plain admin - platform configuration is super_admin-exclusive (RM-57)",
+          "status": "passed"
+        },
+        {
+          "name": "admin.updateSetting allows super_admin, applies through the validated path, and audits",
+          "status": "passed"
+        },
+        {
+          "name": "admin.updateSetting surfaces NOT_FOUND for an unknown key",
+          "status": "passed"
+        },
+        {
+          "name": "admin.updateSetting rejects an invalid value as BAD_REQUEST and audits the failed attempt",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.reportsProjects.test.ts",
+      "tests": [
+        {
+          "name": "admin.createReport / admin.updateReport rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createReport / admin.updateReport creates a report and audits the action",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createReport / admin.updateReport 404s an update for a report outside the given organization",
+          "status": "passed"
+        },
+        {
+          "name": "admin.promoteAiScanToClientReport (AI Scan \u2192 Reports bridge) rejects a scan that hasn't finished scoring",
+          "status": "passed"
+        },
+        {
+          "name": "admin.promoteAiScanToClientReport (AI Scan \u2192 Reports bridge) 404s when the AI Scan doesn't exist",
+          "status": "passed"
+        },
+        {
+          "name": "admin.promoteAiScanToClientReport (AI Scan \u2192 Reports bridge) creates a client_reports row carrying the scan's real score and executive summary",
+          "status": "passed"
+        },
+        {
+          "name": "admin.promoteAiScanToClientReport (AI Scan \u2192 Reports bridge) does not fabricate a summary when reportPayload is corrupted \u2014 still creates the report from the score alone",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createProject / admin.updateProject creates a project and audits the action",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createMilestone / admin.updateMilestone (tenant isolation) refuses to attach a milestone to a project belonging to a different organization",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createMilestone / admin.updateMilestone (tenant isolation) creates a milestone once the project's org ownership is verified",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createMilestone / admin.updateMilestone (tenant isolation) refuses to update a milestone under a project outside the given organization",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.retriggerAiScan.test.ts",
+      "tests": [
+        {
+          "name": "admin.retriggerAiScan rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.retriggerAiScan 404s for an unknown scan",
+          "status": "passed"
+        },
+        {
+          "name": "admin.retriggerAiScan rejects a scan that is already ready (PRECONDITION_FAILED)",
+          "status": "passed"
+        },
+        {
+          "name": "admin.retriggerAiScan rejects a scan that is already actively scoring (PRECONDITION_FAILED)",
+          "status": "passed"
+        },
+        {
+          "name": "admin.retriggerAiScan rejects a scan with no valid stored answers instead of fabricating some",
+          "status": "passed"
+        },
+        {
+          "name": "admin.retriggerAiScan rejects a scan whose responses parse but contain no answers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.retriggerAiScan retries a failed scan with its real stored answers and audits it",
+          "status": "passed"
+        },
+        {
+          "name": "admin.retriggerAiScan retries a pending scan too (not just failed)",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.srsOps.test.ts",
+      "tests": [
+        {
+          "name": "authority boundaries keeps a client out of every adminOps procedure",
+          "status": "passed"
+        },
+        {
+          "name": "authority boundaries reserves AI governance for the super admin",
+          "status": "passed"
+        },
+        {
+          "name": "authority boundaries lets a technical operator work incidents but not sales data",
+          "status": "passed"
+        },
+        {
+          "name": "denied access is recorded (SRS 8.16) writes one blocked audit row when a signed in user is refused",
+          "status": "passed"
+        },
+        {
+          "name": "denied access is recorded (SRS 8.16) does not write a row when an allowed call succeeds",
+          "status": "passed"
+        },
+        {
+          "name": "opportunities needs a lead or an organization",
+          "status": "passed"
+        },
+        {
+          "name": "opportunities surfaces a refused transition as PRECONDITION_FAILED and audits nothing",
+          "status": "passed"
+        },
+        {
+          "name": "opportunities notifies admins when a deal is won and a handover project exists",
+          "status": "passed"
+        },
+        {
+          "name": "activities and quotations requires a due date on a follow up",
+          "status": "passed"
+        },
+        {
+          "name": "activities and quotations requires something to attach an activity to",
+          "status": "passed"
+        },
+        {
+          "name": "activities and quotations turns a quotation arithmetic error into BAD_REQUEST",
+          "status": "passed"
+        },
+        {
+          "name": "activities and quotations refuses fractional cents at the boundary",
+          "status": "passed"
+        },
+        {
+          "name": "activities and quotations will not reopen a cancelled subscription",
+          "status": "passed"
+        },
+        {
+          "name": "time review demands a reason to reject",
+          "status": "passed"
+        },
+        {
+          "name": "time review tells the developer about the decision",
+          "status": "passed"
+        },
+        {
+          "name": "time review refuses an entry that was already reviewed",
+          "status": "passed"
+        },
+        {
+          "name": "AI governance audits a blocked agent action as a failure",
+          "status": "passed"
+        },
+        {
+          "name": "AI governance will not decide the same execution twice",
+          "status": "passed"
+        },
+        {
+          "name": "incidents, archive and reports does not resolve an incident without a resolution",
+          "status": "passed"
+        },
+        {
+          "name": "incidents, archive and reports alerts admins to a critical incident",
+          "status": "passed"
+        },
+        {
+          "name": "incidents, archive and reports refuses to archive a project that is not eligible",
+          "status": "passed"
+        },
+        {
+          "name": "incidents, archive and reports will not schedule a report in the past",
+          "status": "passed"
+        },
+        {
+          "name": "audit export, search and health exports CSV, defuses a formula in an attacker typed identifier, and audits the export",
+          "status": "passed"
+        },
+        {
+          "name": "audit export, search and health keeps audit search and export away from a technical operator",
+          "status": "passed"
+        },
+        {
+          "name": "audit export, search and health lets a technical operator read platform health but not search documents",
+          "status": "passed"
+        },
+        {
+          "name": "audit export, search and health refuses a one character document search",
+          "status": "passed"
+        },
+        {
+          "name": "audit export, search and health scopes a client document search to the caller's organization, never the query text",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan expert review keeps a technical operator and a client out of the review actions",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan expert review will not let the API approve straight from a state the rules forbid",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan expert review records the approver and does not email the customer on approval",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan expert review emails the customer a link when a report is published",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan expert review still publishes when the notification email fails",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan expert review only regenerates a report that was sent back",
+          "status": "passed"
+        },
+        {
+          "name": "Discovery Call outcomes and task comments demands a follow up date for a follow up outcome before touching the database",
+          "status": "passed"
+        },
+        {
+          "name": "Discovery Call outcomes and task comments records an outcome with the follow up and audits it",
+          "status": "passed"
+        },
+        {
+          "name": "Discovery Call outcomes and task comments refuses an outcome on a cancelled call",
+          "status": "passed"
+        },
+        {
+          "name": "Discovery Call outcomes and task comments will not comment on a task nobody holds",
+          "status": "passed"
+        },
+        {
+          "name": "Discovery Call outcomes and task comments keeps a technical operator out of call outcomes",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.summary.test.ts",
+      "tests": [
+        {
+          "name": "admin.summary RBAC rejects unauthenticated callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.summary RBAC rejects non-admin authenticated callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.summary RBAC allows admin callers and writes an audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin.summary when DB is offline reports honest zeros/empty arrays, never fabricated positive numbers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.liveFeed requires admin and emits a separate audit row",
+          "status": "passed"
+        },
+        {
+          "name": "admin.recentLoginAudit returns [] safely when the database is offline and audits the read",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.superAdmin.test.ts",
+      "tests": [
+        {
+          "name": "admin.listOrganizations allows plain admin (read-only)",
+          "status": "passed"
+        },
+        {
+          "name": "admin.listOrganizations rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createOrganization rejects plain admin - this is a super_admin-exclusive capability (RM-57)",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createOrganization rejects unauthenticated callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createOrganization allows super_admin, checks slug uniqueness first, and audits",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createOrganization rejects a duplicate slug with CONFLICT before ever calling createOrganization",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createOrganization rejects an invalid slug shape via zod before touching the database",
+          "status": "passed"
+        },
+        {
+          "name": "admin.updateOrganization rejects plain admin",
+          "status": "passed"
+        },
+        {
+          "name": "admin.updateOrganization allows super_admin and audits",
+          "status": "passed"
+        },
+        {
+          "name": "admin.updateOrganization surfaces NOT_FOUND when the organization doesn't exist",
+          "status": "passed"
+        },
+        {
+          "name": "admin.setUserRole rejects plain admin - role/permission management is super_admin-exclusive (RM-57)",
+          "status": "passed"
+        },
+        {
+          "name": "admin.setUserRole refuses to let a super_admin change their own role",
+          "status": "passed"
+        },
+        {
+          "name": "admin.setUserRole allows super_admin to change another user's role and audits the before/after",
+          "status": "passed"
+        },
+        {
+          "name": "admin.setUserRole surfaces NOT_FOUND for an unknown user without calling setUserRole",
+          "status": "passed"
+        },
+        {
+          "name": "admin.assignUserOrganization rejects plain admin",
+          "status": "passed"
+        },
+        {
+          "name": "admin.assignUserOrganization allows super_admin to link a user to an organization and audits it",
+          "status": "passed"
+        },
+        {
+          "name": "admin.assignUserOrganization allows clearing a user's organization (organizationId: null)",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.webhooks.test.ts",
+      "tests": [
+        {
+          "name": "admin.webhookRegistrations (read) rejects plain admin - registrations carry a signing secret",
+          "status": "passed"
+        },
+        {
+          "name": "admin.webhookRegistrations (read) allows super_admin",
+          "status": "passed"
+        },
+        {
+          "name": "admin.webhookDeliveries (read) allows plain admin",
+          "status": "passed"
+        },
+        {
+          "name": "admin.webhookDeliveries (read) rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createWebhookRegistration rejects plain admin",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createWebhookRegistration rejects a non-https URL",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createWebhookRegistration allows super_admin, persists, and audits",
+          "status": "passed"
+        },
+        {
+          "name": "admin.setWebhookRegistrationEnabled surfaces NOT_FOUND for an unknown id",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/admin.workflows.test.ts",
+      "tests": [
+        {
+          "name": "admin.workflowDefinitions / admin.workflowRuns (read) allows plain admin",
+          "status": "passed"
+        },
+        {
+          "name": "admin.workflowDefinitions / admin.workflowRuns (read) rejects non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createWorkflowDefinition rejects plain admin - platform configuration is super_admin-exclusive (RM-57)",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createWorkflowDefinition allows super_admin and audits",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createWorkflowDefinition requires a cadence and first run for a scheduled workflow",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createWorkflowDefinition stores the cadence and first run for a scheduled workflow",
+          "status": "passed"
+        },
+        {
+          "name": "admin.createWorkflowDefinition rejects an invalid triggerType via zod",
+          "status": "passed"
+        },
+        {
+          "name": "admin.setWorkflowDefinitionEnabled rejects plain admin",
+          "status": "passed"
+        },
+        {
+          "name": "admin.setWorkflowDefinitionEnabled allows super_admin and surfaces NOT_FOUND for an unknown id",
+          "status": "passed"
+        },
+        {
+          "name": "admin.reviewDocument triggers the workflow engine invokes runWorkflowsForTrigger with document_approved on approval",
+          "status": "passed"
+        },
+        {
+          "name": "admin.reviewDocument triggers the workflow engine invokes runWorkflowsForTrigger with document_rejected on rejection",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/aiGovernance.test.ts",
+      "tests": [
+        {
+          "name": "guardAiScanRun registers the defaults, records the attempt and returns the active managed prompt",
+          "status": "passed"
+        },
+        {
+          "name": "guardAiScanRun blocks the run when the agent is disabled or lacks the permission",
+          "status": "passed"
+        },
+        {
+          "name": "guardAiScanRun runs on the default prompt when there is no managed prompt yet",
+          "status": "passed"
+        },
+        {
+          "name": "guardAiScanRun does not take scans down when the registry itself fails",
+          "status": "passed"
+        },
+        {
+          "name": "managed prompt in the scoring call uses the managed text and always appends the language instruction",
+          "status": "passed"
+        },
+        {
+          "name": "managed prompt in the scoring call falls back to the built in text for an empty managed prompt",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/aiScanModel.test.ts",
+      "tests": [
+        {
+          "name": "AI Scan model contract declares exactly the five marketed dimensions",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan model contract grade bands cover 0..100 with no gaps and no overlap",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan model contract gradeForScore maps boundaries correctly",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan model contract tier profile escalates monotonically (free < growth < elite)",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/aiScanReportPdf.test.ts",
+      "tests": [
+        {
+          "name": "renderAiScanReportPdf produces a non-empty PDF buffer with a valid header for each tier",
+          "status": "passed"
+        },
+        {
+          "name": "renderAiScanReportPdf does not throw when optional sections are empty",
+          "status": "passed"
+        },
+        {
+          "name": "renderAiScanReportPdf handles a missing company gracefully",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/aiScans.test.ts",
+      "tests": [
+        {
+          "name": "aiScansRouter.submitLead persists a free-tier lead with source=ai-scan and interest=ai-scan:free",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitLead preserves tier distinction for paid Growth tier",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitLead preserves tier distinction for paid Elite tier",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitLead rejects submissions where the AI Disclaimer was not accepted",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitLead rejects invalid email",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitLead rejects non-empty honeypot field at the schema layer",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitLead does not break when notifyOwner throws",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitLead rate-limits after 6 submissions from the same IP within 1 minute",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitLead propagates a meaningful error when the lead cannot be persisted",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan questionnaire bank contract is consistent: tier counts match AI_SCAN_TIER_PROFILE",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan questionnaire bank free tier exposes exactly the configured number of questions",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan questionnaire bank growth tier is a strict superset of free tier",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan questionnaire bank elite tier is a strict superset of growth tier",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan questionnaire bank every question maps to a covered dimension at its tier",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan questionnaire bank findMissingAnswers reports omissions and is empty when complete",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan questionnaire bank computeRawDimensionScores averages within 0..100",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitQuestionnaire persists scan + lead, runs scoring engine inline for free tier, returns reportToken",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitQuestionnaire rejects payload missing required answers",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitQuestionnaire rejects unknown question ids to prevent payload pollution",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitQuestionnaire marks scan as failed and notifies owner when engine fails",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitQuestionnaire does not block the response on owner notification failure",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitQuestionnaire holds a scored report for expert review and shows it only once published (BR-016)",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitQuestionnaire getReport throws NOT_FOUND for unknown tokens",
+          "status": "passed"
+        },
+        {
+          "name": "aiScansRouter.submitQuestionnaire getQuestionnaire returns canonical question set for the tier",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/aiScanScoring.test.ts",
+      "tests": [
+        {
+          "name": "scoreAiScan returns a typed report and stamps tier + grade for free tier",
+          "status": "passed"
+        },
+        {
+          "name": "scoreAiScan trims opportunities to the tier cap even if LLM returns more",
+          "status": "passed"
+        },
+        {
+          "name": "scoreAiScan locks dimensions to the tier profile even if LLM returns extra dimensions",
+          "status": "passed"
+        },
+        {
+          "name": "scoreAiScan falls back to deterministic raw scores when LLM omits a dimension",
+          "status": "passed"
+        },
+        {
+          "name": "scoreAiScan returns ok=false (not throw) on LLM transport failure",
+          "status": "passed"
+        },
+        {
+          "name": "scoreAiScan returns ok=false on unparseable LLM response",
+          "status": "passed"
+        },
+        {
+          "name": "scoreAiScan propagates locale into the system prompt",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/apiHardening.test.ts",
+      "tests": [
+        {
+          "name": "RM-86: helmet security headers never advertises the framework via X-Powered-By",
+          "status": "passed"
+        },
+        {
+          "name": "RM-86: helmet security headers sets clickjacking, sniffing and referrer protections",
+          "status": "passed"
+        },
+        {
+          "name": "RM-86: helmet security headers does NOT enforce CSP or HSTS in development",
+          "status": "passed"
+        },
+        {
+          "name": "RM-86: helmet security headers enforces a restrictive CSP and HSTS in production",
+          "status": "passed"
+        },
+        {
+          "name": "RM-86: helmet security headers allows the real font and Supabase asset hosts the client loads from",
+          "status": "passed"
+        },
+        {
+          "name": "RM-86: helmet security headers omits the analytics origin from the CSP when it is not configured",
+          "status": "passed"
+        },
+        {
+          "name": "RM-86: helmet security headers includes the analytics origin when one is configured",
+          "status": "passed"
+        },
+        {
+          "name": "RM-87: explicit CORS policy rejects the '*' wildcard \u2014 it cannot be combined with credentials",
+          "status": "passed"
+        },
+        {
+          "name": "RM-87: explicit CORS policy drops malformed origins instead of trusting them",
+          "status": "passed"
+        },
+        {
+          "name": "RM-87: explicit CORS policy normalises to the origin, discarding any path",
+          "status": "passed"
+        },
+        {
+          "name": "RM-87: explicit CORS policy allows requests with no Origin header (same-origin / non-browser)",
+          "status": "passed"
+        },
+        {
+          "name": "RM-87: explicit CORS policy denies every cross-origin request when no allowlist is configured",
+          "status": "passed"
+        },
+        {
+          "name": "RM-87: explicit CORS policy allows only exact allowlist matches",
+          "status": "passed"
+        },
+        {
+          "name": "RM-87: explicit CORS policy omits Access-Control-Allow-Origin for a disallowed origin",
+          "status": "passed"
+        },
+        {
+          "name": "RM-87: explicit CORS policy echoes the origin and allows credentials for an allowed origin",
+          "status": "passed"
+        },
+        {
+          "name": "RM-88: rate limiter allows up to the limit and blocks beyond it",
+          "status": "passed"
+        },
+        {
+          "name": "RM-88: rate limiter counts each caller independently",
+          "status": "passed"
+        },
+        {
+          "name": "RM-88: rate limiter never limits when the caller IP is unknown",
+          "status": "passed"
+        },
+        {
+          "name": "RM-88: rate limiter expires hits once they fall outside the window",
+          "status": "passed"
+        },
+        {
+          "name": "RM-88: rate limiter keeps two limiters isolated even when they share a store",
+          "status": "passed"
+        },
+        {
+          "name": "RM-88: rate limiter defaults to the in-memory store and warns on an unknown value",
+          "status": "passed"
+        },
+        {
+          "name": "RM-89: deliberate session TTL defaults to 12 hours, not the previous one year",
+          "status": "passed"
+        },
+        {
+          "name": "RM-89: deliberate session TTL honours a valid override",
+          "status": "passed"
+        },
+        {
+          "name": "RM-89: deliberate session TTL falls back to the default for a non-numeric or zero value",
+          "status": "passed"
+        },
+        {
+          "name": "RM-89: deliberate session TTL clamps absurd values rather than accepting them",
+          "status": "passed"
+        },
+        {
+          "name": "malformed request URLs answers 400 instead of throwing on an un-decodable path",
+          "status": "passed"
+        },
+        {
+          "name": "malformed request URLs answers 400 for a stray percent sign from any client",
+          "status": "passed"
+        },
+        {
+          "name": "malformed request URLs leaves well-formed paths alone",
+          "status": "passed"
+        },
+        {
+          "name": "malformed request URLs leaves correctly percent-encoded paths alone",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/auditCoverage.test.ts",
+      "tests": [
+        {
+          "name": "audit coverage admin: every mutation audits itself or is on the central list",
+          "status": "passed"
+        },
+        {
+          "name": "audit coverage adminOps: every mutation audits itself or is on the central list",
+          "status": "passed"
+        },
+        {
+          "name": "audit coverage bookingAdmin: every mutation audits itself or is on the central list",
+          "status": "passed"
+        },
+        {
+          "name": "audit coverage clientPortal: every mutation audits itself or is on the central list",
+          "status": "passed"
+        },
+        {
+          "name": "audit coverage developer: every mutation audits itself or is on the central list",
+          "status": "passed"
+        },
+        {
+          "name": "audit coverage ops: every mutation audits itself or is on the central list",
+          "status": "passed"
+        },
+        {
+          "name": "audit coverage privacy: every mutation audits itself or is on the central list",
+          "status": "passed"
+        },
+        {
+          "name": "audit coverage profile: every mutation audits itself or is on the central list",
+          "status": "passed"
+        },
+        {
+          "name": "audit coverage mfa: every mutation audits itself or is on the central list",
+          "status": "passed"
+        },
+        {
+          "name": "audit coverage finds mutations to check, so the scan is not passing on an empty parse",
+          "status": "passed"
+        },
+        {
+          "name": "shouldAuditMutation covers the booking admin router and the listed client actions",
+          "status": "passed"
+        },
+        {
+          "name": "shouldAuditMutation does not audit unrelated paths",
+          "status": "passed"
+        },
+        {
+          "name": "mutation audit middleware records a successful listed mutation with the caller and the path",
+          "status": "passed"
+        },
+        {
+          "name": "mutation audit middleware records nothing when the mutation fails",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/auth.logout.test.ts",
+      "tests": [
+        {
+          "name": "auth.logout clears the session cookie and reports success",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/auth.recordAttempt.test.ts",
+      "tests": [
+        {
+          "name": "auth.recordAttempt accepts 'supabase' as a valid provider (RM-50)",
+          "status": "passed"
+        },
+        {
+          "name": "auth.recordAttempt still accepts every pre-existing provider value",
+          "status": "passed"
+        },
+        {
+          "name": "auth.recordAttempt rejects an unknown provider value",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/bookingAdmin.test.ts",
+      "tests": [
+        {
+          "name": "booking action tokens round-trips and verifies correctly",
+          "status": "passed"
+        },
+        {
+          "name": "booking action tokens rejects a tampered signature",
+          "status": "passed"
+        },
+        {
+          "name": "booking action tokens rejects when the requested action does not match",
+          "status": "passed"
+        },
+        {
+          "name": "bookingAdmin router authz rejects anonymous callers on listAvailabilityRules",
+          "status": "passed"
+        },
+        {
+          "name": "bookingAdmin router authz rejects authenticated non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "bookingAdmin router authz allows admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "bookingAdmin input validation rejects rules where end <= start",
+          "status": "passed"
+        },
+        {
+          "name": "bookingAdmin input validation accepts a valid rule and lists it back",
+          "status": "passed"
+        },
+        {
+          "name": "bookingAdmin input validation rejects calendar block with end < start",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.hold rejects a second hold on the same slot with CONFLICT",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.cancelByToken rejects bad signatures",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.cancelByToken accepts a properly signed token",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/bookingReminders.test.ts",
+      "tests": [
+        {
+          "name": "dispatchDueBookingReminders sends a due 24h reminder and marks it sent",
+          "status": "passed"
+        },
+        {
+          "name": "dispatchDueBookingReminders never re-sends a 'confirmation' reminder \u2014 only marks it as handled",
+          "status": "passed"
+        },
+        {
+          "name": "dispatchDueBookingReminders suppresses a reminder for a cancelled booking without emailing",
+          "status": "passed"
+        },
+        {
+          "name": "dispatchDueBookingReminders includes the meeting URL only when callType is video",
+          "status": "passed"
+        },
+        {
+          "name": "dispatchDueBookingReminders omits the meeting URL when callType has reverted to phone, even if one is stored",
+          "status": "passed"
+        },
+        {
+          "name": "dispatchDueBookingReminders records a failed send without throwing",
+          "status": "passed"
+        },
+        {
+          "name": "dispatchDueBookingReminders skips a reminder whose booking no longer exists",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/bookings.test.ts",
+      "tests": [
+        {
+          "name": "bookings.create creates a confirmed booking and returns a public reference",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.create rejects honeypot submissions at input validation",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.create rejects slot times in the deep past",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.create rejects malformed emails",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.create requires a telephone number",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.create rejects a placeholder in the telephone field",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.create accepts international telephone formats",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.getByRef returns null for an unknown reference",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.getByRef returns sanitized booking data when reference exists",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.listRecent rejects unauthenticated callers",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.listRecent rejects authenticated non-admin callers",
+          "status": "passed"
+        },
+        {
+          "name": "bookings.listRecent returns recent bookings for admin callers",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/clientNotifications.test.ts",
+      "tests": [
+        {
+          "name": "clientPortal.notifications shows everything when the member has set no preferences",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal.notifications hides a category this member opted out of, for in app only",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal.notifications never hides a security notification, even if a preference row says so",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/clientPortal.test.ts",
+      "tests": [
+        {
+          "name": "clientPortal router rejects unauthenticated calls",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router rejects users without a client role",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router rejects clients without a linked organization",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router returns the tenant-scoped dashboard for the logged-in client",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router returns the organization record for the logged-in client",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router creates a support ticket with a public reference and notifies owner",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router sends a client message and writes a notification",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router requestReportSignedUrl returns a short-lived URL and audits download",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router requestReportSignedUrl rejects when report is not in caller's org",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router requestReportSignedUrl rejects with PRECONDITION when pdfKey is missing",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router recommendationAction proposal: flips status to in_progress, audits, notifies owner",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router recommendationAction discuss: audits + notifies feed but does NOT flip status",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router recommendationAction dismiss: flips to dismissed, audits, no owner notify",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router recommendationAction rejects when rec is in another tenant",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router cancelStrategyCall: cancels a future booking, audits, notifies owner",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router cancelStrategyCall: blocks self-cancel inside the 60-min window",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router cancelStrategyCall: rejects when booking is in another tenant",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router requestInvoiceCheckout: open invoice triggers manual flow + audit + notify",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router requestInvoiceCheckout: rejects already-paid invoices",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router requestInvoiceCheckout: rejects when invoice belongs to another tenant",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router uploadDocument: rejects blocked extensions",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router uploadDocument: rejects empty payload",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router uploadDocument: persists, audits, notifies",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router uploadDocument: passes supersedesDocumentId through to insertClientDocument (Milestone 2 \u00a72.6 versioning)",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router uploadDocument: surfaces a version-linking failure as BAD_REQUEST",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router markNotificationRead: marks a notification read and surfaces NOT_FOUND for an unknown one (Milestone 2 \u00a72.7)",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router archiveNotification: archives a notification (Milestone 2 \u00a72.7)",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router requestDocumentDeletion: only the uploader can delete their file",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router requestDocumentDeletion: removes own file + audits",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router requestDocumentDeletion: DB row is removed even if the storage-object delete fails (best-effort, not a partial-failure error)",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router markMessagesRead returns affected-rows count and stays tenant-scoped",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router updateDisplayName: persists trimmed name and audits the change",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router updateDisplayName: rejects names shorter than 2 chars",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router setMfaMethod: enables email MFA and audits the change",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router setMfaMethod: rejects unknown methods at the schema layer",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router revokeSession: clears the IO SKY cookie and audits the revocation",
+          "status": "passed"
+        },
+        {
+          "name": "clientPortal router surfaces the security center payload with recentLogins array",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/concurrency.test.ts",
+      "tests": [
+        {
+          "name": "RM-113: booking-slot concurrency gives the slot to exactly one of ten simultaneous holders",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-113: booking-slot concurrency keeps different slots independent under the same burst",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-113: booking-slot concurrency lets an expired hold be taken over rather than blocking the slot forever",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-113: booking-slot concurrency does not let two callers take over the same expired hold",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-110: latency baseline for hot queries records a baseline for the authentication lookup",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-110: latency baseline for hot queries records a baseline for the login lookup",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-110: latency baseline for hot queries records a baseline for tenant-scoped listing",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-110: latency baseline for hot queries hangs, rather than queues, when a burst exceeds the pool size",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-110: latency baseline for hot queries handles a burst of concurrent authentication lookups without collapsing",
+          "status": "skipped"
+        }
+      ]
+    },
+    {
+      "file": "server/contact-engineering-auth.test.ts",
+      "tests": [
+        {
+          "name": "contact.submit creates a submission, CRM lead, and returns a publicRef",
+          "status": "passed"
+        },
+        {
+          "name": "contact.submit rejects malformed emails",
+          "status": "passed"
+        },
+        {
+          "name": "contact.submit rejects honeypot submissions at the validator boundary",
+          "status": "passed"
+        },
+        {
+          "name": "contact.submit guards listRecent behind admin auth",
+          "status": "passed"
+        },
+        {
+          "name": "engineering.submit creates an application + CRM lead when all acknowledgements are present",
+          "status": "passed"
+        },
+        {
+          "name": "engineering.submit rejects applications missing any acknowledgement",
+          "status": "passed"
+        },
+        {
+          "name": "engineering.submit guards listRecent and setStatus behind admin auth",
+          "status": "passed"
+        },
+        {
+          "name": "auth.recordAttempt appends a login audit row with the requested provider/outcome",
+          "status": "passed"
+        },
+        {
+          "name": "auth.recordAttempt rejects unknown providers and outcomes",
+          "status": "passed"
+        },
+        {
+          "name": "auth.recordAttempt guards audit.listLeads + audit.listLogins behind admin auth",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/cookieSecurity.test.ts",
+      "tests": [
+        {
+          "name": "RM-92: direct connections uses Lax + insecure over plain HTTP",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: direct connections uses None + Secure over direct HTTPS",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: behind a TLS-terminating proxy honours X-Forwarded-Proto: https",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: behind a TLS-terminating proxy handles a comma-separated forwarded chain",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: behind a TLS-terminating proxy handles the header arriving as an array",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: behind a TLS-terminating proxy tolerates whitespace and casing in the chain",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: behind a TLS-terminating proxy stays insecure when the proxy reports plain http",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'plain http' is always HttpOnly",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'direct https' is always HttpOnly",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'proxied https' is always HttpOnly",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'proxied http' is always HttpOnly",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'plain http' is scoped to the whole site",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'direct https' is scoped to the whole site",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'proxied https' is scoped to the whole site",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'proxied http' is scoped to the whole site",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'plain http' never emits SameSite=None without Secure",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'direct https' never emits SameSite=None without Secure",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'proxied https' never emits SameSite=None without Secure",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: invariants that must hold on every path 'proxied http' never emits SameSite=None without Secure",
+          "status": "passed"
+        },
+        {
+          "name": "RM-92: trust-proxy configuration is opt-in rather than always on",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/dbConstraints.test.ts",
+      "tests": [
+        {
+          "name": "RM-108: database constraint enforcement foreign keys declares a substantial number of foreign keys, not a handful",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-108: database constraint enforcement foreign keys every foreign key declares explicit ON DELETE behaviour",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-108: database constraint enforcement foreign keys rejects an orphaned row at the database layer",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-108: database constraint enforcement updatedAt triggers installs the updatedAt trigger on tables that carry the column",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-108: database constraint enforcement updatedAt triggers actually bumps updatedAt on write",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-108: database constraint enforcement row-level security enables RLS on EVERY public table, not only the tenant-scoped ones",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-108: database constraint enforcement row-level security enables RLS on every tenant-scoped table",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-108: database constraint enforcement row-level security does not leave an RLS-enabled table with zero policies",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-108: database constraint enforcement indexes indexes every foreign key column",
+          "status": "skipped"
+        }
+      ]
+    },
+    {
+      "file": "server/designLanguage.test.ts",
+      "tests": [
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-surface",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-surface-glass",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-card",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-section",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-empty-state",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-empty-icon",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-icon-chip",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-icon-chip-sm",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-divider",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-divider-vertical",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-pill",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-pill-success",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-pill-danger",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-pill-warn",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .io-pill-orange",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .reveal",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .pulse-orange",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .glow-orange",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .lift-on-hover",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .skeleton",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .ticker-track",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .font-display",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .font-mono",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .eyebrow",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .btn-primary",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens declares .btn-secondary",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens brand orange variable is the exact #F58A1F specified by the approved design system",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens brand background is the exact #0D2D2E Deep Teal specified by the approved design system",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens respects prefers-reduced-motion globally",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 2 \u2014 design-language tokens supports RTL reveal on Arabic locale",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/developer.test.ts",
+      "tests": [
+        {
+          "name": "developer router \u2014 gating rejects unauthenticated calls to gateStatus",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 gating returns ok=false/reason=denied for non-developer roles",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 gating blocks dashboard when MFA gate fails",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 gating blocks dashboard when agreements gate fails",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 gating blocks dashboard when access scope is expired",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 gating blocks dashboard when no active assignments exist",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 gating returns the workspace dashboard when every gate passes",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 file signed URL denies download when file does not belong to an assigned project",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 file signed URL returns a signed URL and records an audit row when access is allowed",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 task + submission rejects setTaskStatus when the task is not assigned to the developer",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 task + submission updates status and notifies admin when caller owns the task",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 task + submission blocks submission for an unassigned project",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 task + submission creates a submission, audits, and notifies admin",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 task + submission requires repository+sha when submitting a commit",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 messages + agreements appends a message to the admin thread and notifies admin",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 messages + agreements marks admin messages as read",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 messages + agreements lets a developer sign an agreement even before all gates pass",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Notification Center (Milestone 2 \u00a72.7) marks a notification read and surfaces NOT_FOUND for an unknown one",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Notification Center (Milestone 2 \u00a72.7) archives a notification",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 support tickets rejects subjects that are too short",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 support tickets opens a ticket, audits, and notifies the engineering desk",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 access extension rejects extension reasons that are too short",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 access extension creates an access request, audits, and notifies admin",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Step 2: editable profile + security updateProfile writes patch + audit row and skips notify when availability stays the same",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Step 2: editable profile + security updateProfile fires notifyOwner when availability changes",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Step 2: editable profile + security updateProfile is rejected for client, user, and even admin (self-service only)",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Step 2: editable profile + security setMfaMethodLite is rejected for client, user, and even admin (self-service only)",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Step 2: editable profile + security getProfileForEdit is rejected for client, user, and even admin (self-service only)",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Step 2: editable profile + security setMfaMethodLite rejects 'none' when mfaRequired=1 and records a security event",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Step 2: editable profile + security setMfaMethodLite allows switching to 'email' and writes an audit row",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Step 2: editable profile + security setMfaMethodLite allows 'none' when mfaRequired=0 and notifies the admin",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Step 2: editable profile + security listAuditEvents returns the calling developer's audit rows only",
+          "status": "passed"
+        },
+        {
+          "name": "developer router \u2014 Step 2: editable profile + security listAuditEvents is rejected for client, user, and even admin (self-service only)",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/email-i18n.test.ts",
+      "tests": [
+        {
+          "name": "email-i18n locale normalisation maps common locale-ish inputs to supported codes",
+          "status": "passed"
+        },
+        {
+          "name": "email-i18n locale normalisation falls back to EN for unknown or empty input",
+          "status": "passed"
+        },
+        {
+          "name": "email-i18n locale normalisation flags only Arabic as RTL",
+          "status": "passed"
+        },
+        {
+          "name": "email-i18n string completeness provides non-empty strings for every locale and email type",
+          "status": "passed"
+        },
+        {
+          "name": "email-i18n string completeness keeps placeholder tokens intact in templated strings",
+          "status": "passed"
+        },
+        {
+          "name": "email-i18n string completeness fill() substitutes tokens and leaves unknown tokens visible",
+          "status": "passed"
+        },
+        {
+          "name": "localised email rendering (console transport) renders Dutch booking subject and RTL Arabic markup",
+          "status": "passed"
+        },
+        {
+          "name": "localised email rendering (console transport) renders contact + devapp confirmations for a non-EN locale",
+          "status": "passed"
+        },
+        {
+          "name": "localised email rendering (console transport) defaults to EN when locale is omitted",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/emailBranding.test.ts",
+      "tests": [
+        {
+          "name": "transactional email branding defines the exact brand ground and accent",
+          "status": "passed"
+        },
+        {
+          "name": "transactional email branding carries no off-brand approximations of the teal or the orange",
+          "status": "passed"
+        },
+        {
+          "name": "transactional email branding routes every template colour through the shared palette",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/emailDeliveryLogging.test.ts",
+      "tests": [
+        {
+          "name": "email delivery logging (Milestone 2 \u00a72.3) logs a 'sent' row for a booking confirmation delivered via the console fallback",
+          "status": "passed"
+        },
+        {
+          "name": "email delivery logging (Milestone 2 \u00a72.3) logs a 'failed' row with the transport error when Resend rejects the send",
+          "status": "passed"
+        },
+        {
+          "name": "email delivery logging (Milestone 2 \u00a72.3) logs contact-confirmation and devapp-ack sends with their own messageType and relatedRef",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/healthRoute.test.ts",
+      "tests": [
+        {
+          "name": "RM-76: liveness (/health) returns 200 with a status payload",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: liveness (/health) stays 200 even when the database is completely unavailable",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: liveness (/health) never touches the database at all",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: liveness (/health) forbids caching so a proxy cannot mask a dead instance",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: readiness (/health/ready) returns 200 when the database answers",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: readiness (/health/ready) returns 503 when the database is unreachable",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: readiness (/health/ready) returns 503 when no database is configured at all",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: readiness (/health/ready) reports the probe latency",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: readiness (/health/ready) never leaks a connection string in the error message",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: version (/health/version) reports the build commit so a deploy or rollback can be confirmed",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: version (/health/version) says 'unknown' rather than inventing a commit when unset",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: credential redaction redacts a password embedded in a connection URL",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: credential redaction redacts a key/value style password",
+          "status": "passed"
+        },
+        {
+          "name": "RM-76: credential redaction leaves an innocuous message untouched",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/i18n.completeness.test.ts",
+      "tests": [
+        {
+          "name": "i18n completeness English has at least 1100 keys",
+          "status": "passed"
+        },
+        {
+          "name": "i18n completeness nl.ts covers every English key",
+          "status": "passed"
+        },
+        {
+          "name": "i18n completeness de.ts covers every English key",
+          "status": "passed"
+        },
+        {
+          "name": "i18n completeness fr.ts covers every English key",
+          "status": "passed"
+        },
+        {
+          "name": "i18n completeness es.ts covers every English key",
+          "status": "passed"
+        },
+        {
+          "name": "i18n completeness it.ts covers every English key",
+          "status": "passed"
+        },
+        {
+          "name": "i18n completeness pt.ts covers every English key",
+          "status": "passed"
+        },
+        {
+          "name": "i18n completeness ar.ts covers every English key",
+          "status": "passed"
+        },
+        {
+          "name": "i18n completeness ja.ts covers every English key",
+          "status": "passed"
+        },
+        {
+          "name": "i18n completeness zh.ts covers every English key",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/i18n.homepage.test.ts",
+      "tests": [
+        {
+          "name": "i18n \u2014 homepage key completeness loads a non-empty English dictionary",
+          "status": "passed"
+        },
+        {
+          "name": "i18n \u2014 homepage key completeness every t(\"...\") key in Hero.tsx is declared in en.ts",
+          "status": "passed"
+        },
+        {
+          "name": "i18n \u2014 homepage key completeness every t(\"...\") key in GrowthDependency.tsx is declared in en.ts",
+          "status": "passed"
+        },
+        {
+          "name": "i18n \u2014 homepage key completeness every t(\"...\") key in LookBeyond.tsx is declared in en.ts",
+          "status": "passed"
+        },
+        {
+          "name": "i18n \u2014 homepage key completeness every t(\"...\") key in OurStartingPoint.tsx is declared in en.ts",
+          "status": "passed"
+        },
+        {
+          "name": "i18n \u2014 homepage key completeness every t(\"...\") key in DesigningRelationships.tsx is declared in en.ts",
+          "status": "passed"
+        },
+        {
+          "name": "i18n \u2014 homepage key completeness every t(\"...\") key in WhatThatCanBecome.tsx is declared in en.ts",
+          "status": "passed"
+        },
+        {
+          "name": "i18n \u2014 homepage key completeness every t(\"...\") key in WhyIOSKY.tsx is declared in en.ts",
+          "status": "passed"
+        },
+        {
+          "name": "i18n \u2014 homepage key completeness every t(\"...\") key in BuiltForChange.tsx is declared in en.ts",
+          "status": "passed"
+        },
+        {
+          "name": "i18n \u2014 homepage key completeness every t(\"...\") key in HomeFinalCta.tsx is declared in en.ts",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/i18n.locale.test.ts",
+      "tests": [
+        {
+          "name": "Pakket 3 \u2014 i18n registry registers exactly the 10 active languages",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 i18n registry Arabic is the only RTL locale",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 i18n registry each language exposes a BCP47 tag for Intl APIs",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 translate() returns the localized value when the key exists in the locale",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 translate() falls back to English when the key is missing in the target locale",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 translate() returns the raw key as a last-resort fallback",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 translate() supports {name} placeholder substitution",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 Chinese locale ZH dictionary contains at least the core navigation keys",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 Chinese locale every ZH value is non-Latin (catches accidental EN copy-paste)",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 locale-aware formatters formatNumber respects locale separators",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 locale-aware formatters formatCurrency emits a recognisable currency symbol",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 locale-aware formatters formatDate produces locale-specific output",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 locale-aware formatters formatRelative returns a sensible string",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 locale-aware formatters formatters never throw on unknown locale (defensive fallback)",
+          "status": "passed"
+        },
+        {
+          "name": "Pakket 3 \u2014 dictionary parity EN remains the single source of truth",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/i18n.usedKeys.test.ts",
+      "tests": [
+        {
+          "name": "keys used without a default exist in the dictionary the dictionary has the keys the scan below relies on",
+          "status": "passed"
+        },
+        {
+          "name": "keys used without a default exist in the dictionary detects a single argument call and ignores one with a default",
+          "status": "passed"
+        },
+        {
+          "name": "keys used without a default exist in the dictionary scans the client source",
+          "status": "passed"
+        },
+        {
+          "name": "keys used without a default exist in the dictionary no t(\"key\") call shows a raw key because its entry is missing",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/inputValidationCoverage.test.ts",
+      "tests": [
+        {
+          "name": "RM-91: dangerouslySetInnerHTML surface has no dangerouslySetInnerHTML anywhere in client or server source",
+          "status": "passed"
+        },
+        {
+          "name": "RM-93: zod validation coverage across tRPC procedures finds the expected procedure surface (guards the parser itself)",
+          "status": "passed"
+        },
+        {
+          "name": "RM-93: zod validation coverage across tRPC procedures every procedure that reads `input` declares a validator for it",
+          "status": "passed"
+        },
+        {
+          "name": "RM-93: zod validation coverage across tRPC procedures every declared validator is a zod schema",
+          "status": "passed"
+        },
+        {
+          "name": "RM-93: zod validation coverage across tRPC procedures procedures without a validator genuinely take no input",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/integrations.test.ts",
+      "tests": [
+        {
+          "name": "integration status reports configured only when every required variable is set",
+          "status": "passed"
+        },
+        {
+          "name": "integration status accepts either of two alternative variables",
+          "status": "passed"
+        },
+        {
+          "name": "integration status never includes a secret value in the status",
+          "status": "passed"
+        },
+        {
+          "name": "integration status does not call a provider that is not configured",
+          "status": "passed"
+        },
+        {
+          "name": "integration status reports the mode when the Stripe key is accepted",
+          "status": "passed"
+        },
+        {
+          "name": "integration status reports a rejected key as a failure",
+          "status": "passed"
+        },
+        {
+          "name": "lead evaluation (SRS 14.16) parses a valid answer and rejects malformed ones",
+          "status": "passed"
+        },
+        {
+          "name": "lead evaluation (SRS 14.16) routes through the agent gate, uses the simple model class and records the result",
+          "status": "passed"
+        },
+        {
+          "name": "lead evaluation (SRS 14.16) does not call the model when the agent is blocked",
+          "status": "passed"
+        },
+        {
+          "name": "lead evaluation (SRS 14.16) records nothing when the model answer is unusable",
+          "status": "passed"
+        },
+        {
+          "name": "lead evaluation (SRS 14.16) reports a provider failure instead of throwing",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/legal.test.ts",
+      "tests": [
+        {
+          "name": "legal router listDocuments returns all 8 supported kinds with live version",
+          "status": "skipped"
+        },
+        {
+          "name": "legal router getDocument returns body + hash for privacy-policy",
+          "status": "skipped"
+        },
+        {
+          "name": "legal router getDocument resolves slug 'privacy' to privacy-policy",
+          "status": "skipped"
+        },
+        {
+          "name": "legal router getDocument throws NOT_FOUND for unknown slug",
+          "status": "skipped"
+        },
+        {
+          "name": "legal router recordCookieConsent + getCookieConsent round-trip with rejected-all",
+          "status": "skipped"
+        },
+        {
+          "name": "legal router recordCookieConsent forces functional=true even if client tries to disable it",
+          "status": "skipped"
+        },
+        {
+          "name": "legal router acceptAgreement is idempotent for the same user+version",
+          "status": "skipped"
+        },
+        {
+          "name": "legal router myAcceptances + myMissingAcceptances reflect acceptance state",
+          "status": "skipped"
+        },
+        {
+          "name": "legal router acknowledgeAi accepts anonymous and authenticated calls",
+          "status": "skipped"
+        }
+      ]
+    },
+    {
+      "file": "server/llm.test.ts",
+      "tests": [
+        {
+          "name": "invokeLLM (Milestone 2 \u00a72.2) throws a clear config error when no endpoint is configured \u2014 no silent fallback to a hardcoded Manus/Forge URL",
+          "status": "passed"
+        },
+        {
+          "name": "invokeLLM (Milestone 2 \u00a72.2) throws a clear config error when no credential is configured",
+          "status": "passed"
+        },
+        {
+          "name": "invokeLLM (Milestone 2 \u00a72.2) sends the configured model/url/key and defaults max_tokens",
+          "status": "passed"
+        },
+        {
+          "name": "invokeLLM (Milestone 2 \u00a72.2) respects an explicit maxTokens override instead of always sending the hardcoded default",
+          "status": "passed"
+        },
+        {
+          "name": "invokeLLM (Milestone 2 \u00a72.2) surfaces a clear rate-limit error on HTTP 429",
+          "status": "passed"
+        },
+        {
+          "name": "invokeLLM (Milestone 2 \u00a72.2) surfaces a clear error for other non-OK responses",
+          "status": "passed"
+        },
+        {
+          "name": "invokeLLM (Milestone 2 \u00a72.2) wraps a network failure in a clear error rather than letting a raw fetch rejection propagate",
+          "status": "passed"
+        },
+        {
+          "name": "invokeLLM (Milestone 2 \u00a72.2) activates from OPENAI_API_KEY alone, defaulting to OpenAI's endpoint",
+          "status": "passed"
+        },
+        {
+          "name": "invokeLLM (Milestone 2 \u00a72.2) lets an explicit LLM_API_URL win over the OpenAI default",
+          "status": "passed"
+        },
+        {
+          "name": "invokeLLM (Milestone 2 \u00a72.2) reports configuration status without performing a call",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/localAuth.errors.test.ts",
+      "tests": [
+        {
+          "name": "POST /api/auth/local/login \u2014 missing fields returns 400 with stable code 'missing_fields' when email is empty",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 missing fields returns 400 with stable code 'missing_fields' when password is empty",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 missing fields returns 400 when body is empty object",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 missing fields missing-fields path does NOT touch the database",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 unknown email returns 401 with the SAME generic code as wrong-password",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 unknown email still runs a bcrypt compare to keep timing constant (anti-enumeration)",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 unknown email audits the failed attempt with reason 'invalid_credentials'",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 wrong password returns 401 with code 'invalid_credentials' for a real user",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 wrong password does NOT mint a session cookie on wrong password",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 wrong password audits the failed attempt linked to the real user id",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 passwordless account treats user.passwordHash=null exactly like wrong-password (401, no enumeration)",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 success path returns 200 with role + next, mints io_sky_session cookie, audits success",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 success path admin role redirects to /admin/bookings",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 success path developer role redirects to /developer-workspace",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login \u2014 internal error returns 500 with code 'server_error' when the DB lookup throws",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login: brute force throttle answers 429 after repeated attempts on one account, and records it as blocked",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/auth/local/login: brute force throttle does not check the password once an account is throttled",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/localAuth.mfa.test.ts",
+      "tests": [
+        {
+          "name": "local sign in with a second factor enrolled issues no session and sends the browser to the challenge",
+          "status": "passed"
+        },
+        {
+          "name": "local sign in with a second factor enrolled records an mfa_required audit row, not a successful sign in",
+          "status": "passed"
+        },
+        {
+          "name": "local sign in with a second factor enrolled refuses the login when the factor lookup fails, rather than assuming there is none",
+          "status": "passed"
+        },
+        {
+          "name": "local sign in without a second factor still signs in with the session cookie",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/mfa.test.ts",
+      "tests": [
+        {
+          "name": "mfa.enrollTotpBegin creates an un-verified factor and returns an otpauth URI",
+          "status": "passed"
+        },
+        {
+          "name": "mfa.enrollTotpBegin replaces an abandoned un-verified factor instead of stacking a new one",
+          "status": "passed"
+        },
+        {
+          "name": "mfa.enrollTotpBegin never discards a verified factor when starting a new enrolment",
+          "status": "passed"
+        },
+        {
+          "name": "mfa.enrollTotpVerify marks the factor verified and returns 10 recovery codes",
+          "status": "passed"
+        },
+        {
+          "name": "mfa.enrollTotpVerify rejects a wrong code, bumps failedAttempts, and audits the failure",
+          "status": "passed"
+        },
+        {
+          "name": "mfa.enrollTotpVerify locks the factor after 5 consecutive failed attempts",
+          "status": "passed"
+        },
+        {
+          "name": "mfa.listFactors / deleteFactor / setPrimaryFactor lists masked factors, refuses cross-user delete, and switches primary",
+          "status": "passed"
+        },
+        {
+          "name": "mfa.regenerateRecoveryCodes replaces the recovery code batch and audits the action",
+          "status": "passed"
+        },
+        {
+          "name": "mfa SMS enrolment dispatches an OTP and stores an unverified SMS factor",
+          "status": "passed"
+        },
+        {
+          "name": "mfa SMS enrolment rejects an invalid phone number with BAD_REQUEST",
+          "status": "passed"
+        },
+        {
+          "name": "mfa SMS enrolment verifies the SMS code, marks the factor verified, issues recovery codes",
+          "status": "passed"
+        },
+        {
+          "name": "mfa SMS enrolment rejects wrong code, bumps failures, locks after MAX attempts",
+          "status": "passed"
+        },
+        {
+          "name": "mfa.redeemRecoveryCode burns a single code and refuses to reuse it",
+          "status": "passed"
+        },
+        {
+          "name": "mfa.redeemRecoveryCode rejects an unknown recovery code with UNAUTHORIZED + audit",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/mfaChallenge.test.ts",
+      "tests": [
+        {
+          "name": "verifyChallengeCode accepts a fresh TOTP code generated from the same secret",
+          "status": "passed"
+        },
+        {
+          "name": "verifyChallengeCode rejects a TOTP code that is plainly wrong",
+          "status": "passed"
+        },
+        {
+          "name": "verifyChallengeCode accepts an SMS code while its expiry is in the future",
+          "status": "passed"
+        },
+        {
+          "name": "verifyChallengeCode rejects an SMS code once it has expired",
+          "status": "passed"
+        },
+        {
+          "name": "verifyChallengeCode rejects when the factor is not verified",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/mfa/challenge returns 401 challenge_expired when no pending cookie is set",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/mfa/challenge issues a real session cookie and clears the pending cookie on a valid TOTP code",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/mfa/challenge returns 401 + bumps the failure counter on a wrong code",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/mfa/challenge returns 429 when the factor is already locked",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/mfa/challenge returns 404 when the factor belongs to a different user",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/mfa/challenge redeems a valid recovery code one-shot and marks it used",
+          "status": "passed"
+        },
+        {
+          "name": "POST /api/mfa/challenge rejects an unrelated recovery code",
+          "status": "passed"
+        },
+        {
+          "name": "GET /api/mfa/challenge/status returns 401 inactive when there is no pending cookie",
+          "status": "passed"
+        },
+        {
+          "name": "GET /api/mfa/challenge/status returns the list of verified factors for the pending user",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/mfaCrypto.test.ts",
+      "tests": [
+        {
+          "name": "envelopeEncrypt / envelopeDecrypt round-trips arbitrary plaintext",
+          "status": "passed"
+        },
+        {
+          "name": "envelopeEncrypt / envelopeDecrypt rejects tampered ciphertext",
+          "status": "passed"
+        },
+        {
+          "name": "hashPhoneNumber / verifyPhoneHash verifies the same phone but rejects a different one",
+          "status": "passed"
+        },
+        {
+          "name": "recovery codes generates 10 codes that match their hashes",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/mfaTotp.test.ts",
+      "tests": [
+        {
+          "name": "TOTP helper generates a base32 secret that can be re-used to verify a token",
+          "status": "passed"
+        },
+        {
+          "name": "TOTP helper rejects a malformed or wrong token",
+          "status": "passed"
+        },
+        {
+          "name": "TOTP helper strips whitespace and dashes from the user-supplied token",
+          "status": "passed"
+        },
+        {
+          "name": "TOTP helper renders an otpauth URI with the IO SKY issuer and the user's email",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/notification.test.ts",
+      "tests": [
+        {
+          "name": "notifyOwner (Milestone 2 \u00a72.2) rejects an empty title/content before touching config or the transport",
+          "status": "passed"
+        },
+        {
+          "name": "notifyOwner (Milestone 2 \u00a72.2) throws a clear config error when OWNER_NOTIFY_EMAIL is unset \u2014 no silent Manus-style fallback",
+          "status": "passed"
+        },
+        {
+          "name": "notifyOwner (Milestone 2 \u00a72.2) sends via the shared email transport and returns true on success",
+          "status": "passed"
+        },
+        {
+          "name": "notifyOwner (Milestone 2 \u00a72.2) returns false (does not throw) when the email transport reports failure",
+          "status": "passed"
+        },
+        {
+          "name": "notifyOwner (Milestone 2 \u00a72.2) escapes HTML in title/content so a hostile submission can't inject markup into the owner-alert email",
+          "status": "passed"
+        },
+        {
+          "name": "notifyOwner (Milestone 2 \u00a72.2) posts to Slack when a webhook is configured, without blocking or failing the email path",
+          "status": "passed"
+        },
+        {
+          "name": "notifyOwner (Milestone 2 \u00a72.2) does not call Slack when no webhook is configured",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/notificationCatalogue.test.ts",
+      "tests": [
+        {
+          "name": "Notification Event Catalogue \u2014 structure carries all 84 events from the v1.0 catalogue",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 structure matches the per-family counts in the source document",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 structure gives every event a unique catalogue id and a unique machine name",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 structure uses only the nine declared families",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 structure gives every event the fields routing and delivery depend on",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 structure resolves every conditional priority to a concrete floor",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 lookups finds an event by catalogue id",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 lookups finds an event by machine name",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 lookups returns undefined rather than throwing for unknown keys",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 lookups reports the events that require the recipient to act",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 specification invariants keeps pre-publication AI Scan review events away from the Client",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 specification invariants declares a published AI Scan event, which is the Client-facing boundary",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 specification invariants never describes a notification preview containing secrets",
+          "status": "passed"
+        },
+        {
+          "name": "Notification Event Catalogue \u2014 specification invariants scopes every deduplication key to whoever receives it",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/notificationDispatcher.test.ts",
+      "tests": [
+        {
+          "name": "emitNotification rejects a name that is not in the catalogue without delivering anything",
+          "status": "passed"
+        },
+        {
+          "name": "emitNotification delivers a repeated occurrence only once",
+          "status": "passed"
+        },
+        {
+          "name": "emitNotification records the catalogue id, priority and a key scoped to event, audience, recipient and occurrence",
+          "status": "passed"
+        },
+        {
+          "name": "emitNotification maps priority onto the in app scale",
+          "status": "passed"
+        },
+        {
+          "name": "emitNotification does not fill the admin bell twice when the caller already did",
+          "status": "passed"
+        },
+        {
+          "name": "emitNotification routes to a client organization with an email when the catalogue asks for one",
+          "status": "passed"
+        },
+        {
+          "name": "emitNotification routes a developer event and sends a mandatory one by email",
+          "status": "passed"
+        },
+        {
+          "name": "emitNotification files a security event under the security category so it cannot be opted out of",
+          "status": "passed"
+        },
+        {
+          "name": "emitNotification never throws into the caller when delivery fails",
+          "status": "passed"
+        },
+        {
+          "name": "emitNotification still delivers when the emission log cannot be written because there is no database",
+          "status": "passed"
+        },
+        {
+          "name": "dispatch policy helpers reads only the leading keyword of the email policy",
+          "status": "passed"
+        },
+        {
+          "name": "dispatch policy helpers maps priorities and families",
+          "status": "passed"
+        },
+        {
+          "name": "dispatch policy helpers builds a bounded dedupe key",
+          "status": "passed"
+        },
+        {
+          "name": "dispatch policy helpers resolves every catalogue event to a routable family and priority",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/notifications.test.ts",
+      "tests": [
+        {
+          "name": "notifyClient writes the in-app row with channel: in_app by default and never calls the email bridge",
+          "status": "passed"
+        },
+        {
+          "name": "notifyClient bridges to email for every org member when channel is in_app_and_email",
+          "status": "passed"
+        },
+        {
+          "name": "notifyClient still writes the in-app row even if the email bridge throws",
+          "status": "passed"
+        },
+        {
+          "name": "notifyDeveloper writes the in-app row and never calls the email bridge by default",
+          "status": "passed"
+        },
+        {
+          "name": "notifyDeveloper bridges to email when channel is in_app_and_email and the developer has an email on file",
+          "status": "passed"
+        },
+        {
+          "name": "notifyDeveloper skips the email bridge silently when the developer has no email on file",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/oauth.redirect.test.ts",
+      "tests": [
+        {
+          "name": "OAuth callback \u2014 role-based redirect routes role=developer to /developer-workspace",
+          "status": "passed"
+        },
+        {
+          "name": "OAuth callback \u2014 role-based redirect routes role=client (and client_member) to /client-portal",
+          "status": "passed"
+        },
+        {
+          "name": "OAuth callback \u2014 role-based redirect routes role=admin to /admin/bookings",
+          "status": "passed"
+        },
+        {
+          "name": "OAuth callback \u2014 role-based redirect falls back to the requested returnPath for role=user",
+          "status": "passed"
+        },
+        {
+          "name": "OAuth callback \u2014 role-based redirect falls back to / when role is unknown and no returnPath given",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/ops.test.ts",
+      "tests": [
+        {
+          "name": "ops RBAC gating (isOpsRole) allows technical_operator",
+          "status": "passed"
+        },
+        {
+          "name": "ops RBAC gating (isOpsRole) allows admin (additive, not a replacement for adminProcedure elsewhere)",
+          "status": "passed"
+        },
+        {
+          "name": "ops RBAC gating (isOpsRole) allows super_admin",
+          "status": "passed"
+        },
+        {
+          "name": "ops RBAC gating (isOpsRole) rejects client",
+          "status": "passed"
+        },
+        {
+          "name": "ops RBAC gating (isOpsRole) rejects developer",
+          "status": "passed"
+        },
+        {
+          "name": "ops RBAC gating (isOpsRole) rejects unauthenticated callers",
+          "status": "passed"
+        },
+        {
+          "name": "technical_operator is walled off from customer/financial admin endpoints cannot reach admin.billing",
+          "status": "passed"
+        },
+        {
+          "name": "technical_operator is walled off from customer/financial admin endpoints cannot reach admin.documents",
+          "status": "passed"
+        },
+        {
+          "name": "technical_operator is walled off from customer/financial admin endpoints cannot reach admin.crm (leads)",
+          "status": "passed"
+        },
+        {
+          "name": "technical_operator is walled off from customer/financial admin endpoints cannot reach admin.reports",
+          "status": "passed"
+        },
+        {
+          "name": "ops.systemHealth returns an honest empty/unavailable shape when the database is offline",
+          "status": "passed"
+        },
+        {
+          "name": "ops.emailDeliveryLog / ops.securityEvents returns the email delivery log",
+          "status": "passed"
+        },
+        {
+          "name": "ops.emailDeliveryLog / ops.securityEvents returns recent security events",
+          "status": "passed"
+        },
+        {
+          "name": "ops.acknowledgeSecurityEvent acknowledges an event and audits it",
+          "status": "passed"
+        },
+        {
+          "name": "ops.acknowledgeSecurityEvent surfaces NOT_FOUND for an unknown event id",
+          "status": "passed"
+        },
+        {
+          "name": "ops.acknowledgeSecurityEvent rejects non-ops callers",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (opsProcedure) blocks technical_operator/admin/super_admin with no verified MFA factor from every ops.* endpoint",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (opsProcedure) an unverified (pending) factor does not satisfy the gate \u2014 only verifiedAt-set factors count",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (opsProcedure) does not affect client/developer roles at all \u2014 the gate only applies to admin/super_admin/technical_operator",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (opsProcedure) ops.gateStatus reports mfa_required without throwing, so the console can render a calm interstitial",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (opsProcedure) ops.gateStatus reports ok once a verified factor exists",
+          "status": "passed"
+        },
+        {
+          "name": "Milestone 2 \u00a72.5 \u2014 hard MFA gate (opsProcedure) ops.gateStatus reports denied (not mfa_required) for a non-ops role",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/paymentSync.test.ts",
+      "tests": [
+        {
+          "name": "payment reminder staging is quiet until a week before the due date",
+          "status": "passed"
+        },
+        {
+          "name": "payment reminder staging picks the closest applicable stage",
+          "status": "passed"
+        },
+        {
+          "name": "payment reminder staging compares calendar days, not hours",
+          "status": "passed"
+        },
+        {
+          "name": "branded email shell links the logo to the homepage and carries the same header and footer",
+          "status": "passed"
+        },
+        {
+          "name": "branded email shell escapes message text so a name cannot inject markup",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/platformRules.test.ts",
+      "tests": [
+        {
+          "name": "notification templates (OPD-001) builds the variant id from event, channel, language and version",
+          "status": "passed"
+        },
+        {
+          "name": "notification templates (OPD-001) accepts only the backend derived placeholders",
+          "status": "passed"
+        },
+        {
+          "name": "notification templates (OPD-001) refuses markup in template text",
+          "status": "passed"
+        },
+        {
+          "name": "notification templates (OPD-001) escapes values when rendering html and leaves missing values empty",
+          "status": "passed"
+        },
+        {
+          "name": "notification templates (OPD-001) falls back to English when the preferred language has no template",
+          "status": "passed"
+        },
+        {
+          "name": "document matrix (OPD-003) allows only the listed roles",
+          "status": "passed"
+        },
+        {
+          "name": "document matrix (OPD-003) never shows a type to a client unless it is client visible",
+          "status": "passed"
+        },
+        {
+          "name": "document matrix (OPD-003) is closed for unknown types except for administrators",
+          "status": "passed"
+        },
+        {
+          "name": "technical operator scopes (SRS 15.4) treats expired and revoked grants as inactive",
+          "status": "passed"
+        },
+        {
+          "name": "technical operator scopes (SRS 15.4) does not give the Security Center to an operator by role alone",
+          "status": "passed"
+        },
+        {
+          "name": "technical operator scopes (SRS 15.4) keeps administrators and refuses every other role",
+          "status": "passed"
+        },
+        {
+          "name": "AI model routing (SRS 19.6, 19.25) uses the configured model for each class",
+          "status": "passed"
+        },
+        {
+          "name": "AI model routing (SRS 19.6, 19.25) lets a single LLM_MODEL pin every class, as before routing existed",
+          "status": "passed"
+        },
+        {
+          "name": "AI model routing (SRS 19.6, 19.25) falls back to the defaults and treats an unknown class as complex",
+          "status": "passed"
+        },
+        {
+          "name": "AI model routing (SRS 19.6, 19.25) prices a call only when the model has a configured price",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/policy.test.ts",
+      "tests": [
+        {
+          "name": "session length policy uses the built in default when nothing is set",
+          "status": "passed"
+        },
+        {
+          "name": "session length policy uses the environment value when there is no policy",
+          "status": "passed"
+        },
+        {
+          "name": "session length policy lets the policy win over the environment",
+          "status": "passed"
+        },
+        {
+          "name": "session length policy ignores an out of range value instead of locking everyone out",
+          "status": "passed"
+        },
+        {
+          "name": "session length policy returns to the fallback when the policy is cleared",
+          "status": "passed"
+        },
+        {
+          "name": "password length policy defaults to the platform minimum",
+          "status": "passed"
+        },
+        {
+          "name": "password length policy applies a valid configured minimum",
+          "status": "passed"
+        },
+        {
+          "name": "password length policy refuses a minimum below the safe floor",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/privacy.test.ts",
+      "tests": [
+        {
+          "name": "privacy officer authorisation refuses a Super Admin who holds no grant",
+          "status": "passed"
+        },
+        {
+          "name": "privacy officer authorisation refuses an anonymous caller",
+          "status": "passed"
+        },
+        {
+          "name": "privacy officer authorisation admits a granted user whose role is not privileged",
+          "status": "passed"
+        },
+        {
+          "name": "privacy officer authorisation refuses a granted user who has not cleared MFA",
+          "status": "passed"
+        },
+        {
+          "name": "privacy officer authorisation refuses once a grant is revoked",
+          "status": "passed"
+        },
+        {
+          "name": "identity verification gate refuses to locate data for an unverified subject",
+          "status": "passed"
+        },
+        {
+          "name": "identity verification gate locates data once the subject is verified and records what was searched",
+          "status": "passed"
+        },
+        {
+          "name": "export produces JSON carrying the reference and the located data",
+          "status": "passed"
+        },
+        {
+          "name": "export escapes quotes and commas in CSV rather than shifting columns",
+          "status": "passed"
+        },
+        {
+          "name": "export records every export in the audit history",
+          "status": "passed"
+        },
+        {
+          "name": "staged approval refuses to stage an erasure rather than reporting one as done",
+          "status": "passed"
+        },
+        {
+          "name": "staged approval refuses self-approval of a staged action",
+          "status": "passed"
+        },
+        {
+          "name": "staged approval completes when a different authorised person approves",
+          "status": "passed"
+        },
+        {
+          "name": "staged approval records a rejection as a rejection, not a completion",
+          "status": "passed"
+        },
+        {
+          "name": "staged approval refuses approval when nothing is staged",
+          "status": "passed"
+        },
+        {
+          "name": "request record sets a one month statutory deadline from receipt",
+          "status": "passed"
+        },
+        {
+          "name": "request record normalises the subject email so casing cannot split one person in two",
+          "status": "passed"
+        },
+        {
+          "name": "request record keeps an append-only history of every action on the request",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/productionBundle.test.ts",
+      "tests": [
+        {
+          "name": "production server bundle never statically imports vite",
+          "status": "passed"
+        },
+        {
+          "name": "production server bundle imports no devDependency at module scope",
+          "status": "passed"
+        },
+        {
+          "name": "production server bundle still imports the runtime dependencies it needs",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/profileAvatar.test.ts",
+      "tests": [
+        {
+          "name": "sniffImageType identifies PNG, JPEG and WebP from their leading bytes",
+          "status": "passed"
+        },
+        {
+          "name": "sniffImageType rejects an SVG even though browsers render it",
+          "status": "passed"
+        },
+        {
+          "name": "sniffImageType rejects HTML dressed up with an image extension",
+          "status": "passed"
+        },
+        {
+          "name": "sniffImageType rejects a RIFF container that is not WebP",
+          "status": "passed"
+        },
+        {
+          "name": "sniffImageType rejects a payload too short to identify",
+          "status": "passed"
+        },
+        {
+          "name": "decodeBoundedBase64 decodes a payload within the limit",
+          "status": "passed"
+        },
+        {
+          "name": "decodeBoundedBase64 refuses an oversize payload before allocating it",
+          "status": "passed"
+        },
+        {
+          "name": "decodeBoundedBase64 refuses an empty payload",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/queryPerformance.test.ts",
+      "tests": [
+        {
+          "name": "RM-111: index usage under realistic queries looks up a user by email via an index (the login hot path)",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-111: index usage under realistic queries looks up a user by openId via an index (every authenticated request)",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-111: index usage under realistic queries filters users by organization via an index (tenant scoping)",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-111: index usage under realistic queries filters bookings by status via an index",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-111: index usage under realistic queries serves the rate-limit window from its composite index",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-111: index usage under realistic queries reports the planner's natural choice for the login lookup",
+          "status": "skipped"
+        }
+      ]
+    },
+    {
+      "file": "server/rawSqlDates.test.ts",
+      "tests": [
+        {
+          "name": "raw sql date parameters scans a meaningful number of db files",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\accounts.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\aiScans.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\auth.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\bookings.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\campaigns.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\clientPortal.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\connection.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\crm.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\developerWorkspace.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\emailDelivery.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\index.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\legal.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\mfa.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\payments.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\platformGovernance.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\platformSettings.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\privacy.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\solutions.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\srsDelivery.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\srsExtras.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\srsGovernance.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\srsOps.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\srsSales.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\users.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\webhooks.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db\\workflows.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\accounts.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\admin.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\adminOps.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\adminPlatform.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\aiScans.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\bookingAdmin.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\bookings.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\clientPortal.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\contact.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\developer.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\engineering.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\legal.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\mfa.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\ops.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\privacy.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\profile.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers\\solutions.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\aiScanScoring.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\bookingReminders.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\context.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\cookies.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\corsPolicy.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\env.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\healthRoute.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\index.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\llm.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\llmUsage.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\localAuthRoute.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\mfaChallenge.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\mfaChallengeRoute.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\mfaCrypto.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\mfaTotp.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\notification.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\oauth.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\operations.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\policy.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\publicRef.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\rateLimiter.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\requestMeta.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\resendWebhookRoute.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\sdk.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\securityHeaders.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\smsSender.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\stagingGate.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\staticServer.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\storageProxy.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\stripe.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\stripeWebhookRoute.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\supabaseAuth.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\supabaseAuthRoute.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\systemRouter.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\trpc.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\viewAsRoute.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters _core\\vite.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters aiGovernance.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters aiScanReportPdf.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters db.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters email-i18n.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters email.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters emailShell.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters integrations.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters leadEvaluation.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters legalDb.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters notificationDispatcher.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters notifications.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters paymentSync.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters routers.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters storage.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters webhookDispatcher.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters workflowEngine.ts passes no bare date variable into a raw sql template",
+          "status": "passed"
+        },
+        {
+          "name": "raw sql date parameters the detector itself flags the bad pattern",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/rbac.authOrigin.test.ts",
+      "tests": [
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Manus-origin adminProcedure rejects unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Manus-origin adminProcedure rejects role=client",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Manus-origin adminProcedure rejects role=developer",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Manus-origin adminProcedure rejects role=user",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Manus-origin clientProcedure rejects unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Manus-origin clientProcedure rejects role=user (no client/admin role)",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Manus-origin clientProcedure rejects role=client with no organizationId",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Manus-origin developerProcedure rejects unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Manus-origin developerProcedure rejects role=client",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Manus-origin developerProcedure rejects role=user",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Supabase-origin adminProcedure rejects unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Supabase-origin adminProcedure rejects role=client",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Supabase-origin adminProcedure rejects role=developer",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Supabase-origin adminProcedure rejects role=user",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Supabase-origin clientProcedure rejects unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Supabase-origin clientProcedure rejects role=user (no client/admin role)",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Supabase-origin clientProcedure rejects role=client with no organizationId",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Supabase-origin developerProcedure rejects unauthenticated",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Supabase-origin developerProcedure rejects role=client",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) Supabase-origin developerProcedure rejects role=user",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) role gating never inspects openId/authUserId - a Supabase-shaped admin passes the SAME adminProcedure check a Manus-shaped admin would reach for",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) RM-57: super_admin passes adminProcedure's role gate exactly like admin does (strict superset, not a separate/weaker tier)",
+          "status": "passed"
+        },
+        {
+          "name": "RBAC is identical regardless of auth origin (RM-55) RM-57: plain admin is rejected by superAdminProcedure (super_admin's exclusive capabilities are NOT available to regular admin)",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/requireAcceptances.test.ts",
+      "tests": [
+        {
+          "name": "requireAcceptances middleware anonymous callers pass through publicProcedure-based gate",
+          "status": "skipped"
+        },
+        {
+          "name": "requireAcceptances middleware anonymous callers are blocked by acceptedProcedure (auth layer first)",
+          "status": "skipped"
+        },
+        {
+          "name": "requireAcceptances middleware authenticated user without any acceptance is blocked",
+          "status": "skipped"
+        },
+        {
+          "name": "requireAcceptances middleware blocked error names exactly the missing kinds",
+          "status": "skipped"
+        },
+        {
+          "name": "requireAcceptances middleware authenticated user with full acceptance set passes",
+          "status": "skipped"
+        },
+        {
+          "name": "requireAcceptances middleware requireAcceptances([]) is a no-op gate",
+          "status": "skipped"
+        }
+      ]
+    },
+    {
+      "file": "server/resendWebhook.test.ts",
+      "tests": [
+        {
+          "name": "Resend webhook route (Milestone 2 \u00a72.3) rejects with 500 when RESEND_WEBHOOK_SECRET is not configured \u2014 fails closed, not silently",
+          "status": "passed"
+        },
+        {
+          "name": "Resend webhook route (Milestone 2 \u00a72.3) rejects an unsigned/tampered payload with 401",
+          "status": "passed"
+        },
+        {
+          "name": "Resend webhook route (Milestone 2 \u00a72.3) rejects a payload signed with the wrong secret",
+          "status": "passed"
+        },
+        {
+          "name": "Resend webhook route (Milestone 2 \u00a72.3) applies a valid email.delivered event to the matching log row",
+          "status": "passed"
+        },
+        {
+          "name": "Resend webhook route (Milestone 2 \u00a72.3) maps email.bounced and email.complained to the right status",
+          "status": "passed"
+        },
+        {
+          "name": "Resend webhook route (Milestone 2 \u00a72.3) acknowledges but ignores event types it doesn't track (e.g. email.opened)",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/rls.negative.test.ts",
+      "tests": [
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) client A can read their own org's report",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) client B CANNOT read client A's org report (cross-tenant read denied)",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) client B CANNOT read client A's org invoice (cross-tenant read denied)",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) client B CANNOT read client A's organization row directly",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) client B CANNOT update client A's org invoice (cross-tenant update denied)",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) client B CANNOT delete client A's org report (cross-tenant delete denied)",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) client A CANNOT read the admin-only leads table",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) developer X CANNOT read the admin-only leads table",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) unauthenticated (anon) request CANNOT read leads at all",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) unauthenticated (anon) request CANNOT read client_reports at all",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) unauthenticated (anon) request CANNOT read organizations at all",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) developer Y CANNOT read developer X's developer_profiles row",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) developer X can read their OWN developer_profiles row",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) client A (not a developer) CANNOT read any developer_profiles row",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) client B CANNOT read client A's mfa_factors (even though none exist, the query must return empty, not error, and must not leak existence)",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) unauthenticated (anon) CAN read a PUBLISHED agreement version (deliberate public carve-out)",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) unauthenticated (anon) CANNOT read a DRAFT agreement version (carve-out is narrowly scoped, not USING(true))",
+          "status": "skipped"
+        },
+        {
+          "name": "RM-60: RLS negative tests (live Supabase project) unauthenticated (anon) CAN read the active legal_documents row itself",
+          "status": "skipped"
+        }
+      ]
+    },
+    {
+      "file": "server/sessionRevocation.test.ts",
+      "tests": [
+        {
+          "name": "RM-90: server-side session revocation accepts a valid session when nothing has been revoked",
+          "status": "passed"
+        },
+        {
+          "name": "RM-90: server-side session revocation rejects a token issued before the revocation cutoff",
+          "status": "passed"
+        },
+        {
+          "name": "RM-90: server-side session revocation rejects a token issued in the same second as the revocation",
+          "status": "passed"
+        },
+        {
+          "name": "RM-90: server-side session revocation accepts a fresh login issued after a revocation",
+          "status": "passed"
+        },
+        {
+          "name": "RM-90: server-side session revocation rejects a legacy token with no iat claim once a revocation exists",
+          "status": "passed"
+        },
+        {
+          "name": "RM-90: server-side session revocation still accepts a legacy token when the user has never revoked",
+          "status": "passed"
+        },
+        {
+          "name": "RM-89/RM-90: issued-at claim is present on every new session signs an iat claim so revocation has something to compare against",
+          "status": "passed"
+        },
+        {
+          "name": "RM-89/RM-90: issued-at claim is present on every new session mints sessions that expire in hours, not a year",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/solutions.test.ts",
+      "tests": [
+        {
+          "name": "solutionsRouter.recordClick records a click without throwing",
+          "status": "passed"
+        },
+        {
+          "name": "solutionsRouter.recordClick swallows DB errors instead of breaking UX",
+          "status": "passed"
+        },
+        {
+          "name": "solutionsRouter.requestProposal creates lead + proposal + notifies owner",
+          "status": "passed"
+        },
+        {
+          "name": "solutionsRouter.requestProposal rejects invalid email",
+          "status": "passed"
+        },
+        {
+          "name": "solutionsRouter.startDiscovery + saveDiscoveryStep + submitDiscovery issues a token, persists progressive saves, and finalizes submission",
+          "status": "passed"
+        },
+        {
+          "name": "solutionsRouter.startDiscovery + saveDiscoveryStep + submitDiscovery blocks submission without name+email",
+          "status": "passed"
+        },
+        {
+          "name": "solutionsRouter.startDiscovery + saveDiscoveryStep + submitDiscovery rejects unknown discovery token",
+          "status": "passed"
+        },
+        {
+          "name": "solutionsRouter admin listings requires admin role",
+          "status": "passed"
+        },
+        {
+          "name": "solutionsRouter admin listings admins can list",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/srsRules.test.ts",
+      "tests": [
+        {
+          "name": "opportunity lifecycle moves forward, never back",
+          "status": "passed"
+        },
+        {
+          "name": "opportunity lifecycle lets any open stage close, and keeps closed stages terminal",
+          "status": "passed"
+        },
+        {
+          "name": "opportunity lifecycle requires an organization to win and a reason to lose",
+          "status": "passed"
+        },
+        {
+          "name": "proposal and quote lifecycle only sends a draft and only decides a sent document",
+          "status": "passed"
+        },
+        {
+          "name": "proposal and quote lifecycle totals in integer cents and rejects bad lines",
+          "status": "passed"
+        },
+        {
+          "name": "time registration accepts today and a recent day",
+          "status": "passed"
+        },
+        {
+          "name": "time registration rejects the future, the distant past, bad minutes and bad dates",
+          "status": "passed"
+        },
+        {
+          "name": "notification preferences defaults to delivering",
+          "status": "passed"
+        },
+        {
+          "name": "notification preferences honours an opt out",
+          "status": "passed"
+        },
+        {
+          "name": "notification preferences scopes an opt out to its own channel",
+          "status": "passed"
+        },
+        {
+          "name": "notification preferences never lets security notifications be switched off",
+          "status": "passed"
+        },
+        {
+          "name": "alert firing fires at the threshold, not below",
+          "status": "passed"
+        },
+        {
+          "name": "alert firing stays quiet for one window after firing",
+          "status": "passed"
+        },
+        {
+          "name": "configuration validation refuses to edit derived values",
+          "status": "passed"
+        },
+        {
+          "name": "configuration validation validates on/off and integer ranges",
+          "status": "passed"
+        },
+        {
+          "name": "configuration validation rejects empty and oversized free text",
+          "status": "passed"
+        },
+        {
+          "name": "scheduling steps daily and weekly",
+          "status": "passed"
+        },
+        {
+          "name": "scheduling clamps a monthly step to the end of a short month",
+          "status": "passed"
+        },
+        {
+          "name": "AI agent authorisation allows a permitted action and flags approval",
+          "status": "passed"
+        },
+        {
+          "name": "AI agent authorisation blocks an action outside its permissions",
+          "status": "passed"
+        },
+        {
+          "name": "AI agent authorisation blocks a disabled or unknown agent",
+          "status": "passed"
+        },
+        {
+          "name": "project archive policy archives only a completed project with nothing pending",
+          "status": "passed"
+        },
+        {
+          "name": "notification category mapping maps kinds to preference categories",
+          "status": "passed"
+        },
+        {
+          "name": "notification category mapping never files an unknown kind under marketing",
+          "status": "passed"
+        },
+        {
+          "name": "CSV export quotes cells with commas, quotes and line breaks",
+          "status": "passed"
+        },
+        {
+          "name": "CSV export defuses spreadsheet formulas",
+          "status": "passed"
+        },
+        {
+          "name": "CSV export builds a header and rows",
+          "status": "passed"
+        },
+        {
+          "name": "LIKE escaping escapes wildcards and the escape character",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan report lifecycle (SRS 9.6) has exactly the nine statuses the SRS names",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan report lifecycle (SRS 9.6) walks the happy path in order",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan report lifecycle (SRS 9.6) cannot skip review: the engine output is never approved or published directly",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan report lifecycle (SRS 9.6) sends a report back and through review again",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan report lifecycle (SRS 9.6) treats archived as terminal and publication as one way",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan report lifecycle (SRS 9.6) shows the customer only a published report",
+          "status": "passed"
+        },
+        {
+          "name": "AI Scan report lifecycle (SRS 9.6) marks approve, revise, publish and archive as human only",
+          "status": "passed"
+        },
+        {
+          "name": "Discovery Call outcomes needs a follow up date when work is left to do",
+          "status": "passed"
+        },
+        {
+          "name": "Discovery Call outcomes does not require one when the matter is closed",
+          "status": "passed"
+        },
+        {
+          "name": "Discovery Call outcomes rejects a follow up date in the past",
+          "status": "passed"
+        },
+        {
+          "name": "questionnaire drafts expires after the retention window",
+          "status": "passed"
+        },
+        {
+          "name": "compliance evaluation passes everything on a clean platform",
+          "status": "passed"
+        },
+        {
+          "name": "compliance evaluation fails an administrator without a second factor and a missed privacy deadline",
+          "status": "passed"
+        },
+        {
+          "name": "compliance evaluation warns on a slowly growing review backlog and fails it only when large",
+          "status": "passed"
+        },
+        {
+          "name": "compliance evaluation fails when nothing is watching for abuse",
+          "status": "passed"
+        },
+        {
+          "name": "compliance evaluation names the count in the detail so the figure can be checked",
+          "status": "passed"
+        },
+        {
+          "name": "monthly history helpers lists the last n months oldest first, across a year boundary",
+          "status": "passed"
+        },
+        {
+          "name": "monthly history helpers fills missing months with zero and keeps the order",
+          "status": "passed"
+        },
+        {
+          "name": "monthly history helpers knows the capacity metrics",
+          "status": "passed"
+        },
+        {
+          "name": "invitations (SRS 8.7) lets a super admin invite anyone",
+          "status": "passed"
+        },
+        {
+          "name": "invitations (SRS 8.7) lets an admin invite only customers and developers, so a stolen admin cannot mint admins",
+          "status": "passed"
+        },
+        {
+          "name": "invitations (SRS 8.7) lets nobody else invite",
+          "status": "passed"
+        },
+        {
+          "name": "invitations (SRS 8.7) requires MFA for the privileged roles only",
+          "status": "passed"
+        },
+        {
+          "name": "invitations (SRS 8.7) derives the invitation state, with accepted and revoked beating expiry",
+          "status": "passed"
+        },
+        {
+          "name": "password strength accepts a long mixed password",
+          "status": "passed"
+        },
+        {
+          "name": "password strength refuses short, single letter run, letters only, numbers only",
+          "status": "passed"
+        },
+        {
+          "name": "password strength refuses a password that contains the email name",
+          "status": "passed"
+        },
+        {
+          "name": "password strength refuses an oversized password",
+          "status": "passed"
+        },
+        {
+          "name": "password strength explains each refusal in words for the person choosing",
+          "status": "passed"
+        },
+        {
+          "name": "project lifecycle (SRS 15.5) moves forward one stage at a time",
+          "status": "passed"
+        },
+        {
+          "name": "project lifecycle (SRS 15.5) lets a review send work back to in progress and nothing else go backwards",
+          "status": "passed"
+        },
+        {
+          "name": "project lifecycle (SRS 15.5) treats archived as final and rejects unknown stages",
+          "status": "passed"
+        },
+        {
+          "name": "project lifecycle (SRS 15.5) keeps the coarse status older screens read",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/stagingGate.test.ts",
+      "tests": [
+        {
+          "name": "stagingGate \u2014 STAGING_MODE=on blocks anonymous GET / with the pre-launch screen",
+          "status": "passed"
+        },
+        {
+          "name": "stagingGate \u2014 STAGING_MODE=on does not gate /api/* requests",
+          "status": "passed"
+        },
+        {
+          "name": "stagingGate \u2014 STAGING_MODE=on does not gate static assets",
+          "status": "passed"
+        },
+        {
+          "name": "stagingGate \u2014 STAGING_MODE=on rejects unlock with wrong password",
+          "status": "passed"
+        },
+        {
+          "name": "stagingGate \u2014 STAGING_MODE=on accepts unlock with correct password and sets the cookie",
+          "status": "passed"
+        },
+        {
+          "name": "stagingGate \u2014 STAGING_MODE=on lets a request through when carrying a valid staging cookie",
+          "status": "passed"
+        },
+        {
+          "name": "stagingGate \u2014 STAGING_MODE=on rejects a tampered staging cookie",
+          "status": "passed"
+        },
+        {
+          "name": "stagingGate \u2014 STAGING_MODE=on lets a request through when an authenticated session cookie is present",
+          "status": "passed"
+        },
+        {
+          "name": "stagingGate \u2014 STAGING_MODE=on returns Disallow: / from /robots.txt",
+          "status": "passed"
+        },
+        {
+          "name": "stagingGate \u2014 STAGING_MODE off does not gate anonymous requests",
+          "status": "passed"
+        },
+        {
+          "name": "stagingGate \u2014 STAGING_MODE off returns Allow: / from /robots.txt",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/stripe.test.ts",
+      "tests": [
+        {
+          "name": "verifyStripeSignature accepts a correct, fresh signature",
+          "status": "passed"
+        },
+        {
+          "name": "verifyStripeSignature rejects a wrong secret, a changed body and a stale timestamp",
+          "status": "passed"
+        },
+        {
+          "name": "processStripeEvent: invoices marks an invoice paid once and notifies the client",
+          "status": "passed"
+        },
+        {
+          "name": "processStripeEvent: invoices ignores a redelivered event",
+          "status": "passed"
+        },
+        {
+          "name": "processStripeEvent: invoices does not mark paid when the amount differs from the invoice",
+          "status": "passed"
+        },
+        {
+          "name": "processStripeEvent: invoices does not treat an unpaid completed session as payment",
+          "status": "passed"
+        },
+        {
+          "name": "processStripeEvent: invoices records a failed asynchronous payment and tells the client",
+          "status": "passed"
+        },
+        {
+          "name": "processStripeEvent: invoices ignores events that are not for this platform",
+          "status": "passed"
+        },
+        {
+          "name": "processStripeEvent: AI Scan purchase creates the account invitation only after verified payment",
+          "status": "passed"
+        },
+        {
+          "name": "processStripeEvent: AI Scan purchase grants nothing on a wrong amount",
+          "status": "passed"
+        },
+        {
+          "name": "processStripeEvent: AI Scan purchase does not invite twice for a redelivery",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/supabaseAuth.test.ts",
+      "tests": [
+        {
+          "name": "getSupabaseAdmin throws a clear config error when SUPABASE_URL/SECRET_KEY are unset",
+          "status": "passed"
+        },
+        {
+          "name": "getSupabaseAdmin succeeds once both vars are set",
+          "status": "passed"
+        },
+        {
+          "name": "verifySupabaseAccessToken returns null for a missing token without touching config",
+          "status": "passed"
+        },
+        {
+          "name": "verifySupabaseAccessToken throws a clear config error when SUPABASE_JWKS_URL is unset, rather than silently returning null",
+          "status": "passed"
+        },
+        {
+          "name": "verifySupabaseAccessToken returns null (not a throw) for a malformed token once JWKS is configured",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/viewAs.test.ts",
+      "tests": [
+        {
+          "name": "View-As impersonation token round-trips a signed token and exposes the claim",
+          "status": "passed"
+        },
+        {
+          "name": "View-As impersonation token rejects an empty / missing token",
+          "status": "passed"
+        },
+        {
+          "name": "View-As impersonation token rejects a tampered payload",
+          "status": "passed"
+        },
+        {
+          "name": "View-As impersonation token rejects a token signed with the wrong secret",
+          "status": "passed"
+        },
+        {
+          "name": "View-As impersonation token exposes a stable cookie name",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/webhookDispatcher.test.ts",
+      "tests": [
+        {
+          "name": "dispatchWebhooksForTrigger does nothing when no enabled registrations match the trigger",
+          "status": "passed"
+        },
+        {
+          "name": "dispatchWebhooksForTrigger POSTs to the registered URL and records a successful delivery",
+          "status": "passed"
+        },
+        {
+          "name": "dispatchWebhooksForTrigger signs the payload with HMAC-SHA256 when the registration has a secret",
+          "status": "passed"
+        },
+        {
+          "name": "dispatchWebhooksForTrigger records a failed delivery (not a throw) on a non-2xx response",
+          "status": "passed"
+        },
+        {
+          "name": "dispatchWebhooksForTrigger catches a network error and records a failed delivery with statusCode null",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/workflowCoverage.test.ts",
+      "tests": [
+        {
+          "name": "RM-109: every converted workflow has a test suite CRM / leads pipeline is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Billing / invoice creation is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Support ticketing is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Reports & projects bridge is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Executive overview summary is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Admin action / audited buttons is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Developer access granting is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Developer project, task and message delivery is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite SRS completion (CRM, quotes, governance, incidents, alerts) is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Account invitation and activation is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite SRS business rules (lifecycles, policy, validation) is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite AI Scan retrigger is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Super Admin & role management is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Platform configuration store is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Business intelligence / analytics is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite MFA compliance posture is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Document lifecycle is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Workflow definition engine is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Integration & webhook registry is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Client portal is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Developer portal is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Booking engine is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Booking administration is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite Email delivery tracking is covered by its suite",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite each suite actually contains assertions",
+          "status": "passed"
+        },
+        {
+          "name": "RM-109: every converted workflow has a test suite covers every admin router test file that exists",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/workflowEngine.test.ts",
+      "tests": [
+        {
+          "name": "runWorkflowsForTrigger does nothing when no enabled definitions match the trigger",
+          "status": "passed"
+        },
+        {
+          "name": "runWorkflowsForTrigger runs a notify_owner action, substitutes template tokens, and records a succeeded run",
+          "status": "passed"
+        },
+        {
+          "name": "runWorkflowsForTrigger runs an audit_log action and records a succeeded run",
+          "status": "passed"
+        },
+        {
+          "name": "runWorkflowsForTrigger catches a notify_owner failure and records a failed run instead of throwing",
+          "status": "passed"
+        },
+        {
+          "name": "runWorkflowsForTrigger runs every matching enabled definition, not just the first",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "server/workflowSchedule.test.ts",
+      "tests": [
+        {
+          "name": "runDueScheduledWorkflows does nothing when no workflow is due",
+          "status": "passed"
+        },
+        {
+          "name": "runDueScheduledWorkflows runs each claimed workflow and logs a successful run for it",
+          "status": "passed"
+        },
+        {
+          "name": "runDueScheduledWorkflows records a failure and still runs the next workflow",
+          "status": "passed"
+        },
+        {
+          "name": "runDueScheduledWorkflows hands the claim a monthly rule that clamps to the end of a short month",
+          "status": "passed"
+        },
+        {
+          "name": "fireTrigger runs matching workflows and registered webhooks",
+          "status": "passed"
+        },
+        {
+          "name": "fireTrigger does not throw when workflows or webhooks fail, and still tries the webhooks",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "client/src/tailwindArbitraryValues.test.ts",
+      "tests": [
+        {
+          "name": "Tailwind arbitrary values finds source files to scan",
+          "status": "passed"
+        },
+        {
+          "name": "Tailwind arbitrary values contains no arbitrary value with a raw space",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "client/src/components/NotificationBell.test.tsx",
+      "tests": [
+        {
+          "name": "RM-99: unread badge shows the unread count",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: unread badge counts a notification with an undefined readAt as unread",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: unread badge hides the badge entirely when everything is read",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: unread badge stays accessible by name",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: dropdown behaviour opens on click and lists the notifications",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: dropdown behaviour renders the notification body when present",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: dropdown behaviour shows an empty state rather than a blank panel",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: mark-as-read and archive are wired marks a single notification read",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: mark-as-read and archive are wired offers mark-read only on unread items",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: mark-as-read and archive are wired marks every unread item read from the header action",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: mark-as-read and archive are wired hides 'Mark all read' when nothing is unread",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: mark-as-read and archive are wired archives a notification",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: mark-as-read and archive are wired does not mark read when archiving",
+          "status": "passed"
+        },
+        {
+          "name": "RM-99: priority indicator falls back to the normal dot for an unrecognised priority",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "client/src/components/RouteTransition.test.tsx",
+      "tests": [
+        {
+          "name": "RouteTransition carries no transform and no will-change once settled",
+          "status": "passed"
+        },
+        {
+          "name": "RouteTransition is fully opaque once settled, so content is never left invisible",
+          "status": "passed"
+        },
+        {
+          "name": "RouteTransition settles even if the transition never fires",
+          "status": "passed"
+        },
+        {
+          "name": "RouteTransition renders its children",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "client/src/pages/Login.test.tsx",
+      "tests": [
+        {
+          "name": "RM-98: Login form rendering renders both credential fields",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: Login form rendering masks the password by default",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: Login form rendering sets autocomplete hints so password managers behave",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: Login form rendering ships a honeypot field that is hidden from autocomplete",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: Login form validation disables submit until the form is valid",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: Login form validation keeps submit disabled for a malformed email",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: Login form validation keeps submit disabled for a password under 8 characters",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: Login anti-automation gates blocks a submission made immediately after mount",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: Login anti-automation gates blocks a submission when the honeypot field is filled",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: Remember-me hydration pre-fills the email from localStorage on mount",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: Remember-me hydration renders normally when localStorage is unavailable",
+          "status": "passed"
+        },
+        {
+          "name": "RM-98: password visibility toggle reveals and re-masks the password",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "client/src/lib/industries.test.ts",
+      "tests": [
+        {
+          "name": "searchIndustries returns every canonical option for an empty query",
+          "status": "passed"
+        },
+        {
+          "name": "searchIndustries matches the canonical label directly",
+          "status": "passed"
+        },
+        {
+          "name": "searchIndustries surfaces the canonical category from a Dutch alias",
+          "status": "passed"
+        },
+        {
+          "name": "searchIndustries is case-insensitive and tolerant of punctuation",
+          "status": "passed"
+        },
+        {
+          "name": "searchIndustries never returns a value outside the canonical list",
+          "status": "passed"
+        },
+        {
+          "name": "searchIndustries returns nothing for a query matching no label or alias",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "client/src/lib/siteImages.test.ts",
+      "tests": [
+        {
+          "name": "dead asset host is referenced nowhere in the client",
+          "status": "passed"
+        },
+        {
+          "name": "no hardcoded image URLs in pages routes every remote image through the registry",
+          "status": "passed"
+        },
+        {
+          "name": "registry derives a sensible env var name for each key",
+          "status": "passed"
+        },
+        {
+          "name": "registry returns null for an unsupplied visual rather than a placeholder URL",
+          "status": "passed"
+        },
+        {
+          "name": "registry labels every key, so a placeholder always names what belongs there",
+          "status": "passed"
+        },
+        {
+          "name": "registry reports the current gap honestly",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "client/src/_core/hooks/useRouteGuard.test.ts",
+      "tests": [
+        {
+          "name": "roleHome maps every known role to its portal",
+          "status": "passed"
+        },
+        {
+          "name": "roleHome falls back to / for user role and unknown/missing values",
+          "status": "passed"
+        },
+        {
+          "name": "isAdminRole (RM-57) is true for admin and super_admin (strict superset)",
+          "status": "passed"
+        },
+        {
+          "name": "isAdminRole (RM-57) is false for every non-admin role and missing values",
+          "status": "passed"
+        },
+        {
+          "name": "isImpersonatingTarget is true only when impersonation is active AND targets the given role",
+          "status": "passed"
+        },
+        {
+          "name": "isImpersonatingTarget is false for null/undefined user or missing impersonation",
+          "status": "passed"
+        },
+        {
+          "name": "recordAttemptProvider passes through every valid non-manus/credentials provider value",
+          "status": "passed"
+        },
+        {
+          "name": "recordAttemptProvider falls back to credentials for unknown values, including the ones deriveLoginMethod() can actually produce",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "client/src/pages/admin/sections/_shared/adminModuleState.test.tsx",
+      "tests": [
+        {
+          "name": "RM-100: ModuleStateBoundary state machine shows a loading state while the query is in flight",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: ModuleStateBoundary state machine renders the happy path when data arrives",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: ModuleStateBoundary state machine distinguishes 'permission denied' from 'no data'",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: ModuleStateBoundary state machine treats UNAUTHORIZED the same as FORBIDDEN",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: ModuleStateBoundary state machine surfaces a genuine failure as an alert, not as an empty state",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: ModuleStateBoundary state machine falls back to a generic message when the error carries none",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: ModuleStateBoundary state machine offers retry only when a retry handler was supplied",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: ModuleStateBoundary state machine shows the connected-but-empty state when isEmpty reports true",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: ModuleStateBoundary state machine renders nothing at all when data is undefined and there is no error",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: ModuleStateBoundary state machine does not treat a present-but-falsy payload as missing",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: DataTable renders headers and rows",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: DataTable shows an explicit empty label instead of a bare table shell",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: DataTable honours a caller-supplied empty label",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: DataTable uses a custom cell renderer when one is provided",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: StatusPill renders each tone with its label",
+          "status": "passed"
+        },
+        {
+          "name": "RM-100: StatusPill visually separates a failure tone from a success tone",
+          "status": "passed"
+        }
+      ]
+    }
+  ]
+}

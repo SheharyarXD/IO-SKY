@@ -1,162 +1,101 @@
-# Milestone 4 — scope that is genuinely outside the Master SRS
+# Milestone 4 — proposed additions beyond Master SRS v1.1
 
-Internal working document. Prepared 7 October 2026.
+Prepared 13 October 2026. **Proposal only — no additional work is approved by this document.**
 
-Reconciles the 318 tasks in `MILESTONE4_CHECKLIST.md` against Master SRS v1.1, on the
-basis that Milestones 1 to 3 deliver the SRS baseline. Anything the SRS already requires
-is removed from Milestone 4 and returned to the Milestone 1 to 3 backlog.
+## Scope boundary
 
----
+Master SRS v1.1 remains the functional baseline. This proposal covers defined additions beyond that baseline. It does not approve the client's entire reconciliation message, incorporate every later specification, or reclassify baseline functionality as chargeable work.
 
-## The finding that matters
+An SRS requirement can be binding even where its implementation detail is brief. A later specification may clarify an existing duty or add a new capability; those cases must be separated. Earlier Milestone 4 labels and task counts are not substitutes for that comparison.
 
-The subtraction is not clean, because the SRS does two different things with Phase 4
-subject matter and they carry opposite commercial weight.
+No non-SRS addition is accepted for implementation until both parties approve the specific delta, deliverables, acceptance conditions, price, dependencies and schedule in writing. No development or provider purchase for an additional item is authorized by this proposal.
 
-For some capabilities the SRS gives a **specification**. §9.5 walks the AI Scan through
-seven named stages. §14.7 states exactly what Discovery Call management must do. §16.7
-defines payment verification. §19.25 requires provider switching without workflow
-changes. These are buildable from the SRS alone, so they belong to Milestones 1 to 3.
+## Proposed workstreams
 
-For others the SRS gives only a **name in a list**. §17.6 lists "IVR and own telephone
-system (SIP)" as a Version 1 channel. §19.5 lists "AI Receptionist" and "AI Voice Agent"
-among ten example agents. §6.9 lists "IVR / Telephony Services" among seven integrations.
-Nothing anywhere in the SRS's 197 pages states what an IVR must do: no menu, no routing,
-no queue, no transfer, no recording, no failure behaviour, no concurrency. A developer
-handed only the SRS could not build any of it.
+The IDs below are new proposal references. They do not reuse the earlier 318-task total or claim that those tasks were individually reclassified.
 
-**That distinction is the whole argument.** A capability named in a one-line bullet is not
-a specified requirement, and the Phase 4 documents are not a restatement of the SRS. They
-are the first time these products have been specified at all.
+| Ref | Proposed addition | SRS baseline retained | Exact proposed delta | Extension acceptance |
+| --- | --- | --- | --- | --- |
+| M4-E01 | Adaptive AI Scan assessment | §§9.5, 9.7: resumable questionnaire, required-field validation and AI-generated analysis | Bounded dynamic questions, material follow-ups, persistent assessment memory, explicit depth/stop rules and contradiction-resolution questioning as defined in the later engine specification | Demonstrate that materially different answers produce different relevant follow-ups; save/resume preserves adaptive state; clarification updates the assessment. Baseline questionnaire completion is not this item's deliverable. |
+| M4-E02 | Prescribed analysis and evidence methodology | §§9.5, 19.6, 19.7: real AI processing, orchestration and useful recommendations | The later specification's particular multi-pass assessment architecture, six evidence states, qualitative confidence framework, finding relationships and nonnumeric priority method | Demonstrate the specified evidence/finding states and changes after conflicting input is resolved. Only the additional prescribed methodology is quoted; analysis necessary to satisfy the baseline remains baseline work. |
+| M4-E03 | New report design system and publication viewer | §§9.5, 9.7, 10.7: usable published reports, downloads, recommendations and version history | Fixed 21-section branded report architecture, approved reference compositions and a book-style portal viewer with contents/chapter navigation and responsive one/two-page reading | Produce an approved sample in the agreed design; verify contents/links and page layouts; demonstrate the viewer and matching PDF. Existing report generation, approval and publication are excluded from the extension charge. |
+| M4-E04 | Executive Briefing audiovisual deliverable | §§9.5, 10.7: written executive summary and report delivery | Separate report-derived narrated video/briefing, entitlement handling, review, version binding and secure delivery | Demonstrate one approved briefing derived from a reviewed report; unauthorized users cannot access it; a source-report revision flags the briefing for re-review. Provider assessment belongs to this item if separately approved. |
+| M4-E05 | Multi-host scheduling | §14.7: Discovery Call scheduling, rescheduling, cancellation, outcomes, notes and lead/customer linkage | Multiple hosts with individual availability/calendars, eligible appointment types and a shared host-selection/conflict policy | Demonstrate at least two hosts, agreed selection rules and conflict handling across manual and automated bookings. Generic integration administration under §13.13 and baseline booking correctness are not charged again. |
+| M4-E06 | Public website and portal visual redesign | §7.8 and §§26.10–26.11: working public pages, usable navigation, responsive and accessible interfaces | New approved visual system across existing public, authentication, Client, Developer, Admin, Super Admin and Technical Operator surfaces; specifically listed new visual assets | Approve the surface/asset inventory before quoting; deliver agreed references and responsive layouts. Baseline defects, missing required workflows and ordinary usability corrections remain baseline. |
+| M4-O01 | Generated-report translation — optional | Baseline notification-template localization under §17.8; published report delivery under §10.7 | Dutch/English renderings of generated report content from one canonical analysis, with terminology/equivalence and stale-rendering checks | Demonstrate both agreed report languages and invalidate a dependent rendering after its canonical content changes. Notification localization is excluded from this extension. |
+| M4-O02 | Passkey/WebAuthn authentication — optional | BR-014 and Module 2: existing authentication, applicable MFA, recovery and session security | Additional passkey enrollment, supported-device sign-in, removal and agreed recovery flow | Demonstrate registration, sign-in, revocation and lost-device recovery on agreed supported clients. Existing MFA/security corrections are excluded. |
 
----
+M4-E01 through M4-E06 are the proposed core package. M4-O01 and M4-O02 are optional and require separate selection. Core workstreams can also be approved individually.
 
-## Three buckets
+## Specification anchors
 
-| Bucket | Meaning | Tasks | Share |
-| --- | --- | ---: | ---: |
-| **A** | Specified in the SRS. Return to Milestones 1 to 3 | **61** | 19% |
-| **B** | Named in the SRS, never specified. Judgment call | **115** | 36% |
-| **C** | Absent from the SRS entirely. New scope | **142** | 45% |
-| | **Total** | **318** | 100% |
+These references identify the requested additions. They are not acceptance of every requirement in the referenced document.
 
----
+| Workstream | Later specification/reference |
+| --- | --- |
+| M4-E01 | AI Scan Engine Master Specification: AI-004, MEM-001 onward, depth/stop rules and CTR-001 onward; checklist RM-350–RM-372 |
+| M4-E02 | Engine evidence, confidence, findings, relationships and priority clauses; the exact pass structure must be fixed in the approved scope |
+| M4-E03 | Report Design System §4, fixed 21-section architecture; Engine VIEW-003–VIEW-007; checklist RM-391–RM-408 |
+| M4-E04 | Engine Executive Briefing requirements EB-003, EB-009–EB-010 and associated entitlement requirements; checklist RM-412–RM-415 |
+| M4-E05 | Scheduling Agent Specification §30, multi-host architecture; detailed host-selection rules to be selected before quotation |
+| M4-E06 | Website/platform design specifications and the individually approved page, portal and asset inventory |
+| M4-O01 | Engine LNG-003–LNG-008; checklist RM-409–RM-411 |
+| M4-O02 | Client review item 30, passkey/WebAuthn request; supported devices and recovery rules to be fixed before quotation |
 
-## Bucket A — remove from Milestone 4, these are SRS work
+## Existing baseline obligations
 
-The SRS specifies these well enough to build from. If Milestones 1 to 3 close the SRS,
-they are already covered and should not be re-billed under Milestone 4.
+The following remain assessed against the SRS. Their inclusion in the client's email does not create a new agreement to every extra detail in that email.
 
-| Item | Tasks | Where the SRS specifies it |
-| --- | ---: | --- |
-| 4.0 Shared foundation: provider abstraction, model router, configuration | 23 | §19.6 AI Orchestration, §19.25 AI Provider Management, §24.8 AI Configuration |
-| 4.7.3 Expert Review workflow | 10 | §9.5 Stage 5, BR-009 Human Approval Required, §12.8 |
-| 4.7.4 Publication | 8 | §9.5 Stage 6, BR-016 Report Lifecycle, §9.6 Report Status Model |
-| 4.7.1 subset: Stripe purchase, server-side payment verification, account binding | 8 | §9.5 Stages 1 and 2, §16.7 Payment Management, §8.6 Account Creation, BR-023 |
-| 4.5 subset: qualification engine, opportunity lifecycle, scheduling handoff | 6 | §14.16 AI-assisted lead evaluation, §14.8 Opportunity Management, §14.7 |
-| 4.4 subset: Discovery Call schedule, reschedule, cancel, record outcomes | 6 | §14.7 Discovery Call Management |
-| **Total** | **61** | |
+| Existing obligation | SRS reference | Boundary |
+| --- | --- | --- |
+| Telephony and AI communication support | §§6.9, 17.2–17.6 | Required platform capability remains baseline. This does not automatically incorporate every later call-centre/receptionist specification. |
+| Multiple specialized agents, orchestration, provider management and recommendations | §§19.5–19.7, 19.25 | A registry alone is not operational proof. The example names in §19.5 do not individually specify ten complete standalone products. |
+| Campaign management, follow-ups and AI-assisted lead evaluation | §14.16 | Baseline functions stay baseline; a complete externally sourced cold-prospecting product is not accepted through this proposal. |
+| AI Scan analysis, expert review, approval, publication, reports, versioning and customer delivery | §§9.5–9.7, 10.7 | Live analysis and usable reports remain baseline; the specific adaptive/design/video deltas above are separate. |
+| Discovery Call management | §14.7 | Ordinary schedule/reschedule/cancel, linkage, notes and outcomes remain baseline. A requested 60-minute block must be checked against existing configuration; a new setting is not automatically a new development charge. |
+| Individual and temporary Technical Operator permissions | §5.7, §13.8, BR-024 | Permission enforcement, expiry and revocation remain baseline. Scope labels do not establish full implementation by themselves. |
+| Authorized messages, project documentation and document governance | §10.11, §15.13, §§18.6–18.21, BR-011 | Permissions, associations and the Client/Developer boundary stay baseline. Exact OPD-003 unresolved fields need documentary reconciliation. |
+| Quotations, invoices, payments and subscriptions | §§16.5–16.9 | Usable required business documents and customer association stay baseline. No wholesale billing/subscription workstream is priced as new here. |
+| Notifications, email templates and provider delivery | §§17.6–17.9 | Baseline production email completion is not Milestone 4 extension work. Additional visual treatments need a specific delta before acceptance. |
+| Security, tenant isolation, recovery and performance/capacity evidence | §§19.11, 20.24, 21.12, 25.8, 25.20, 26.4, 26.6–26.7, 26.13, 26.22 | Existing obligations remain baseline. This proposal makes no additional numerical concurrency guarantee. |
+| Existing portal operations, profiles, project/team management and CRM | Modules 5–10; §§26.10–26.11 | Existing duties must be compared with the request before any additional layout, field or workflow is accepted or priced. |
 
-Worth noting: SRS Module 13, the AI Intelligence Layer, currently stands at **0 of 7
-acceptance criteria complete**. The shared AI foundation in 4.0 is not something Phase 4
-introduced. It is SRS work that Milestones 1 to 3 have not yet delivered. It has to be
-built either way, and it should be counted against the SRS rather than against Phase 4.
+A request for proof of an actual SRS workflow is not automatically an extension. A missing baseline requirement is not made chargeable by appearing in this proposal.
 
----
+## Requests held for a precise delta
 
-## Bucket B — the commercial argument
+These are **not accepted additional deliverables** in this proposal:
 
-The SRS names these. It does not specify them. Each row shows every mention the SRS makes,
-in full, against the number of tasks the Phase 4 documents define.
+- Full cold-outbound prospect research, enrichment and sequencing: separate the proposed engine from §14.16 campaign/lead obligations and §17.6 sales communication first.
+- Complete standalone products for every agent named in §19.5: map each intended business function against explicit requirements, especially Module 11 communication capabilities.
+- Detailed IVR/receptionist menus, queues, recording, interruption rules and playbooks: establish the required baseline behaviour and each requested addition; not every operating detail is necessarily new scope.
+- Universal mandatory MFA: BR-014 specifies different treatment by role. Check the baseline's configurable security policy before treating a policy setting as development work.
+- New numerical capacity promises or a separately specified benchmark programme: agree workloads and success thresholds; existing performance and recovery verification stays baseline.
+- The complete new navigation, global search behaviour, unified customer/project layouts, Developer Working Method, extra profile fields/social links, bespoke quotation templates, payment-link tooling, safe/demo Role Preview and maintenance presentation: verify each exact delta first. Existing SRS functionality and ordinary configuration cannot be rejected or charged collectively.
 
-| Item | Tasks | Everything the SRS says about it |
-| --- | ---: | --- |
-| 4.1 Telephony and IVR | 29 | "IVR and own telephone system (SIP)" (§17.6); "IVR / Telephony Services" (§6.9). Two bullets. |
-| 4.2 AI Receptionist | 27 | "Support AI Receptionists" (§17.2); "AI Receptionist Communications" (§17.3); "AI Receptionist" in the agent examples (§19.5); NT-029 "AI Receptionist Assigned" (§17.15). Four mentions, no behaviour. |
-| 4.4 Scheduling Agent beyond Discovery Calls | 34 | "Scheduling meetings" as one AI tool-execution example (§19.19); "Calendar providers" as a supported integration (§13.13). |
-| 4.5 AI Sales Outbound core motion | 25 | "Support AI Sales Agents" (§17.2); "AI Sales Agent" (§19.5); NT-031; "Marketing campaign management" (§14.3); "Support campaign management" (§14.16). |
-| **Total** | **115** | |
+This preserves the baseline without approving the client's entire set of additions or promising an implementation method that the SRS does not require.
 
-Two factual points support treating this as new scope.
+## Commercial and delivery conditions
 
-**The SRS defines lead capture as inbound only.** §14.5 lists the permitted lead sources:
-public website contact forms, Discovery Call requests, AI Scan purchases, partnership
-inquiries, manual creation by Admins, and "future external integrations." Every one is a
-prospect approaching IO SKY. Outbound prospecting to people who have not made contact is a
-different commercial motion, and the SRS does not describe it.
+| Item | Proposal position |
+| --- | --- |
+| Development effort | Not yet estimated. Estimate each selected delta after its exact boundaries, surface count, acceptance examples and dependencies are approved. |
+| One-time development fee | Not yet quoted. Provide a separate fixed quote or agreed effort basis per selected workstream. No invented fee or assumed approval. |
+| External/recurring costs | AI usage, audiovisual services, hosting/storage and any approved calendar service are itemized separately once provider and usage assumptions are selected. Existing provider costs are not development fees. |
+| Dependencies | Approved source specifications, design/asset inventory, supported devices, accounts/credentials, test data and owner decisions relevant to the selected item. |
+| Schedule | Agreed after selection and dependency confirmation; no delivery date is promised by this proposal. |
+| Change control | A new behaviour, language, portal surface, template, provider or acceptance target outside the approved item requires its own written delta and approval. |
+| Acceptance | Demonstrate the selected extension's specified behaviours and agreed failure/permission cases; distinguish local automated checks from successful live provider operation. No baseline obligation is waived. |
+| Relationship to earlier M4 documents | If both parties approve this proposal, it becomes the agreed extension list in place of earlier proposed extension packages. Approval does not delete or amend SRS baseline duties. |
 
-**BR-022 constrains notifications to business events.** "Notifications shall only be
-generated in response to defined business events. Each notification must be linked to its
-originating event and recipient." A cold outbound campaign has no originating business
-event and no pre-existing recipient relationship. It does not fit the model the SRS sets
-out.
+## Proposed sequence
 
-Recommendation: treat Bucket B as Milestone 4 scope. A named channel is not a
-specification, and no reasonable reading of §17.6's six words produces 29 telephony
-behaviours. It is the bucket most likely to be challenged, so it needs the evidence above
-rather than an assertion.
+1. Close and verify outstanding SRS baseline items independently.
+2. Select Milestone 4 workstreams and fix their exact deltas and acceptance examples.
+3. Issue the itemized development quote, recurring-cost assumptions, dependencies and schedule.
+4. Obtain written approval before additional implementation or provider purchase.
+5. Build the selected workstreams, demonstrate them and record acceptance separately from baseline completion.
 
----
+The [verification record](docs/client/SRS_SCOPE_VERIFICATION_2026-10-13.md) supports the classifications. The [client reply](docs/client/CLIENT_REPLY_2026-10-13.md) presents the proposed boundary.
 
-## Bucket C — genuinely new, no SRS basis at all
-
-Nothing in the SRS corresponds to any of this.
-
-| Item | Tasks | Why it is new |
-| --- | ---: | --- |
-| 4.7.2 Adaptive assessment engine | 23 | The SRS requires "resumable questionnaires" (§9.7) and says nothing about adaptive questioning. The Phase 4 Master Specification grades a fixed sequence as an explicit FAIL (TST-004) and prohibits numeric scoring outright (PRD-006). The SRS addresses neither. |
-| 4.6 Acceptance, evidence and demonstration standard | 18 | §26.18 gives six general statements. Phase 4 requires demonstrated failure paths, session isolation under concurrent load, permission isolation, and evidence retained for inspection. A materially higher bar. |
-| 4.7.5 Report system, 21-section architecture | 18 | The SRS requires a report with version history (§9.7, BR-017) and specifies no structure. Phase 4 defines 21 canonical sections. |
-| 4.3 Conversation and Response Playbook | 16 | The SRS contains no conversational design content anywhere. §17.8 covers notification templates, which are transactional, not dialogue. Tone, phrasing, objection handling and response structure appear nowhere in 197 pages. |
-| 4.8 Website and platform redesign | 16 | §7 specifies the Public Website's pages, navigation and behaviour, never its visual design. The Milestone 2 specification pointed the other way and required existing portals to be ported without redesign. Already conceded by the client in writing. |
-| 4.5 subset: Do Not Contact, suppression layer, compliance policy, controlled learning, 24 canonical permissions | 20 | None of this exists in the SRS. The platform permission model (§5.8) has 15 capabilities across 5 roles and no outbound concepts at all. |
-| Prerequisites and blockers | 12 | Credential and account provisioning for providers the SRS never names. |
-| 4.7.1 subset: VAT validation, account collision protection, billing and tax snapshot | 6 | §16 covers invoices and payments. Country-aware VAT validation and tax snapshotting are not mentioned. |
-| 4.7.8 Scan platform, security and operations | 6 | Specific to the replacement engine. |
-| 4.7.7 Executive Briefing | 4 | A separate commercial deliverable and a paid add-on. Not in the SRS. |
-| 4.7.6 Translation and language | 3 | §24.5 offers "Localization settings" as a configuration item. Per-report translation of generated content is a different thing. |
-| **Total** | **142** | |
-
----
-
-## Recommended Milestone 4 scope
-
-**Milestone 4 = Buckets B + C = 257 tasks.**
-
-**Return 61 tasks to the Milestone 1 to 3 backlog**, where they belong against SRS Modules
-3, 8, 10, 13 and 16. Most of that 61 is the AI Intelligence Layer, which is the largest
-unbuilt part of the SRS regardless of what happens with Phase 4.
-
-If Bucket B is disputed, the floor position is **Milestone 4 = 142 tasks**. The 115
-disputed tasks still have to be specified, built and paid for by someone. Moving them into
-Milestones 1 to 3 does not make them smaller. It makes the SRS baseline 115 tasks larger
-than it was when that baseline was priced.
-
----
-
-## One thing to settle before quoting either number
-
-The AI Scan workstream is a **replacement**, not an extension, and that is the client's own
-specification saying so rather than our interpretation. Two Phase 4 acceptance tests are
-written as FAIL conditions that the shipped product meets exactly:
-
-> **TST-001 Form Test.** "If experience is effectively customer fills long form, AI
-> generates PDF" — **FAIL**
->
-> **TST-004 Fixed Sequence Test.** "Hidden fixed 35-question sequence with cosmetic
-> variation" — **FAIL**
-
-`shared/aiScanQuestionnaire.ts` holds exactly 35 questions, and `aiScanReportPdf.ts`
-produces a PDF. Both tests grade FAIL rather than "needs improvement", so the engine cannot
-be evolved into compliance. Three further direct conflicts with live code, each verified:
-
-- COM-001 states "There is no free AI Scan product", while `drizzle/schema.ts:1920`
-  defines `pgEnum("ai_scans_tier", ["free","growth","elite"])` with a live unpaid tier.
-- PRD-006 prohibits scores and readiness percentages, while `aiScanScoring.ts` computes
-  per-dimension scores constrained 0 to 100 and the table carries an `overallScore` column.
-- CNF-001 requires qualitative confidence (High, Moderate, Low, Insufficient), while the
-  model response schema returns it numerically.
-
-The AI Scan that Milestones 1 to 3 built against SRS Module 3 is being discarded. That is a
-legitimate client decision, but it is a decision with a cost, and it should be priced rather
-than absorbed quietly.
+The [previous scope document](docs/client/archive/MILESTONE4_NEW_SCOPE_PREVIOUS_2026-10-13.md) is retained as a historical record. Its 61/115/142 and 257-task commercial suggestions do not govern this proposal.

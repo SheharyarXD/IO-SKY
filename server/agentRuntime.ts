@@ -27,6 +27,8 @@
  */
 import type { z } from "zod";
 import { authorityDecision, type ToolEffect } from "../shared/aiAgentRegistry";
+import { operatorMayOnAgent } from "../shared/agentOperatorScopes";
+import type { ScopeGrant } from "../shared/platformRules";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,7 +48,15 @@ export type AgentDefinition = {
 export type RunContext = {
   /** The only organisation this run may touch. Null for platform-level agents. */
   organizationId: number | null;
+  /** The person who started the run, or null for a system run (a scan, a webhook, a schedule). */
   actorUserId: number | null;
+  /**
+   * The actor's role. Required whenever actorUserId is set: a run started by a
+   * person whose role is unknown is refused (G09). A Technical Operator needs a
+   * per-agent `run` grant; the other roles are limited by the agent's own
+   * permissions, tools and organisation scope.
+   */
+  actorRole?: string | null;
 };
 
 export type AgentTool<I = unknown, O = unknown> = {
@@ -109,6 +119,8 @@ export type RuntimeDeps = {
   /** Append a result row to the execution history. */
   record(a: { agentKey: string; action: string; subjectRef: string; detail: string }): Promise<number | null>;
   escalate(a: { agentKey: string; kind: EscalationKind; reason: string; subjectRef: string; escalationRules: string | null; detail?: string }): Promise<void>;
+  /** The actor's operator grants (operator_scopes), read fresh each time so a revocation applies at once. */
+  actorGrants(userId: number): Promise<ScopeGrant[]>;
   model: AgentModel;
   tools: ToolRegistry;
 };
@@ -193,6 +205,29 @@ export async function runAgent(input: RunInput, deps: RuntimeDeps): Promise<RunR
   if (!agent) return { status: "blocked", reason: "agent_not_found", toolCalls: trace, steps };
   if (agent.status !== "active") return { status: "blocked", reason: "agent_disabled", toolCalls: trace, steps };
 
+  // ---- 1b. Is the PERSON who started it allowed to operate THIS agent? (G09) ------------------------------------
+  // A Technical Operator authorised for Agent A has no access to Agent B. Checked now and again before every tool
+  // call, so a grant that is revoked or expires mid-run stops the next call. Fails closed.
+  const actorAllowed = async (): Promise<{ ok: true } | { ok: false; reason: string }> => {
+    const { actorUserId, actorRole } = input.ctx;
+    if (actorUserId === null) return { ok: true }; // system run: governed by the agent's own permissions
+    if (!actorRole) return { ok: false, reason: "The actor's role is unknown." };
+    if (actorRole !== "technical_operator") return { ok: true }; // staff and customers: governed by permissions, tools and organisation scope
+    try {
+      const grants = await deps.actorGrants(actorUserId);
+      return operatorMayOnAgent(actorRole, grants, input.agentKey, "run")
+        ? { ok: true }
+        : { ok: false, reason: "This operator has no active grant to run this agent." };
+    } catch (err) {
+      return { ok: false, reason: `Operator access could not be verified (${(err as Error).message}).` };
+    }
+  };
+  const first = await actorAllowed();
+  if (!first.ok) {
+    await deps.record({ agentKey: input.agentKey, action: "operator_denied:run", subjectRef: input.subjectRef, detail: first.reason }).catch(() => null);
+    return { status: "blocked", reason: first.reason, toolCalls: trace, steps };
+  }
+
   let start: Verdict;
   try {
     start = await deps.authorise({ agentKey: agent.key, action: input.runPermission, subjectRef: input.subjectRef, detail: null });
@@ -271,6 +306,12 @@ export async function runAgent(input: RunInput, deps: RuntimeDeps): Promise<RunR
       if (toolCallsMade > maxToolCalls) {
         await escalate("human_needed", "tool_call_limit");
         return { status: "escalated", reason: "tool_call_limit", toolCalls: trace, steps };
+      }
+
+      const still = await actorAllowed();
+      if (!still.ok) {
+        await refuse(`operator access to this agent ended: ${still.reason}`);
+        continue;
       }
 
       const tool = deps.tools.get(call.name);

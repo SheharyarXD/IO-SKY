@@ -51,6 +51,7 @@ export async function realRuntimeDeps(model: AgentModel, tools: ToolRegistry): P
         href: "/admin/governance",
       });
     },
+    actorGrants: async (userId) => (await import("./db/platformGovernance")).getScopeGrants(userId),
     model,
     tools,
   };

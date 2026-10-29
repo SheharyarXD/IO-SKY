@@ -12,7 +12,8 @@ import { evaluateLead, LEAD_AGENT_KEY } from "../leadEvaluation";
 import { getLeadById } from "../db/crm";
 import { reconcileStripePayments } from "../paymentSync";
 import { emitNotification } from "../notificationDispatcher";
-import { listAiExecutions } from "../db/srsGovernance";
+import { getAiAgentDefinition, listAiExecutions } from "../db/srsGovernance";
+import { isGrantableAgentScope, parseAgentScope } from "../../shared/agentOperatorScopes";
 import { NOTIFICATION_EVENTS } from "../../shared/notificationCatalogue";
 import {
   DOCUMENT_CLASSIFICATIONS,
@@ -125,12 +126,15 @@ export const adminPlatformRouter = router({
     .input(
       z.object({
         userId: z.number().int().positive(),
-        scope: z.enum(OPERATOR_SCOPES),
+        // A platform scope, or a per-agent scope "agent:<key>:<view|run|approve>" (G09).
+        scope: z.string().trim().refine((s) => (OPERATOR_SCOPES as readonly string[]).includes(s) || isGrantableAgentScope(s), "Unknown scope."),
         expiresInDays: z.number().int().min(1).max(365).nullable(),
         note: z.string().trim().max(300).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const agentScope = parseAgentScope(input.scope);
+      if (agentScope && !(await getAiAgentDefinition(agentScope.agentKey))) fail("NOT_FOUND", "That AI agent is not registered.");
       const expiresAt = input.expiresInDays ? new Date(Date.now() + input.expiresInDays * 86_400_000) : null;
       const res = await grantOperatorScope({ userId: input.userId, scope: input.scope, expiresAt, note: input.note ?? null, grantedByUserId: ctx.user.id });
       if (res === "unavailable") fail("INTERNAL_SERVER_ERROR", "Database unavailable.");

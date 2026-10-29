@@ -21,8 +21,10 @@ import { and, count, gte, ne, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {
   scopedOpsProcedure,
+  opsProcedure,
   protectedProcedure,
   isOpsRole,
+  isAdminRole,
   evaluatePrivilegedMfaGate,
   router,
 } from "../_core/trpc";
@@ -33,7 +35,14 @@ import {
   listEmailDeliveryLog,
   listRecentSecurityEvents,
   acknowledgeDeveloperSecurityEvent,
+  decideAiExecution,
+  getAiExecutionAgentKey,
+  listAiAgents,
+  listAiExecutions,
 } from "../db";
+import { getScopeGrants } from "../db/platformGovernance";
+import { assertOperatorAgentAccess } from "../_core/agentAccess";
+import { AGENT_OPERATOR_ACTIONS, activeAgentGrants } from "../../shared/agentOperatorScopes";
 import {
   loginAudit,
   users,
@@ -73,6 +82,49 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 }
 
 export const opsRouter = router({
+  // ---- Per-agent operator access (G09) ------------------------------------------------------------------------
+  /** The agents this person may work with, and for each the actions they hold. Admins see every agent with every action. */
+  myAgents: opsProcedure.query(async ({ ctx }) => {
+    const agents = await safe(() => listAiAgents(), []);
+    if (isAdminRole(ctx.user.role)) {
+      return agents.map((a) => ({ agentKey: a.key, name: a.name, status: a.status, actions: [...AGENT_OPERATOR_ACTIONS] }));
+    }
+    const mine = activeAgentGrants(await getScopeGrants(ctx.user.id));
+    return mine
+      .map((g) => ({ g, a: agents.find((x) => x.key === g.agentKey) }))
+      .filter((x): x is { g: (typeof mine)[number]; a: (typeof agents)[number] } => Boolean(x.a))
+      .map(({ g, a }) => ({ agentKey: a.key, name: a.name, status: a.status, actions: g.actions }));
+  }),
+
+  /** Execution history of ONE agent. Needs the `view` grant for that agent, never a grant for another. */
+  agentExecutions: opsProcedure
+    .input(z.object({ agentKey: z.string().trim().regex(/^[a-z][a-z0-9_]{1,63}$/) }))
+    .query(async ({ ctx, input }) => {
+      await assertOperatorAgentAccess(ctx.user, input.agentKey, "view");
+      await recordOpsEvent({ ctx, reason: `ops.agent.executions(${input.agentKey})` });
+      return listAiExecutions(input.agentKey, 100);
+    }),
+
+  /** Approve or reject an action an agent is waiting on. Authorised against the execution's OWN agent. */
+  decideAgentExecution: opsProcedure
+    .input(z.object({ executionId: z.number().int().positive(), approve: z.boolean(), note: z.string().trim().max(1000).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const agentKey = await getAiExecutionAgentKey(input.executionId);
+      // An unknown id and an agent the caller has no grant for look the same to an operator: no probing for ids.
+      if (!agentKey) {
+        if (isAdminRole(ctx.user.role)) throw new TRPCError({ code: "NOT_FOUND", message: "Execution not found." });
+        throw new TRPCError({ code: "FORBIDDEN", message: "You have no active grant to approve this AI agent." });
+      }
+      await assertOperatorAgentAccess(ctx.user, agentKey, "approve");
+      const r = await decideAiExecution({ executionId: input.executionId, approve: input.approve, userId: ctx.user.id, note: input.note ?? null });
+      if (r === "not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Execution not found." });
+      if (r === "not_awaiting") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "That execution is not awaiting approval." });
+      if (r === "already_decided") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A decision was already recorded." });
+      if (!r) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable." });
+      await recordOpsEvent({ ctx, reason: `ops.agent.${input.approve ? "approve" : "reject"}(${agentKey}:${input.executionId})` });
+      return { ok: true as const };
+    }),
+
   /**
    * Milestone 2 §2.5 — hard MFA gate status for the ops console. See
    * admin.gateStatus's doc comment for the full reasoning; this is the
