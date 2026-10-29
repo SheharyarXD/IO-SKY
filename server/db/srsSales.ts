@@ -180,7 +180,8 @@ export async function createActivity(args: {
   opportunityId: number | null;
   organizationId: number | null;
   dueAt: Date | null;
-  createdByUserId: number;
+  /** Null when an AI agent recorded it (task R18); the body then says so. */
+  createdByUserId: number | null;
 }): Promise<CrmActivity | null> {
   const db = await getDb();
   if (!db) return null;

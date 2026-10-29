@@ -63,6 +63,11 @@ export type RunContext = {
    * customer) or internal (platform staff). Anything not stated is treated as public.
    */
   audience?: Audience;
+  /**
+   * Whether the person on the other end has been verified (identity levels, R10/R11). Anything not stated is
+   * unverified: tools then reveal nothing about existing records.
+   */
+  verification?: "unverified" | "verified";
 };
 
 /** What a tool receives: the run's context plus which agent and subject it is running for. */

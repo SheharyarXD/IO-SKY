@@ -203,6 +203,16 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Remaining: register an agent with these tools and the scheduling permissions once the agent is specified; calendar provider integration (S03/S04) and the duration policy (S05) are separate decisions; persistent idempotency key would need a migration.
 - Next: R18.
 
+## R18 AI Receptionist CRM tool wrappers
+
+- Previous status: NOT_STARTED (audit: C, "CRM exists, no agent tool wrapper"). New status: TESTED_LOCAL. This builds tools only; it does not make the AI Receptionist work.
+- Data functions added (`server/db/crm.ts`): `findLeadsByContact` (email case-insensitive; phone by identifying digits), `isExistingClientEmail` (a client-role account), `fillLeadBlanks` (fills only empty fields). `createActivity` now accepts a null author, because an assistant is not a user.
+- Tools (`server/crmTools.ts`, `shared/crmRules.ts`): find, create prospect, add note with structured qualification, create follow-up, fill details.
+- Safety model: resource scope per conversation (`RunLeadScope`), no disclosure without verification (an unverified lookup is only yes or no; an existing client is never described and is routed to verification), deduplication before insert, append-only updates (no overwrite, no name, email or status), assistant-authored records with a timeline note as audit, per-request-id idempotency, generic errors. The run context gained a `verification` field (default unverified).
+- Tests: `crmTools.test.ts` 29 (rules, scope, every disclosure path, dedupe by email and phone variants, protected client, append-only, follow-up bounds, runtime authority and permission refusals, verification reaching the tool). Mutation check: removing the scope guard fails 2. Full suite 1541 passed, 57 skipped, 0 failed; typecheck and build clean.
+- Not done and not claimed: voice, speech, conversation, identity verification (R10/R11), a unique index on lead email, registering an agent with these tools. Verification flag semantics need client confirmation.
+- Next: M4-01.
+
 ---
 
 ## Status translation rules used for the import

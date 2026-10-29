@@ -4,11 +4,12 @@
  * Database helpers for CRM / lead capture.
  * Covers: leads, contact submissions, and dev applications (Engineering Access).
  */
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import {
   contactSubmissions,
   devApplications,
   leads,
+  users,
   type ContactSubmission,
   type DevApplication,
   type InsertContactSubmission,
@@ -36,6 +37,54 @@ export async function getLeadById(id: number): Promise<Lead | null> {
   const db = await getDb();
   if (!db) return null;
   return (await db.select().from(leads).where(eq(leads.id, id)).limit(1))[0] ?? null;
+}
+
+/**
+ * Leads that share an email address or a phone line with the probe, newest
+ * first (at most 5). Email compares case-insensitively; phone compares the
+ * identifying digits, so formatting and country prefixes do not matter. Used to
+ * deduplicate before a lead is created (task R18).
+ */
+export async function findLeadsByContact(a: { email: string | null; phoneKey: string | null }): Promise<Lead[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const conds = [];
+  if (a.email) conds.push(sql`lower(${leads.email}) = ${a.email}`);
+  if (a.phoneKey) {
+    const digits = sql`regexp_replace(coalesce(${leads.phone}, ''), '[^0-9]', '', 'g')`;
+    conds.push(a.phoneKey.length >= 9 ? sql`right(${digits}, 9) = ${a.phoneKey}` : sql`${digits} = ${a.phoneKey}`);
+  }
+  if (conds.length === 0) return [];
+  return db.select().from(leads).where(or(...conds)).orderBy(desc(leads.createdAt)).limit(5);
+}
+
+/** True when this email belongs to a signed-in client account: protected, never described to an unverified caller. */
+export async function isExistingClientEmail(email: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const row = (await db.select({ id: users.id }).from(users).where(and(sql`lower(${users.email}) = ${email.toLowerCase()}`, eq(users.role, "client"))).limit(1))[0];
+  return Boolean(row);
+}
+
+/**
+ * Fill details that are EMPTY on a lead and report which were filled. It never
+ * overwrites a value a person or an earlier conversation recorded, and never
+ * touches name, email, status or notes. Null when the lead does not exist.
+ */
+export async function fillLeadBlanks(id: number, patch: { company?: string; phone?: string; interest?: string }): Promise<string[] | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const row = (await db.select().from(leads).where(eq(leads.id, id)).limit(1))[0];
+  if (!row) return null;
+  const set: Record<string, string> = {};
+  const conds = [eq(leads.id, id)];
+  const blank = (v: string | null) => v === null || v.trim() === "";
+  if (patch.company && blank(row.company)) { set.company = patch.company; conds.push(or(isNull(leads.company), eq(leads.company, ""))!); }
+  if (patch.phone && blank(row.phone)) { set.phone = patch.phone; conds.push(or(isNull(leads.phone), eq(leads.phone, ""))!); }
+  if (patch.interest && blank(row.interest)) { set.interest = patch.interest; conds.push(or(isNull(leads.interest), eq(leads.interest, ""))!); }
+  if (Object.keys(set).length === 0) return [];
+  const updated = await db.update(leads).set({ ...set, updatedAt: new Date() }).where(and(...conds)).returning({ id: leads.id });
+  return updated.length ? Object.keys(set) : [];
 }
 
 export async function listRecentLeads(limit = 100): Promise<Lead[]> {
