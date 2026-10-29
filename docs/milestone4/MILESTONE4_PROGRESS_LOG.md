@@ -275,6 +275,10 @@ Added shared/taskAssignmentRules.ts, migration 0043 and schema for an append-onl
 
 Added shared/teamRules.ts, migration 0044 and schema, server/db/developerTeams.ts, seven admin endpoints, developer.myTeams and a Teams tab in the admin Delivery screen. Teams keep exactly one primary contact at all times, removal of that contact needs a successor, members are removed not deleted, and a developer sees only their own teams. 21 new tests including a 2000-step invariant check and a mutation check. Team-to-project assignment is not built.
 
+## G04 - provider priority, fallback and budget limits (TESTED_LOCAL)
+
+Added shared/providerRouting.ts and server/llmRouter.ts, refactored server/_core/llm.ts so invokeLLM routes through them only when a provider list or a budget is configured, added readLlmSpend and the admin.aiProviderRouting read. Fallback is for provider failures only, a rejected request is never replayed to another vendor, a circuit breaker avoids dead providers, and a configured budget fails closed. 37 new tests with a mutation check; legacy behaviour unchanged. Nothing live was exercised.
+
 ---
 
 ## Status translation rules used for the import

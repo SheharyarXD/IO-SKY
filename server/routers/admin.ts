@@ -108,6 +108,7 @@ import type { AiScanReportPayload } from "../../shared/aiScanModel";
 import { mayViewCompanyRevenue } from "../../shared/srsRules";
 import { assessBackupPolicy, isBackupKey, readDeclared } from "../../shared/backupPolicy";
 import { REFUSAL_TEXT } from "../../shared/taskAssignmentRules";
+import { llmRoutingStatus } from "../_core/llm";
 import { generatePublicRef } from "../_core/publicRef";
 import {
   organizations,
@@ -2037,6 +2038,14 @@ export const adminRouter = router({
     const rows = await safe(() => listPlatformSettings(), []);
     const map = new Map(rows.filter((r) => isBackupKey(r.key)).map((r) => [r.key, r.value] as const));
     return { ...assessBackupPolicy(readDeclared(map)), source: rows.length > 0 ? ("db" as const) : ("unavailable" as const), generatedAtMs: Date.now() };
+  }),
+  /**
+   * AI provider routing (G04, SRS 19.25): which providers are configured in priority order, whether each has its
+   * key set and whether its circuit is open, and the spending limits. Never returns a key or a key's value.
+   */
+  aiProviderRouting: adminProcedure.query(async ({ ctx }) => {
+    await recordAdminEvent({ ctx, reason: "admin.read.ai_provider_routing" });
+    return { ...llmRoutingStatus(), generatedAtMs: Date.now() };
   }),
   updateSetting: superAdminProcedure
     .input(

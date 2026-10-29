@@ -239,6 +239,9 @@ const normalizeToolChoice = (
  * populated and unread, which is a confusing way for a platform to be
  * broken.
  */
+import { CircuitBreaker, hasBudget, parseBudget, parseProviders } from "../../shared/providerRouting";
+import { invokeRouted, type RouterEvent } from "../llmRouter";
+
 const DEFAULT_TIMEOUT_MS = 60_000;
 const OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -340,9 +343,22 @@ const normalizeResponseFormat = ({
   };
 };
 
-export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  const apiUrl = resolveApiUrl();
-  const apiKey = resolveApiKey();
+/** Where one call goes. `model` pins the model for this provider; null uses the task-class routing. */
+type Endpoint = { apiUrl: string; apiKey: string; model: string | null };
+
+/** A failed call, with what the router needs to decide whether another provider should be tried. */
+export class LlmCallError extends Error {
+  constructor(
+    message: string,
+    readonly info: { status?: number; timeout?: boolean; network?: boolean; missingKey?: boolean },
+  ) {
+    super(message);
+    this.name = "LlmCallError";
+  }
+}
+
+async function invokeOnEndpoint(endpoint: Endpoint, params: InvokeParams): Promise<InvokeResult> {
+  const { apiUrl, apiKey } = endpoint;
 
   const {
     messages,
@@ -356,7 +372,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: resolveModel(params.complexity),
+    model: endpoint.model ?? resolveModel(params.complexity),
     messages: messages.map(normalizeMessage),
   };
 
@@ -399,26 +415,91 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     });
   } catch (err) {
     if (err instanceof Error && err.name === "TimeoutError") {
-      throw new Error(`LLM invoke timed out after ${timeoutMs}ms`);
+      throw new LlmCallError(`LLM invoke timed out after ${timeoutMs}ms`, { timeout: true });
     }
-    throw new Error(
-      `LLM invoke failed to reach the provider: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    throw new LlmCallError(`LLM invoke failed to reach the provider: ${err instanceof Error ? err.message : String(err)}`, { network: true });
   }
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
     if (response.status === 429) {
-      throw new Error(
-        `LLM invoke rate-limited by provider (429)${errorText ? `: ${errorText}` : ""}`,
-      );
+      throw new LlmCallError(`LLM invoke rate-limited by provider (429)${errorText ? `: ${errorText}` : ""}`, { status: 429 });
     }
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
-    );
+    throw new LlmCallError(`LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`, { status: response.status });
   }
 
   const result = (await response.json()) as InvokeResult;
   recordLlmUsage({ model: result.model ?? String(payload.model), complexity: params.complexity ?? "complex", purpose: params.purpose ?? null, usage: result.usage });
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Provider priority, fallback and budget (task G04)
+// ---------------------------------------------------------------------------
+
+const breaker = new CircuitBreaker();
+
+function onRouterEvent(e: RouterEvent): void {
+  console.warn(`[llm] ${e.type}`, "provider" in e ? e.provider : "failed" in e ? `${e.failed}:${e.kind}` : "reason" in e ? e.reason : "");
+  if (e.type !== "budget_blocked") return;
+  // An approved operational threshold being reached is a catalogue event (AO-04), raised once a day per reason.
+  void import("../notificationDispatcher")
+    .then((m) => m.emitNotification({ event: "AI_OPERATION_THRESHOLD_EXCEEDED", audience: { type: "admin" }, dedupeRef: `llm-budget:${e.reason}:${new Date().toISOString().slice(0, 10)}`, title: "AI calls paused by the spending limit", body: e.reason === "budget_unavailable" ? "A limit is set but spend could not be read." : `The ${e.reason === "daily_budget_exhausted" ? "daily" : "monthly"} AI spending limit was reached.`, href: "/admin/governance" }))
+    .catch(() => undefined);
+}
+
+/**
+ * The entry point every AI feature uses. With no provider list and no budget configured this is the single
+ * provider call exactly as before. With either, the call goes through the router: spending limit first, then
+ * the providers in priority order with fallback and circuit breaking.
+ */
+export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
+  const parsed = parseProviders(process.env);
+  const { budget } = parseBudget(process.env);
+  if (parsed.source !== "list" && !hasBudget(budget)) {
+    return invokeOnEndpoint({ apiUrl: resolveApiUrl(), apiKey: resolveApiKey(), model: null }, params);
+  }
+  if (parsed.providers.length === 0) {
+    resolveApiUrl(); // throws the usual "No LLM provider is configured"
+    resolveApiKey();
+  }
+  return invokeRouted(params, {
+    providers: parsed.providers,
+    budget,
+    breaker,
+    now: () => Date.now(),
+    spend: async (now) => (await import("./llmUsage")).readLlmSpend(now),
+    call: async (p, prm) => {
+      const apiKey = readEnv(p.apiKeyEnv);
+      if (!apiKey) throw new LlmCallError(`The key variable for provider "${p.name}" is not set.`, { missingKey: true });
+      return invokeOnEndpoint({ apiUrl: p.apiUrl, apiKey, model: p.model }, prm);
+    },
+    describeFailure: (err) => (err instanceof LlmCallError ? err.info : {}),
+    onEvent: onRouterEvent,
+  });
+}
+
+/** What routing is configured and how each provider is doing. Never includes a key or a key value. */
+export function llmRoutingStatus(now: number = Date.now()) {
+  const parsed = parseProviders(process.env);
+  const b = parseBudget(process.env);
+  return {
+    source: parsed.source,
+    providers: parsed.providers.map((p) => ({ name: p.name, priority: p.priority, apiHost: safeHost(p.apiUrl), model: p.model, keyConfigured: Boolean(readEnv(p.apiKeyEnv)), circuit: breaker.state(p.name, now) })),
+    budget: { dailyUsd: b.budget.dailyMicros === null ? null : b.budget.dailyMicros / 1_000_000, monthlyUsd: b.budget.monthlyMicros === null ? null : b.budget.monthlyMicros / 1_000_000 },
+    problems: [...parsed.problems, ...b.problems],
+  };
+}
+
+function safeHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return "invalid";
+  }
+}
+
+/** Test hook: forget circuit state. */
+export function resetLlmRouterForTests(): void {
+  breaker.reset();
 }
