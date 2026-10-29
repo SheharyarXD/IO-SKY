@@ -47,6 +47,7 @@ import { createCheckoutSession, isStripeConfigured } from "../_core/stripe";
 import { setInvoiceCheckoutSession } from "../db/payments";
 import { clientVisibleDocumentTypes } from "../db/platformGovernance";
 import { resolveNotificationLink } from "../../shared/notificationLinks";
+import { validateUpload } from "../../shared/uploadValidation";
 import { clientMayViewDocument } from "../../shared/platformRules";
 
 const supportTicketSchema = z.object({
@@ -571,18 +572,11 @@ export const clientPortalRouter = router({
          * flipped to status "superseded" (see insertClientDocument).
          */
         supersedesDocumentId: z.number().int().positive().optional(),
+        /** Optional note for the IO SKY team (J08). Shown in the upload notification. */
+        note: z.string().trim().max(1000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // Reject obviously dangerous extensions even if the mime says otherwise.
-      const lower = input.name.toLowerCase();
-      const blocked = [".exe", ".bat", ".cmd", ".sh", ".js", ".msi"];
-      if (blocked.some(ext => lower.endsWith(ext))) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "This file type is not allowed in the client vault.",
-        });
-      }
       let buffer: Buffer;
       try {
         buffer = Buffer.from(input.contentBase64, "base64");
@@ -593,18 +587,19 @@ export const clientPortalRouter = router({
         });
       }
       const sizeBytes = buffer.byteLength;
-      const FIFTEEN_MB = 15 * 1024 * 1024;
-      if (sizeBytes === 0 || sizeBytes > FIFTEEN_MB) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "File must be between 1 byte and 15 MB.",
-        });
+      // J08 / ACC-31: the file's CONTENT must match its name and type, from an allow-list. A program renamed to
+      // .pdf, a disguised double extension, a PDF with scripts, or an antivirus test file is refused.
+      const check = validateUpload({ name: input.name, mimeType: input.mimeType, bytes: buffer });
+      if (!check.ok) {
+        try {
+          await appendLoginAudit({ userId: ctx.user.id, identifier: ctx.user.email ?? null, provider: "client-portal", outcome: "blocked", reason: `document-upload-refused:${check.code}`, ip: null, userAgent: null });
+        } catch {
+          /* audit best-effort */
+        }
+        throw new TRPCError({ code: "BAD_REQUEST", message: check.message });
       }
       // Slug the filename so the storage key stays predictable.
-      const safeName = input.name
-        .replace(/[^a-zA-Z0-9._-]+/g, "-")
-        .replace(/-+/g, "-")
-        .slice(0, 120);
+      const safeName = check.safeName;
       // Path convention per drizzle/0007_storage_buckets.sql:
       // {organizationId}/documents/{timestamp}-{name} — the leading
       // organizationId segment is what the bucket's RLS policy matches
@@ -616,7 +611,7 @@ export const clientPortalRouter = router({
           "client-portal",
           key,
           buffer,
-          input.mimeType ?? "application/octet-stream",
+          check.mimeType,
         );
         putKey = out.key;
       } catch (err) {
@@ -634,7 +629,7 @@ export const clientPortalRouter = router({
           category: input.category,
           fileKey: putKey,
           sizeBytes,
-          mimeType: input.mimeType ?? null,
+          mimeType: check.mimeType,
           uploadedByUserId: ctx.user.id ?? null,
           uploadedBy: ctx.user.name ?? ctx.user.email ?? null,
           supersedesDocumentId: input.supersedesDocumentId ?? null,
@@ -673,7 +668,7 @@ export const clientPortalRouter = router({
       try {
         await notifyOwner({
           title: `Client uploaded ${input.name}`,
-          content: `Org #${ctx.organizationId} — ${ctx.user.name ?? ctx.user.email}\nCategory: ${input.category}\nSize: ${sizeBytes} bytes`,
+          content: `Org #${ctx.organizationId} — ${ctx.user.name ?? ctx.user.email}\nCategory: ${input.category}\nSize: ${sizeBytes} bytes${input.note ? `\nNote from the client: ${input.note}` : ""}`,
         });
       } catch {
         /* best-effort */

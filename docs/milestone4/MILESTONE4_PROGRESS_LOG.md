@@ -223,6 +223,16 @@ What the new tests do: every test I wrote is fully mocked and needs no database.
 - Remaining: apply 0040 on a non-production database; verify the trigger and cascade there; a view of the audit in the admin portal (not built).
 - Next: J09, J10, J08.
 
+## J08 Upload validation and security checks
+
+- Previous status: NOT_STARTED (audit: C, "malware scan missing"). New status: TESTED_LOCAL.
+- Gap: `uploadDocument` blocked six extensions by name and capped size at 15 MB, but never looked at the content: a program named `.pdf` or a text file named `.pdf` was accepted and stored with whatever mime type the browser claimed.
+- Change: `shared/uploadValidation.ts` replaces the block-list with an allow-list and checks content against the claim (magic bytes, OOXML structure, text sanity), refuses executables by signature, double extensions, PDFs with active content and the EICAR test signature, validates names, and returns the canonical mime type and a storage-safe name. `uploadDocument` uses it, audits refusals (`document-upload-refused:<code>`), stores nothing on refusal, and accepts an optional note that is shown in the team notification.
+- Tests: `uploadValidation.test.ts` 35 (every allowed type, every refusal class, boundary sizes, name edge cases) and 2 router tests. Two legacy fixtures were fixed because they uploaded plain text as a PDF. Full suite 1592 passed, 57 skipped, 0 failed; typecheck and build clean.
+- Honest limit: this is not an antivirus engine. The engine choice is the client's. Macro-enabled Office formats are simply not allowed.
+- Remaining: an antivirus integration once the engine is chosen; storing the note needs a column (migration); other upload paths.
+- Next: J09, J10.
+
 ---
 
 ## Status translation rules used for the import

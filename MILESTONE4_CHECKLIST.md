@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 19
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 20
 - Live verification pending: 20
 - In progress: 0
-- Not started: 43
+- Not started: 42
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -247,7 +247,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `J03`: Teams (P1, BASELINE, NOT_STARTED)
 - [ ] `J04`: Per-developer tasks and milestones, reassignment, replacement preserving (P1, BASELINE, NOT_STARTED)
 - [ ] `J07`: Mediated messaging (P1, BASELINE, NOT_STARTED)
-- [ ] `J08`: Upload validation, type and size limits, malware (P1, BASELINE, NOT_STARTED)
+- [ ] `J08`: Upload validation, type and size limits, malware (P1, BASELINE, TESTED_LOCAL)
 - [ ] `J09`: Project-document association and controlled handoff (GOV-09) (P1, BASELINE, NOT_STARTED)
 - [ ] `J10`: Cross-boundary release gate between client and developer (P1, BASELINE, NOT_STARTED)
 - [x] `J01`: Project lifecycle stages with append-only history (P2, ALREADY_DELIVERED, COMPLETED_VERIFIED)

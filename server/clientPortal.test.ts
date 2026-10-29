@@ -421,6 +421,50 @@ describe("clientPortal router", () => {
     ).rejects.toThrow(/not allowed/i);
   });
 
+  // J08 / ACC-31: content must match the claimed type; refusals never reach storage and are audited.
+  it("uploadDocument: refuses a file whose content is not what its name says, stores nothing and audits the refusal", async () => {
+    const db = await import("./db");
+    const storage = await import("./storage");
+    (storage.storagePut as any).mockClear();
+    (db.appendLoginAudit as any).mockClear();
+    (db.insertClientDocument as any).mockClear();
+    const caller = appRouter.createCaller(makeCtx({ role: "client", orgId: 7 }));
+    const fake = [
+      { name: "brief.pdf", bytes: Buffer.from("this is just text") },
+      { name: "invoice.pdf", bytes: Buffer.from("MZ" + " ") },
+      { name: "report.exe.pdf", bytes: Buffer.from("%PDF-1.4 x %%EOF") },
+      { name: "scripted.pdf", bytes: Buffer.from("%PDF-1.4 << /JavaScript (app.alert(1)) >> %%EOF") },
+    ];
+    for (const f of fake) {
+      await expect(caller.clientPortal.uploadDocument({ name: f.name, category: "general", mimeType: "application/pdf", contentBase64: f.bytes.toString("base64") })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(storage.storagePut).not.toHaveBeenCalled();
+    expect(db.insertClientDocument).not.toHaveBeenCalled();
+    const reasons = (db.appendLoginAudit as any).mock.calls.map((c: any[]) => c[0].reason);
+    expect(reasons).toEqual(["document-upload-refused:type_mismatch", "document-upload-refused:executable", "document-upload-refused:executable", "document-upload-refused:active_content"]);
+    expect((db.appendLoginAudit as any).mock.calls.every((c: any[]) => c[0].outcome === "blocked")).toBe(true);
+  });
+
+  it("uploadDocument: stores the canonical mime type, not whatever the browser claimed, and passes the optional note to the team", async () => {
+    const db = await import("./db");
+    const storage = await import("./storage");
+    const { notifyOwner } = await import("./_core/notification");
+    (storage.storagePut as any).mockResolvedValueOnce({ bucket: "client-portal", key: "7/documents/1-brief.pdf" });
+    (notifyOwner as any).mockClear();
+    const caller = appRouter.createCaller(makeCtx({ role: "client", orgId: 7 }));
+    await caller.clientPortal.uploadDocument({
+      name: "Brief (final).pdf",
+      category: "general",
+      mimeType: "application/octet-stream",
+      contentBase64: Buffer.from("%PDF-1.4 hello %%EOF").toString("base64"),
+      note: "Please review before Friday",
+    });
+    expect((storage.storagePut as any).mock.calls.at(-1)[3]).toBe("application/pdf");
+    expect((storage.storagePut as any).mock.calls.at(-1)[1]).toMatch(/^7\/documents\/\d+-Brief-final-\.pdf$/);
+    expect((db.insertClientDocument as any).mock.calls.at(-1)[0]).toMatchObject({ mimeType: "application/pdf", name: "Brief (final).pdf" });
+    expect((notifyOwner as any).mock.calls.at(-1)[0].content).toContain("Note from the client: Please review before Friday");
+  });
+
   it("uploadDocument: rejects empty payload", async () => {
     const caller = appRouter.createCaller(makeCtx({ role: "client", orgId: 7 }));
     await expect(
@@ -446,7 +490,7 @@ describe("clientPortal router", () => {
       name: "brief.pdf",
       category: "deliverable",
       mimeType: "application/pdf",
-      contentBase64: Buffer.from("hello world").toString("base64"),
+      contentBase64: Buffer.from("%PDF-1.4 hello world %%EOF").toString("base64"),
     });
     expect(out.id).toBe(999);
     expect(out.fileKey).toBe("7/documents/123-test.pdf");
@@ -470,7 +514,7 @@ describe("clientPortal router", () => {
     await caller.clientPortal.uploadDocument({
       name: "brief-v2.pdf",
       category: "deliverable",
-      contentBase64: Buffer.from("hello world v2").toString("base64"),
+      contentBase64: Buffer.from("%PDF-1.4 hello world v2 %%EOF").toString("base64"),
       supersedesDocumentId: 5,
     });
     expect((db.insertClientDocument as any).mock.calls.at(-1)[0]).toMatchObject({
@@ -493,7 +537,7 @@ describe("clientPortal router", () => {
       caller.clientPortal.uploadDocument({
         name: "brief-v2.pdf",
         category: "deliverable",
-        contentBase64: Buffer.from("hello world v2").toString("base64"),
+        contentBase64: Buffer.from("%PDF-1.4 hello world v2 %%EOF").toString("base64"),
         supersedesDocumentId: 999,
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
