@@ -7,6 +7,7 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   aiScans,
+  aiScanReportVersions,
   aiScanStatusEvents,
   type AiScan,
   type AiScanStatusEvent,
@@ -211,4 +212,40 @@ export async function listAiScanProgressForEmail(email: string) {
     .orderBy(desc(aiScans.createdAt))
     .limit(20);
   return rows.map(({ reportToken, ...r }) => ({ ...r, reportToken: r.reportStatus === "published" ? reportToken : null }));
+}
+
+// ---- Report versions (P06, BR-017) -----------------------------------------------------------------------------
+
+/**
+ * Keep the report the engine just produced as the next version of this scan. Best effort for the caller: it
+ * throws if the table is missing (migration 0046 not applied), and the engine catches that and carries on.
+ */
+export async function recordReportVersion(scanId: number, payloadJson: string, overallScore: number | null): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+  return db.transaction(async (tx) => {
+    const last = await tx.select({ v: sql<number>`coalesce(max(${aiScanReportVersions.version}), 0)::int` }).from(aiScanReportVersions).where(eq(aiScanReportVersions.scanId, scanId));
+    const version = (last[0]?.v ?? 0) + 1;
+    await tx.insert(aiScanReportVersions).values({ scanId, version, payload: payloadJson, overallScore });
+    return version;
+  });
+}
+
+/** Versions without their payloads, newest first. */
+export async function listReportVersions(scanId: number): Promise<Array<{ version: number; createdAt: Date; overallScore: number | null }>> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({ version: aiScanReportVersions.version, createdAt: aiScanReportVersions.createdAt, overallScore: aiScanReportVersions.overallScore })
+    .from(aiScanReportVersions)
+    .where(eq(aiScanReportVersions.scanId, scanId))
+    .orderBy(desc(aiScanReportVersions.version))
+    .limit(200);
+}
+
+export async function getReportVersionPayload(scanId: number, version: number): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const r = (await db.select({ payload: aiScanReportVersions.payload }).from(aiScanReportVersions).where(and(eq(aiScanReportVersions.scanId, scanId), eq(aiScanReportVersions.version, version))).limit(1))[0];
+  return r?.payload ?? null;
 }

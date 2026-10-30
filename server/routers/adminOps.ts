@@ -88,6 +88,8 @@ import { MEMBER_REFUSAL_TEXT, TEAM_ROLES } from "../../shared/teamRules";
 import { diffPrompts, PROMPT_LIMITS, renderPreview } from "../../shared/promptTools";
 import { buildQuoteDocument, renderQuoteHtml } from "../../shared/quoteDocument";
 import { actionFor, authorizeReportAction, REPORT_REFUSAL_TEXT } from "../../shared/reportPermissions";
+import { attachDecisions, compareReports, parseReportPayload } from "../../shared/reportCompare";
+import { getReportVersionPayload, listReportVersions } from "../db/aiScans";
 import { getScopeGrants } from "../db/platformGovernance";
 import { renderQuotePdf } from "../quotePdf";
 import { OWNER_REFUSAL_TEXT } from "../../shared/leadOwnership";
@@ -985,6 +987,23 @@ export const adminOpsRouter = router({
       canPublish: authorizeReportAction({ role: ctx.user.role, action: "publish", grants }).allowed,
     };
   }),
+
+  /** P06: every version of a scan's report, with the approvals, publications and revision requests that applied to each. */
+  aiScanVersions: adminProcedure.input(z.object({ scanId: z.number().int().positive() })).query(async ({ input }) => {
+    const [versions, events] = await Promise.all([listReportVersions(input.scanId), listAiScanStatusEvents(input.scanId)]);
+    return attachDecisions(versions, events).reverse();
+  }),
+
+  /** P06: what changed between two versions of a report. Read only. */
+  compareAiScanVersions: adminProcedure
+    .input(z.object({ scanId: z.number().int().positive(), from: z.number().int().positive(), to: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      const [a, b] = await Promise.all([getReportVersionPayload(input.scanId, input.from), getReportVersionPayload(input.scanId, input.to)]);
+      const from = parseReportPayload(a);
+      const to = parseReportPayload(b);
+      if (!from || !to) fail("NOT_FOUND", "One of those report versions does not exist or cannot be read.");
+      return { from: input.from, to: input.to, ...compareReports(from, to) };
+    }),
 
   aiScanHistory: adminProcedure.input(z.object({ scanId: z.number().int().positive() })).query(async ({ input }) => listAiScanStatusEvents(input.scanId)),
 

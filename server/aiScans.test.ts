@@ -17,7 +17,9 @@ vi.mock("./db", () => {
     leads: Array<Record<string, unknown>>;
     aiScans: Array<Record<string, unknown>>;
     downloads: Array<Record<string, unknown>>;
-  } = { leads: [], aiScans: [], downloads: [] };
+    versions: Array<{ scanId: number; payload: string; score: number | null }>;
+    versionFailure: "none" | "reject" | "throw";
+  } = { leads: [], aiScans: [], downloads: [], versions: [], versionFailure: "none" };
   return {
     __state: state,
     createLead: vi.fn(async (input: Record<string, unknown>) => {
@@ -44,6 +46,13 @@ vi.mock("./db", () => {
       },
     ),
     listRecentAiScans: vi.fn(async () => state.aiScans),
+    // P06: each report the engine produces is kept as a version.
+    recordReportVersion: vi.fn((scanId: number, payload: string, score: number | null) => {
+      if (state.versionFailure === "throw") throw new Error("sync failure");
+      if (state.versionFailure === "reject") return Promise.reject(new Error("table missing"));
+      state.versions.push({ scanId, payload, score });
+      return Promise.resolve(state.versions.length);
+    }),
     recordNotificationEvent: vi.fn(async () => true),
     createAdminNotification: vi.fn(async () => null),
     // A healthy agent registry. The AI gate fails closed (P0-01), so a test that
@@ -144,6 +153,8 @@ describe("aiScansRouter.submitLead", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const st = (dbMock as any).__state;
     st.leads.length = 0;
+    st.versions.length = 0;
+    st.versionFailure = "none";
     vi.mocked(notifyOwner).mockClear();
     vi.mocked(dbMock.createLead).mockClear();
   });
@@ -388,6 +399,36 @@ describe("aiScansRouter.submitQuestionnaire", () => {
     const st = (dbMock as any).__state;
     expect(st.aiScans[0].status).toBe("failed");
     expect(st.aiScans[0].errorMessage).toContain("LLM unavailable");
+  });
+
+  it("keeps each report the engine produces as a version (BR-017)", async () => {
+    const caller = aiScansRouter.createCaller(makeCtx("11.0.0.7"));
+    const r = await caller.submitQuestionnaire(questionnaireInput());
+    expect(r.success).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const st = (dbMock as any).__state;
+    // Match on the payload itself: scan ids restart in this mock and another test's engine run may finish late,
+    // so the reliable proof is that a kept version is exactly the report stored on this scan.
+    const mine = st.aiScans.find((x: Record<string, unknown>) => x.reportToken === r.reportToken);
+    expect(typeof mine.reportPayload).toBe("string");
+    const kept = st.versions.filter((v: { payload: string }) => v.payload === mine.reportPayload);
+    expect(kept.length).toBeGreaterThanOrEqual(1);
+    expect(kept[0].scanId).toBe(mine.id);
+    expect(JSON.parse(kept[0].payload).overallScore).toBe(kept[0].score);
+  });
+
+  it("a failure to keep the version never stops the report reaching review", async () => {
+    for (const mode of ["reject", "throw"] as const) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const st = (dbMock as any).__state;
+      st.versionFailure = mode;
+      const caller = aiScansRouter.createCaller(makeCtx(`11.0.1.${mode.length}`));
+      const r = await caller.submitQuestionnaire(questionnaireInput());
+      expect(r.success, mode).toBe(true);
+      const row = st.aiScans[st.aiScans.length - 1];
+      expect(row.status, mode).toBe("ready");
+      expect(row.reportStatus, mode).toBe("awaiting_expert_review");
+    }
   });
 
   it("does not block the response on owner notification failure", async () => {

@@ -311,6 +311,10 @@ Added lead ownership (shared/leadOwnership.ts, migration 0045, setLeadOwner, adm
 
 Created docs/milestone4/MILESTONE4_DECISION_LOG.md listing the product decisions taken by engineering (P07, N01, lead ownership, operator scope mapping, provider routing, reassignment, teams, verification, FAQ, document handoff, report audit), how to reverse each, and what is still open. All are assumptions pending the client document.
 
+## P06 - report versions, comparison and approval evidence (TESTED_LOCAL)
+
+Added shared/reportCompare.ts, the ai_scan_report_versions table (migration 0046), recording at the engine's single write point (failure-tolerant), adminOps.aiScanVersions and compareAiScanVersions, and a Report versions panel in the review screen. Approvals, publications and revision notes are attached to the version they applied to. 24 new tests with mutation checks; one earlier test mock extended and made robust against cross-test leakage.
+
 ---
 
 ## Status translation rules used for the import

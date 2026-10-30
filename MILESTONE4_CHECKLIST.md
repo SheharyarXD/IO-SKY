@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 34
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 35
 - Live verification pending: 20
 - In progress: 4
-- Not started: 24
+- Not started: 23
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -182,7 +182,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `P05`: Targeted regeneration with dependency checks across summary, (P1, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `P09`: Client notified only after authorised publication (P1, ALREADY_DELIVERED, LIVE_VERIFICATION_PENDING)
 - [ ] `P03`: Branded downloadable PDF in approved report design (P2, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)
-- [ ] `P06`: Version history, comparison, reviewer comments and approval (P2, BASELINE, NOT_STARTED)
+- [ ] `P06`: Version history, comparison, reviewer comments and approval (P2, BASELINE, TESTED_LOCAL)
 - [ ] `P10`: Immutable published payload and history proof (P2, ALREADY_DELIVERED, LIVE_VERIFICATION_PENDING)
 - [ ] `P11`: Audience-invariant evidence tests (scores and findings unchanged (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `P12`: Charts and visuals per design system (P2, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)

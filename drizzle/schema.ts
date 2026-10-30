@@ -3082,3 +3082,21 @@ export const leadOwners = pgTable(
   (t) => [uniqueIndex("lead_owners_lead_unique_idx").on(t.leadId), index("lead_owners_owner_idx").on(t.ownerUserId)],
 );
 export type LeadOwner = typeof leadOwners.$inferSelect;
+
+/**
+ * Every report the engine produced for a scan, kept as evidence (task P06, BR-017). Append-only
+ * (migration 0046): a version is never edited. `version` counts up per scan.
+ */
+export const aiScanReportVersions = pgTable(
+  "ai_scan_report_versions",
+  {
+    id: serial("id").primaryKey(),
+    scanId: integer("scanId").notNull().references(() => aiScans.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    payload: text("payload").notNull(),
+    overallScore: integer("overallScore"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("ai_scan_report_versions_unique_idx").on(t.scanId, t.version)],
+);
+export type AiScanReportVersion = typeof aiScanReportVersions.$inferSelect;

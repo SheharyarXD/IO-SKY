@@ -36,6 +36,7 @@ import {
   saveAiScanDraft,
   setAiScanReportPdfKey,
   updateAiScanStatus,
+  recordReportVersion,
 } from "../db";
 import { renderAiScanReportPdf } from "../aiScanReportPdf";
 import { storagePut, storageGetSignedUrl } from "../storage";
@@ -172,6 +173,9 @@ export async function runAiScanEngine(params: {
       overallScore: result.report.overallScore,
       scoredAt: new Date(),
     });
+    // BR-017: keep this report as a version. Evidence only: if the table is not there yet, the report still goes to review.
+    // Wrapped so that even a synchronous failure cannot stop the report reaching review.
+    await (async () => recordReportVersion(params.scanId, JSON.stringify(result.report), result.report.overallScore))().catch((e) => console.warn("[aiScan] could not keep the report version:", (e as Error).message));
     await emitNotification({ event: "AI_SCAN_READY_FOR_REVIEW", audience: { type: "admin" }, dedupeRef: `scan:${params.scanId}:${result.report.scoredAt}`, title: `AI Scan ready for expert review (${params.tier})`, href: "/admin/governance", skipAdminFeed: true });
     try {
       await notifyOwner({

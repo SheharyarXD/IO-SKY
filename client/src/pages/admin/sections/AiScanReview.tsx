@@ -16,6 +16,101 @@ import { Panel, SmallButton, shortDateTime } from "./_shared/Forms";
 const tone = (s: string) => (s === "published" ? "ok" : s === "revision_required" ? "warn" : s === "approved" ? "info" : s === "archived" ? "muted" : "warn");
 const label = (s: string) => s.replace(/_/g, " ");
 
+function VersionsPanel({ scanId }: { scanId: number }) {
+  const versions = trpc.adminOps.aiScanVersions.useQuery({ scanId });
+  const [from, setFrom] = useState<number | null>(null);
+  const [to, setTo] = useState<number | null>(null);
+  const cmp = trpc.adminOps.compareAiScanVersions.useQuery({ scanId, from: from ?? 1, to: to ?? 1 }, { enabled: from !== null && to !== null && from !== to });
+  const rows = versions.data ?? [];
+  const sel = "h-8 rounded-md border border-white/[0.1] bg-transparent px-2 text-[12px]";
+  const pick = (value: number | null, set: (v: number | null) => void, label: string) => (
+    <select className={sel} aria-label={label} value={value ?? ""} onChange={(e) => set(e.target.value ? Number(e.target.value) : null)}>
+      <option value="">{label}</option>
+      {rows.map((v) => (
+        <option key={v.version} value={v.version}>
+          v{v.version}
+        </option>
+      ))}
+    </select>
+  );
+  const c = cmp.data;
+  return (
+    <Panel title={`Report versions for SCN-${scanId}`}>
+      {rows.length === 0 ? (
+        <p className="text-[12.5px] text-white/55">No versions are kept for this scan yet. Each report the engine produces from now on is kept here.</p>
+      ) : (
+        <div className="space-y-3">
+          <ul className="space-y-1 text-[12.5px]">
+            {rows.map((v) => (
+              <li key={v.version} className="flex flex-wrap items-center gap-2">
+                <span className="font-mono">v{v.version}</span>
+                <span className="text-white/55">{shortDateTime(v.createdAt)}</span>
+                {v.overallScore !== null ? <span>score {v.overallScore}</span> : null}
+                {v.published ? <StatusPill tone="ok" label="published" /> : null}
+                {v.approvals.length > 0 ? <StatusPill tone="info" label={`approved by user #${v.approvals[v.approvals.length - 1].byUserId ?? "?"}`} /> : null}
+                {v.revisionRequests.length > 0 ? <StatusPill tone="warn" label="revision requested" /> : null}
+              </li>
+            ))}
+          </ul>
+          <div className="flex flex-wrap items-center gap-2">
+            {pick(from, setFrom, "From version")}
+            {pick(to, setTo, "To version")}
+          </div>
+          {c ? (
+            <div className="space-y-1 text-[12.5px]">
+              {c.identical ? (
+                <p>These versions are identical.</p>
+              ) : (
+                <p className="text-white/65">
+                  {c.changes} difference{c.changes === 1 ? "" : "s"}. Score {c.score.from} to {c.score.to} ({c.score.delta >= 0 ? "+" : ""}
+                  {c.score.delta}){c.grade.changed ? `, grade ${c.grade.from} to ${c.grade.to}` : ""}.
+                </p>
+              )}
+              {c.dimensions.map((d) => (
+                <p key={d.dimension}>
+                  {d.dimension}: {d.from ?? "n/a"} to {d.to ?? "n/a"}
+                  {d.rationaleChanged ? " (reasoning changed)" : ""}
+                </p>
+              ))}
+              {c.summary.identical ? null : (
+                <pre className="max-h-48 overflow-auto rounded border border-white/10 p-2 text-[12px]">
+                  {c.summary.ops.map((o, i) => (
+                    <div key={i} className={o.type === "added" ? "text-emerald-200" : o.type === "removed" ? "text-red-200" : "text-white/55"}>
+                      {o.type === "added" ? "+ " : o.type === "removed" ? "- " : "  "}
+                      {o.text}
+                    </div>
+                  ))}
+                </pre>
+              )}
+              {c.opportunities.added.map((t) => (
+                <p key={`a${t}`} className="text-emerald-200">
+                  + Opportunity: {t}
+                </p>
+              ))}
+              {c.opportunities.removed.map((t) => (
+                <p key={`r${t}`} className="text-red-200">
+                  - Opportunity: {t}
+                </p>
+              ))}
+              {c.opportunities.changed.map((o) => (
+                <p key={`c${o.title}`}>
+                  ~ {o.title}: {o.fields.join(", ")} changed
+                </p>
+              ))}
+              {c.roadmap.map((r) => (
+                <p key={r.horizon}>
+                  Roadmap {r.horizon}: +{r.added.length} / -{r.removed.length}
+                </p>
+              ))}
+              {c.disclaimersChanged ? <p>Disclaimers changed.</p> : null}
+            </div>
+          ) : null}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 export function AiScanReview() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
@@ -89,6 +184,7 @@ export function AiScanReview() {
           emptyLabel="No reports in this state."
         />
       </Panel>
+      {open !== null ? <VersionsPanel scanId={open} /> : null}
       {open !== null ? (
         <Panel title={`History for SCN-${open}`}>
           <DataTable
