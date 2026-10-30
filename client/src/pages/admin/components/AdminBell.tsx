@@ -11,13 +11,16 @@ import { Bell } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { FAMILY_LABELS, NOTIFICATION_FAMILIES, familyLabelOfKind, filterByFamily } from "@shared/notificationFamilies";
+import type { NotificationFamily } from "@shared/notificationCatalogue";
 
 export default function AdminBell() {
   const [open, setOpen] = useState(false);
+  const [family, setFamily] = useState<NotificationFamily | "">("");
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
   const count = trpc.adminOps.unreadNotificationCount.useQuery(undefined, { refetchInterval: 60_000, retry: false });
-  const list = trpc.adminOps.notifications.useQuery({ unreadOnly: false, limit: 15 }, { enabled: open });
+  const list = trpc.adminOps.notifications.useQuery({ unreadOnly: false, limit: 50 }, { enabled: open });
   const mark = trpc.adminOps.markNotificationsRead.useMutation({
     onSuccess: () => {
       utils.adminOps.unreadNotificationCount.invalidate();
@@ -63,19 +66,30 @@ export default function AdminBell() {
               Mark all read
             </button>
           </div>
+          <div className="px-3 py-2 border-b border-white/[0.06]">
+            <select aria-label="Filter by family" value={family} onChange={(e) => setFamily(e.target.value as NotificationFamily | "")} className="w-full h-7 rounded-md border border-white/[0.1] bg-transparent px-2 text-[11.5px] text-white/80">
+              <option value="">All families</option>
+              {NOTIFICATION_FAMILIES.map((f) => (
+                <option key={f} value={f}>
+                  {FAMILY_LABELS[f]}
+                </option>
+              ))}
+            </select>
+          </div>
           {list.isLoading ? (
             <div className="px-3 py-6 text-center text-[12.5px] text-white/50">Loading…</div>
-          ) : (list.data?.rows.length ?? 0) === 0 ? (
+          ) : filterByFamily(list.data?.rows ?? [], family).length === 0 ? (
             <div className="px-3 py-6 text-center text-[12.5px] text-white/50">Nothing yet.</div>
           ) : (
             <ul>
-              {list.data!.rows.map((n) => {
+              {filterByFamily(list.data!.rows, family).slice(0, 15).map((n) => {
                 const inner = (
                   <div className={`px-3 py-2.5 border-b border-white/[0.04] ${n.readAt ? "opacity-60" : ""}`}>
                     <div className="flex items-center gap-2">
                       {n.priority === "critical" || n.priority === "high" ? <span className="w-1.5 h-1.5 rounded-full bg-red-400" aria-label={n.priority} /> : null}
                       <span className="text-[12.5px] text-white/90">{n.title}</span>
                     </div>
+                    {familyLabelOfKind(n.kind) ? <div className="mt-0.5 text-[10.5px] uppercase tracking-wide text-[#F58A1F]/80">{familyLabelOfKind(n.kind)}</div> : null}
                     {n.body ? <div className="mt-0.5 text-[11.5px] text-white/50 line-clamp-2">{n.body}</div> : null}
                     <div className="mt-1 text-[10.5px] text-white/35">{new Date(n.createdAt).toLocaleString()}</div>
                   </div>

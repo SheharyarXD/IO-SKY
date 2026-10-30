@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 31
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 32
 - Live verification pending: 20
 - In progress: 5
-- Not started: 26
+- Not started: 25
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -210,7 +210,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `N08`: Zoho SMTP sending for no-reply with Reply-To (P1, EXTERNAL_DEPENDENCY, BLOCKED_EXTERNAL)
 - [ ] `N10`: Real inbound routing, folder placement and Outlook (P1, EXTERNAL_DEPENDENCY, BLOCKED_EXTERNAL)
 - [ ] `N13`: Notification deep links revalidate permission on open (P1, BASELINE, TESTED_LOCAL)
-- [ ] `N01`: Map catalogue to nine notification families (P2, BASELINE, NOT_STARTED)
+- [ ] `N01`: Map catalogue to nine notification families (P2, BASELINE, TESTED_LOCAL)
 - [ ] `N04`: Manual template sending (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `N05`: Authorised sender identity and alias controls, anti-impersonation (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `N06`: Template parity with supplied AWF, BWF, DWF, (P2, BASELINE, NOT_STARTED)

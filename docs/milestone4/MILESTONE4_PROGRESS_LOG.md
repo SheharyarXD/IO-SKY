@@ -299,6 +299,10 @@ Added shared/quoteDocument.ts and server/quotePdf.ts, updateQuote (draft only, c
 
 Added shared/reportPermissions.ts, enforced the publish right in moveAiScanReport before any side effect, added myReportPermissions, let a super admin grant report:publish to an admin, and hid the Publish button from admins without it. Decision recorded as engineering's, pending the client document. 21 new tests with mutation checks; existing publish tests now run as super admin. Existing admins lose publish until granted.
 
+## N01 - notification catalogue mapped to the nine families (TESTED_LOCAL)
+
+Added shared/notificationFamilies.ts (display names, event id to family lookup, filter and count) and a family label and filter in the admin Notification Center. Family keys from the catalogue are adopted as decided. Client and developer bells are not filterable by family because their notifications do not store the event id. 7 new tests with a mutation check.
+
 ---
 
 ## Status translation rules used for the import
