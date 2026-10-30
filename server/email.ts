@@ -615,6 +615,29 @@ export async function sendDevApplicationAck(
  * every call is logged to email_delivery_log — messageType is required
  * precisely so that log entry is meaningful, not a generic "email" row.
  */
+/**
+ * A file sent with an email. The content is base64. Limits keep one message well inside every provider's
+ * ceiling and stop a path or header being smuggled in through the file name: at most 3 files, 5 MB in total,
+ * a plain file name, and a content type from a short allow-list.
+ */
+export type EmailAttachment = { filename: string; contentBase64: string; contentType: string };
+
+export const EMAIL_ATTACHMENT_LIMITS = { files: 3, totalBytes: 5 * 1024 * 1024, types: ["application/pdf", "text/calendar"] } as const;
+
+export function isValidAttachment(a: EmailAttachment): boolean {
+  if (!a || typeof a.filename !== "string" || typeof a.contentBase64 !== "string" || typeof a.contentType !== "string") return false;
+  if (!/^[A-Za-z0-9][A-Za-z0-9._ -]{0,100}$/.test(a.filename) || a.filename.includes("..")) return false;
+  if (!(EMAIL_ATTACHMENT_LIMITS.types as readonly string[]).includes(a.contentType)) return false;
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(a.contentBase64) || a.contentBase64.length % 4 !== 0) return false;
+  return Math.floor((a.contentBase64.length * 3) / 4) <= EMAIL_ATTACHMENT_LIMITS.totalBytes;
+}
+
+/** Whether a set of attachments may be sent together: a count and a total size. */
+export function attachmentsWithinLimits(list: EmailAttachment[]): boolean {
+  if (list.length > EMAIL_ATTACHMENT_LIMITS.files) return false;
+  return list.every(isValidAttachment) && list.reduce((n, a) => n + Math.floor((a.contentBase64.length * 3) / 4), 0) <= EMAIL_ATTACHMENT_LIMITS.totalBytes;
+}
+
 export async function dispatchSimpleEmail(args: {
   to: string;
   subject: string;
@@ -623,6 +646,8 @@ export async function dispatchSimpleEmail(args: {
   refHeader: string;
   messageType: InsertEmailDeliveryLog["messageType"];
   relatedRef?: string | null;
+  /** Optional files (for example a quotation PDF). See EmailAttachment for the limits. */
+  attachments?: EmailAttachment[];
 }): Promise<GenericEmailResult> {
   const result = await attemptDispatchSimpleEmail(args);
   await insertEmailDeliveryLog({
@@ -642,7 +667,7 @@ export async function dispatchSimpleEmail(args: {
       recipient: args.to,
       subject: args.subject,
       relatedRef: args.relatedRef ?? null,
-      payload: { html: args.html, text: args.text, refHeader: args.refHeader },
+      payload: { html: args.html, text: args.text, refHeader: args.refHeader, ...(args.attachments?.length ? { attachments: args.attachments } : {}) },
       error: result.error ?? null,
     });
   }
@@ -650,7 +675,7 @@ export async function dispatchSimpleEmail(args: {
 }
 
 /** Used by the retry worker: send a stored generic message again. */
-export async function retrySimpleEmail(args: { to: string; subject: string; html: string; text: string; refHeader: string }): Promise<GenericEmailResult> {
+export async function retrySimpleEmail(args: { to: string; subject: string; html: string; text: string; refHeader: string; attachments?: EmailAttachment[] }): Promise<GenericEmailResult> {
   return attemptDispatchSimpleEmail(args);
 }
 
@@ -660,9 +685,12 @@ async function attemptDispatchSimpleEmail(args: {
   html: string;
   text: string;
   refHeader: string;
+  attachments?: EmailAttachment[];
 }): Promise<GenericEmailResult> {
   const from = getFromEmail();
   const headers = { "X-IOSKY-Ref": args.refHeader };
+  // Only well-formed attachments are sent; anything else is dropped rather than risking a malformed request.
+  const files = (args.attachments ?? []).filter(isValidAttachment);
 
   if (process.env.RESEND_API_KEY) {
     try {
@@ -679,6 +707,7 @@ async function attemptDispatchSimpleEmail(args: {
           html: args.html,
           text: args.text,
           headers,
+          ...(files.length ? { attachments: files.map((f) => ({ filename: f.filename, content: f.contentBase64 })) } : {}),
         }),
       });
       if (!resp.ok) {
@@ -710,6 +739,7 @@ async function attemptDispatchSimpleEmail(args: {
         text: args.text,
         html: args.html,
         headers,
+        ...(files.length ? { attachments: files.map((f) => ({ filename: f.filename, content: Buffer.from(f.contentBase64, "base64"), contentType: f.contentType })) } : {}),
       });
       return { ok: true, transport: "smtp", messageId: info.messageId };
     } catch (error) {

@@ -117,8 +117,8 @@ async function realDeps(): Promise<OutboxDeps> {
     claim: ob.claimDueEmailOutbox,
     send: async (row, payload) => {
       if (row.kind === "booking") return email.retryBookingConfirmation(payload as Parameters<typeof email.retryBookingConfirmation>[0]);
-      const p = payload as { html: string; text: string; refHeader: string };
-      return email.retrySimpleEmail({ to: row.recipient, subject: row.subject ?? "", html: p.html, text: p.text, refHeader: p.refHeader });
+      const p = payload as { html: string; text: string; refHeader: string; attachments?: Parameters<typeof email.retrySimpleEmail>[0]["attachments"] };
+      return email.retrySimpleEmail({ to: row.recipient, subject: row.subject ?? "", html: p.html, text: p.text, refHeader: p.refHeader, attachments: p.attachments });
     },
     // One delivery-log row per send attempt, as for every other send.
     logAttempt: ({ row, result }) =>

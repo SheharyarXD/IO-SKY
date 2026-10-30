@@ -343,6 +343,10 @@ Created docs/milestone4/DEVELOPER_HANDOFF.md from facts extracted from the repos
 
 Created docs/milestone4/RELEASE_NOTE_PROCESS.md with the rules, a template and a worked example. No release has happened, so no note has been written yet.
 
+## B07 - emailing quotations with the PDF attached (TESTED_LOCAL)
+
+Added optional, validated attachments to the shared email layer (and the retry queue), planQuoteSend, and adminOps.sendQuote. A draft is marked sent only after the provider accepted the email; a failure stays draft and is retried; no transport means nothing is claimed. 25 new tests with mutation checks. B07 moves to TESTED_LOCAL; the screen still has no send button or line editor.
+
 ---
 
 ## Status translation rules used for the import

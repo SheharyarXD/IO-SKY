@@ -29,6 +29,27 @@ export const MOVE_BLOCK_TEXT: Record<MoveBlock, string> = {
   validity_passed: "This quotation's validity date has passed. Change the date, or create a new quotation.",
 };
 
+export type SendBlock = "not_sendable" | "validity_passed" | "empty_quote" | "invalid_recipient";
+
+export const SEND_BLOCK_TEXT: Record<SendBlock, string> = {
+  not_sendable: "Only a draft or an already sent quotation can be emailed. An accepted, rejected or expired one cannot.",
+  validity_passed: MOVE_BLOCK_TEXT.validity_passed,
+  empty_quote: "This quotation has no lines or no amount to send.",
+  invalid_recipient: "Enter a valid email address for the recipient.",
+};
+
+/**
+ * Whether a quotation may be emailed now. A draft is sent and becomes 'sent'; a sent one may be sent again (for
+ * example to a new contact) and stays 'sent'. Nothing past its validity date is sent, and nothing without lines.
+ */
+export function planQuoteSend(a: { status: string; validUntil: string | null; lineCount: number; totalCents: number; recipientEmail: string; today: string }): { ok: true; movesToSent: boolean } | { ok: false; reason: SendBlock } {
+  if (a.status !== "draft" && a.status !== "sent") return { ok: false, reason: "not_sendable" };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.recipientEmail.trim()) || a.recipientEmail.length > 320) return { ok: false, reason: "invalid_recipient" };
+  if (a.lineCount === 0 || a.totalCents <= 0) return { ok: false, reason: "empty_quote" };
+  if (a.validUntil && a.validUntil < a.today) return { ok: false, reason: "validity_passed" };
+  return { ok: true, movesToSent: a.status === "draft" };
+}
+
 export function formatMoney(cents: number, currency: string): string {
   const sign = cents < 0 ? "-" : "";
   const abs = Math.abs(cents);

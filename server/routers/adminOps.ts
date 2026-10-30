@@ -87,7 +87,8 @@ import { createFaq, decideFaq, editFaq, listFaqEvents, listFaqForReview } from "
 import { previewTeamAssignment, addTeamMember, createTeam, listTeams, removeTeamMember, setTeamArchived, setTeamMemberRole, setTeamPrimaryContact, type TeamOutcome } from "../db/developerTeams";
 import { MEMBER_REFUSAL_TEXT, TEAM_ROLES } from "../../shared/teamRules";
 import { diffPrompts, PROMPT_LIMITS, renderPreview } from "../../shared/promptTools";
-import { buildQuoteDocument, renderQuoteHtml } from "../../shared/quoteDocument";
+import { buildQuoteDocument, planQuoteSend, renderQuoteHtml, SEND_BLOCK_TEXT } from "../../shared/quoteDocument";
+import { attachmentsWithinLimits } from "../email";
 import { actionFor, authorizeReportAction, REPORT_REFUSAL_TEXT } from "../../shared/reportPermissions";
 import { attachDecisions, compareReports, parseReportPayload } from "../../shared/reportCompare";
 import { getReportVersionPayload, listReportVersions } from "../db/aiScans";
@@ -746,6 +747,39 @@ export const adminOpsRouter = router({
     await recordAdminEvent({ ctx, reason: `admin.quote.document(${found.quote.publicRef})` });
     return { ref: doc.ref, filename: `${doc.ref}.pdf`, html: renderQuoteHtml(doc), pdfBase64: (await renderQuotePdf(doc)).toString("base64"), totalCents: doc.totalCents };
   }),
+
+  /**
+   * B07: email a quotation to a customer as a branded message with the PDF attached. A draft becomes 'sent' only
+   * when the email was handed to the mail provider; if delivery fails it stays a draft, and the failure is queued
+   * for automatic retry. If no email transport is configured nothing is claimed as sent. Audited without the address.
+   */
+  sendQuote: adminProcedure
+    .input(z.object({ id: z.number().int().positive(), recipientEmail: z.string().trim().email().max(320), message: z.string().trim().max(1000).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const found = await getQuoteWithCustomer(input.id);
+      if (!found) fail("NOT_FOUND", "Quotation not found.");
+      const doc = buildQuoteDocument(found.quote, found.customer);
+      const plan = planQuoteSend({ status: found.quote.status, validUntil: found.quote.validUntil, lineCount: doc.lines.length, totalCents: doc.totalCents, recipientEmail: input.recipientEmail, today: new Date().toISOString().slice(0, 10) });
+      if (!plan.ok) fail("PRECONDITION_FAILED", SEND_BLOCK_TEXT[plan.reason]);
+      const pdf = await renderQuotePdf(doc);
+      const attachments = [{ filename: `${doc.ref}.pdf`, contentBase64: pdf.toString("base64"), contentType: "application/pdf" }];
+      if (!attachmentsWithinLimits(attachments)) fail("PRECONDITION_FAILED", "The quotation document is too large to email.");
+      const paragraphs = ["Please find your quotation attached.", `${doc.title}: total ${doc.total}${doc.validUntil ? `, valid until ${doc.validUntil}` : ""}.`, ...(input.message ? [input.message] : []), "If you would like to go ahead, or have any questions, just reply to this email."];
+      const shell = brandedEmail({ title: `Quotation ${doc.ref}`, paragraphs, footerNote: "IO SKY. This quotation is not an invoice and is not binding until accepted." });
+      const sent = await dispatchSimpleEmail({ to: input.recipientEmail, subject: `Your IO SKY quotation ${doc.ref}`, html: shell.html, text: shell.text, refHeader: `quote:${doc.ref}`, messageType: "notification", relatedRef: `quote:${doc.ref}`, attachments });
+      if (sent.transport === "console") fail("PRECONDITION_FAILED", "Email is not configured, so nothing was sent.");
+      if (!sent.ok) {
+        await recordAdminEvent({ ctx, reason: `admin.quote.send_failed(${doc.ref})`, outcome: "failed" });
+        fail("INTERNAL_SERVER_ERROR", "The email could not be delivered. It will be retried automatically; the quotation has not been marked as sent.");
+      }
+      let moved = false;
+      if (plan.movesToSent) {
+        const r = await moveQuote(input.id, "sent");
+        moved = Boolean(r && r.ok);
+      }
+      await recordAdminEvent({ ctx, reason: `admin.quote.send(${doc.ref}:moved=${moved})` });
+      return { ok: true as const, status: plan.movesToSent ? (moved ? "sent" : "draft") : "sent", statusUpdated: !plan.movesToSent || moved };
+    }),
 
   moveQuote: adminProcedure
     .input(z.object({ id: z.number().int().positive(), to: z.enum(DOCUMENT_STATUSES) }))

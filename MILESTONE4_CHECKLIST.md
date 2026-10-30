@@ -10,9 +10,9 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 41
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 42
 - Live verification pending: 20
-- In progress: 5
+- In progress: 4
 - Not started: 16
 - Externally blocked: 20
 - Awaiting client decisions: 87
@@ -239,7 +239,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `B06`: Billing scenario matrix (P1, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)
 - [ ] `B08`: Generated invoice field verification and branded PDF (P1, ALREADY_DELIVERED, LIVE_VERIFICATION_PENDING)
 - [x] `B02`: Payment reconciliation job and invoice reminders (P2, ALREADY_DELIVERED, COMPLETED_VERIFIED)
-- [ ] `B07`: Quotation create, edit, send with branded output (P2, BASELINE, IN_PROGRESS)
+- [ ] `B07`: Quotation create, edit, send with branded output (P2, BASELINE, TESTED_LOCAL)
 - [ ] `B09`: Subscriptions and payment-link management in portal (P2, ALREADY_DELIVERED, LIVE_VERIFICATION_PENDING)
 
 ### 13. Projects, developer teams, messaging and documents (1 of 12 verified)
