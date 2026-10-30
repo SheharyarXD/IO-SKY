@@ -4,10 +4,11 @@
  * Database helpers for CRM / lead capture.
  * Covers: leads, contact submissions, and dev applications (Engineering Access).
  */
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import {
   contactSubmissions,
   devApplications,
+  leadOwners,
   leads,
   users,
   type ContactSubmission,
@@ -18,6 +19,7 @@ import {
   type Lead,
 } from "../../drizzle/schema";
 import { filterLeads, LEAD_QUERY, type LeadFilter } from "../../shared/crmFilters";
+import { planOwnerAssignment } from "../../shared/leadOwnership";
 import { getDb } from "./connection";
 
 // ---------------------------------------------------------------------------
@@ -93,12 +95,50 @@ export async function fillLeadBlanks(id: number, patch: { company?: string; phon
  * decides which match, so the result is exactly what the rule says; `truncated` is true when older leads were
  * not looked at. Returns at most LEAD_QUERY.return rows, newest first.
  */
-export async function listLeadsFiltered(filter: LeadFilter): Promise<{ rows: Lead[]; matched: number; scanned: number; truncated: boolean }> {
+export async function listLeadsFiltered(filter: LeadFilter): Promise<{ rows: Array<Lead & { ownerUserId: number | null }>; matched: number; scanned: number; truncated: boolean; ownersAvailable: boolean }> {
   const db = await getDb();
-  if (!db) return { rows: [], matched: 0, scanned: 0, truncated: false };
+  if (!db) return { rows: [], matched: 0, scanned: 0, truncated: false, ownersAvailable: false };
   const all = await db.select().from(leads).orderBy(desc(leads.createdAt)).limit(LEAD_QUERY.scan);
-  const hits = filterLeads(all, filter);
-  return { rows: hits.slice(0, LEAD_QUERY.return), matched: hits.length, scanned: all.length, truncated: all.length >= LEAD_QUERY.scan };
+  // Owners are a separate record. If that table is not there yet (migration 0045), every lead is unowned.
+  let owners = new Map<number, number>();
+  let ownersAvailable = true;
+  try {
+    owners = await ownersForLeads(all.map((l) => l.id));
+  } catch (err) {
+    ownersAvailable = false;
+    console.warn("[crm] lead owners unavailable:", (err as Error).message);
+  }
+  const withOwner = all.map((l) => ({ ...l, ownerUserId: owners.get(l.id) ?? null }));
+  const hits = filterLeads(withOwner, filter);
+  return { rows: hits.slice(0, LEAD_QUERY.return), matched: hits.length, scanned: all.length, truncated: all.length >= LEAD_QUERY.scan, ownersAvailable };
+}
+
+export async function ownersForLeads(ids: number[]): Promise<Map<number, number>> {
+  const db = await getDb();
+  const out = new Map<number, number>();
+  if (!db || ids.length === 0) return out;
+  const rows = await db.select({ leadId: leadOwners.leadId, ownerUserId: leadOwners.ownerUserId }).from(leadOwners).where(inArray(leadOwners.leadId, ids));
+  for (const r of rows) out.set(r.leadId, r.ownerUserId);
+  return out;
+}
+
+/** Give a lead an owner, change it, or clear it (null). One owner per lead. */
+export async function setLeadOwner(a: { leadId: number; ownerUserId: number | null; actorUserId: number }): Promise<{ ok: true; ownerUserId: number | null } | { ok: false; reason: "lead_not_found" | "owner_not_staff" | "owner_not_found" | "unavailable" }> {
+  const db = await getDb();
+  if (!db) return { ok: false, reason: "unavailable" };
+  if (!(await db.select({ id: leads.id }).from(leads).where(eq(leads.id, a.leadId)).limit(1))[0]) return { ok: false, reason: "lead_not_found" };
+  const owner = a.ownerUserId === null ? null : (await db.select({ role: users.role }).from(users).where(eq(users.id, a.ownerUserId)).limit(1))[0] ?? null;
+  const plan = planOwnerAssignment({ ownerUserId: a.ownerUserId, ownerRole: owner?.role, ownerExists: a.ownerUserId === null || owner !== null });
+  if (!plan.ok) return plan;
+  if (plan.ownerUserId === null) {
+    await db.delete(leadOwners).where(eq(leadOwners.leadId, a.leadId));
+    return { ok: true, ownerUserId: null };
+  }
+  await db
+    .insert(leadOwners)
+    .values({ leadId: a.leadId, ownerUserId: plan.ownerUserId, assignedByUserId: a.actorUserId })
+    .onConflictDoUpdate({ target: leadOwners.leadId, set: { ownerUserId: plan.ownerUserId, assignedByUserId: a.actorUserId, assignedAt: new Date() } });
+  return { ok: true, ownerUserId: plan.ownerUserId };
 }
 
 export async function listRecentLeads(limit = 100): Promise<Lead[]> {

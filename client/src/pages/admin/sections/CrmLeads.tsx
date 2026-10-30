@@ -19,6 +19,7 @@ import { ModuleStateBoundary } from "./_shared/ModuleState";
 import { Users, ScanSearch, Target, Wallet, Sparkles, ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 interface LeadRow {
   id: number;
@@ -41,7 +42,7 @@ function ageInDays(d: string | Date) {
 
 const fieldClass = "h-8 rounded-md border border-white/[0.1] bg-transparent px-2 text-[12px] text-white/85 placeholder:text-white/35";
 
-function FilterBar({ value, onChange, sources }: { value: LeadFilter; onChange: (f: LeadFilter) => void; sources: string[] }) {
+function FilterBar({ value, onChange, sources, meId }: { value: LeadFilter; onChange: (f: LeadFilter) => void; sources: string[]; meId: number | null }) {
   const set = (patch: Partial<LeadFilter>) => {
     const next: Record<string, unknown> = { ...value, ...patch };
     for (const k of Object.keys(next)) {
@@ -72,6 +73,11 @@ function FilterBar({ value, onChange, sources }: { value: LeadFilter; onChange: 
       </select>
       <input className={`${fieldClass} w-36`} placeholder="Company" value={value.company ?? ""} onChange={(e) => set({ company: e.target.value })} />
       <input className={`${fieldClass} w-36`} placeholder="Campaign" value={value.utmCampaign ?? ""} onChange={(e) => set({ utmCampaign: e.target.value })} />
+      <select className={fieldClass} aria-label="Owner" value={value.owner === undefined ? "" : value.owner === "none" ? "none" : "me"} onChange={(e) => set({ owner: e.target.value === "" ? undefined : e.target.value === "none" ? "none" : (meId ?? undefined) })}>
+        <option value="">Any owner</option>
+        <option value="me">Mine</option>
+        <option value="none">Unassigned</option>
+      </select>
       <select className={fieldClass} aria-label="Phone" value={value.hasPhone === undefined ? "" : value.hasPhone ? "yes" : "no"} onChange={(e) => set({ hasPhone: e.target.value === "" ? undefined : e.target.value === "yes" })}>
         <option value="">Phone: any</option>
         <option value="yes">Has phone</option>
@@ -96,7 +102,9 @@ function FilterBar({ value, onChange, sources }: { value: LeadFilter; onChange: 
 
 export default function CrmLeads() {
   const query = trpc.admin.crm.useQuery(undefined, { staleTime: 30_000 });
+  const { user: me } = useAuth();
   const [filter, setFilter] = useState<LeadFilter>({});
+  const assignOwner = trpc.adminOps.assignLeadOwner.useMutation({ onSuccess: () => utils.admin.crmLeads.invalidate(), onError: (e) => window.alert(e.message) });
   const filtered = trpc.admin.crmLeads.useQuery(filter, { staleTime: 10_000, placeholderData: (prev) => prev });
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
@@ -161,6 +169,27 @@ export default function CrmLeads() {
     { key: "source", header: "Source", render: (r) => <span className="font-mono text-[11.5px] text-white/75 uppercase">{r.source}</span> },
     { key: "status", header: "Stage", render: (r) => <StatusPill tone={stageTone(r.status) as any} label={r.status} /> },
     {
+      key: "ownerUserId",
+      header: "Owner",
+      render: (r) => {
+        const owner = (r as LeadRow & { ownerUserId?: number | null }).ownerUserId ?? null;
+        return owner === null ? (
+          <button type="button" className="text-[11.5px] text-[#F58A1F]" onClick={() => me && assignOwner.mutate({ leadId: r.id, ownerUserId: me.id })}>
+            Take
+          </button>
+        ) : (
+          <span className="text-[11.5px] text-white/75">
+            {owner === me?.id ? "You" : `user #${owner}`}{" "}
+            {owner === me?.id ? (
+              <button type="button" className="text-white/45 underline" onClick={() => assignOwner.mutate({ leadId: r.id, ownerUserId: null })}>
+                release
+              </button>
+            ) : null}
+          </span>
+        );
+      },
+    },
+    {
       key: "createdAt",
       header: "Age",
       align: "right",
@@ -184,7 +213,7 @@ export default function CrmLeads() {
           kpis={kpis}
           toolbar={
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <FilterBar value={filter} onChange={setFilter} sources={Array.from(new Set(((d.rows ?? []) as unknown as LeadRow[]).map((r) => r.source))).sort()} />
+              <FilterBar meId={me?.id ?? null} value={filter} onChange={setFilter} sources={Array.from(new Set(((d.rows ?? []) as unknown as LeadRow[]).map((r) => r.source))).sort()} />
               <button type="button" className="h-8 rounded-md bg-[#F58A1F] px-3 text-[12px] font-medium text-black" onClick={onNewLead}>
                 New lead
               </button>

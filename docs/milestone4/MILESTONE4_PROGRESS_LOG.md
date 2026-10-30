@@ -303,6 +303,10 @@ Added shared/reportPermissions.ts, enforced the publish right in moveAiScanRepor
 
 Added shared/notificationFamilies.ts (display names, event id to family lookup, filter and count) and a family label and filter in the admin Notification Center. Family keys from the catalogue are adopted as decided. Client and developer bells are not filterable by family because their notifications do not store the event id. 7 new tests with a mutation check.
 
+## C01 - owner added to the CRM filters (TESTED_LOCAL)
+
+Added lead ownership (shared/leadOwnership.ts, migration 0045, setLeadOwner, adminOps.assignLeadOwner), an owner condition in the shared filter rule, and Owner controls in the CRM page. Decision on ownership taken by engineering, pending the client document. C01 moves to TESTED_LOCAL with the remaining gaps listed in the task notes.
+
 ---
 
 ## Status translation rules used for the import

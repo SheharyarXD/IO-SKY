@@ -9,8 +9,8 @@
  * days, inclusive at both ends.
  *
  * Attributes covered are the ones a lead actually has: status, source, interest,
- * company, name/email text, phone present, campaign attribution (UTM) and the date
- * it was created. A lead has no owner attribute, so "owner" cannot be filtered.
+ * company, name/email text, phone present, campaign attribution (UTM), the date
+ * it was created and its owner (a separate record; a lead with none is unowned).
  */
 import { z } from "zod";
 
@@ -29,6 +29,8 @@ export const leadFilterSchema = z
     utmSource: z.string().trim().max(120).optional(),
     utmCampaign: z.string().trim().max(120).optional(),
     hasPhone: z.boolean().optional(),
+    /** A user id, or "none" for leads nobody owns. */
+    owner: z.union([z.number().int().positive(), z.literal("none")]).optional(),
     createdFrom: day.optional(),
     createdTo: day.optional(),
   })
@@ -48,6 +50,8 @@ export type FilterableLead = {
   utmSource: string | null;
   utmCampaign: string | null;
   createdAt: Date | string | number;
+  /** Absent or null means the lead has no owner. */
+  ownerUserId?: number | null;
 };
 
 const norm = (v: string | null | undefined) => (v ?? "").toLowerCase().trim();
@@ -71,6 +75,10 @@ export function leadMatches(lead: FilterableLead, f: LeadFilter): boolean {
   if (f.hasPhone !== undefined) {
     const present = norm(lead.phone).length > 0;
     if (present !== f.hasPhone) return false;
+  }
+  if (f.owner !== undefined) {
+    const owner = lead.ownerUserId ?? null;
+    if (f.owner === "none" ? owner !== null : owner !== f.owner) return false;
   }
   if (f.createdFrom || f.createdTo) {
     const t = new Date(lead.createdAt).getTime();
@@ -96,6 +104,7 @@ export function activeFilterCount(f: LeadFilter): number {
   if (f.utmSource?.trim()) n++;
   if (f.utmCampaign?.trim()) n++;
   if (f.hasPhone !== undefined) n++;
+  if (f.owner !== undefined) n++;
   if (f.createdFrom) n++;
   if (f.createdTo) n++;
   return n;

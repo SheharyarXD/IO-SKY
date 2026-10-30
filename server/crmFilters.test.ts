@@ -79,6 +79,28 @@ describe("single conditions", () => {
   });
 });
 
+describe("owner", () => {
+  it("matches the owner by id, 'none' means nobody owns it, and a lead with no owner record is unowned", () => {
+    expect(m({ owner: 7 }, { ownerUserId: 7 })).toBe(true);
+    expect(m({ owner: 7 }, { ownerUserId: 8 })).toBe(false);
+    expect(m({ owner: 7 }, { ownerUserId: null })).toBe(false);
+    expect(m({ owner: 7 })).toBe(false); // ownerUserId absent
+    expect(m({ owner: "none" })).toBe(true);
+    expect(m({ owner: "none" }, { ownerUserId: null })).toBe(true);
+    expect(m({ owner: "none" }, { ownerUserId: 7 })).toBe(false);
+  });
+  it("combines with the other conditions and counts as one", () => {
+    expect(m({ owner: 7, statuses: ["new"] }, { ownerUserId: 7 })).toBe(true);
+    expect(m({ owner: 7, statuses: ["won"] }, { ownerUserId: 7 })).toBe(false);
+    expect(activeFilterCount({ owner: "none", q: "x" })).toBe(2);
+  });
+  it("the schema takes a positive id or 'none' and nothing else", () => {
+    expect(leadFilterSchema.parse({ owner: 5 })).toEqual({ owner: 5 });
+    expect(leadFilterSchema.parse({ owner: "none" })).toEqual({ owner: "none" });
+    for (const bad of [{ owner: "me" }, { owner: 0 }, { owner: -1 }, { owner: 1.5 }, { owner: null }]) expect(leadFilterSchema.safeParse(bad).success, JSON.stringify(bad)).toBe(false);
+  });
+});
+
 describe("combining", () => {
   it("every condition given must hold", () => {
     const all: LeadFilter = { statuses: ["new"], sources: ["booking"], company: "bv", utmCampaign: "spring-launch", hasPhone: true, createdFrom: "2026-10-01", createdTo: "2026-10-31", q: "pat" };

@@ -90,6 +90,8 @@ import { buildQuoteDocument, renderQuoteHtml } from "../../shared/quoteDocument"
 import { actionFor, authorizeReportAction, REPORT_REFUSAL_TEXT } from "../../shared/reportPermissions";
 import { getScopeGrants } from "../db/platformGovernance";
 import { renderQuotePdf } from "../quotePdf";
+import { OWNER_REFUSAL_TEXT } from "../../shared/leadOwnership";
+import { setLeadOwner } from "../db/crm";
 import { createRelease, getReleaseFacts, linkDeveloperProject, listActiveAssignedDeveloperIds, listReleases, revokeRelease, unlinkDeveloperProject } from "../db/documentHandoff";
 const message_alreadyReleased = "This document is already released to that project.";
 import { KNOWLEDGE_SOURCES, REGISTRY_LIMITS, validateRegistryFields } from "../../shared/aiAgentRegistry";
@@ -140,6 +142,20 @@ function fail(code: "NOT_FOUND" | "PRECONDITION_FAILED" | "BAD_REQUEST" | "INTER
 }
 
 export const adminOpsRouter = router({
+  /** C01: give a lead an owner (an admin or super admin), change it, or clear it. Recorded. */
+  assignLeadOwner: adminProcedure
+    .input(z.object({ leadId: z.number().int().positive(), ownerUserId: z.number().int().positive().nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await setLeadOwner({ ...input, actorUserId: ctx.user.id });
+      if (!r.ok) {
+        if (r.reason === "lead_not_found") fail("NOT_FOUND", "Lead not found.");
+        if (r.reason === "unavailable") fail("INTERNAL_SERVER_ERROR", "The owner could not be saved.");
+        fail("BAD_REQUEST", OWNER_REFUSAL_TEXT[r.reason]);
+      }
+      await recordAdminEvent({ ctx, reason: `admin.lead.owner(lead=${input.leadId}->${input.ownerUserId ?? "none"})` });
+      return r;
+    }),
+
   /** C03: one customer's timeline (CRM history, calls, scans, projects, files) with a summary. Staff only. */
   customerProfile: adminProcedure
     .input(z.object({ leadId: z.number().int().positive().optional(), organizationId: z.number().int().positive().optional() }))

@@ -3065,3 +3065,20 @@ export const developerTeamMembers = pgTable(
   (t) => [index("developer_team_members_developer_idx").on(t.developerId, t.status)],
 );
 export type DeveloperTeamMember = typeof developerTeamMembers.$inferSelect;
+
+/**
+ * Who owns a lead (CRM). One owner per lead (unique index in migration 0045). A separate table, so the leads
+ * table is not altered. Owner is an admin or super admin, checked when it is set.
+ */
+export const leadOwners = pgTable(
+  "lead_owners",
+  {
+    id: serial("id").primaryKey(),
+    leadId: integer("leadId").notNull().references(() => leads.id, { onDelete: "cascade" }),
+    ownerUserId: integer("ownerUserId").notNull().references(() => users.id),
+    assignedByUserId: integer("assignedByUserId").references(() => users.id),
+    assignedAt: timestamp("assignedAt").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("lead_owners_lead_unique_idx").on(t.leadId), index("lead_owners_owner_idx").on(t.ownerUserId)],
+);
+export type LeadOwner = typeof leadOwners.$inferSelect;
