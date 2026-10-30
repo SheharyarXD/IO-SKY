@@ -346,6 +346,12 @@ function Quotes() {
   const q = trpc.adminOps.quotes.useQuery();
   const create = trpc.adminOps.createQuote.useMutation({ onSuccess: () => utils.adminOps.quotes.invalidate() });
   const move = trpc.adminOps.moveQuote.useMutation({ onSuccess: () => utils.adminOps.quotes.invalidate() });
+  const sendMail = trpc.adminOps.sendQuote.useMutation({ onSuccess: () => utils.adminOps.quotes.invalidate() });
+  const email = (id: number, ref: string) => {
+    const to = window.prompt(`Email ${ref} to which address? The PDF is attached.`);
+    if (!to?.trim()) return;
+    sendMail.mutateAsync({ id, recipientEmail: to.trim() }).then((r) => toast.success(r.statusUpdated ? "Quotation emailed." : "Emailed, but the status could not be updated.")).catch((e) => toast.error(e.message));
+  };
   const download = async (id: number) => {
     try {
       const d = await utils.adminOps.quoteDocument.fetch({ id });
@@ -372,6 +378,7 @@ function Quotes() {
       render: (r) => (
         <div className="flex gap-1">
           <SmallButton onClick={() => void download(r.id)}>PDF</SmallButton>
+          {r.status === "draft" || r.status === "sent" ? <SmallButton onClick={() => email(r.id, r.publicRef)}>Email</SmallButton> : null}
           {STATUSES.filter((s) => canMoveDocument(r.status as DocumentStatus, s)).map((s) => (
             <SmallButton key={s} onClick={() => move.mutateAsync({ id: r.id, to: s }).catch((e) => toast.error(e.message))}>
               {s}
