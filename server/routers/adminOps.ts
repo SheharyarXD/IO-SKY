@@ -83,7 +83,7 @@ import { resolveNotificationLink } from "../../shared/notificationLinks";
 import { evaluateRelease } from "../../shared/documentHandoff";
 import { FAQ_AUDIENCES, FAQ_STATUSES, reviewWarnings, validateFaqDraft } from "../../shared/faqRules";
 import { createFaq, decideFaq, editFaq, listFaqEvents, listFaqForReview } from "../db/faq";
-import { addTeamMember, createTeam, listTeams, removeTeamMember, setTeamArchived, setTeamMemberRole, setTeamPrimaryContact, type TeamOutcome } from "../db/developerTeams";
+import { previewTeamAssignment, addTeamMember, createTeam, listTeams, removeTeamMember, setTeamArchived, setTeamMemberRole, setTeamPrimaryContact, type TeamOutcome } from "../db/developerTeams";
 import { MEMBER_REFUSAL_TEXT, TEAM_ROLES } from "../../shared/teamRules";
 import { diffPrompts, PROMPT_LIMITS, renderPreview } from "../../shared/promptTools";
 import { buildQuoteDocument, renderQuoteHtml } from "../../shared/quoteDocument";
@@ -93,6 +93,8 @@ import { getReportVersionPayload, listReportVersions } from "../db/aiScans";
 import { getScopeGrants } from "../db/platformGovernance";
 import { renderQuotePdf } from "../quotePdf";
 import { OWNER_REFUSAL_TEXT } from "../../shared/leadOwnership";
+import { PLAN_REFUSAL_TEXT } from "../../shared/teamAssignment";
+import { assignDeveloperToProject } from "../db/developerWorkspace";
 import { checkMessage, describeLeaks, findIdentityLeaks, MESSAGE_LIMITS, MESSAGE_REFUSAL_TEXT } from "../../shared/mediatedMessaging";
 import { broadcastToDevelopers, clientIdentities, developerIdentities, developerServesOrganization, getClientMessage, getDeveloperMessage, listMediationLog, relayToClient, relayToDeveloper } from "../db/mediatedMessaging";
 import { setLeadOwner } from "../db/crm";
@@ -354,6 +356,38 @@ export const adminOpsRouter = router({
       teamResult(await setTeamMemberRole({ ...input, userId: ctx.user.id }));
       await recordAdminEvent({ ctx, reason: `admin.team.role(team=${input.teamId}:dev=${input.developerId}:${input.role})` });
       return { ok: true as const };
+    }),
+
+  /** J06: what putting this team on this project would do, member by member. Changes nothing. */
+  previewTeamAssignment: adminProcedure
+    .input(z.object({ teamId: z.number().int().positive(), projectId: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      const v = await previewTeamAssignment(input);
+      if (!v.found) fail(v.reason === "unavailable" ? "INTERNAL_SERVER_ERROR" : "NOT_FOUND", v.reason === "unavailable" ? "The team store is unavailable." : v.reason === "team_not_found" ? "No such team." : "No such project.");
+      return { project: v.project, team: v.team, names: v.names, plan: v.plan, refusal: v.plan.ok ? null : PLAN_REFUSAL_TEXT[v.plan.reason] };
+    }),
+
+  /**
+   * J06: put every eligible member of a team on a developer project. The plan is recomputed here from the data,
+   * never taken from the screen. An existing project lead is not displaced. Each member is reported.
+   */
+  assignTeamToProject: adminProcedure
+    .input(z.object({ teamId: z.number().int().positive(), projectId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const v = await previewTeamAssignment(input);
+      if (!v.found) fail(v.reason === "unavailable" ? "INTERNAL_SERVER_ERROR" : "NOT_FOUND", v.reason === "unavailable" ? "The team store is unavailable." : v.reason === "team_not_found" ? "No such team." : "No such project.");
+      if (!v.plan.ok) fail("PRECONDITION_FAILED", PLAN_REFUSAL_TEXT[v.plan.reason]);
+      const assigned: number[] = [];
+      const failed: number[] = [];
+      for (const a of v.plan.assign) {
+        const r = await assignDeveloperToProject({ projectId: input.projectId, developerId: a.developerId, assignmentRole: a.role, createdByUserId: ctx.user.id }).catch(() => null);
+        if (r) {
+          assigned.push(a.developerId);
+          await emitNotification({ event: "PROJECT_ASSIGNED", audience: { type: "developer", developerId: a.developerId }, dedupeRef: `project:${input.projectId}:${a.developerId}:${Date.now()}`, title: `New project assignment: ${v.project.name}`, body: `You were assigned to ${v.project.code} as ${a.role}.`, href: "/developer-workspace/projects" });
+        } else failed.push(a.developerId);
+      }
+      await recordAdminEvent({ ctx, reason: `admin.team.assign_project(team=${input.teamId}:project=${input.projectId}:assigned=${assigned.length}:skipped=${v.plan.skipped.length}:failed=${failed.length})` });
+      return { assigned: assigned.length, skipped: v.plan.skipped, failed: failed.length };
     }),
 
   setTeamArchived: adminProcedure

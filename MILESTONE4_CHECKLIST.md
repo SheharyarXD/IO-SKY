@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 35
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 36
 - Live verification pending: 20
 - In progress: 5
-- Not started: 22
+- Not started: 21
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -253,7 +253,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [x] `J01`: Project lifecycle stages with append-only history (P2, ALREADY_DELIVERED, COMPLETED_VERIFIED)
 - [ ] `J02`: Rename project keeping stable ID (P2, ALREADY_DELIVERED, LIVE_VERIFICATION_PENDING)
 - [ ] `J05`: Implementer and Reviewer independent assignment, reviewer read (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
-- [ ] `J06`: Assign-developer flow (P2, BASELINE, NOT_STARTED)
+- [ ] `J06`: Assign-developer flow (P2, BASELINE, TESTED_LOCAL)
 - [ ] `J12`: Public legal document workflow with placement updates (P2, ALREADY_DELIVERED, LIVE_VERIFICATION_PENDING)
 - [ ] `J13`: Account invitations, activation, suspension without fixed caps (P2, ALREADY_DELIVERED, LIVE_VERIFICATION_PENDING)
 

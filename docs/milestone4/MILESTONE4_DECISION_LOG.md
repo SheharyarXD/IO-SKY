@@ -19,6 +19,7 @@ Nothing here was approved by the client. Nothing here has been deployed.
 | D11 | 2026-10-30 | M4-01 | Report download auditing is best effort, not fail closed | Assumed |
 | D12 | 2026-10-30 | J07 | Developers and clients never talk directly; staff relay as IO SKY and the system refuses text that reveals the other party | Assumed |
 | D13 | 2026-10-30 | P06 | Every engine-produced report is kept as a version; approvals are tied to the version in force at the time | Assumed |
+| D14 | 2026-10-30 | J06 | Assigning a team maps roles, never displaces an existing project lead, and skips people already on the project | Assumed |
 
 ## D01 Review and Publish (P07)
 
@@ -84,6 +85,12 @@ Nothing here was approved by the client. Nothing here has been deployed.
 ## D13 Report versions (P06)
 
 - **Chosen:** every report the engine produces is kept as a numbered, append-only version; approvals, publications and revision requests are attached to the newest version produced before the decision. Versions exist only from when migration 0046 is applied.
+
+## D14 Assigning a team to a project (J06)
+
+- **Chosen:** every active member of an active team who is an active developer joins the project. Team role maps to project role (lead to lead, member to contributor, reviewer to reviewer). The team lead becomes project lead only if the project has none, so an existing lead is never displaced. People already on the project are left alone and reported. A preview shows exactly what would happen; the apply step recomputes it on the server.
+- **Not atomic:** members are added one by one; a failure for one is counted and reported while the rest continue.
+- **To change:** edit `projectRoleFor` in `shared/teamAssignment.ts` (for example to let a team lead replace the project lead).
 
 ## Still genuinely open (need the client or an external resource)
 

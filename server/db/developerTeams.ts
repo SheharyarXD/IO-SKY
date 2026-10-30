@@ -9,7 +9,8 @@
  * per team in the database as well, so two simultaneous edits cannot break it.
  */
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import { developerProfiles, developerTeamMembers, developerTeams } from "../../drizzle/schema";
+import { developerProfiles, developerProjectAssignments, developerProjects, developerTeamMembers, developerTeams } from "../../drizzle/schema";
+import { planTeamAssignment, type Plan } from "../../shared/teamAssignment";
 import { addMember, removeMember, setPrimaryContact, setRole, validateTeamName, type Member, type MemberRefusal, type RosterChange, type TeamRole } from "../../shared/teamRules";
 import { isUniqueViolation } from "./bookings";
 import { getDb } from "./connection";
@@ -155,3 +156,38 @@ export async function listTeamsForDeveloper(developerId: number): Promise<TeamVi
   return viewOf(db, mine);
 }
 
+
+// ---------------------------------------------------------------------------
+// Putting a whole team on a developer project (J06)
+// ---------------------------------------------------------------------------
+
+export type TeamAssignmentView =
+  | { found: false; reason: "team_not_found" | "project_not_found" | "unavailable" }
+  | { found: true; project: { id: number; code: string; name: string }; team: { id: number; name: string }; names: Record<number, string>; plan: TeamPlan };
+
+/** Read the team, the project and who is already on it, and work out what assigning the team would do. */
+export async function previewTeamAssignment(a: { teamId: number; projectId: number }): Promise<TeamAssignmentView> {
+  const db = await getDb();
+  if (!db) return { found: false, reason: "unavailable" };
+  const team = (await db.select().from(developerTeams).where(eq(developerTeams.id, a.teamId)).limit(1))[0];
+  if (!team) return { found: false, reason: "team_not_found" };
+  const project = (await db.select().from(developerProjects).where(eq(developerProjects.id, a.projectId)).limit(1))[0];
+  if (!project) return { found: false, reason: "project_not_found" };
+  const members = await db
+    .select({ developerId: developerTeamMembers.developerId, role: developerTeamMembers.role, fullName: developerProfiles.fullName, status: developerProfiles.status })
+    .from(developerTeamMembers)
+    .innerJoin(developerProfiles, eq(developerProfiles.id, developerTeamMembers.developerId))
+    .where(and(eq(developerTeamMembers.teamId, a.teamId), eq(developerTeamMembers.status, "active")))
+    .orderBy(asc(developerTeamMembers.id));
+  const onProject = await db.select({ developerId: developerProjectAssignments.developerId, role: developerProjectAssignments.assignmentRole }).from(developerProjectAssignments).where(and(eq(developerProjectAssignments.projectId, a.projectId), eq(developerProjectAssignments.status, "active")));
+  const plan = planTeamAssignment({
+    projectStatus: project.status,
+    teamArchived: team.status === "archived",
+    members: members.map((m) => ({ developerId: m.developerId, teamRole: m.role as TeamRole, developerActive: m.status === "active" })),
+    alreadyOnProject: new Set(onProject.map((o) => o.developerId)),
+    projectHasLead: onProject.some((o) => o.role === "lead"),
+  });
+  return { found: true, project: { id: project.id, code: project.code, name: project.name }, team: { id: team.id, name: team.name }, names: Object.fromEntries(members.map((m) => [m.developerId, m.fullName])), plan };
+}
+
+export type TeamPlan = Plan;

@@ -319,6 +319,10 @@ Added shared/reportCompare.ts, the ai_scan_report_versions table (migration 0046
 
 Added shared/mediatedMessaging.ts (identity-leak detection, audience and message checks), server/db/mediatedMessaging.ts (relay and broadcast with a same-transaction log row), migration 0047, five staff endpoints and the Messages tab. Decision on the mediation model taken by engineering, pending the client document. Attachments not built. 31 new tests with mutation checks.
 
+## J06 - assign a whole team to a project (TESTED_LOCAL)
+
+Added shared/teamAssignment.ts (role mapping and plan), previewTeamAssignment, two staff endpoints and a preview-then-assign panel on the Teams tab. An existing project lead is never displaced; the plan is always recomputed on the server. Decision recorded as D14, pending the client document. 18 new tests with mutation checks.
+
 ---
 
 ## Status translation rules used for the import

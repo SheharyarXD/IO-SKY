@@ -163,6 +163,62 @@ function Assign() {
   );
 }
 
+function TeamToProject({ teams }: { teams: Array<{ id: number; name: string; status: string }> }) {
+  const utils = trpc.useUtils();
+  const projects = trpc.admin.developerProjects.useQuery();
+  const [teamId, setTeamId] = useState<number | null>(null);
+  const [projectId, setProjectId] = useState<number | null>(null);
+  const ready = teamId !== null && projectId !== null;
+  const preview = trpc.adminOps.previewTeamAssignment.useQuery({ teamId: teamId ?? 1, projectId: projectId ?? 1 }, { enabled: ready, retry: false });
+  const apply = trpc.adminOps.assignTeamToProject.useMutation({ onSuccess: () => { utils.admin.developerAssignments.invalidate(); utils.adminOps.previewTeamAssignment.invalidate(); } });
+  const sel = "h-8 rounded-md border border-white/[0.1] bg-transparent px-2 text-[12px]";
+  const p = preview.data;
+  return (
+    <Panel title="Put a team on a project">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <select className={sel} aria-label="Team" value={teamId ?? ""} onChange={(e) => setTeamId(e.target.value ? Number(e.target.value) : null)}>
+            <option value="">Choose a team</option>
+            {teams.filter((t) => t.status === "active").map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <select className={sel} aria-label="Project" value={projectId ?? ""} onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : null)}>
+            <option value="">Choose a project</option>
+            {(projects.data ?? []).filter((x) => x.status !== "completed").map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.code}: {x.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {ready && preview.error ? <p className="text-[12.5px] text-red-300">{preview.error.message}</p> : null}
+        {p ? (
+          p.plan.ok ? (
+            <div className="space-y-1 text-[12.5px]">
+              {p.plan.assign.map((a) => (
+                <p key={a.developerId}>
+                  {p.names[a.developerId] ?? `Developer #${a.developerId}`} joins as {a.role}
+                </p>
+              ))}
+              {p.plan.skipped.map((k) => (
+                <p key={k.developerId} className="text-white/55">
+                  {p.names[k.developerId] ?? `Developer #${k.developerId}`}: {k.reason.replace(/_/g, " ")}
+                </p>
+              ))}
+              <SmallButton onClick={() => apply.mutateAsync({ teamId: teamId!, projectId: projectId! }).then((r) => toast.success(`${r.assigned} assigned${r.failed ? `, ${r.failed} failed` : ""}.`)).catch((e) => toast.error(e.message))}>Assign them</SmallButton>
+            </div>
+          ) : (
+            <p className="text-[12.5px] text-white/65">{p.refusal}</p>
+          )
+        ) : null}
+      </div>
+    </Panel>
+  );
+}
+
 function Teams() {
   const utils = trpc.useUtils();
   const teams = trpc.adminOps.teams.useQuery();
@@ -223,6 +279,7 @@ function Teams() {
           </div>
         )}
       </Panel>
+      <TeamToProject teams={rows} />
       <FormCard
         title="Create a team"
         submitLabel="Create team"
