@@ -335,6 +335,10 @@ Added shared/supportAgent.ts (definition, prompt, triage, priority floor), serve
 
 Added shared/salesAgent.ts (definition, prompt, commitment and hand-over triage), server/salesTools.ts (toolset assembly) and adminOps.registerSalesAgent. A consistency test found that draft-only authority would refuse booking, so authority is act-with-approval (decision D17). Prospects only, no prices or terms, registered disabled. Not operational. 24 new tests with mutation checks.
 
+## T02 - developer handoff document (TESTED_LOCAL)
+
+Created docs/milestone4/DEVELOPER_HANDOFF.md from facts extracted from the repository: commands, feature map, background jobs, configuration names, pre-deployment checklist and the list of what is not done.
+
 ---
 
 ## Status translation rules used for the import
