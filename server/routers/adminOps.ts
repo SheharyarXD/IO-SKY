@@ -87,6 +87,8 @@ import { addTeamMember, createTeam, listTeams, removeTeamMember, setTeamArchived
 import { MEMBER_REFUSAL_TEXT, TEAM_ROLES } from "../../shared/teamRules";
 import { diffPrompts, PROMPT_LIMITS, renderPreview } from "../../shared/promptTools";
 import { buildQuoteDocument, renderQuoteHtml } from "../../shared/quoteDocument";
+import { actionFor, authorizeReportAction, REPORT_REFUSAL_TEXT } from "../../shared/reportPermissions";
+import { getScopeGrants } from "../db/platformGovernance";
 import { renderQuotePdf } from "../quotePdf";
 import { createRelease, getReleaseFacts, linkDeveloperProject, listActiveAssignedDeveloperIds, listReleases, revokeRelease, unlinkDeveloperProject } from "../db/documentHandoff";
 const message_alreadyReleased = "This document is already released to that project.";
@@ -959,6 +961,15 @@ export const adminOpsRouter = router({
     .input(z.object({ statuses: z.array(z.enum(REPORT_STATUSES)).min(1).max(9).default(["awaiting_expert_review", "revision_required", "approved"]) }).default({ statuses: ["awaiting_expert_review", "revision_required", "approved"] }))
     .query(async ({ input }) => listAiScansForReview(input.statuses as ReportStatus[])),
 
+  /** What the signed-in staff member may do to a report, so the screen offers only what the API will allow. */
+  myReportPermissions: adminProcedure.query(async ({ ctx }) => {
+    const grants = await getScopeGrants(ctx.user.id);
+    return {
+      canReview: authorizeReportAction({ role: ctx.user.role, action: "review", grants }).allowed,
+      canPublish: authorizeReportAction({ role: ctx.user.role, action: "publish", grants }).allowed,
+    };
+  }),
+
   aiScanHistory: adminProcedure.input(z.object({ scanId: z.number().int().positive() })).query(async ({ input }) => listAiScanStatusEvents(input.scanId)),
 
   assignAiScanReviewer: adminProcedure
@@ -983,6 +994,12 @@ export const adminOpsRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // P07: review and publish are different rights. The check runs before anything is changed.
+      const verdict = authorizeReportAction({ role: ctx.user.role, action: actionFor(input.to), grants: await getScopeGrants(ctx.user.id) });
+      if (!verdict.allowed) {
+        await recordAdminEvent({ ctx, reason: `admin.ai_scan.${input.to}_refused(${input.scanId}:${verdict.reason})`, outcome: "failed" });
+        fail("FORBIDDEN", REPORT_REFUSAL_TEXT[verdict.reason]);
+      }
       const res = await transitionAiScanReport({ scanId: input.scanId, to: input.to, actorUserId: ctx.user.id, note: input.note ?? null });
       if (!res) fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
       if (!res.ok) fail(res.code, res.reason);

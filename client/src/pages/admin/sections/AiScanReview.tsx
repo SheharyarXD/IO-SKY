@@ -31,6 +31,8 @@ export function AiScanReview() {
   const history = trpc.adminOps.aiScanHistory.useQuery({ scanId: open ?? 1 }, { enabled: open !== null });
   const refresh = () => utils.adminOps.aiScanReviewQueue.invalidate();
   const move = trpc.adminOps.moveAiScanReport.useMutation({ onSuccess: refresh });
+  const perms = trpc.adminOps.myReportPermissions.useQuery(undefined, { staleTime: 60_000 });
+  const canPublish = perms.data?.canPublish === true;
   const assign = trpc.adminOps.assignAiScanReviewer.useMutation({ onSuccess: refresh });
   const regen = trpc.adminOps.regenerateAiScanReport.useMutation({ onSuccess: refresh });
 
@@ -76,7 +78,7 @@ export function AiScanReview() {
                   {r.reportStatus === "awaiting_expert_review" && <SmallButton onClick={() => go(r.id, "approved")}>Approve</SmallButton>}
                   {(r.reportStatus === "awaiting_expert_review" || r.reportStatus === "approved") && <SmallButton tone="danger" onClick={() => go(r.id, "revision_required")}>Request revision</SmallButton>}
                   {r.reportStatus === "revision_required" && <SmallButton onClick={() => regen.mutateAsync({ scanId: r.id }).then(() => toast.success("Regenerating.")).catch((e) => toast.error(e.message))}>Regenerate</SmallButton>}
-                  {r.reportStatus === "approved" && <SmallButton onClick={() => go(r.id, "published")}>Publish</SmallButton>}
+                  {r.reportStatus === "approved" && (canPublish ? <SmallButton onClick={() => go(r.id, "published")}>Publish</SmallButton> : <span className="text-[11px] text-white/45" title="Ask a super admin to grant you the publish right">Publish needs the publish right</span>)}
                   {r.reportStatus === "published" && <SmallButton onClick={() => go(r.id, "archived")}>Archive</SmallButton>}
                   <SmallButton onClick={() => setOpen(open === r.id ? null : r.id)}>History</SmallButton>
                 </div>

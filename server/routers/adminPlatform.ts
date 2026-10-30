@@ -38,6 +38,8 @@ import {
   updateDocumentMatrixRow,
 } from "../db/platformGovernance";
 
+import { isReportScope } from "../../shared/reportPermissions";
+
 const fail = (code: ConstructorParameters<typeof TRPCError>[0]["code"], message: string): never => {
   throw new TRPCError({ code, message });
 };
@@ -127,7 +129,7 @@ export const adminPlatformRouter = router({
       z.object({
         userId: z.number().int().positive(),
         // A platform scope, or a per-agent scope "agent:<key>:<view|run|approve>" (G09).
-        scope: z.string().trim().refine((s) => (OPERATOR_SCOPES as readonly string[]).includes(s) || isGrantableAgentScope(s), "Unknown scope."),
+        scope: z.string().trim().refine((s) => (OPERATOR_SCOPES as readonly string[]).includes(s) || isGrantableAgentScope(s) || isReportScope(s), "Unknown scope."),
         expiresInDays: z.number().int().min(1).max(365).nullable(),
         note: z.string().trim().max(300).optional(),
       }),
@@ -140,6 +142,7 @@ export const adminPlatformRouter = router({
       if (res === "unavailable") fail("INTERNAL_SERVER_ERROR", "Database unavailable.");
       if (res === "no_user") fail("NOT_FOUND", "User not found.");
       if (res === "not_operator") fail("BAD_REQUEST", "Scopes can only be granted to a Technical Operator.");
+      if (res === "not_admin") fail("BAD_REQUEST", "The publish right can only be granted to an admin. Super admins already hold it.");
       await recordAdminEvent({ ctx, reason: `admin.operator_scope.grant(user=${input.userId}:${input.scope}:${expiresAt ? expiresAt.toISOString().slice(0, 10) : "no-expiry"})` });
       return res;
     }),

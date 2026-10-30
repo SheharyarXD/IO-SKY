@@ -295,6 +295,10 @@ Added shared/promptTools.ts (line diff, safe placeholder preview, warnings, toke
 
 Added shared/quoteDocument.ts and server/quotePdf.ts, updateQuote (draft only, conditional write), a validity-date rule on sending and accepting, a quoteDocument read returning branded HTML and PDF, and a PDF button on the Quotes table. 19 new tests with a mutation check. Sending by email is not built because the email layer cannot attach files, so the task stays IN_PROGRESS.
 
+## P07 - Review and Publish as independent permissions (TESTED_LOCAL)
+
+Added shared/reportPermissions.ts, enforced the publish right in moveAiScanReport before any side effect, added myReportPermissions, let a super admin grant report:publish to an admin, and hid the Publish button from admins without it. Decision recorded as engineering's, pending the client document. 21 new tests with mutation checks; existing publish tests now run as super admin. Existing admins lose publish until granted.
+
 ---
 
 ## Status translation rules used for the import

@@ -2,6 +2,7 @@
  * Persistence for notification templates, the document matrix, operator scopes
  * and AI usage reporting.
  */
+import { isReportScope, REPORT_SCOPE_GRANTEE_ROLE } from "../../shared/reportPermissions";
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { aiUsage, clientDocuments, documentMatrix, notificationTemplates, operatorScopes, users } from "../../drizzle/schema";
 import { roleMayAccessDocumentType, type ScopeGrant } from "../../shared/platformRules";
@@ -149,7 +150,10 @@ export async function grantOperatorScope(args: { userId: number; scope: string; 
   if (!db) return "unavailable" as const;
   const target = (await db.select({ role: users.role }).from(users).where(eq(users.id, args.userId)).limit(1))[0];
   if (!target) return "no_user" as const;
-  if (target.role !== "technical_operator") return "not_operator" as const;
+  // Report rights (P07) go to admins; every other scope goes to a Technical Operator.
+  if (isReportScope(args.scope)) {
+    if (target.role !== REPORT_SCOPE_GRANTEE_ROLE) return "not_admin" as const;
+  } else if (target.role !== "technical_operator") return "not_operator" as const;
   const rows = await db.insert(operatorScopes).values({ userId: args.userId, scope: args.scope, expiresAt: args.expiresAt, note: args.note, grantedByUserId: args.grantedByUserId }).returning();
   return rows[0]!;
 }

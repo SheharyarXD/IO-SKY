@@ -72,6 +72,7 @@ All runs after this was discovered used the blank variable.
 | Full suite after C03 | plain `npx vitest run` (database-free) | 120 files passed, 6 skipped; 1857 tests passed, 0 failed, 57 skipped; tsc clean; npm run build ok |
 | Full suite after G06 (partial) | plain `npx vitest run` (database-free) | 121 files passed, 6 skipped; 1878 tests passed, 0 failed, 57 skipped; tsc clean; npm run build ok |
 | Full suite after B07 (partial) | plain `npx vitest run` (database-free) | 122 files passed, 6 skipped; 1898 tests passed, 0 failed, 57 skipped; tsc clean; npm run build ok |
+| Full suite after P07 | plain `npx vitest run` (database-free) | 123 files passed, 6 skipped; 1919 tests passed, 0 failed, 57 skipped; tsc clean; npm run build ok |
 
 The 57 skipped tests in blank mode are: dbConstraints 9, rls.negative 18, concurrency 9, queryPerformance 6, legal 9, requireAcceptances 6. None of them is counted as passed in that row.
 

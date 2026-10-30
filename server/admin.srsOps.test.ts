@@ -253,9 +253,10 @@ describe("AI Scan expert review", () => {
     await expect(as("technical_operator").adminOps.moveAiScanReport({ scanId: 7, to: "published" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(as("client").adminOps.aiScanReviewQueue({})).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
+  // Publishing needs the publish right (P07), so these publish as a super admin. The right itself is covered in reportPermissions.test.ts.
   it("will not let the API approve straight from a state the rules forbid", async () => {
     m.transitionAiScanReport.mockResolvedValueOnce({ ok: false, code: "PRECONDITION_FAILED", reason: "A report that is submitted cannot move to published." });
-    await expect(as("admin").adminOps.moveAiScanReport({ scanId: 7, to: "published" })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(as("super_admin").adminOps.moveAiScanReport({ scanId: 7, to: "published" })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(m.dispatchSimpleEmailMock).not.toHaveBeenCalled();
   });
   it("records the approver and does not email the customer on approval", async () => {
@@ -267,13 +268,13 @@ describe("AI Scan expert review", () => {
   it("emails the customer a link when a report is published", async () => {
     m.transitionAiScanReport.mockResolvedValueOnce({ ok: true, from: "approved", scan });
     m.dispatchSimpleEmailMock.mockResolvedValueOnce({ ok: true });
-    await as("admin").adminOps.moveAiScanReport({ scanId: 7, to: "published" });
+    await as("super_admin").adminOps.moveAiScanReport({ scanId: 7, to: "published" });
     expect(m.dispatchSimpleEmailMock).toHaveBeenCalledWith(expect.objectContaining({ to: "a@example.com", text: expect.stringContaining("/ai-scan/result/tok123") }));
   });
   it("still publishes when the notification email fails", async () => {
     m.transitionAiScanReport.mockResolvedValueOnce({ ok: true, from: "approved", scan });
     m.dispatchSimpleEmailMock.mockRejectedValueOnce(new Error("smtp down"));
-    await expect(as("admin").adminOps.moveAiScanReport({ scanId: 7, to: "published" })).resolves.toMatchObject({ ok: true, status: "published" });
+    await expect(as("super_admin").adminOps.moveAiScanReport({ scanId: 7, to: "published" })).resolves.toMatchObject({ ok: true, status: "published" });
   });
   it("only regenerates a report that was sent back", async () => {
     m.getAiScanById.mockResolvedValueOnce({ id: 7, reportStatus: "awaiting_expert_review" });
