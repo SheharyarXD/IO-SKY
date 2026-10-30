@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 33
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 34
 - Live verification pending: 20
 - In progress: 4
-- Not started: 25
+- Not started: 24
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -295,5 +295,5 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `T02`: Developer handoff documentation set (P2, BASELINE, NOT_STARTED)
 - [ ] `T06`: Automated ten-locale UI regression (P2, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)
 - [ ] `T07`: Per-unit staging release note process (P2, BASELINE, NOT_STARTED)
-- [ ] `T08`: Defect log and dated decision log (P2, BASELINE, NOT_STARTED)
+- [ ] `T08`: Defect log and dated decision log (P2, BASELINE, TESTED_LOCAL)
 - [ ] `T10`: Repo, DB, secret and environment isolation security (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)

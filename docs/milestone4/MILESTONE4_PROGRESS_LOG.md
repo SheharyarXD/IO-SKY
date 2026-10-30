@@ -307,6 +307,10 @@ Added shared/notificationFamilies.ts (display names, event id to family lookup, 
 
 Added lead ownership (shared/leadOwnership.ts, migration 0045, setLeadOwner, adminOps.assignLeadOwner), an owner condition in the shared filter rule, and Owner controls in the CRM page. Decision on ownership taken by engineering, pending the client document. C01 moves to TESTED_LOCAL with the remaining gaps listed in the task notes.
 
+## T08 - dated decision log (TESTED_LOCAL)
+
+Created docs/milestone4/MILESTONE4_DECISION_LOG.md listing the product decisions taken by engineering (P07, N01, lead ownership, operator scope mapping, provider routing, reassignment, teams, verification, FAQ, document handoff, report audit), how to reverse each, and what is still open. All are assumptions pending the client document.
+
 ---
 
 ## Status translation rules used for the import
