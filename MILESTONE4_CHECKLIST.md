@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 37
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 38
 - Live verification pending: 20
 - In progress: 5
-- Not started: 20
+- Not started: 19
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -95,7 +95,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `G06`: Prompt, voice and script configuration UI with (P2, BASELINE, IN_PROGRESS)
 - [ ] `G07`: Staging evaluation harness with baseline comparison before (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `G08`: Controlled improvement lifecycle (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
-- [ ] `G10`: AI Support Agent runtime and tools (P2, BASELINE, NOT_STARTED)
+- [ ] `G10`: AI Support Agent runtime and tools (P2, BASELINE, TESTED_LOCAL)
 - [ ] `G11`: AI Sales Agent runtime (lead qualifier exists) (P2, BASELINE, NOT_STARTED)
 - [ ] `G13`: AI Operations Agent (named only as example (P3, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)
 - [ ] `G14`: AI Project Assistant (P3, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)

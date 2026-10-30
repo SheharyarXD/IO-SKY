@@ -71,6 +71,7 @@ import {
   updateAlertRule,
   updateIncident,
   upsertAiAgent,
+  getAiAgentDefinition,
 } from "../db";
 import {
   DOCUMENT_STATUSES,
@@ -94,6 +95,7 @@ import { getScopeGrants } from "../db/platformGovernance";
 import { renderQuotePdf } from "../quotePdf";
 import { OWNER_REFUSAL_TEXT } from "../../shared/leadOwnership";
 import { PLAN_REFUSAL_TEXT } from "../../shared/teamAssignment";
+import { SUPPORT_AGENT, SUPPORT_AGENT_KEY, SUPPORT_BASE_PROMPT } from "../../shared/supportAgent";
 import { ATTEMPT_RESULTS, REFUSAL_TEXT as CALLBACK_REFUSAL } from "../../shared/callbackRules";
 import { actOnCallback, createCallback as createCallbackTask, isStaffUser, listCallbackEvents, listCallbacks } from "../db/callbacks";
 import { assignDeveloperToProject } from "../db/developerWorkspace";
@@ -205,6 +207,20 @@ export const adminOpsRouter = router({
       await recordAdminEvent({ ctx, reason: `admin.callback.${a.type}(cb=${input.id}:status=${r.task.status})` });
       return { status: r.task.status, attempts: r.task.attempts, dueAt: r.task.dueAt };
     }),
+
+  /**
+   * G10: register the AI Support Agent in the agent registry, DISABLED. A super admin reviews it and enables it
+   * from the registry. It never overwrites an agent that is already registered, so edits made there are kept.
+   */
+  registerSupportAgent: superAdminProcedure.mutation(async ({ ctx }) => {
+    if (await getAiAgentDefinition(SUPPORT_AGENT_KEY)) fail("CONFLICT", "The Support Agent is already registered. Change it in the AI agent registry.");
+    const a = SUPPORT_AGENT;
+    const saved = await upsertAiAgent({ key: a.key, name: a.name, purpose: a.purpose, permissions: [...a.permissions], requiresHumanApproval: a.requiresHumanApproval, status: "disabled", businessFunction: a.businessFunction, capabilities: [...a.capabilities], supportedModules: [...a.supportedModules], tools: [...a.tools], knowledgeSources: [...a.knowledgeSources], escalationRules: a.escalationRules, maxAuthority: a.maxAuthority, responsibleAdminUserId: ctx.user.id });
+    if (!saved || saved === "invalid_responsible_admin") fail("INTERNAL_SERVER_ERROR", "The agent could not be registered.");
+    const prompt = await addPromptVersion({ agentKey: a.key, body: SUPPORT_BASE_PROMPT, changeNote: "Initial prompt for the Support Agent.", createdByUserId: ctx.user.id, activate: true });
+    await recordAdminEvent({ ctx, reason: `admin.ai_agent.register(${a.key}:disabled)` });
+    return { key: a.key, status: "disabled" as const, promptVersion: prompt && prompt !== "agent_not_found" ? prompt.version : null };
+  }),
 
   /** C03: one customer's timeline (CRM history, calls, scans, projects, files) with a summary. Staff only. */
   customerProfile: adminProcedure

@@ -21,6 +21,7 @@ Nothing here was approved by the client. Nothing here has been deployed.
 | D13 | 2026-10-30 | P06 | Every engine-produced report is kept as a version; approvals are tied to the version in force at the time | Assumed |
 | D14 | 2026-10-30 | J06 | Assigning a team maps roles, never displaces an existing project lead, and skips people already on the project | Assumed |
 | D15 | 2026-10-30 | R21 | Callbacks: due in 2 hours (30 minutes urgent), 3 missed attempts then unreachable, escalate an hour after due | Assumed |
+| D16 | 2026-10-30 | G10 | Support Agent: draft-only, FAQ and public docs only, Level 2 for ticket status and opening a ticket, security/legal/safety always handed to a person, registered disabled | Assumed |
 
 ## D01 Review and Publish (P07)
 
@@ -98,6 +99,12 @@ Nothing here was approved by the client. Nothing here has been deployed.
 - **Chosen:** a callback is due 120 minutes after it is created (30 if urgent); a missed attempt (no answer or busy) schedules the next try 4 hours later unless staff choose a time; the third missed attempt ends it as unreachable; a caller who is reached and asks for another time does not count as a miss; completing needs a note and cancelling needs a reason; when the due time passes staff are notified, and an hour later it is escalated. A second request from a number that already has an open callback joins it instead of creating another.
 - **Not built:** the trigger from a failed warm transfer (R05, blocked on telephony). Today callbacks come from the receptionist tool and from staff.
 - **To change:** the numbers are in `CALLBACK_RULES` in `shared/callbackRules.ts`.
+
+## D16 AI Support Agent (G10)
+
+- **Chosen:** a definition on the shared runtime with draft-only authority. It answers general questions only from approved FAQ entries and public product documentation, and says so when nothing matches. It can read the status of the verified caller's own tickets and open a ticket for them, only after Level 2 verification and the caller's confirmation; ticket text is never read back. Security reports, legal or fraud disputes and anything about personal safety are detected deterministically and handed to a person; a ticket opened for a security report is forced urgent and filed under security, and personal safety never becomes a ticket. It cannot resolve, refund, change an account or promise a time. It is registered DISABLED by a super admin and enabled after review.
+- **Not built:** the flow that verifies a caller (R11), so no caller can reach Level 2 yet; any live model call.
+- **To change:** the definition, prompt and trigger words are in `shared/supportAgent.ts`.
 
 ## Still genuinely open (need the client or an external resource)
 

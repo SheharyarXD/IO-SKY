@@ -327,6 +327,10 @@ Added shared/teamAssignment.ts (role mapping and plan), previewTeamAssignment, t
 
 Added shared/callbackRules.ts, migration 0048 (tasks and append-only events), server/db/callbacks.ts, the request_callback receptionist tool, the overdue escalator wired to the operations tick, staff endpoints and a Callbacks panel in Sales. Decision D15 recorded. The failed-transfer trigger (R05) is not built. 35 new tests with mutation checks.
 
+## G10 - AI Support Agent definition and tools (TESTED_LOCAL)
+
+Added shared/supportAgent.ts (definition, prompt, triage, priority floor), server/supportTools.ts (ticket status and open-ticket tools, the full toolset assembly) and adminOps.registerSupportAgent. Decision D16 recorded. A consistency test ties the definition to the real tools. Not operational: verification (R11) and a live model are missing. 39 new tests with mutation checks.
+
 ---
 
 ## Status translation rules used for the import
