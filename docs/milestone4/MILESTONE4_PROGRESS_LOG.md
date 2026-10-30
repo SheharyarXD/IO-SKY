@@ -339,6 +339,10 @@ Added shared/salesAgent.ts (definition, prompt, commitment and hand-over triage)
 
 Created docs/milestone4/DEVELOPER_HANDOFF.md from facts extracted from the repository: commands, feature map, background jobs, configuration names, pre-deployment checklist and the list of what is not done.
 
+## T07 - per-unit release note process (TESTED_LOCAL)
+
+Created docs/milestone4/RELEASE_NOTE_PROCESS.md with the rules, a template and a worked example. No release has happened, so no note has been written yet.
+
 ---
 
 ## Status translation rules used for the import
