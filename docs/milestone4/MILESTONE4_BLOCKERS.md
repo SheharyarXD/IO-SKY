@@ -49,8 +49,9 @@ Each entry names the exact missing item, who owes it, why it blocks, and what ca
 | `drizzle/0045_lead_owners.sql` | C01 (owner) | No (fails closed) | Every lead shows as unowned, the Owner filter finds nothing owned, and assigning an owner returns an error. The leads table is not altered. |
 | `drizzle/0046_ai_scan_report_versions.sql` | P06 | No (fails closed) | Report versions are not kept (logged once per report) and the version list is empty. Reports still reach review, approval and publication exactly as before. |
 | `drizzle/0047_message_mediation_log.sql` | J07 | No (fails closed) | Relays and broadcasts to developers are refused (nothing is sent without its record). Existing messaging is unaffected. |
+| `drizzle/0048_callback_tasks.sql` | R21 | No (fails closed) | Callbacks cannot be created (staff screens and the receptionist tool say so; the tool tells the assistant not to promise a callback) and the escalation sweep does nothing. Nothing else depends on it. |
 
-Independent except 0038. Apply each to a non-production database first, verify, then production, then deploy. The tests do not need any of them (they are database-free). The SQL of 0037, 0040, 0041, 0042, 0043, 0044, 0045, 0046 and 0047 (claim query, append-only triggers, partial unique index, the developer access joins) has never run against PostgreSQL: that verification is task M4-03 and needs the isolated database.
+Independent except 0038. Apply each to a non-production database first, verify, then production, then deploy. The tests do not need any of them (they are database-free). The SQL of 0037, 0040, 0041, 0042, 0043, 0044, 0045, 0046, 0047 and 0048 (claim query, append-only triggers, partial unique index, the developer access joins) has never run against PostgreSQL: that verification is task M4-03 and needs the isolated database.
 
 ## Dependency of the seven items marked BLOCKED_EXTERNAL that are code-heavy
 

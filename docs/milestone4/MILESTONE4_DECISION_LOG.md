@@ -20,6 +20,7 @@ Nothing here was approved by the client. Nothing here has been deployed.
 | D12 | 2026-10-30 | J07 | Developers and clients never talk directly; staff relay as IO SKY and the system refuses text that reveals the other party | Assumed |
 | D13 | 2026-10-30 | P06 | Every engine-produced report is kept as a version; approvals are tied to the version in force at the time | Assumed |
 | D14 | 2026-10-30 | J06 | Assigning a team maps roles, never displaces an existing project lead, and skips people already on the project | Assumed |
+| D15 | 2026-10-30 | R21 | Callbacks: due in 2 hours (30 minutes urgent), 3 missed attempts then unreachable, escalate an hour after due | Assumed |
 
 ## D01 Review and Publish (P07)
 
@@ -91,6 +92,12 @@ Nothing here was approved by the client. Nothing here has been deployed.
 - **Chosen:** every active member of an active team who is an active developer joins the project. Team role maps to project role (lead to lead, member to contributor, reviewer to reviewer). The team lead becomes project lead only if the project has none, so an existing lead is never displaced. People already on the project are left alone and reported. A preview shows exactly what would happen; the apply step recomputes it on the server.
 - **Not atomic:** members are added one by one; a failure for one is counted and reported while the rest continue.
 - **To change:** edit `projectRoleFor` in `shared/teamAssignment.ts` (for example to let a team lead replace the project lead).
+
+## D15 Callback lifecycle (R21)
+
+- **Chosen:** a callback is due 120 minutes after it is created (30 if urgent); a missed attempt (no answer or busy) schedules the next try 4 hours later unless staff choose a time; the third missed attempt ends it as unreachable; a caller who is reached and asks for another time does not count as a miss; completing needs a note and cancelling needs a reason; when the due time passes staff are notified, and an hour later it is escalated. A second request from a number that already has an open callback joins it instead of creating another.
+- **Not built:** the trigger from a failed warm transfer (R05, blocked on telephony). Today callbacks come from the receptionist tool and from staff.
+- **To change:** the numbers are in `CALLBACK_RULES` in `shared/callbackRules.ts`.
 
 ## Still genuinely open (need the client or an external resource)
 

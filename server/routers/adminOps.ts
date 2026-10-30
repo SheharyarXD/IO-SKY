@@ -94,6 +94,8 @@ import { getScopeGrants } from "../db/platformGovernance";
 import { renderQuotePdf } from "../quotePdf";
 import { OWNER_REFUSAL_TEXT } from "../../shared/leadOwnership";
 import { PLAN_REFUSAL_TEXT } from "../../shared/teamAssignment";
+import { ATTEMPT_RESULTS, REFUSAL_TEXT as CALLBACK_REFUSAL } from "../../shared/callbackRules";
+import { actOnCallback, createCallback as createCallbackTask, isStaffUser, listCallbackEvents, listCallbacks } from "../db/callbacks";
 import { assignDeveloperToProject } from "../db/developerWorkspace";
 import { checkMessage, describeLeaks, findIdentityLeaks, MESSAGE_LIMITS, MESSAGE_REFUSAL_TEXT } from "../../shared/mediatedMessaging";
 import { broadcastToDevelopers, clientIdentities, developerIdentities, developerServesOrganization, getClientMessage, getDeveloperMessage, listMediationLog, relayToClient, relayToDeveloper } from "../db/mediatedMessaging";
@@ -160,6 +162,48 @@ export const adminOpsRouter = router({
       }
       await recordAdminEvent({ ctx, reason: `admin.lead.owner(lead=${input.leadId}->${input.ownerUserId ?? "none"})` });
       return r;
+    }),
+
+  // ---- Callbacks (R21): a promised callback is tracked, assigned and escalated if missed ----------------------------
+
+  callbacks: adminProcedure.input(z.object({ openOnly: z.boolean().default(true), mine: z.boolean().default(false) }).default({ openOnly: true, mine: false })).query(async ({ ctx, input }) => listCallbacks({ openOnly: input.openOnly, assignedToUserId: input.mine ? ctx.user.id : undefined })),
+
+  callbackHistory: adminProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => listCallbackEvents(input.id)),
+
+  createCallback: adminProcedure
+    .input(z.object({ callerName: z.string().trim().min(2).max(200), callerPhone: z.string().trim().min(7).max(40), reason: z.string().trim().min(3).max(500), urgent: z.boolean().default(false), leadId: z.number().int().positive().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const r = await createCallbackTask({ leadId: input.leadId ?? null, organizationId: null, callerName: input.callerName, callerPhone: input.callerPhone, reason: input.reason, source: "manual", priority: input.urgent ? "urgent" : "normal", createdByUserId: ctx.user.id });
+      if (!r.ok) fail(r.reason === "invalid_phone" ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR", r.reason === "invalid_phone" ? "That phone number cannot be dialled." : "The callback could not be saved.");
+      await recordAdminEvent({ ctx, reason: `admin.callback.create(cb=${r.task.id}${r.duplicate ? ":already_open" : ""})` });
+      return { id: r.task.id, duplicate: r.duplicate };
+    }),
+
+  /** One action on a callback: assign, log an attempt, complete or cancel. The rules decide; a closed callback is never reopened. */
+  actOnCallback: adminProcedure
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+        action: z.discriminatedUnion("type", [
+          z.object({ type: z.literal("assign"), userId: z.number().int().positive().nullable() }),
+          z.object({ type: z.literal("attempt"), result: z.enum(ATTEMPT_RESULTS), newDueAtMs: z.number().int().optional() }),
+          z.object({ type: z.literal("complete"), note: z.string().max(500) }),
+          z.object({ type: z.literal("cancel"), reason: z.string().max(500) }),
+        ]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const a = input.action;
+      if (a.type === "assign" && a.userId !== null && !(await isStaffUser(a.userId))) fail("BAD_REQUEST", "A callback can only be assigned to an admin or super admin.");
+      const action = a.type === "attempt" ? ({ type: "attempt", result: a.result, newDueAt: a.newDueAtMs ? new Date(a.newDueAtMs) : null } as const) : a;
+      const r = await actOnCallback(input.id, action, ctx.user.id);
+      if (!r.ok) {
+        if (r.reason === "not_found") fail("NOT_FOUND", "No such callback.");
+        if (r.reason === "unavailable") fail("INTERNAL_SERVER_ERROR", "The callback store is unavailable.");
+        fail("PRECONDITION_FAILED", CALLBACK_REFUSAL[r.reason]);
+      }
+      await recordAdminEvent({ ctx, reason: `admin.callback.${a.type}(cb=${input.id}:status=${r.task.status})` });
+      return { status: r.task.status, attempts: r.task.attempts, dueAt: r.task.dueAt };
     }),
 
   /** C03: one customer's timeline (CRM history, calls, scans, projects, files) with a summary. Staff only. */

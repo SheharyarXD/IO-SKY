@@ -323,6 +323,10 @@ Added shared/mediatedMessaging.ts (identity-leak detection, audience and message
 
 Added shared/teamAssignment.ts (role mapping and plan), previewTeamAssignment, two staff endpoints and a preview-then-assign panel on the Teams tab. An existing project lead is never displaced; the plan is always recomputed on the server. Decision recorded as D14, pending the client document. 18 new tests with mutation checks.
 
+## R21 - callback task lifecycle (TESTED_LOCAL)
+
+Added shared/callbackRules.ts, migration 0048 (tasks and append-only events), server/db/callbacks.ts, the request_callback receptionist tool, the overdue escalator wired to the operations tick, staff endpoints and a Callbacks panel in Sales. Decision D15 recorded. The failed-transfer trigger (R05) is not built. 35 new tests with mutation checks.
+
 ---
 
 ## Status translation rules used for the import

@@ -179,5 +179,6 @@ export async function realReceptionistRecordTools(): Promise<AgentTool[]> {
   const { realCrmTools, RunLeadScope } = await import("./crmTools");
   const { IdempotencyStore } = await import("./schedulingTools");
   const shared = { idempotency: new IdempotencyStore(), leadScope: new RunLeadScope() };
-  return [...(await realCrmTools(shared)), await realDiscoveryCaptureTool(shared)];
+  const { realCallbackTool } = await import("./callbackTools");
+  return [...(await realCrmTools(shared)), await realDiscoveryCaptureTool(shared), await realCallbackTool(shared)];
 }

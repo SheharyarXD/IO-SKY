@@ -3124,3 +3124,49 @@ export const messageMediationLog = pgTable(
   (t) => [index("message_mediation_log_org_idx").on(t.organizationId, t.createdAt), index("message_mediation_log_dev_idx").on(t.developerId, t.createdAt)],
 );
 export type MessageMediationLogRow = typeof messageMediationLog.$inferSelect;
+
+/**
+ * A promised callback (task R21). status: requested | assigned | attempted | completed | unreachable | cancelled.
+ * The lifecycle rules are in shared/callbackRules.ts. Rows are kept after they close.
+ */
+export const callbackTasks = pgTable(
+  "callback_tasks",
+  {
+    id: serial("id").primaryKey(),
+    leadId: integer("leadId").references(() => leads.id, { onDelete: "set null" }),
+    organizationId: integer("organizationId").references(() => organizations.id, { onDelete: "set null" }),
+    callerName: varchar("callerName", { length: 200 }),
+    callerPhone: varchar("callerPhone", { length: 32 }).notNull(),
+    reason: varchar("reason", { length: 500 }).notNull(),
+    /** ai_receptionist | transfer_failed | manual */
+    source: varchar("source", { length: 24 }).default("manual").notNull(),
+    priority: varchar("priority", { length: 8 }).default("normal").notNull(),
+    status: varchar("status", { length: 16 }).default("requested").notNull(),
+    assignedToUserId: integer("assignedToUserId").references(() => users.id),
+    dueAt: timestamp("dueAt").notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+    lastAttemptAt: timestamp("lastAttemptAt"),
+    escalationLevel: integer("escalationLevel").default(0).notNull(),
+    outcomeNote: varchar("outcomeNote", { length: 500 }),
+    createdByUserId: integer("createdByUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+    closedAt: timestamp("closedAt"),
+  },
+  (t) => [index("callback_tasks_open_idx").on(t.status, t.dueAt), index("callback_tasks_assignee_idx").on(t.assignedToUserId, t.status)],
+);
+export type CallbackTask = typeof callbackTasks.$inferSelect;
+
+/** Append-only history of a callback: created, assigned, attempted, escalated, closed. */
+export const callbackTaskEvents = pgTable(
+  "callback_task_events",
+  {
+    id: serial("id").primaryKey(),
+    taskId: integer("taskId").notNull().references(() => callbackTasks.id, { onDelete: "cascade" }),
+    event: varchar("event", { length: 40 }).notNull(),
+    actorUserId: integer("actorUserId").references(() => users.id),
+    detail: varchar("detail", { length: 300 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("callback_task_events_task_idx").on(t.taskId, t.createdAt)],
+);

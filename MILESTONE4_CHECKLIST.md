@@ -10,10 +10,10 @@ A task is `COMPLETED_VERIFIED` only when its acceptance condition has been met w
 
 - Total unique tasks: 193
 - Already verified (COMPLETED_VERIFIED): 4 of 193 (2.1%)
-- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 36
+- Locally implemented and tested (TESTED_LOCAL, IMPLEMENTED_TESTING_PENDING): 37
 - Live verification pending: 20
 - In progress: 5
-- Not started: 21
+- Not started: 20
 - Externally blocked: 20
 - Awaiting client decisions: 87
 
@@ -121,7 +121,7 @@ Format: checkbox, task ID, name, priority, commercial classification, status. Ch
 - [ ] `R17`: Approved FAQ store with grounded answers, no (P1, BASELINE, TESTED_LOCAL)
 - [ ] `R18`: Receptionist CRM tools (P1, BASELINE, TESTED_LOCAL)
 - [ ] `R19`: Discovery qualification capture persisted to CRM and (P1, BASELINE, TESTED_LOCAL)
-- [ ] `R21`: Callback task lifecycle (P1, BASELINE, NOT_STARTED)
+- [ ] `R21`: Callback task lifecycle (P1, BASELINE, TESTED_LOCAL)
 - [ ] `R04`: Super Admin editor for greetings, scripts, voices, (P2, BASELINE, NOT_STARTED)
 - [ ] `R09`: Handover summary in caller language, surrounding UI (P2, PAID_M4_PROPOSED, AWAITING_CLIENT_DECISION)
 - [ ] `R14`: Separate retention, deletion, access, audit for audio, (P2, SCOPE_DISPUTED, AWAITING_CLIENT_DECISION)

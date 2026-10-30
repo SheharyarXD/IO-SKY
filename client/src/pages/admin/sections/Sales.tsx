@@ -6,6 +6,7 @@
  */
 import { useState } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { canMoveOpportunity, canMoveDocument, OPPORTUNITY_STAGES, type DocumentStatus, type OpportunityStage } from "@shared/srsRules";
 import OperationalPage, { DataTable, StatusPill, type DataColumn } from "./_shared/OperationalPage";
@@ -176,6 +177,60 @@ function Proposals() {
   );
 }
 
+function Callbacks() {
+  const utils = trpc.useUtils();
+  const { user: me } = useAuth();
+  const q = trpc.adminOps.callbacks.useQuery({ openOnly: true, mine: false }, { refetchInterval: 60_000 });
+  const refresh = () => utils.adminOps.callbacks.invalidate();
+  const act = trpc.adminOps.actOnCallback.useMutation({ onSuccess: refresh });
+  const create = trpc.adminOps.createCallback.useMutation({ onSuccess: refresh });
+  const run = (id: number, action: Parameters<typeof act.mutateAsync>[0]["action"], done: string) => act.mutateAsync({ id, action }).then(() => toast.success(done)).catch((e) => toast.error(e.message));
+  const now = Date.now();
+  type Row = NonNullable<typeof q.data>[number];
+  return (
+    <>
+      <Panel title="Callbacks waiting">
+        <DataTable
+          columns={[
+            { key: "id", header: "Ref", width: "64px", render: (r: Row) => <span className="font-mono text-white/55">CB-{r.id}</span> },
+            { key: "callerName", header: "Caller", render: (r: Row) => r.callerName ?? "Unknown" },
+            { key: "callerPhone", header: "Phone" },
+            { key: "reason", header: "Why" },
+            { key: "dueAt", header: "Due", render: (r: Row) => <span className={new Date(r.dueAt).getTime() < now ? "text-red-300" : ""}>{shortDateTime(r.dueAt)}{r.priority === "urgent" ? " (urgent)" : ""}</span> },
+            { key: "status", header: "State", render: (r: Row) => `${r.status}${r.attempts ? `, ${r.attempts} missed` : ""}${r.assignedToUserId ? (r.assignedToUserId === me?.id ? ", yours" : `, user #${r.assignedToUserId}`) : ""}` },
+            {
+              key: "actions",
+              header: "",
+              render: (r: Row) => (
+                <div className="flex flex-wrap gap-1">
+                  {me && r.assignedToUserId !== me.id ? <SmallButton onClick={() => void run(r.id, { type: "assign", userId: me.id }, "Assigned to you.")}>Take</SmallButton> : null}
+                  <SmallButton onClick={() => void run(r.id, { type: "attempt", result: "no_answer" }, "Missed attempt logged.")}>No answer</SmallButton>
+                  <SmallButton onClick={() => { const note = window.prompt("What happened on the call?"); if (note?.trim()) void run(r.id, { type: "complete", note: note.trim() }, "Callback completed."); }}>Done</SmallButton>
+                  <SmallButton tone="danger" onClick={() => { const reason = window.prompt("Why cancel this callback?"); if (reason?.trim()) void run(r.id, { type: "cancel", reason: reason.trim() }, "Callback cancelled."); }}>Cancel</SmallButton>
+                </div>
+              ),
+            },
+          ]}
+          rows={q.data ?? []}
+          emptyLabel="No callbacks are waiting."
+        />
+      </Panel>
+      <FormCard
+        title="Record a callback"
+        submitLabel="Record"
+        successMessage="Callback recorded. It is due within 2 hours (30 minutes if urgent)."
+        fields={[
+          { name: "callerName", label: "Caller", required: true },
+          { name: "callerPhone", label: "Phone", required: true, hint: "With the country code if it is not local." },
+          { name: "reason", label: "Why they want a call", required: true },
+          { name: "urgent", label: "Urgent", type: "select", initial: "no", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes" }] },
+        ]}
+        onSubmit={(v) => create.mutateAsync({ callerName: v.callerName, callerPhone: v.callerPhone, reason: v.reason, urgent: v.urgent === "yes" })}
+      />
+    </>
+  );
+}
+
 function Activities() {
   const utils = trpc.useUtils();
   const follow = trpc.adminOps.followUps.useQuery();
@@ -188,6 +243,7 @@ function Activities() {
   const now = Date.now();
   return (
     <>
+      <Callbacks />
       <Panel title="Open follow ups">
         <DataTable
           columns={[
