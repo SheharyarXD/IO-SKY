@@ -22,6 +22,7 @@ Nothing here was approved by the client. Nothing here has been deployed.
 | D14 | 2026-10-30 | J06 | Assigning a team maps roles, never displaces an existing project lead, and skips people already on the project | Assumed |
 | D15 | 2026-10-30 | R21 | Callbacks: due in 2 hours (30 minutes urgent), 3 missed attempts then unreachable, escalate an hour after due | Assumed |
 | D16 | 2026-10-30 | G10 | Support Agent: draft-only, FAQ and public docs only, Level 2 for ticket status and opening a ticket, security/legal/safety always handed to a person, registered disabled | Assumed |
+| D17 | 2026-10-30 | G11 | Sales Agent: prospects only (Level 1), never quotes prices or terms, authority act-with-approval so bookings wait for a person | Assumed |
 
 ## D01 Review and Publish (P07)
 
@@ -105,6 +106,13 @@ Nothing here was approved by the client. Nothing here has been deployed.
 - **Chosen:** a definition on the shared runtime with draft-only authority. It answers general questions only from approved FAQ entries and public product documentation, and says so when nothing matches. It can read the status of the verified caller's own tickets and open a ticket for them, only after Level 2 verification and the caller's confirmation; ticket text is never read back. Security reports, legal or fraud disputes and anything about personal safety are detected deterministically and handed to a person; a ticket opened for a security report is forced urgent and filed under security, and personal safety never becomes a ticket. It cannot resolve, refund, change an account or promise a time. It is registered DISABLED by a super admin and enabled after review.
 - **Not built:** the flow that verifies a caller (R11), so no caller can reach Level 2 yet; any live model call.
 - **To change:** the definition, prompt and trigger words are in `shared/supportAgent.ts`.
+
+## D17 AI Sales Agent (G11)
+
+- **Chosen:** the agent talks to prospects only. Every tool it has is Level 1 (public), and none reaches an existing client's account, invoices or records. It can find or create a prospect record, add notes and the discovery qualification, create a follow-up, offer discovery-call times and request a booking, answer general questions from approved content, and arrange a callback. It never states a price, a discount, a guarantee or contract terms: pricing, contract and guarantee questions are deflected to a discovery call or a person, and security, legal or safety matters are handed to a person at once.
+- **Authority is act-with-approval, not draft-only and not autonomous.** Draft-only would refuse booking altogether (booking is an action that emails the guest), and full autonomy would send customer emails unreviewed. So a booking, move or cancellation is held for a person to approve. The prompt tells the assistant to say the team will confirm it. Raising it to autonomous is one setting in the agent registry.
+- **Not built:** the conversation layer that applies the triage to each thing a caller says (the receptionist and chat front end are not built), so today the triage is a tested rule waiting to be called, and the prompt carries the same instruction; no live model has driven this agent.
+- **To change:** the definition, prompt and trigger words are in `shared/salesAgent.ts`.
 
 ## Still genuinely open (need the client or an external resource)
 

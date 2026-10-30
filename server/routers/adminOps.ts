@@ -96,6 +96,7 @@ import { renderQuotePdf } from "../quotePdf";
 import { OWNER_REFUSAL_TEXT } from "../../shared/leadOwnership";
 import { PLAN_REFUSAL_TEXT } from "../../shared/teamAssignment";
 import { SUPPORT_AGENT, SUPPORT_AGENT_KEY, SUPPORT_BASE_PROMPT } from "../../shared/supportAgent";
+import { SALES_AGENT, SALES_AGENT_KEY, SALES_BASE_PROMPT } from "../../shared/salesAgent";
 import { ATTEMPT_RESULTS, REFUSAL_TEXT as CALLBACK_REFUSAL } from "../../shared/callbackRules";
 import { actOnCallback, createCallback as createCallbackTask, isStaffUser, listCallbackEvents, listCallbacks } from "../db/callbacks";
 import { assignDeveloperToProject } from "../db/developerWorkspace";
@@ -218,6 +219,17 @@ export const adminOpsRouter = router({
     const saved = await upsertAiAgent({ key: a.key, name: a.name, purpose: a.purpose, permissions: [...a.permissions], requiresHumanApproval: a.requiresHumanApproval, status: "disabled", businessFunction: a.businessFunction, capabilities: [...a.capabilities], supportedModules: [...a.supportedModules], tools: [...a.tools], knowledgeSources: [...a.knowledgeSources], escalationRules: a.escalationRules, maxAuthority: a.maxAuthority, responsibleAdminUserId: ctx.user.id });
     if (!saved || saved === "invalid_responsible_admin") fail("INTERNAL_SERVER_ERROR", "The agent could not be registered.");
     const prompt = await addPromptVersion({ agentKey: a.key, body: SUPPORT_BASE_PROMPT, changeNote: "Initial prompt for the Support Agent.", createdByUserId: ctx.user.id, activate: true });
+    await recordAdminEvent({ ctx, reason: `admin.ai_agent.register(${a.key}:disabled)` });
+    return { key: a.key, status: "disabled" as const, promptVersion: prompt && prompt !== "agent_not_found" ? prompt.version : null };
+  }),
+
+  /** G11: register the AI Sales Agent, DISABLED, without overwriting an existing registration. Same rules as the Support Agent. */
+  registerSalesAgent: superAdminProcedure.mutation(async ({ ctx }) => {
+    if (await getAiAgentDefinition(SALES_AGENT_KEY)) fail("CONFLICT", "The Sales Agent is already registered. Change it in the AI agent registry.");
+    const a = SALES_AGENT;
+    const saved = await upsertAiAgent({ key: a.key, name: a.name, purpose: a.purpose, permissions: [...a.permissions], requiresHumanApproval: a.requiresHumanApproval, status: "disabled", businessFunction: a.businessFunction, capabilities: [...a.capabilities], supportedModules: [...a.supportedModules], tools: [...a.tools], knowledgeSources: [...a.knowledgeSources], escalationRules: a.escalationRules, maxAuthority: a.maxAuthority, responsibleAdminUserId: ctx.user.id });
+    if (!saved || saved === "invalid_responsible_admin") fail("INTERNAL_SERVER_ERROR", "The agent could not be registered.");
+    const prompt = await addPromptVersion({ agentKey: a.key, body: SALES_BASE_PROMPT, changeNote: "Initial prompt for the Sales Agent.", createdByUserId: ctx.user.id, activate: true });
     await recordAdminEvent({ ctx, reason: `admin.ai_agent.register(${a.key}:disabled)` });
     return { key: a.key, status: "disabled" as const, promptVersion: prompt && prompt !== "agent_not_found" ? prompt.version : null };
   }),
