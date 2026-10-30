@@ -3100,3 +3100,27 @@ export const aiScanReportVersions = pgTable(
   (t) => [uniqueIndex("ai_scan_report_versions_unique_idx").on(t.scanId, t.version)],
 );
 export type AiScanReportVersion = typeof aiScanReportVersions.$inferSelect;
+
+/**
+ * Append-only record of every staff relay between a developer and a client, and every broadcast to
+ * developers (task J07). It records who, how many and which source message, never the message text.
+ */
+export const messageMediationLog = pgTable(
+  "message_mediation_log",
+  {
+    id: serial("id").primaryKey(),
+    /** developer_to_client | client_to_developer | broadcast */
+    kind: varchar("kind", { length: 24 }).notNull(),
+    sourceMessageId: integer("sourceMessageId"),
+    organizationId: integer("organizationId").references(() => organizations.id, { onDelete: "set null" }),
+    developerId: integer("developerId").references(() => developerProfiles.id, { onDelete: "set null" }),
+    /** developer | team | project, for a broadcast. */
+    audienceType: varchar("audienceType", { length: 16 }),
+    audienceRef: integer("audienceRef"),
+    recipientCount: integer("recipientCount").default(1).notNull(),
+    actorUserId: integer("actorUserId").references(() => users.id),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("message_mediation_log_org_idx").on(t.organizationId, t.createdAt), index("message_mediation_log_dev_idx").on(t.developerId, t.createdAt)],
+);
+export type MessageMediationLogRow = typeof messageMediationLog.$inferSelect;

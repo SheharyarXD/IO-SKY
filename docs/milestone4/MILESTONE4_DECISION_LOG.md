@@ -17,6 +17,8 @@ Nothing here was approved by the client. Nothing here has been deployed.
 | D09 | 2026-10-30 | R17 | The FAQ is the `knowledge_base_articles` source; the last editor cannot approve | Assumed |
 | D10 | 2026-10-30 | J09/J10 | Documents reach developers only by explicit staff release of an approved document | Assumed |
 | D11 | 2026-10-30 | M4-01 | Report download auditing is best effort, not fail closed | Assumed |
+| D12 | 2026-10-30 | J07 | Developers and clients never talk directly; staff relay as IO SKY and the system refuses text that reveals the other party | Assumed |
+| D13 | 2026-10-30 | P06 | Every engine-produced report is kept as a version; approvals are tied to the version in force at the time | Assumed |
 
 ## D01 Review and Publish (P07)
 
@@ -71,6 +73,17 @@ Nothing here was approved by the client. Nothing here has been deployed.
 ## D11 Report download audit (M4-01)
 
 - **Chosen:** every download and refused attempt is recorded, but a failure to record does not block a legitimate download. Switch to fail-closed in `safeAudit` in `server/routers/aiScans.ts` if the client requires it.
+
+## D12 Mediated messaging (J07)
+
+- **Chosen:** developers and clients never message each other. Staff relay a point in each direction; the message arrives from "IO SKY", written by staff, never under the original sender's name. A relay is refused if its text contains the other party's full name, email, phone or company name (a bare first name only warns). A developer can be relayed to a client only if they actively work on a developer project staff linked to that client's project. Staff can also message one developer, a team, or everyone active on a project (each in their own thread). Every relay and broadcast is logged with who and how many, never the text.
+- **Not built:** attachments, and internal staff notes as a message type (internal notes stay in the existing staff tools).
+- **Limit:** the client side is identified by company name and the sender's name on the message; client email and phone are not checked.
+- **To change:** edit `findIdentityLeaks` or make a first-name mention blocking in `shared/mediatedMessaging.ts`.
+
+## D13 Report versions (P06)
+
+- **Chosen:** every report the engine produces is kept as a numbered, append-only version; approvals, publications and revision requests are attached to the newest version produced before the decision. Versions exist only from when migration 0046 is applied.
 
 ## Still genuinely open (need the client or an external resource)
 

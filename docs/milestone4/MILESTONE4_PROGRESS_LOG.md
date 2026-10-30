@@ -315,6 +315,10 @@ Created docs/milestone4/MILESTONE4_DECISION_LOG.md listing the product decisions
 
 Added shared/reportCompare.ts, the ai_scan_report_versions table (migration 0046), recording at the engine's single write point (failure-tolerant), adminOps.aiScanVersions and compareAiScanVersions, and a Report versions panel in the review screen. Approvals, publications and revision notes are attached to the version they applied to. 24 new tests with mutation checks; one earlier test mock extended and made robust against cross-test leakage.
 
+## J07 - staff-mediated messaging (IN_PROGRESS)
+
+Added shared/mediatedMessaging.ts (identity-leak detection, audience and message checks), server/db/mediatedMessaging.ts (relay and broadcast with a same-transaction log row), migration 0047, five staff endpoints and the Messages tab. Decision on the mediation model taken by engineering, pending the client document. Attachments not built. 31 new tests with mutation checks.
+
 ---
 
 ## Status translation rules used for the import

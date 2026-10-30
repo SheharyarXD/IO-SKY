@@ -420,18 +420,83 @@ function Approvals() {
 function Messages() {
   const devOptions = useDevOptions();
   const reply = trpc.admin.replyToDeveloper.useMutation();
+  const teams = trpc.adminOps.teams.useQuery();
+  const projects = trpc.admin.developerProjects.useQuery();
+  const broadcast = trpc.adminOps.messageDevelopers.useMutation();
+  const toClient = trpc.adminOps.relayDeveloperMessageToClient.useMutation();
+  const toDeveloper = trpc.adminOps.relayClientMessageToDeveloper.useMutation();
+  const log = trpc.adminOps.mediationLog.useQuery();
+  const audienceOptions = [
+    ...(teams.data ?? []).filter((t) => t.status === "active").map((t) => ({ value: `team:${t.id}`, label: `Team: ${t.name}` })),
+    ...(projects.data ?? []).filter((p) => p.status !== "completed").map((p) => ({ value: `project:${p.id}`, label: `Everyone on project ${p.code}` })),
+  ];
   return (
-    <FormCard
-      title="Message a developer"
-      submitLabel="Send"
-      successMessage="Message sent. The developer is notified."
-      columns={1}
-      fields={[
-        { name: "developerId", label: "Developer", type: "select", required: true, options: devOptions },
-        { name: "subject", label: "Subject" },
-        { name: "body", label: "Message", type: "textarea", required: true },
-      ]}
-      onSubmit={(v) => reply.mutateAsync({ developerId: Number(v.developerId), subject: v.subject || undefined, body: v.body })}
-    />
+    <>
+      <FormCard
+        title="Message a developer"
+        submitLabel="Send"
+        successMessage="Message sent. The developer is notified."
+        columns={1}
+        fields={[
+          { name: "developerId", label: "Developer", type: "select", required: true, options: devOptions },
+          { name: "subject", label: "Subject" },
+          { name: "body", label: "Message", type: "textarea", required: true },
+        ]}
+        onSubmit={(v) => reply.mutateAsync({ developerId: Number(v.developerId), subject: v.subject || undefined, body: v.body })}
+      />
+      <FormCard
+        title="Message a team or a project"
+        submitLabel="Send to everyone"
+        successMessage="Sent. Each developer received it in their own thread; none can see who else did."
+        columns={1}
+        fields={[
+          { name: "audience", label: "Audience", type: "select", required: true, options: audienceOptions },
+          { name: "subject", label: "Subject" },
+          { name: "body", label: "Message", type: "textarea", required: true },
+        ]}
+        onSubmit={(v) => {
+          const [type, id] = v.audience.split(":");
+          return broadcast.mutateAsync({ audience: { type: type as "team", id: Number(id) }, subject: v.subject || undefined, body: v.body });
+        }}
+      />
+      <FormCard
+        title="Pass a developer's point on to a client"
+        submitLabel="Send to the client"
+        successMessage="Sent to the client as IO SKY. The developer is not named."
+        columns={1}
+        fields={[
+          { name: "developerMessageId", label: "Developer message id", type: "number", required: true, hint: "The message you are answering or passing on." },
+          { name: "organizationId", label: "Client organization id", type: "number", required: true, hint: "The developer must work on this client's project." },
+          { name: "subject", label: "Subject" },
+          { name: "body", label: "Message to the client", type: "textarea", required: true, hint: "You write this. It is refused if it names the developer, their email or their phone." },
+        ]}
+        onSubmit={(v) => toClient.mutateAsync({ developerMessageId: Number(v.developerMessageId), organizationId: Number(v.organizationId), subject: v.subject || undefined, body: v.body })}
+      />
+      <FormCard
+        title="Pass a client's point on to a developer"
+        submitLabel="Send to the developer"
+        successMessage="Sent to the developer as IO SKY. The client is not named."
+        columns={1}
+        fields={[
+          { name: "clientMessageId", label: "Client message id", type: "number", required: true },
+          { name: "developerId", label: "Developer", type: "select", required: true, options: devOptions, hint: "Must work on this client's project." },
+          { name: "subject", label: "Subject" },
+          { name: "body", label: "Message to the developer", type: "textarea", required: true, hint: "Refused if it names the client's company or contact." },
+        ]}
+        onSubmit={(v) => toDeveloper.mutateAsync({ clientMessageId: Number(v.clientMessageId), developerId: Number(v.developerId), subject: v.subject || undefined, body: v.body })}
+      />
+      <Panel title="Mediation log (who sent what to whom, never the text)">
+        <DataTable
+          columns={[
+            { key: "createdAt", header: "When", render: (r: NonNullable<typeof log.data>[number]) => shortDateTime(r.createdAt) },
+            { key: "kind", header: "Kind", render: (r: NonNullable<typeof log.data>[number]) => r.kind.replace(/_/g, " ") },
+            { key: "recipientCount", header: "Recipients", align: "right" },
+            { key: "actorUserId", header: "By", render: (r: NonNullable<typeof log.data>[number]) => (r.actorUserId ? `user #${r.actorUserId}` : "system") },
+          ]}
+          rows={log.data ?? []}
+          emptyLabel="Nothing has been relayed or broadcast yet."
+        />
+      </Panel>
+    </>
   );
 }

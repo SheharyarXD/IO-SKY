@@ -93,6 +93,8 @@ import { getReportVersionPayload, listReportVersions } from "../db/aiScans";
 import { getScopeGrants } from "../db/platformGovernance";
 import { renderQuotePdf } from "../quotePdf";
 import { OWNER_REFUSAL_TEXT } from "../../shared/leadOwnership";
+import { checkMessage, describeLeaks, findIdentityLeaks, MESSAGE_LIMITS, MESSAGE_REFUSAL_TEXT } from "../../shared/mediatedMessaging";
+import { broadcastToDevelopers, clientIdentities, developerIdentities, developerServesOrganization, getClientMessage, getDeveloperMessage, listMediationLog, relayToClient, relayToDeveloper } from "../db/mediatedMessaging";
 import { setLeadOwner } from "../db/crm";
 import { createRelease, getReleaseFacts, linkDeveloperProject, listActiveAssignedDeveloperIds, listReleases, revokeRelease, unlinkDeveloperProject } from "../db/documentHandoff";
 const message_alreadyReleased = "This document is already released to that project.";
@@ -124,7 +126,7 @@ const auditFilter = z.object({
   fromMs: z.number().int().optional(),
   toMs: z.number().int().optional(),
 });
-import { notifyDeveloper } from "../notifications";
+import { notifyClient, notifyDeveloper } from "../notifications";
 
 const currency = z.string().length(3).transform((s) => s.toUpperCase());
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD.");
@@ -364,6 +366,66 @@ export const adminOpsRouter = router({
       await recordAdminEvent({ ctx, reason: `admin.team.${input.archived ? "archive" : "restore"}(team=${input.teamId})` });
       return { ok: true as const };
     }),
+
+  // ---- Mediated messaging (J07): staff stand between developers and clients ---------------------------------
+
+  /**
+   * Carry a point from a developer to a client. Staff write the message; it arrives as IO SKY, never under the
+   * developer's name, and is refused if it reveals who the developer is. The developer must actually work on
+   * this client's project.
+   */
+  relayDeveloperMessageToClient: adminProcedure
+    .input(z.object({ developerMessageId: z.number().int().positive(), organizationId: z.number().int().positive(), subject: z.string().max(200).optional(), body: z.string().max(MESSAGE_LIMITS.body) }))
+    .mutation(async ({ ctx, input }) => {
+      const src = await getDeveloperMessage(input.developerMessageId);
+      if (!src || src.sender !== "developer") fail("NOT_FOUND", "That developer message does not exist.");
+      if (!(await developerServesOrganization(src.developerId, input.organizationId))) fail("PRECONDITION_FAILED", "That developer does not work on this client's project, so their message cannot be passed to this client.");
+      const msg = checkMessage({ subject: input.subject, body: input.body });
+      if (!msg.ok) fail("BAD_REQUEST", MESSAGE_REFUSAL_TEXT[msg.reason]);
+      const leaks = findIdentityLeaks(`${msg.subject ?? ""}\n${msg.body}`, await developerIdentities(src.developerId));
+      if (leaks.blocking.length > 0) fail("BAD_REQUEST", describeLeaks(leaks));
+      const sent = await relayToClient({ sourceMessageId: src.id, developerId: src.developerId, organizationId: input.organizationId, subject: msg.subject, body: msg.body, actorUserId: ctx.user.id });
+      if (!sent.ok) fail("INTERNAL_SERVER_ERROR", "The message could not be sent, so nothing was delivered.");
+      await notifyClient({ organizationId: input.organizationId, kind: "message", title: "New message from IO SKY", body: msg.subject, href: "/client-portal/messages", priority: "normal" }).catch(() => undefined);
+      await recordAdminEvent({ ctx, reason: `admin.message.relay(developer_to_client:src=${src.id}:org=${input.organizationId})` });
+      return { ok: true as const, warnings: leaks.warnings.map((w) => w.kind) };
+    }),
+
+  /** The other direction: a client's point goes to the developer who needs it, as IO SKY, without naming the client. */
+  relayClientMessageToDeveloper: adminProcedure
+    .input(z.object({ clientMessageId: z.number().int().positive(), developerId: z.number().int().positive(), subject: z.string().max(200).optional(), body: z.string().max(MESSAGE_LIMITS.body) }))
+    .mutation(async ({ ctx, input }) => {
+      const src = await getClientMessage(input.clientMessageId);
+      if (!src || src.sender !== "client") fail("NOT_FOUND", "That client message does not exist.");
+      if (!(await developerServesOrganization(input.developerId, src.organizationId))) fail("PRECONDITION_FAILED", "That developer does not work on this client's project, so this client's message cannot be passed to them.");
+      const msg = checkMessage({ subject: input.subject, body: input.body });
+      if (!msg.ok) fail("BAD_REQUEST", MESSAGE_REFUSAL_TEXT[msg.reason]);
+      const leaks = findIdentityLeaks(`${msg.subject ?? ""}\n${msg.body}`, await clientIdentities(src.organizationId, src.senderName));
+      if (leaks.blocking.length > 0) fail("BAD_REQUEST", describeLeaks(leaks));
+      const sent = await relayToDeveloper({ sourceMessageId: src.id, developerId: input.developerId, organizationId: src.organizationId, subject: msg.subject, body: msg.body, actorUserId: ctx.user.id });
+      if (!sent.ok) fail("INTERNAL_SERVER_ERROR", "The message could not be sent, so nothing was delivered.");
+      await notifyDeveloper({ developerId: input.developerId, kind: "message", title: "New message from IO SKY", body: msg.subject, href: "/developer-workspace/messages", priority: "normal" }).catch(() => undefined);
+      await recordAdminEvent({ ctx, reason: `admin.message.relay(client_to_developer:src=${src.id}:dev=${input.developerId})` });
+      return { ok: true as const, warnings: leaks.warnings.map((w) => w.kind) };
+    }),
+
+  /** One message to a developer, a whole team, or everyone active on a developer project. Each gets it in their own thread. */
+  messageDevelopers: adminProcedure
+    .input(z.object({ audience: z.object({ type: z.enum(["developer", "team", "project"]), id: z.number().int().positive() }), subject: z.string().max(200).optional(), body: z.string().max(MESSAGE_LIMITS.body) }))
+    .mutation(async ({ ctx, input }) => {
+      const msg = checkMessage({ subject: input.subject, body: input.body });
+      if (!msg.ok) fail("BAD_REQUEST", MESSAGE_REFUSAL_TEXT[msg.reason]);
+      const sent = await broadcastToDevelopers({ audienceType: input.audience.type, audienceRef: input.audience.id, subject: msg.subject, body: msg.body, actorUserId: ctx.user.id });
+      if (!sent.ok) {
+        if (sent.reason === "no_recipients" || sent.reason === "too_many") fail("PRECONDITION_FAILED", MESSAGE_REFUSAL_TEXT[sent.reason]);
+        fail("INTERNAL_SERVER_ERROR", "The message could not be sent, so nothing was delivered.");
+      }
+      for (const developerId of sent.recipients) await notifyDeveloper({ developerId, kind: "message", title: "New message from IO SKY", body: msg.subject, href: "/developer-workspace/messages", priority: "normal" }).catch(() => undefined);
+      await recordAdminEvent({ ctx, reason: `admin.message.broadcast(${input.audience.type}=${input.audience.id}:recipients=${sent.recipients.length})` });
+      return { ok: true as const, recipients: sent.recipients.length };
+    }),
+
+  mediationLog: adminProcedure.query(async () => listMediationLog(100)),
 
   documentReleases: adminProcedure
     .input(z.object({ developerProjectId: z.number().int().positive().optional(), documentId: z.number().int().positive().optional() }).default({}))
